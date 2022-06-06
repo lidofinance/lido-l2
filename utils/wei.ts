@@ -5,7 +5,7 @@ export function wei(value: TemplateStringsArray) {
     return "0";
   }
   const [amountText, unit = "wei"] = value[0]
-    .replace("_", "")
+    .replace(/_/g, "")
     .trim()
     .split(" ")
     .filter((v) => !!v);

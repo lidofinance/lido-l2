@@ -3,8 +3,8 @@ import hre, { ethers } from "hardhat";
 import {
   InitializableImplementationStub__factory,
   OssifiableProxy__factory,
-} from "../typechain";
-import { testsuite } from "../utils/testing";
+} from "../../typechain";
+import { testsuite } from "../../utils/testing";
 
 testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
   it("proxy__getAdmin()", async () => {

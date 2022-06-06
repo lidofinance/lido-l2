@@ -61,7 +61,7 @@ interface DeploymentNetwork {
 
 export async function loadArbitrumDeployDependencies(
   deploymentNetwork: DeploymentNetwork,
-  manualDependencies?: ArbitrumDependencies
+  manualDependencies?: ArbitrumDeploymentDependencies
 ) {
   if (manualDependencies) {
     return manualDependencies;

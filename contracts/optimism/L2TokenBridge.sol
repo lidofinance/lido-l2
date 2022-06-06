@@ -8,7 +8,7 @@ import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
 
 import {InterchainTokenBridge} from "./InterchainTokenBridge.sol";
 
-contract L2TokensBridge is IL2ERC20Bridge, InterchainTokenBridge {
+contract L2TokenBridge is IL2ERC20Bridge, InterchainTokenBridge {
     address public immutable l1TokenBridge;
 
     constructor(

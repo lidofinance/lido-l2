@@ -1,15 +1,15 @@
 import hre, { ethers } from "hardhat";
-import { wei } from "../../../utils/wei";
+import { wei } from "../../utils/wei";
 import {
   ERC20Stub__factory,
   L1TokensGateway__factory,
   L2TokensGateway__factory,
   OssifiableProxy__factory,
   EmptyContractStub__factory,
-} from "../../../typechain";
+} from "../../typechain";
 import { assert } from "chai";
-import { testsuite } from "../../../utils/testing";
-import { ArbSysStub__factory } from "../../../typechain/factories/ArbSysStub__factory";
+import { testsuite } from "../../utils/testing";
+import { ArbSysStub__factory } from "../../typechain/factories/ArbSysStub__factory";
 
 testsuite("L1TokensGateway unit tests", ctxProvider, (ctx) => {
   it("l1Token()", async () => {

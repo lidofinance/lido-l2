@@ -47,11 +47,14 @@ export class DeployScript {
   }
 
   async run() {
+    const res = [];
     for (let i = 0; i < this.steps.length; ++i) {
       this._printStepInfo(this._getStepInfo(i), { prefix: "Deploying " });
-      await this.runStep(this.deployer, i);
+      const c = await this.runStep(this.deployer, i);
+      res.push(c);
       console.log();
     }
+    return res;
   }
 
   print() {
@@ -79,6 +82,7 @@ export class DeployScript {
     if (step.afterDeploy) {
       step.afterDeploy(contract);
     }
+    return contract;
   }
 
   private _getStepInfo(index: number) {

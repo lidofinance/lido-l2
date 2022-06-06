@@ -1,5 +1,5 @@
 import hre, { ethers } from "hardhat";
-import { wei } from "../../../utils/wei";
+import { wei } from "../../utils/wei";
 import {
   BridgeStub__factory,
   ERC20Stub__factory,
@@ -9,9 +9,9 @@ import {
   OssifiableProxy__factory,
   OutboxStub__factory,
   EmptyContractStub__factory,
-} from "../../../typechain";
+} from "../../typechain";
 import { assert } from "chai";
-import { testsuite } from "../../../utils/testing";
+import { testsuite } from "../../utils/testing";
 
 testsuite("L1TokensGateway unit tests", ctxProvider, (ctx) => {
   it("l1Token() returns correct value after deployment", async () => {
