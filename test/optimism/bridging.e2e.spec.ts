@@ -9,12 +9,7 @@ import {
   L2TokenBridge,
   L2TokenBridge__factory,
 } from "../../typechain";
-import { loadOptimismDeployDependencies } from "../../utils/deployment/dependencies";
-import { createOptimismBridgeDeployScripts } from "../../utils/deployment/script-factories";
-import {
-  DeploymentNetwork,
-  getDeploymentNetwork,
-} from "../../utils/deployment/network";
+import { createOptimismBridgeDeployScripts } from "../../utils/deployment/optimism";
 import { wei } from "../../utils/wei";
 import { assert } from "chai";
 import {
@@ -22,43 +17,47 @@ import {
   MessageStatus,
   DAIBridgeAdapter,
 } from "@eth-optimism/sdk";
+import { Wallet } from "ethers";
+import { getDeployer } from "../../utils/deployment/network";
 
 describe("Optimism :: bridging integration test", () => {
-  let network: DeploymentNetwork;
+  let l1Deployer: Wallet;
+  let l2Deployer: Wallet;
   let l1Token: ERC20Stub;
   let l1TokenBridge: L1TokenBridge;
   let l2TokenBridge: L2TokenBridge;
   let l2Token: ERC20Ownable;
+
   before(async () => {
-    network = getDeploymentNetwork(hre);
-    const dependencies = await loadOptimismDeployDependencies(network);
+    l1Deployer = getDeployer("local", hre);
+    l2Deployer = getDeployer("local_optimism", hre);
 
     // deploy L1Token stub
-    l1Token = await new ERC20Stub__factory(network.l1.deployer).deploy(
-      "L1 Token",
-      "L1"
-    );
+    l1Token = await new ERC20Stub__factory(l1Deployer).deploy("L1 Token", "L1");
 
     const [l1DeployScript, l2DeployScript] =
       await createOptimismBridgeDeployScripts(
-        network,
-        dependencies,
-        l1Token.address
+        l1Token.address,
+        {
+          deployer: l1Deployer,
+          admins: { proxy: l1Deployer.address, bridge: l1Deployer.address },
+        },
+        {
+          deployer: l2Deployer,
+          admins: { proxy: l2Deployer.address, bridge: l2Deployer.address },
+        }
       );
     const l1Contracts = await l1DeployScript.run();
     const l2Contracts = await l2DeployScript.run();
 
     l1TokenBridge = L1TokenBridge__factory.connect(
       l1Contracts[1].address,
-      network.l1.deployer
+      l1Deployer
     );
-    l2Token = ERC20Ownable__factory.connect(
-      l2Contracts[1].address,
-      network.l2.deployer
-    );
+    l2Token = ERC20Ownable__factory.connect(l2Contracts[1].address, l2Deployer);
     l2TokenBridge = L2TokenBridge__factory.connect(
       l2Contracts[3].address,
-      network.l2.deployer
+      l2Deployer
     );
 
     // initialize token bridge
@@ -71,8 +70,8 @@ describe("Optimism :: bridging integration test", () => {
     ]);
 
     for (const role of roles) {
-      await l1TokenBridge.grantRole(role, network.l1.deployer.address);
-      await l2TokenBridge.grantRole(role, network.l2.deployer.address);
+      await l1TokenBridge.grantRole(role, l1Deployer.address);
+      await l2TokenBridge.grantRole(role, l2Deployer.address);
     }
     await l1TokenBridge.enableDeposits();
     await l1TokenBridge.enableWithdrawals();
@@ -92,20 +91,17 @@ describe("Optimism :: bridging integration test", () => {
 
     console.log(
       "L1Token balance:",
-      await l1Token.balanceOf(network.l1.deployer.address)
+      await l1Token.balanceOf(l1Deployer.address)
     );
 
     console.log(
       "L1Token allowance:",
-      await l1Token.allowance(
-        network.l1.deployer.address,
-        l1TokenBridge.address
-      )
+      await l1Token.allowance(l1Deployer.address, l1TokenBridge.address)
     );
 
     console.log(
       "L2Token balance:",
-      await l2Token.balanceOf(network.l2.deployer.address)
+      await l2Token.balanceOf(l2Deployer.address)
     );
 
     console.log("l1TokenBridge.messenger()", await l1TokenBridge.messenger());
@@ -117,9 +113,9 @@ describe("Optimism :: bridging integration test", () => {
     );
 
     const crossChainMessenger = new CrossChainMessenger({
-      l1ChainId: await network.l1.deployer.getChainId(), // For Kovan, it's 1 for Mainnet
-      l1SignerOrProvider: network.l1.deployer,
-      l2SignerOrProvider: network.l2.deployer,
+      l1ChainId: await l1Deployer.getChainId(), // For Kovan, it's 1 for Mainnet
+      l1SignerOrProvider: l1Deployer,
+      l2SignerOrProvider: l2Deployer,
       contracts: {
         l1: {
           L1CrossDomainMessenger: "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",

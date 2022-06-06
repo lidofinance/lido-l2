@@ -6,6 +6,7 @@ import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
+import "./tasks/fork-node";
 
 dotenv.config();
 
@@ -35,6 +36,12 @@ const config: HardhatUserConfig = {
     },
     mainnet: {
       url: process.env.MAINNET_URL || "",
+    },
+    mainnet_fork: {
+      url: process.env.MAINNET_URL || "",
+      forking: {
+        url: process.env.MAINNET_URL || "",
+      },
     },
     mainnet_arbitrum: {
       url: process.env.MAINNET_ARBITRUM_URL || "",

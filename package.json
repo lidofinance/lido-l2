@@ -4,7 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "hardhat test",
+    "compile": "hardhat compile",
+    "compile:force": "hardhat compile --force",
+    "coverage": "hardhat coverage",
+    "manager:grant-role": "ts-node --files ./scripts/bridging-manager/grant-role.ts",
+    "optimism:deploy-bridge": "ts-node --files ./scripts/optimism/deploy-bridge.ts",
+    "arbitrum:deploy-gateway": "ts-node --files ./scripts/arbitrum/deploy-gateway.ts",
+    "fork:ethereum": "hardhat node:fork mainnet 8545",
+    "fork:arbitrum": "hardhat node:fork mainnet_arbitrum 8546",
+    "fork:optimism": "hardhat node:fork mainnet_optimism 9545"
   },
   "keywords": [],
   "author": "",

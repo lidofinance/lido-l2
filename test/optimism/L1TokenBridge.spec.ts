@@ -3,7 +3,7 @@ import hre from "hardhat";
 import {
   ERC20Stub__factory,
   L1TokenBridge__factory,
-  L2TokensBridge__factory,
+  L2TokenBridge__factory,
   OssifiableProxy__factory,
   EmptyContractStub__factory,
 } from "../../typechain";
@@ -114,7 +114,7 @@ testsuite("Optimism :: L1TokenBridge unit tests", ctxProvider, (ctx) => {
     await assert.emits(l1Messenger, tx, "SentMessage", [
       l2TokenBridgeEOA.address,
       l1TokenBridge.address,
-      L2TokensBridge__factory.createInterface().encodeFunctionData(
+      L2TokenBridge__factory.createInterface().encodeFunctionData(
         "finalizeDeposit",
         [
           l1Token.address,
@@ -246,7 +246,7 @@ testsuite("Optimism :: L1TokenBridge unit tests", ctxProvider, (ctx) => {
     await assert.emits(l1Messenger, tx, "SentMessage", [
       l2TokenBridgeEOA.address,
       l1TokenBridge.address,
-      L2TokensBridge__factory.createInterface().encodeFunctionData(
+      L2TokenBridge__factory.createInterface().encodeFunctionData(
         "finalizeDeposit",
         [
           l1Token.address,

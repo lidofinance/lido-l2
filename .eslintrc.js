@@ -20,6 +20,9 @@ module.exports = {
       tryExtensions: [".js", ".ts"],
     },
   },
+  globals: {
+    Awaited: "readonly",
+  },
   rules: {
     "no-useless-constructor": "off",
     camelcase: ["error", { allow: [".+__factory$"], properties: "never" }],

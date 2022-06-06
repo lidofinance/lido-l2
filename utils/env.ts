@@ -1,6 +1,4 @@
-import dotenv from "dotenv";
-
-dotenv.config();
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 export function getEnvVariable(variableName: string, defaultValue?: string) {
   const value = process.env[variableName];
@@ -10,4 +8,21 @@ export function getEnvVariable(variableName: string, defaultValue?: string) {
     );
   }
   return (value || defaultValue) as string;
+}
+
+export function getAddress(
+  addressName: string,
+  hre: HardhatRuntimeEnvironment
+) {
+  return hre.ethers.utils.getAddress(getEnvVariable(addressName));
+}
+
+export function getEnum(variableName: string, allowedValues: string[]) {
+  const value = getEnvVariable(variableName);
+  if (!allowedValues.includes(value)) {
+    throw new Error(
+      `Variable ${variableName} not in allowed values: ${allowedValues}`
+    );
+  }
+  return value;
 }

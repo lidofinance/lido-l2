@@ -2,7 +2,7 @@ import hre from "hardhat";
 import {
   ERC20Stub__factory,
   L1TokenBridge__factory,
-  L2TokensBridge__factory,
+  L2TokenBridge__factory,
   OssifiableProxy__factory,
   EmptyContractStub__factory,
   CrossDomainMessengerStub__factory,
@@ -399,7 +399,7 @@ async function ctxProvider() {
   });
   const emptyContractEOA = await account.impersonate(emptyContract.address);
 
-  const l2TokenBridgeImpl = await new L2TokensBridge__factory(deployer).deploy(
+  const l2TokenBridgeImpl = await new L2TokenBridge__factory(deployer).deploy(
     l2Messenger.address,
     l1TokenBridgeEOA.address,
     l1Token.address,
@@ -416,7 +416,7 @@ async function ctxProvider() {
     ])
   );
 
-  const l2TokenBridge = L2TokensBridge__factory.connect(
+  const l2TokenBridge = L2TokenBridge__factory.connect(
     l2TokenBridgeProxy.address,
     deployer
   );
