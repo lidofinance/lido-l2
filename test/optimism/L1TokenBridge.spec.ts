@@ -46,7 +46,7 @@ testsuite("Optimism :: L1TokenBridge unit tests", ctxProvider, (ctx) => {
         wei`1 gwei`,
         "0x"
       ),
-      "ErrorWrongL1Token()"
+      "ErrorUnsupportedL1Token()"
     );
   });
 
@@ -59,7 +59,7 @@ testsuite("Optimism :: L1TokenBridge unit tests", ctxProvider, (ctx) => {
         wei`1 gwei`,
         "0x"
       ),
-      "ErrorWrongL2Token()"
+      "ErrorUnsupportedL2Token()"
     );
   });
 
@@ -315,7 +315,7 @@ testsuite("Optimism :: L1TokenBridge unit tests", ctxProvider, (ctx) => {
           wei`1 ether`,
           "0x"
         ),
-      "ErrorWrongL1Token()"
+      "ErrorUnsupportedL1Token()"
     );
   });
 
@@ -337,7 +337,7 @@ testsuite("Optimism :: L1TokenBridge unit tests", ctxProvider, (ctx) => {
           wei`1 ether`,
           "0x"
         ),
-      "ErrorWrongL2Token()"
+      "ErrorUnsupportedL2Token()"
     );
   });
 

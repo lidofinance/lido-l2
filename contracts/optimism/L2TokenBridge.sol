@@ -6,9 +6,16 @@ import {IERC20Ownable} from "../token/interfaces/IERC20Ownable.sol";
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
 
-import {InterchainTokenBridge} from "./InterchainTokenBridge.sol";
+import {BridgingManager} from "../BridgingManager.sol";
+import {BridgeableTokens} from "../BridgeableTokens.sol";
+import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 
-contract L2TokenBridge is IL2ERC20Bridge, InterchainTokenBridge {
+contract L2TokenBridge is
+    IL2ERC20Bridge,
+    BridgingManager,
+    BridgeableTokens,
+    CrossDomainEnabled
+{
     address public immutable l1TokenBridge;
 
     constructor(
@@ -16,7 +23,7 @@ contract L2TokenBridge is IL2ERC20Bridge, InterchainTokenBridge {
         address l1TokenBridge_,
         address l1Token_,
         address l2Token_
-    ) InterchainTokenBridge(messenger_, l1Token_, l2Token_) {
+    ) CrossDomainEnabled(messenger_) BridgeableTokens(l1Token_, l2Token_) {
         l1TokenBridge = l1TokenBridge_;
     }
 

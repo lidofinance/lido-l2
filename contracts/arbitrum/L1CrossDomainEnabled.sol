@@ -3,9 +3,9 @@
 
 pragma solidity ^0.8.13;
 
-import {IInbox} from "../interfaces/IInbox.sol";
-import {IBridge} from "../interfaces/IBridge.sol";
-import {IOutbox} from "../interfaces/IOutbox.sol";
+import {IInbox} from "./interfaces/IInbox.sol";
+import {IBridge} from "./interfaces/IBridge.sol";
+import {IOutbox} from "./interfaces/IOutbox.sol";
 
 contract L1CrossDomainEnabled {
     IInbox public immutable inbox;

@@ -6,9 +6,9 @@ pragma solidity ^0.8.13;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import {IL1TokenGateway} from "../interfaces/IL1TokenGateway.sol";
+import {IL1TokenGateway} from "./interfaces/IL1TokenGateway.sol";
 import {InterchainTokensGateway} from "./InterchainTokensGateway.sol";
-import {L1OutboundDataParser} from "../libraries/L1OutboundDataParser.sol";
+import {L1OutboundDataParser} from "./libraries/L1OutboundDataParser.sol";
 import {L1CrossDomainEnabled} from "./L1CrossDomainEnabled.sol";
 
 contract L1TokensGateway is
@@ -45,7 +45,7 @@ contract L1TokensGateway is
         external
         payable
         whenDepositsEnabled
-        onlyL1Token(l1Token_)
+        onlySupportedL1Token(l1Token_)
         returns (bytes memory res)
     {
         (address from, uint256 maxSubmissionCost) = L1OutboundDataParser.decode(
@@ -83,7 +83,7 @@ contract L1TokensGateway is
         bytes calldata
     )
         external
-        onlyL1Token(token)
+        onlySupportedL1Token(token)
         onlyFromCrossDomainAccount(counterpartGateway)
     {
         IERC20(l1Token).safeTransfer(to, amount);

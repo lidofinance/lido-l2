@@ -57,7 +57,9 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: {
       rinkeby: process.env.RINKEBY_ETHERSCAN_API_KEY,
+      kovan: process.env.KOVAN_ETHERSCAN_API_KEY,
       arbitrumTestnet: process.env.RINKEBY_ARBITRUM_ETHERSCAN_API_KEY,
+      optimisticKovan: process.env.KOVAN_OPTIMISM_ETHERSCAN_API_KEY,
     },
   },
 };

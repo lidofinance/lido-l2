@@ -3,11 +3,11 @@
 
 pragma solidity ^0.8.13;
 
-import {IL2TokenGateway} from "../interfaces/IL2TokenGateway.sol";
+import {IL2TokenGateway} from "./interfaces/IL2TokenGateway.sol";
 import {InterchainTokensGateway} from "./InterchainTokensGateway.sol";
 
-import {IERC20Ownable} from "../../token/interfaces/IERC20Ownable.sol";
-import {L2OutboundDataParser} from "../libraries/L2OutboundDataParser.sol";
+import {IERC20Ownable} from "../token/interfaces/IERC20Ownable.sol";
+import {L2OutboundDataParser} from "./libraries/L2OutboundDataParser.sol";
 import {L2CrossDomainEnabled} from "./L2CrossDomainEnabled.sol";
 
 contract L2TokensGateway is
@@ -41,7 +41,7 @@ contract L2TokensGateway is
     )
         external
         whenWithdrawalsEnabled
-        onlyL1Token(l1Token_)
+        onlySupportedL1Token(l1Token_)
         returns (bytes memory res)
     {
         address from = L2OutboundDataParser.decode(router, _data);
@@ -62,7 +62,7 @@ contract L2TokensGateway is
         bytes calldata
     )
         external
-        onlyL1Token(token)
+        onlySupportedL1Token(token)
         onlyFromCrossDomainAccount(counterpartGateway)
     {
         IERC20Ownable(l2Token).mint(to, amount);

@@ -1,15 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
-import {InterchainTokenBridge} from "./InterchainTokenBridge.sol";
 
-contract L1TokenBridge is IL1ERC20Bridge, InterchainTokenBridge {
+import {BridgingManager} from "../BridgingManager.sol";
+import {BridgeableTokens} from "../BridgeableTokens.sol";
+import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
+
+contract L1TokenBridge is
+    IL1ERC20Bridge,
+    BridgingManager,
+    BridgeableTokens,
+    CrossDomainEnabled
+{
     using SafeERC20 for IERC20;
 
     address public immutable l2TokenBridge;
@@ -19,7 +27,7 @@ contract L1TokenBridge is IL1ERC20Bridge, InterchainTokenBridge {
         address l2TokenBridge_,
         address l1Token_,
         address l2Token_
-    ) InterchainTokenBridge(messenger_, l1Token_, l2Token_) {
+    ) CrossDomainEnabled(messenger_) BridgeableTokens(l1Token_, l2Token_) {
         l2TokenBridge = l2TokenBridge_;
     }
 

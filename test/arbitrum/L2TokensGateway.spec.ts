@@ -149,7 +149,7 @@ testsuite("L1TokensGateway unit tests", ctxProvider, (ctx) => {
           gasPriceBid,
           data
         ),
-      "WrongToken()"
+      "ErrorUnsupportedL1Token()"
     );
   });
 
@@ -395,7 +395,7 @@ testsuite("L1TokensGateway unit tests", ctxProvider, (ctx) => {
     // validate withdrawals were enabled
     assert.isTrue(await l2TokensGateway.isDepositsEnabled());
 
-    // validate gateway reverts with error WrongToken()
+    // validate gateway reverts with error ErrorUnsupportedL1Token()
     await assert.revertsWith(
       l2TokensGateway
         .connect(l1TokensGatewayAliasedEOA)
@@ -406,7 +406,7 @@ testsuite("L1TokensGateway unit tests", ctxProvider, (ctx) => {
           wei`10 ether`,
           "0x"
         ),
-      "ErrorWrongToken()"
+      "ErrorUnsupportedL1Token()"
     );
   });
 

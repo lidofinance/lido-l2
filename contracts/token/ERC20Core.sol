@@ -1,77 +1,106 @@
 // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.0;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+/// @author psirex
+/// @notice Contains the required logic of the ERC20 standard as defined in the EIP
 contract ERC20Core is IERC20 {
+    /// @notice The amount of tokens in existence
     uint256 public totalSupply;
+
+    /// @notice Stores the amount of tokens owned by account
     mapping(address => uint256) public balanceOf;
+
+    /// @notice Stores the remaining amount of tokens that spender will be
+    ///     allowed to spend on behalf of owner through transferFrom.
     mapping(address => mapping(address => uint256)) public allowance;
 
-    function approve(address spender, uint256 amount)
+    /// @notice Sets amount_ as the allowance of spender_ over the caller's tokens.
+    /// @param spender_ An address of the tokens spender
+    /// @param amount_ An amount of tokens to allow to spend
+    function approve(address spender_, uint256 amount_)
         public
         returns (bool success)
     {
-        allowance[msg.sender][spender] = amount;
+        allowance[msg.sender][spender_] = amount_;
 
-        emit Approval(msg.sender, spender, amount);
+        emit Approval(msg.sender, spender_, amount_);
         return true;
     }
 
-    function transfer(address to, uint256 amount)
+    /// @notice Moves amount_ tokens from the caller's account to to_
+    /// @param to_ An address of the recipient of the tokens
+    /// @param amount_ An amount of tokens to transfer
+    function transfer(address to_, uint256 amount_)
         public
         returns (bool success)
     {
-        _transfer(msg.sender, to, amount);
+        _transfer(msg.sender, to_, amount_);
         return true;
     }
 
+    /// @notice Moves amount_ tokens from from_ to to_ using the allowance mechanism.
+    ///     amount_ is then deducted from the caller's allowance.
+    /// @param from_ An address to transfer tokens from
+    /// @param to_ An address of the recipient of the tokens
+    /// @param amount_ An amount of tokens to transfer
     function transferFrom(
-        address from,
-        address to,
-        uint256 amount
+        address from_,
+        address to_,
+        uint256 amount_
     ) public returns (bool success) {
-        _spendAllowance(from, to, amount);
-        _transfer(from, to, amount);
+        _spendAllowance(from_, to_, amount_);
+        _transfer(from_, to_, amount_);
         return true;
     }
 
-    function increaseAllowance(address spender, uint256 addedValue)
+    /// @notice Atomically increases the allowance granted to spender by the caller.
+    /// @param spender_ An address of the tokens spender
+    /// @param addedValue_ An amount to increase the allowance
+    function increaseAllowance(address spender_, uint256 addedValue_)
         external
         returns (bool)
     {
         _approve(
             msg.sender,
-            spender,
-            allowance[msg.sender][spender] + addedValue
+            spender_,
+            allowance[msg.sender][spender_] + addedValue_
         );
         return true;
     }
 
-    function decreaseAllowance(address spender, uint256 subtractedValue)
+    /// @notice Atomically decreases the allowance granted to spender by the caller.
+    /// @param spender_ An address of the tokens spender
+    /// @param subtractedValue_ An amount to decrease the  allowance
+    function decreaseAllowance(address spender_, uint256 subtractedValue_)
         external
         returns (bool)
     {
-        uint256 currentAllowance = allowance[msg.sender][spender];
-        if (currentAllowance < subtractedValue) {
+        uint256 currentAllowance = allowance[msg.sender][spender_];
+        if (currentAllowance < subtractedValue_) {
             revert ErrorDecreasedAllowanceBelowZero();
         }
         unchecked {
-            _approve(msg.sender, spender, currentAllowance - subtractedValue);
+            _approve(msg.sender, spender_, currentAllowance - subtractedValue_);
         }
         return true;
     }
 
+    /// @dev Moves amount_ of tokens from sender_ to recipient_.
+    /// @param from_ An address of the sender of the tokens
+    /// @param to_  An address of the recipient of the tokens
+    /// @param amount_ An amount of tokens to transfer
     function _transfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal onlyNonZeroAccount(from) onlyNonZeroAccount(to) {
-        _decreaseBalance(from, amount);
-        balanceOf[to] += amount;
-        emit Transfer(from, to, amount);
+        address from_,
+        address to_,
+        uint256 amount_
+    ) internal onlyNonZeroAccount(from_) onlyNonZeroAccount(to_) {
+        _decreaseBalance(from_, amount_);
+        balanceOf[to_] += amount_;
+        emit Transfer(from_, to_, amount_);
     }
 
     function _spendAllowance(

@@ -58,8 +58,6 @@ export class DeployScript {
   }
 
   print() {
-    // console.log(`  Deployer: ${chalk.underline(this.deployer.address)}`);
-    // console.log();
     for (let i = 0; i < this.steps.length; ++i) {
       this._printStepInfo(this._getStepInfo(i), { padding: 2 });
       console.log();
@@ -82,6 +80,10 @@ export class DeployScript {
     if (step.afterDeploy) {
       step.afterDeploy(contract);
     }
+    await this._printVerificationCommand(
+      contract.address,
+      this._getStepInfo(index)
+    );
     return contract;
   }
 
@@ -122,6 +124,29 @@ export class DeployScript {
         `${padString}  ${chalk.cyan(arg.index + ":")} ${name}  ${value}`
       );
     }
+  }
+
+  private async _printVerificationCommand(
+    address: string,
+    stepInfo: DeployStepInfo
+  ) {
+    const chainId = await this.deployer.getChainId();
+    const networkNameByChainId: Record<number, string> = {
+      1: "mainnet",
+      4: "rinkeby",
+      10: "mainnet_optimism",
+      42: "kovan",
+      69: "kovan_optimism",
+      31337: "hardhat",
+      42161: "mainnet_arbitrum",
+      421611: "rinkeby_arbitrum",
+    };
+    const networkName = networkNameByChainId[chainId] || "<NETWORK_NAME>";
+    const arsString = stepInfo.args.map((a) => `"${a.value}"`).join(" ");
+    console.log("To verify the contract on Etherscan, use command:");
+    console.log(
+      `npx hardhat verify --network ${networkName} ${address} ${arsString}`
+    );
   }
 }
 

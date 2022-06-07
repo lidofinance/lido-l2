@@ -48,7 +48,7 @@ testsuite("Optimism:: L2TokenBridge unit tests", ctxProvider, async (ctx) => {
     } = ctx;
     await assert.revertsWith(
       l2TokenBridge.withdraw(stranger.address, wei`1 ether`, wei`1 gwei`, "0x"),
-      "ErrorWrongL2Token()"
+      "ErrorUnsupportedL2Token()"
     );
   });
 
@@ -151,7 +151,7 @@ testsuite("Optimism:: L2TokenBridge unit tests", ctxProvider, async (ctx) => {
         wei`1 gwei`,
         "0x"
       ),
-      "ErrorWrongL2Token()"
+      "ErrorUnsupportedL2Token()"
     );
   });
 
@@ -263,7 +263,7 @@ testsuite("Optimism:: L2TokenBridge unit tests", ctxProvider, async (ctx) => {
           wei`1 ether`,
           "0x"
         ),
-      "ErrorWrongL1Token()"
+      "ErrorUnsupportedL1Token()"
     );
   });
 
@@ -285,7 +285,7 @@ testsuite("Optimism:: L2TokenBridge unit tests", ctxProvider, async (ctx) => {
           wei`1 ether`,
           "0x"
         ),
-      "ErrorWrongL2Token()"
+      "ErrorUnsupportedL2Token()"
     );
   });
 

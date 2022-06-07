@@ -45,11 +45,11 @@ const L1_DEPENDENCIES: Record<number, L1ArbitrumDependencies> = {
 };
 
 const L2_DEPENDENCIES: Record<number, L2ArbitrumDependencies> = {
-  1: {
+  42161: {
     arbSys: "0x0000000000000000000000000000000000000064",
     router: "0x5288c571Fd7aD117beA99bF60FE0846C4E84F933",
   },
-  4: {
+  421611: {
     arbSys: "0x0000000000000000000000000000000000000064",
     router: "0x9413AD42910c1eA60c737dB5f58d1C504498a3cD",
   },

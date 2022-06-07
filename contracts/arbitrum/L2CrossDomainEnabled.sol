@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.13;
 
-import {IArbSys} from "../interfaces/IArbSys.sol";
+import {IArbSys} from "./interfaces/IArbSys.sol";
 
 contract L2CrossDomainEnabled {
     IArbSys public immutable arbSys;
