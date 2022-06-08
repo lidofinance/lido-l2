@@ -4,8 +4,8 @@ import {
   BridgeStub__factory,
   ERC20Stub__factory,
   InboxStub__factory,
-  L1TokensGateway__factory,
-  L2TokensGateway__factory,
+  L1ERC20TokenGateway__factory,
+  L2ERC20TokenGateway__factory,
   OssifiableProxy__factory,
   OutboxStub__factory,
   EmptyContractStub__factory,
@@ -637,7 +637,7 @@ async function ctxProvider() {
   );
   await l1TokenStub.transfer(sender.address, wei`100 ether`);
 
-  const l1TokensGatewayImpl = await new L1TokensGateway__factory(
+  const l1TokensGatewayImpl = await new L1ERC20TokenGateway__factory(
     deployer
   ).deploy(
     inboxStub.address,
@@ -672,12 +672,12 @@ async function ctxProvider() {
       l1Token: l1TokenStub,
       l2Token: l2TokenStub,
       l1Router: l1RouterStub,
-      l2TokensGateway: L2TokensGateway__factory.connect(
+      l2TokensGateway: L2ERC20TokenGateway__factory.connect(
         l2TokensGatewayStub.address,
         deployer
       ),
     },
-    l1TokensGateway: L1TokensGateway__factory.connect(
+    l1TokensGateway: L1ERC20TokenGateway__factory.connect(
       l1TokensGatewayProxy.address,
       deployer
     ),

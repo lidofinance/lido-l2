@@ -3,8 +3,8 @@ import { Wallet } from "ethers";
 import {
   ERC20Ownable__factory,
   IERC20Metadata__factory,
-  L1TokensGateway__factory,
-  L2TokensGateway__factory,
+  L1ERC20TokenGateway__factory,
+  L2ERC20TokenGateway__factory,
   OssifiableProxy__factory,
 } from "../../typechain";
 import { DeployScript } from "../../utils/deployment/DeployScript";
@@ -85,7 +85,7 @@ export async function createArbitrumGatewayDeployScripts(
 
   const l1DeployScript = new DeployScript(l1Params.deployer)
     .addStep({
-      factory: L1TokensGateway__factory,
+      factory: L1ERC20TokenGateway__factory,
       args: [
         l1Dependencies.inbox,
         l1Dependencies.router,
@@ -101,7 +101,7 @@ export async function createArbitrumGatewayDeployScripts(
       args: [
         expectedL1TokensGatewayImplAddress,
         l1Params.admins.proxy,
-        L1TokensGateway__factory.createInterface().encodeFunctionData(
+        L1ERC20TokenGateway__factory.createInterface().encodeFunctionData(
           "initialize",
           [l1Params.admins.bridge]
         ),
@@ -134,11 +134,18 @@ export async function createArbitrumGatewayDeployScripts(
     })
     .addStep({
       factory: OssifiableProxy__factory,
-      args: [expectedL2TokenImplAddress, l2Params.admins.proxy, "0x"],
+      args: [
+        expectedL2TokenImplAddress,
+        l2Params.admins.proxy,
+        ERC20Ownable__factory.createInterface().encodeFunctionData(
+          "initialize",
+          [l2TokenName, l2TokenSymbol]
+        ),
+      ],
       afterDeploy: (c) => assert.equal(c.address, expectedL2TokenProxyAddress),
     })
     .addStep({
-      factory: L2TokensGateway__factory,
+      factory: L2ERC20TokenGateway__factory,
       args: [
         l2Dependencies.arbSys,
         l2Dependencies.router,
@@ -154,7 +161,7 @@ export async function createArbitrumGatewayDeployScripts(
       args: [
         expectedL2TokensGatewayImplAddress,
         l2Params.admins.proxy,
-        L2TokensGateway__factory.createInterface().encodeFunctionData(
+        L2ERC20TokenGateway__factory.createInterface().encodeFunctionData(
           "initialize",
           [l2Params.admins.bridge]
         ),

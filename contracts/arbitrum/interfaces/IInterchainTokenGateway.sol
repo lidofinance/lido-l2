@@ -2,7 +2,7 @@
 
 pragma solidity >=0.4.21;
 
-interface ITokenGatewayCommon {
+interface IInterchainTokenGateway {
     function finalizeInboundTransfer(
         address token,
         address from,

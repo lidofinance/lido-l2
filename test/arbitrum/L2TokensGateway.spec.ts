@@ -2,8 +2,8 @@ import hre, { ethers } from "hardhat";
 import { wei } from "../../utils/wei";
 import {
   ERC20Stub__factory,
-  L1TokensGateway__factory,
-  L2TokensGateway__factory,
+  L1ERC20TokenGateway__factory,
+  L2ERC20TokenGateway__factory,
   OssifiableProxy__factory,
   EmptyContractStub__factory,
 } from "../../typechain";
@@ -538,7 +538,7 @@ async function ctxProvider() {
   );
 
   const arbSysStub = await new ArbSysStub__factory(deployer).deploy();
-  const l2TokensGatewayImpl = await new L2TokensGateway__factory(
+  const l2TokensGatewayImpl = await new L2ERC20TokenGateway__factory(
     deployer
   ).deploy(
     arbSysStub.address, // the default address of the
@@ -592,12 +592,12 @@ async function ctxProvider() {
       l1Token: l1TokenStub,
       l2Token: l2TokenStub,
       l2Router: l2RouterStub,
-      l1TokensGateway: L1TokensGateway__factory.connect(
+      l1TokensGateway: L1ERC20TokenGateway__factory.connect(
         l1TokensGatewayStub.address,
         deployer
       ),
     },
-    l2TokensGateway: L2TokensGateway__factory.connect(
+    l2TokensGateway: L2ERC20TokenGateway__factory.connect(
       l2TokensGatewayProxy.address,
       deployer
     ),

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.0;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "./IERC20Metadata.sol";
@@ -13,8 +13,12 @@ interface IERC20Ownable is IERC20, IERC20Metadata {
     function owner() external view returns (address);
 
     /// @notice Creates amount_ tokens and assigns them to account_, increasing the total supply
+    /// @param account_ An address of the account to mint tokens
+    /// @param amount_ An amount of tokens to mint
     function mint(address account_, uint256 amount_) external;
 
-    /// @notice Destroys amount_ tokens from account_, reducing the total supply.
+    /// @notice Destroys amount_ tokens from account_, reducing the total supply
+    /// @param account_ An address of the account to burn tokens
+    /// @param amount_ An amount of tokens to burn
     function burn(address account_, uint256 amount_) external;
 }

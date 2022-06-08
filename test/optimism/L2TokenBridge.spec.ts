@@ -1,8 +1,8 @@
 import hre from "hardhat";
 import {
   ERC20Stub__factory,
-  L1TokenBridge__factory,
-  L2TokenBridge__factory,
+  L1ERC20TokenBridge__factory,
+  L2ERC20TokenBridge__factory,
   OssifiableProxy__factory,
   EmptyContractStub__factory,
   CrossDomainMessengerStub__factory,
@@ -89,7 +89,7 @@ testsuite("Optimism:: L2TokenBridge unit tests", ctxProvider, async (ctx) => {
     await assert.emits(l2MessengerStub, tx, "SentMessage", [
       l1TokenBridgeEOA.address,
       l2TokenBridge.address,
-      L1TokenBridge__factory.createInterface().encodeFunctionData(
+      L1ERC20TokenBridge__factory.createInterface().encodeFunctionData(
         "finalizeERC20Withdrawal",
         [
           l1TokenStub.address,
@@ -193,7 +193,7 @@ testsuite("Optimism:: L2TokenBridge unit tests", ctxProvider, async (ctx) => {
     await assert.emits(l2MessengerStub, tx, "SentMessage", [
       l1TokenBridgeEOA.address,
       l2TokenBridge.address,
-      L1TokenBridge__factory.createInterface().encodeFunctionData(
+      L1ERC20TokenBridge__factory.createInterface().encodeFunctionData(
         "finalizeERC20Withdrawal",
         [
           l1TokenStub.address,
@@ -399,7 +399,9 @@ async function ctxProvider() {
   });
   const emptyContractEOA = await account.impersonate(emptyContract.address);
 
-  const l2TokenBridgeImpl = await new L2TokenBridge__factory(deployer).deploy(
+  const l2TokenBridgeImpl = await new L2ERC20TokenBridge__factory(
+    deployer
+  ).deploy(
     l2Messenger.address,
     l1TokenBridgeEOA.address,
     l1Token.address,
@@ -416,7 +418,7 @@ async function ctxProvider() {
     ])
   );
 
-  const l2TokenBridge = L2TokenBridge__factory.connect(
+  const l2TokenBridge = L2ERC20TokenBridge__factory.connect(
     l2TokenBridgeProxy.address,
     deployer
   );

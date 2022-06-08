@@ -3,13 +3,14 @@
 
 pragma solidity ^0.8.0;
 
-import {ERC20Core} from "./ERC20Core.sol";
 import {IERC20Ownable} from "./interfaces/IERC20Ownable.sol";
-import {ERC20MetadataImmutable} from "./ERC20MetadataImmutable.sol";
+
+import {ERC20Core} from "./ERC20Core.sol";
+import {ERC20Metadata} from "./ERC20Metadata.sol";
 
 /// @author psirex
 /// @notice Extends the ERC20 functionality that allows the owner to mint/burn tokens
-contract ERC20Ownable is IERC20Ownable, ERC20Core, ERC20MetadataImmutable {
+contract ERC20Ownable is IERC20Ownable, ERC20Core, ERC20Metadata {
     /// @notice An owner of the token who can mint/burn tokens
     address public immutable owner;
 
@@ -22,16 +23,28 @@ contract ERC20Ownable is IERC20Ownable, ERC20Core, ERC20MetadataImmutable {
         string memory symbol_,
         uint8 decimals_,
         address owner_
-    ) ERC20MetadataImmutable(name_, symbol_, decimals_) {
+    ) ERC20Metadata(name_, symbol_, decimals_) {
         owner = owner_;
     }
 
+    /// @notice Sets the name and the symbol of the tokens if they both are empty
+    /// @param name_ The name of the token
+    /// @param symbol_ The symbol of the token
+    function initialize(string memory name_, string memory symbol_) external {
+        _setERC20MetadataName(name_);
+        _setERC20MetadataSymbol(symbol_);
+    }
+
     /// @notice Creates amount_ tokens and assigns them to account_, increasing the total supply
+    /// @param account_ An address of the account to mint tokens
+    /// @param amount_ An amount of tokens to mint
     function mint(address account_, uint256 amount_) public onlyOwner {
         _mint(account_, amount_);
     }
 
-    /// @notice Destroys amount_ tokens from account_, reducing the total supply.
+    /// @notice Destroys amount_ tokens from account_, reducing the total supply
+    /// @param account_ An address of the account to burn tokens
+    /// @param amount_ An amount of tokens to burn
     function burn(address account_, uint256 amount_) external onlyOwner {
         _burn(account_, amount_);
     }

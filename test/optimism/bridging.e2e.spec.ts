@@ -4,10 +4,10 @@ import {
   ERC20Ownable__factory,
   ERC20Stub,
   ERC20Stub__factory,
-  L1TokenBridge,
-  L1TokenBridge__factory,
-  L2TokenBridge,
-  L2TokenBridge__factory,
+  L1ERC20TokenBridge,
+  L1ERC20TokenBridge__factory,
+  L2ERC20TokenBridge,
+  L2ERC20TokenBridge__factory,
 } from "../../typechain";
 import { createOptimismBridgeDeployScripts } from "../../utils/deployment/optimism";
 import { wei } from "../../utils/wei";
@@ -24,8 +24,8 @@ describe("Optimism :: bridging integration test", () => {
   let l1Deployer: Wallet;
   let l2Deployer: Wallet;
   let l1Token: ERC20Stub;
-  let l1TokenBridge: L1TokenBridge;
-  let l2TokenBridge: L2TokenBridge;
+  let l1ERC20TokenBridge: L1ERC20TokenBridge;
+  let l2TokenBridge: L2ERC20TokenBridge;
   let l2Token: ERC20Ownable;
 
   before(async () => {
@@ -50,12 +50,13 @@ describe("Optimism :: bridging integration test", () => {
     const l1Contracts = await l1DeployScript.run();
     const l2Contracts = await l2DeployScript.run();
 
-    l1TokenBridge = L1TokenBridge__factory.connect(
+    l1ERC20TokenBridge = L1ERC20TokenBridge__factory.connect(
       l1Contracts[1].address,
       l1Deployer
     );
+
     l2Token = ERC20Ownable__factory.connect(l2Contracts[1].address, l2Deployer);
-    l2TokenBridge = L2TokenBridge__factory.connect(
+    l2TokenBridge = L2ERC20TokenBridge__factory.connect(
       l2Contracts[3].address,
       l2Deployer
     );
@@ -63,23 +64,23 @@ describe("Optimism :: bridging integration test", () => {
     // initialize token bridge
 
     const roles = await Promise.all([
-      l1TokenBridge.DEPOSITS_ENABLER_ROLE(),
-      l1TokenBridge.DEPOSITS_DISABLER_ROLE(),
-      l1TokenBridge.WITHDRAWALS_ENABLER_ROLE(),
-      l1TokenBridge.WITHDRAWALS_DISABLER_ROLE(),
+      l1ERC20TokenBridge.DEPOSITS_ENABLER_ROLE(),
+      l1ERC20TokenBridge.DEPOSITS_DISABLER_ROLE(),
+      l1ERC20TokenBridge.WITHDRAWALS_ENABLER_ROLE(),
+      l1ERC20TokenBridge.WITHDRAWALS_DISABLER_ROLE(),
     ]);
 
     for (const role of roles) {
-      await l1TokenBridge.grantRole(role, l1Deployer.address);
+      await l1ERC20TokenBridge.grantRole(role, l1Deployer.address);
       await l2TokenBridge.grantRole(role, l2Deployer.address);
     }
-    await l1TokenBridge.enableDeposits();
-    await l1TokenBridge.enableWithdrawals();
+    await l1ERC20TokenBridge.enableDeposits();
+    await l1ERC20TokenBridge.enableWithdrawals();
     await l2TokenBridge.enableDeposits();
     await l2TokenBridge.enableWithdrawals();
 
-    assert.isTrue(await l1TokenBridge.isDepositsEnabled());
-    assert.isTrue(await l1TokenBridge.isWithdrawalsEnabled());
+    assert.isTrue(await l1ERC20TokenBridge.isDepositsEnabled());
+    assert.isTrue(await l1ERC20TokenBridge.isWithdrawalsEnabled());
     assert.isTrue(await l2TokenBridge.isDepositsEnabled());
     assert.isTrue(await l2TokenBridge.isWithdrawalsEnabled());
   });
@@ -87,7 +88,7 @@ describe("Optimism :: bridging integration test", () => {
     console.log("Run");
     const amount = wei`1 ether`;
     // approve tokens before transfer
-    await l1Token.approve(l1TokenBridge.address, amount);
+    await l1Token.approve(l1ERC20TokenBridge.address, amount);
 
     console.log(
       "L1Token balance:",
@@ -96,7 +97,7 @@ describe("Optimism :: bridging integration test", () => {
 
     console.log(
       "L1Token allowance:",
-      await l1Token.allowance(l1Deployer.address, l1TokenBridge.address)
+      await l1Token.allowance(l1Deployer.address, l1ERC20TokenBridge.address)
     );
 
     console.log(
@@ -104,12 +105,15 @@ describe("Optimism :: bridging integration test", () => {
       await l2Token.balanceOf(l2Deployer.address)
     );
 
-    console.log("l1TokenBridge.messenger()", await l1TokenBridge.messenger());
-    console.log("l1TokenBridge.l1Token()", await l1TokenBridge.l1Token());
-    console.log("l1TokenBridge.l2Token()", await l1TokenBridge.l2Token());
+    console.log(
+      "l1TokenBridge.messenger()",
+      await l1ERC20TokenBridge.messenger()
+    );
+    console.log("l1TokenBridge.l1Token()", await l1ERC20TokenBridge.l1Token());
+    console.log("l1TokenBridge.l2Token()", await l1ERC20TokenBridge.l2Token());
     console.log(
       "l1TokenBridge.l2TokenBridge()",
-      await l1TokenBridge.l2TokenBridge()
+      await l1ERC20TokenBridge.l2TokenBridge()
     );
 
     const crossChainMessenger = new CrossChainMessenger({
@@ -133,7 +137,7 @@ describe("Optimism :: bridging integration test", () => {
       bridges: {
         LidoBridge: {
           Adapter: DAIBridgeAdapter,
-          l1Bridge: l1TokenBridge.address,
+          l1Bridge: l1ERC20TokenBridge.address,
           l2Bridge: l2TokenBridge.address,
         },
       },
