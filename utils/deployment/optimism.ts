@@ -23,7 +23,7 @@ interface OptimismL2DeployScriptParams extends OptimismL1DeployScriptParams {
   l2Token?: { name?: string; symbol?: string };
 }
 
-const OPT_L1_DEPENDENCIES: Record<number, OptimismCommonDependencies> = {
+export const OPT_L1_DEPENDENCIES: Record<number, OptimismCommonDependencies> = {
   1: { messenger: "0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1" },
   17: { messenger: "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318" },
   42: { messenger: "0x4361d0F75A0186C05f971c566dC6bEa5957483fD" },

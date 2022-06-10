@@ -12,15 +12,15 @@ import {
   L2TokenBridge,
   L2TokenBridge__factory,
   CrossDomainMessengerStub,
-  AddressAliasHelper,
+  CrossDomainMessengerStub__factory,
 } from "../../typechain";
 import {
   createOptimismBridgeDeployScripts,
   OPT_L2_DEPENDENCIES,
+  OPT_L1_DEPENDENCIES,
 } from "../../utils/deployment/optimism";
 import { wei } from "../../utils/wei";
 import { getDeployer } from "../../utils/deployment/network";
-import CrossDomainMessengerABI from "../../abi/CrossDomainMessenger";
 import L2TokenBridgeABI from "../../abi/L2TokenBridge";
 
 describe("Optimism :: bridging integration test", () => {
@@ -30,30 +30,47 @@ describe("Optimism :: bridging integration test", () => {
   let l1TokenBridge: L1TokenBridge;
   let l2TokenBridge: L2TokenBridge;
   let l2Token: ERC20Ownable;
-  let addressAliasHelper: AddressAliasHelper;
-  let crossDomainMessengerStub: CrossDomainMessengerStub;
+  let crossDomainMessengerStubL1: CrossDomainMessengerStub;
+  let crossDomainMessengerStubL2: CrossDomainMessengerStub;
   let optimismProvider: JsonRpcProvider;
-
-  before(async () => {
-    optimismProvider = new ethers.providers.JsonRpcProvider(
-      "http://localhost:9545"
-    );
-    const CrossDomainMessengerStubFactory = await ethers.getContractFactory(
-      "CrossDomainMessengerStub"
-    );
-    crossDomainMessengerStub =
-      (await CrossDomainMessengerStubFactory.deploy()) as CrossDomainMessengerStub;
-
-    for (let key in OPT_L2_DEPENDENCIES) {
-      OPT_L2_DEPENDENCIES[key].messenger = crossDomainMessengerStub.address;
-    }
-    console.log("CDM", crossDomainMessengerStub.address);
-  });
+  let ethereumProvider: JsonRpcProvider;
 
   before(async () => {
     l1Deployer = getDeployer("local", hre);
     l2Deployer = getDeployer("local_optimism", hre);
 
+    // optimismProvider = new ethers.providers.JsonRpcProvider(
+    //   "http://localhost:9545"
+    // );
+    // ethereumProvider = new ethers.providers.JsonRpcProvider(
+    //   "http://localhost:8545"
+    // );
+  });
+
+  before(async () => {
+    // crossDomainMessengerStubL1 = await new CrossDomainMessengerStub__factory(
+    //   l1Deployer
+    // ).deploy();
+
+    // crossDomainMessengerStubL2 = await new CrossDomainMessengerStub__factory(
+    //   l2Deployer
+    // ).deploy();
+
+    const CrossDomainMessengerStubFactory = await ethers.getContractFactory(
+      "CrossDomainMessengerStub"
+    );
+    crossDomainMessengerStubL2 =
+      (await CrossDomainMessengerStubFactory.deploy()) as CrossDomainMessengerStub;
+
+    for (let key in OPT_L2_DEPENDENCIES) {
+      OPT_L2_DEPENDENCIES[key].messenger = crossDomainMessengerStubL2.address;
+    }
+    // for (let key in OPT_L1_DEPENDENCIES) {
+    //   OPT_L1_DEPENDENCIES[key].messenger = crossDomainMessengerStubL2.address;
+    // }
+  });
+
+  before(async () => {
     // deploy L1Token stub
     l1Token = await new ERC20Stub__factory(l1Deployer).deploy("L1 Token", "L1");
 
@@ -81,13 +98,8 @@ describe("Optimism :: bridging integration test", () => {
       l2Contracts[3].address,
       l2Deployer
     );
-    const AddressAliasHelperFactory = await ethers.getContractFactory(
-      "AddressAliasHelper"
-    );
-    addressAliasHelper =
-      (await AddressAliasHelperFactory.deploy()) as AddressAliasHelper;
 
-    await crossDomainMessengerStub.setXDomainMessageSender(
+    await crossDomainMessengerStubL2.setXDomainMessageSender(
       l1TokenBridge.address
     );
 
@@ -114,40 +126,51 @@ describe("Optimism :: bridging integration test", () => {
     assert.isTrue(await l2TokenBridge.isDepositsEnabled());
     assert.isTrue(await l2TokenBridge.isWithdrawalsEnabled());
   });
+
   it("depositERC20() -> finalizeDeposit()", async () => {
+    // const operator = l2Deployer;
+    // const amount = wei`1 ether`;
+    // const initialBalanceL1 = await l1Token.balanceOf(operator.address);
+    // const initialBalanceL2 = await l2Token.balanceOf(operator.address);
+    // await l1Token.approve(l1TokenBridge.address, amount);
+    // const depositTx = await l1TokenBridge.depositERC20(
+    //   l1Token.address,
+    //   l2Token.address,
+    //   amount,
+    //   200000,
+    //   "0x"
+    // );
+    // const iface = new ethers.utils.Interface(L2TokenBridgeABI);
+    // const relayData = iface.encodeFunctionData("finalizeDeposit", [
+    //   l1Token.address,
+    //   l2Token.address,
+    //   l1Deployer.address,
+    //   l2Deployer.address,
+    //   amount,
+    //   "0x",
+    // ]);
+    // const a = await crossDomainMessengerStubL2.relayMessage(
+    //   l2TokenBridge.address,
+    //   l1TokenBridge.address,
+    //   relayData,
+    //   depositTx.nonce
+    // );
+    // const receipt = await a.wait();
+    // assert.strictEqual(
+    //   initialBalanceL1,
+    //   (await l1Token.balanceOf(operator.address)).add(amount)
+    // );
+    // assert.strictEqual(
+    //   initialBalanceL2,
+    //   (await l2Token.balanceOf(operator.address)).sub(amount)
+    // );
+  });
+
+  it("depositERC20() -> finalizeDeposit()", async () => {
+    const operator = l2Deployer;
     const amount = wei`1 ether`;
+    const initialBalanceL2 = await l2Token.balanceOf(operator.address);
 
-    await l1Token.approve(l1TokenBridge.address, amount);
-    const depositTx = await l1TokenBridge.depositERC20(
-      l1Token.address,
-      l2Token.address,
-      amount,
-      200000,
-      "0x"
-    );
-    const receipt = await depositTx.wait();
-
-    assert.isNotEmpty(
-      receipt.events?.filter((e) => e.event === "ERC20DepositInitiated")
-    );
-
-    const addressToImpersonate = await addressAliasHelper.applyL1ToL2Alias(
-      "0x25ace71c97b33cc4729cf772ae268934f7ab5fa1"
-    );
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [addressToImpersonate],
-    });
-    const optimismOracle = optimismProvider.getSigner(addressToImpersonate);
-    await l2Deployer.sendTransaction({
-      to: addressToImpersonate,
-      value: ethers.utils.parseEther("1.0"),
-    });
-    const optimismMessageRelayer: any = await ethers.getContractAt(
-      CrossDomainMessengerABI,
-      crossDomainMessengerStub.address,
-      optimismOracle
-    );
     const iface = new ethers.utils.Interface(L2TokenBridgeABI);
     const relayData = iface.encodeFunctionData("finalizeDeposit", [
       l1Token.address,
@@ -157,17 +180,34 @@ describe("Optimism :: bridging integration test", () => {
       amount,
       "0x",
     ]);
-
-    const relayTx = await optimismMessageRelayer.relayMessage(
+    const a = await crossDomainMessengerStubL2.relayMessage(
       l2TokenBridge.address,
       l1TokenBridge.address,
       relayData,
-      depositTx.nonce
+      1
     );
 
-    const receipt1 = await relayTx.wait();
+    const receipt = await a.wait();
 
-    console.log(receipt1);
-    console.log(await l2Token.balanceOf(l2Deployer.address));
+    assert.strictEqual(
+      initialBalanceL2,
+      (await l2Token.balanceOf(operator.address)).sub(amount)
+    );
   });
+
+  // it("withdraw() -> finalizeWithdraw()", async () => {
+  //   const operator = l2Deployer;
+  //   const amount = wei`1 ether`;
+  //   const initialBalanceL1 = await l1Token.balanceOf(operator.address);
+  //   const initialBalanceL2 = await l2Token.balanceOf(operator.address);
+
+  //   await l2Token.approve(l2TokenBridge.address, amount);
+
+  //   const depositTx = await l2TokenBridge.withdraw(
+  //     l2Token.address,
+  //     amount,
+  //     200000,
+  //     "0x"
+  //   );
+  // });
 });

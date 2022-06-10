@@ -107,7 +107,9 @@ contract L2TokenBridge is
         onlySupportedL2Token(_l2Token)
         onlyFromCrossDomainAccount(l1TokenBridge)
     {
-        // emit DepositFinalized(_l1Token, _l2Token, _from, _to, _amount, _data);
+        console.log(123);
         IERC20Ownable(l2Token).mint(_to, _amount);
+        emit DepositFinalized(_l1Token, _l2Token, _from, _to, _amount, _data);
+        console.log(123);
     }
 }

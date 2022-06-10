@@ -15,12 +15,16 @@ const config: HardhatUserConfig = {
   networks: {
     local: {
       url: "http://localhost:8545",
+      gas: 30000000,
+      gasPrice: 10000,
     },
     local_arbitrum: {
       url: "http://localhost:8546",
     },
     local_optimism: {
       url: "http://localhost:9545",
+      gas: 30000000,
+      gasPrice: 1000000000,
     },
     kovan: {
       url: process.env.KOVAN_URL || "",
