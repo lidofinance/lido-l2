@@ -27,4 +27,13 @@ contract CrossDomainMessengerStub is ICrossDomainMessenger {
             _gasLimit
         );
     }
+
+    function relayMessage(
+        address _target,
+        address _sender,
+        bytes memory _message,
+        uint256 _messageNonce
+    ) public {
+        _target.call(_message);
+    }
 }

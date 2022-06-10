@@ -52,7 +52,10 @@
   },
   "dependencies": {
     "@eth-optimism/sdk": "^1.1.7",
+    "@ethersproject/providers": "^5.6.8",
     "@openzeppelin/contracts": "^4.6.0",
-    "chalk": "4.1.2"
+    "chalk": "4.1.2",
+    "hardhat-ethernal": "^1.0.0",
+    "hardhat-tracer": "^1.1.0-rc.6"
   }
 }

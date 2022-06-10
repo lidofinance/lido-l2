@@ -3,6 +3,7 @@ pragma solidity >0.5.0 <0.9.0;
 
 /* Interface Imports */
 import {ICrossDomainMessenger} from "./interfaces/ICrossDomainMessenger.sol";
+import "hardhat/console.sol";
 
 /**
  * @title CrossDomainEnabled

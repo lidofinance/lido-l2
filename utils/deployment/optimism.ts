@@ -30,7 +30,7 @@ const OPT_L1_DEPENDENCIES: Record<number, OptimismCommonDependencies> = {
   31337: { messenger: "0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1" },
 };
 
-const OPT_L2_DEPENDENCIES: Record<number, OptimismCommonDependencies> = {
+export const OPT_L2_DEPENDENCIES: Record<number, OptimismCommonDependencies> = {
   1: { messenger: "0x4200000000000000000000000000000000000007" },
   10: { messenger: "0x4200000000000000000000000000000000000007" },
   42: { messenger: "0x4200000000000000000000000000000000000007" },

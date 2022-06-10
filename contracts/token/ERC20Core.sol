@@ -4,6 +4,7 @@
 pragma solidity ^0.8.0;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "hardhat/console.sol";
 
 /// @author psirex
 /// @notice Contains the required logic of the ERC20 standard as defined in the EIP
@@ -133,9 +134,13 @@ contract ERC20Core is IERC20 {
         internal
         onlyNonZeroAccount(account)
     {
+        console.log("ERC20Core");
         totalSupply += amount;
+        console.log("ERC20Core 2");
         balanceOf[account] += amount;
+        console.log("ERC20Core 3");
         emit Transfer(address(0), account, amount);
+        console.log("ERC20Core 4");
     }
 
     function _burn(address account, uint256 amount)
