@@ -2,7 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-/// @dev Interface for the optional metadata functions from the ERC20 standard.
+/// @author psirex
+/// @notice Interface for the optional metadata functions from the ERC20 standard.
 interface IERC20Metadata {
     /// @dev Returns the name of the token.
     function name() external view returns (string memory);

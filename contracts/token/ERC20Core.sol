@@ -7,7 +7,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "hardhat/console.sol";
 
 /// @author psirex
-/// @notice Contains the required logic of the ERC20 standard as defined in the EIP
+/// @notice Contains the required logic of the ERC20 standard as defined in the EIP. Additionally
+///     provides methods for direct allowance increasing/decreasing.
 contract ERC20Core is IERC20 {
     /// @notice The amount of tokens in existence
     uint256 public totalSupply;
@@ -90,7 +91,7 @@ contract ERC20Core is IERC20 {
         return true;
     }
 
-    /// @dev Moves amount_ of tokens from sender_ to recipient_.
+    /// @dev Moves amount_ of tokens from sender_ to recipient_
     /// @param from_ An address of the sender of the tokens
     /// @param to_  An address of the recipient of the tokens
     /// @param amount_ An amount of tokens to transfer
@@ -104,61 +105,80 @@ contract ERC20Core is IERC20 {
         emit Transfer(from_, to_, amount_);
     }
 
+    /// @dev Updates owner_'s allowance for spender_ based on spent amount_. Does not update
+    ///     the allowance amount in case of infinite allowance
+    /// @param owner_ An address of the account to spend allowance
+    /// @param spender_  An address of the spender of the tokens
+    /// @param amount_ An amount of allowance spend
     function _spendAllowance(
-        address account,
-        address spender,
-        uint256 amount
+        address owner_,
+        address spender_,
+        uint256 amount_
     ) internal {
-        uint256 currentAllowance = allowance[account][spender];
+        uint256 currentAllowance = allowance[owner_][spender_];
         if (currentAllowance == type(uint256).max) {
             return;
         }
-        if (amount > currentAllowance) {
+        if (amount_ > currentAllowance) {
             revert ErrorNotEnoughAllowance();
         }
         unchecked {
-            _approve(account, spender, currentAllowance - amount);
+            _approve(owner_, spender_, currentAllowance - amount_);
         }
     }
 
+    /// @dev Sets amount_ as the allowance of spender_ over the owner_'s tokens
+    /// @param owner_ An address of the account to set allowance
+    /// @param spender_  An address of the tokens spender
+    /// @param amount_ An amount of tokens to allow to spend
     function _approve(
-        address account,
-        address spender,
-        uint256 amount
-    ) internal virtual onlyNonZeroAccount(account) onlyNonZeroAccount(spender) {
-        allowance[account][spender] = amount;
-        emit Approval(account, spender, amount);
+        address owner_,
+        address spender_,
+        uint256 amount_
+    ) internal virtual onlyNonZeroAccount(owner_) onlyNonZeroAccount(spender_) {
+        allowance[owner_][spender_] = amount_;
+        emit Approval(owner_, spender_, amount_);
     }
 
-    function _mint(address account, uint256 amount)
+    /// @dev Creates amount_ tokens and assigns them to account_, increasing the total supply
+    /// @param account_ An address of the account to mint tokens
+    /// @param amount_ An amount of tokens to mint
+    function _mint(address account_, uint256 amount_)
         internal
-        onlyNonZeroAccount(account)
+        onlyNonZeroAccount(account_)
     {
-        totalSupply += amount;
-        balanceOf[account] += amount;
-        emit Transfer(address(0), account, amount);
+        totalSupply += amount_;
+        balanceOf[account_] += amount_;
+        emit Transfer(address(0), account_, amount_);
     }
 
-    function _burn(address account, uint256 amount)
+    /// @dev Destroys amount_ tokens from account_, reducing the total supply.
+    /// @param account_ An address of the account to mint tokens
+    /// @param amount_ An amount of tokens to mint
+    function _burn(address account_, uint256 amount_)
         internal
-        onlyNonZeroAccount(account)
+        onlyNonZeroAccount(account_)
     {
-        _decreaseBalance(account, amount);
-        totalSupply -= amount;
-        emit Transfer(account, address(0), amount);
+        _decreaseBalance(account_, amount_);
+        totalSupply -= amount_;
+        emit Transfer(account_, address(0), amount_);
     }
 
-    function _decreaseBalance(address account, uint256 amount) internal {
-        uint256 balance = balanceOf[account];
+    /// @dev Decreases the balance of the account_
+    /// @param account_ An address of the account to decrease balance
+    /// @param amount_ An amount of balance decrease
+    function _decreaseBalance(address account_, uint256 amount_) internal {
+        uint256 balance = balanceOf[account_];
 
-        if (amount > balance) {
+        if (amount_ > balance) {
             revert ErrorNotEnoughBalance();
         }
         unchecked {
-            balanceOf[account] = balance - amount;
+            balanceOf[account_] = balance - amount_;
         }
     }
 
+    /// @dev validates that account_ is not zero address
     modifier onlyNonZeroAccount(address account_) {
         if (account_ == address(0)) {
             revert ErrorZeroAddress();

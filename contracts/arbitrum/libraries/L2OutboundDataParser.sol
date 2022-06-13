@@ -1,19 +1,25 @@
 // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.0;
 
+/// @author psirex
+/// @notice A helper library to parse data passed to outboundTransfer() of L2ERC20TokenGateway
 library L2OutboundDataParser {
-    function decode(address router, bytes memory data)
+    /// @dev Decodes value contained in data_ bytes array and returns it
+    /// @param router_ Address of the Arbitrum’s L2GatewayRouter
+    /// @param data_ Data encoded for the outboundTransfer() method
+    /// @return from_ address of the sender
+    function decode(address router_, bytes memory data_)
         internal
         view
-        returns (address from)
+        returns (address from_)
     {
         bytes memory extraData;
-        if (msg.sender == router) {
-            (from, extraData) = abi.decode(data, (address, bytes));
+        if (msg.sender == router_) {
+            (from_, extraData) = abi.decode(data_, (address, bytes));
         } else {
-            (from, extraData) = (msg.sender, data);
+            (from_, extraData) = (msg.sender, data_);
         }
         if (extraData.length != 0) {
             revert ExtraDataNotEmpty();

@@ -1,5 +1,21 @@
 import hre, { ethers } from "hardhat";
 
+export function scenario<T>(
+  title: string,
+  ctxBuilder: () => Promise<T>,
+  tests: (ctx: T) => void
+) {
+  describe(title, () => {
+    // @ts-ignore
+    let ctx: T = {};
+    before(async () => {
+      ctx = Object.assign(ctx, await ctxBuilder());
+    });
+
+    tests(ctx);
+  });
+}
+
 export function testsuite<T>(
   title: string,
   ctxBuilder: () => Promise<T>,

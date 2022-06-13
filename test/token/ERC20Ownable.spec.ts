@@ -618,7 +618,10 @@ async function ctxProvider() {
   const l2TokensProxy = await new OssifiableProxy__factory(deployer).deploy(
     l2TokenImpl.address,
     deployer.address,
-    "0x"
+    ERC20Ownable__factory.createInterface().encodeFunctionData("initialize", [
+      name,
+      symbol,
+    ])
   );
 
   const erc20OwnableProxied = ERC20Ownable__factory.connect(

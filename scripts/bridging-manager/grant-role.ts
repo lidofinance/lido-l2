@@ -1,5 +1,5 @@
 import hre from "hardhat";
-import { getDeployer } from "../../utils/deployment/network";
+import { getDeployer, getNetworkConfig } from "../../utils/deployment/network";
 import { getAddress, getEnum, getEnvVariable } from "../../utils/env";
 import { BridgingManager__factory } from "../../typechain";
 import { promptProceed } from "../../utils/prompt";
@@ -13,10 +13,12 @@ const ALLOWED_ROLES = [
 ];
 
 async function main() {
-  const network =
-    getEnvVariable("L1_NETWORK", "") || getEnvVariable("L2_NETWORK", "");
+  const network = getNetworkConfig(
+    getEnvVariable("L1_NETWORK", "") || getEnvVariable("L2_NETWORK", ""),
+    hre
+  );
 
-  const deployer = getDeployer(network, hre);
+  const deployer = getDeployer(network.url);
   const managerAddress = getAddress("MANAGER", hre);
   const account = getAddress("ACCOUNT", hre);
   const roleName = getEnum("ROLE", ALLOWED_ROLES);

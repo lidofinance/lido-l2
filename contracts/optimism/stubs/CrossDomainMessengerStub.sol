@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.0;
 
 import {ICrossDomainMessenger} from "../interfaces/ICrossDomainMessenger.sol";
 
@@ -36,4 +36,12 @@ contract CrossDomainMessengerStub is ICrossDomainMessenger {
     ) public {
         _target.call(_message);
     }
+
+    event SentMessage(
+        address indexed target,
+        address sender,
+        bytes message,
+        uint256 messageNonce,
+        uint256 gasLimit
+    );
 }

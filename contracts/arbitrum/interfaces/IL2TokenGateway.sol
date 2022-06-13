@@ -2,9 +2,9 @@
 
 pragma solidity >=0.4.21;
 
-import {ITokenGatewayCommon} from "./ITokenGatewayCommon.sol";
+import {IInterchainTokenGateway} from "./IInterchainTokenGateway.sol";
 
-interface IL2TokenGateway is ITokenGatewayCommon {
+interface IL2TokenGateway is IInterchainTokenGateway {
     function outboundTransfer(
         address _token,
         address _to,

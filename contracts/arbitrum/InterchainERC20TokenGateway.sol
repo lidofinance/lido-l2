@@ -6,15 +6,15 @@ pragma solidity ^0.8.0;
 import {BridgingManager} from "../BridgingManager.sol";
 import {BridgeableTokens} from "../BridgeableTokens.sol";
 
-import {ITokenGatewayCommon} from "./interfaces/ITokenGatewayCommon.sol";
+import {IInterchainTokenGateway} from "./interfaces/IInterchainTokenGateway.sol";
 
 /// @author psirex
 /// @title Shared L1/L2 gateway logic
 /// @notice The contract keeps logic shared among both L1 and L2 gateways.
-abstract contract InterchainTokensGateway is
+abstract contract InterchainERC20TokenGateway is
     BridgingManager,
     BridgeableTokens,
-    ITokenGatewayCommon
+    IInterchainTokenGateway
 {
     /// @notice An address of the router in the corresponding chain
     address public immutable router;
@@ -67,7 +67,7 @@ abstract contract InterchainTokensGateway is
     ) public pure returns (bytes memory) {
         return
             abi.encodeWithSelector(
-                ITokenGatewayCommon.finalizeInboundTransfer.selector,
+                IInterchainTokenGateway.finalizeInboundTransfer.selector,
                 l1Token_,
                 from_,
                 to_,

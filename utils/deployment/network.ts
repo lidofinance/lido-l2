@@ -16,20 +16,13 @@ export function getNetworkConfig(
   return config as HttpNetworkConfig;
 }
 
-export function getProvider(
-  networkName: string,
-  hre: HardhatRuntimeEnvironment
-) {
-  const config = getNetworkConfig(networkName, hre);
-  return new providers.JsonRpcProvider(config.url);
+export function getProvider(rpcURL: string) {
+  return new providers.JsonRpcProvider(rpcURL);
 }
 
-export function getDeployer(
-  networkName: string,
-  hre: HardhatRuntimeEnvironment
-) {
+export function getDeployer(rpcURL: string) {
   const PRIVATE_KEY = getEnvVariable("PRIVATE_KEY");
-  return new Wallet(PRIVATE_KEY, getProvider(networkName, hre));
+  return new Wallet(PRIVATE_KEY, getProvider(rpcURL));
 }
 
 // predicts future addresses of the contracts deployed by account

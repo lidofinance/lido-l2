@@ -6,7 +6,6 @@ pragma solidity ^0.8.0;
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 /// @author psirex
-/// @title Management logic of the bridging
 /// @notice Contains administrative methods to retrieve and control the state of the bridging
 contract BridgingManager is AccessControl {
     /// @dev Stores the state of the bridging
@@ -18,6 +17,10 @@ contract BridgingManager is AccessControl {
         bool isDepositsEnabled;
         bool isWithdrawalsEnabled;
     }
+
+    /// @dev The location of the slot with State
+    bytes32 private constant STATE_SLOT =
+        keccak256("BridgingManager.bridgingState");
 
     bytes32 public constant DEPOSITS_DISABLER_ROLE =
         keccak256("GatewayManager.DEPOSITS_DISABLER_ROLE");
@@ -93,7 +96,15 @@ contract BridgingManager is AccessControl {
         emit WithdrawalsDisabled(msg.sender);
     }
 
-    /// @notice Validates that deposits are enabled
+    /// @dev Returns the reference to the slot with State struct
+    function _loadState() private pure returns (State storage r) {
+        bytes32 slot = STATE_SLOT;
+        assembly {
+            r.slot := slot
+        }
+    }
+
+    /// @dev Validates that deposits are enabled
     modifier whenDepositsEnabled() {
         if (!isDepositsEnabled()) {
             revert ErrorDepositsDisabled();
@@ -101,21 +112,12 @@ contract BridgingManager is AccessControl {
         _;
     }
 
-    /// @notice Validates that withdrawals aren enabled
+    /// @dev Validates that withdrawals aren enabled
     modifier whenWithdrawalsEnabled() {
         if (!isWithdrawalsEnabled()) {
             revert ErrorWithdrawalsDisabled();
         }
         _;
-    }
-
-    /// @dev Loads and returns the `BridgingState` variable from the slot at
-    ///     address `keccak256("BridgingManager.bridgingState")`
-    function _loadState() private pure returns (State storage r) {
-        bytes32 slot = keccak256("BridgingManager.bridgingState");
-        assembly {
-            r.slot := slot
-        }
     }
 
     event DepositsEnabled(address indexed enabler);
