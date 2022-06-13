@@ -1,7 +1,6 @@
 import hre, { ethers } from "hardhat";
 import { assert } from "chai";
 import { Wallet } from "ethers";
-import { JsonRpcProvider } from "@ethersproject/providers";
 import {
   ERC20Ownable,
   ERC20Ownable__factory,
@@ -22,6 +21,7 @@ import {
 import { wei } from "../../utils/wei";
 import { getDeployer } from "../../utils/deployment/network";
 import L2TokenBridgeABI from "../../abi/L2TokenBridge";
+import L1TokenBridgeABI from "../../abi/L1TokenBridge";
 
 describe("Optimism :: bridging integration test", () => {
   let l1Deployer: Wallet;
@@ -32,42 +32,27 @@ describe("Optimism :: bridging integration test", () => {
   let l2Token: ERC20Ownable;
   let crossDomainMessengerStubL1: CrossDomainMessengerStub;
   let crossDomainMessengerStubL2: CrossDomainMessengerStub;
-  let optimismProvider: JsonRpcProvider;
-  let ethereumProvider: JsonRpcProvider;
 
   before(async () => {
     l1Deployer = getDeployer("local", hre);
     l2Deployer = getDeployer("local_optimism", hre);
-
-    // optimismProvider = new ethers.providers.JsonRpcProvider(
-    //   "http://localhost:9545"
-    // );
-    // ethereumProvider = new ethers.providers.JsonRpcProvider(
-    //   "http://localhost:8545"
-    // );
   });
 
   before(async () => {
-    // crossDomainMessengerStubL1 = await new CrossDomainMessengerStub__factory(
-    //   l1Deployer
-    // ).deploy();
+    crossDomainMessengerStubL1 = await new CrossDomainMessengerStub__factory(
+      l1Deployer
+    ).deploy();
 
-    // crossDomainMessengerStubL2 = await new CrossDomainMessengerStub__factory(
-    //   l2Deployer
-    // ).deploy();
-
-    const CrossDomainMessengerStubFactory = await ethers.getContractFactory(
-      "CrossDomainMessengerStub"
-    );
-    crossDomainMessengerStubL2 =
-      (await CrossDomainMessengerStubFactory.deploy()) as CrossDomainMessengerStub;
+    crossDomainMessengerStubL2 = await new CrossDomainMessengerStub__factory(
+      l2Deployer
+    ).deploy();
 
     for (let key in OPT_L2_DEPENDENCIES) {
       OPT_L2_DEPENDENCIES[key].messenger = crossDomainMessengerStubL2.address;
     }
-    // for (let key in OPT_L1_DEPENDENCIES) {
-    //   OPT_L1_DEPENDENCIES[key].messenger = crossDomainMessengerStubL2.address;
-    // }
+    for (let key in OPT_L1_DEPENDENCIES) {
+      OPT_L1_DEPENDENCIES[key].messenger = crossDomainMessengerStubL1.address;
+    }
   });
 
   before(async () => {
@@ -102,6 +87,9 @@ describe("Optimism :: bridging integration test", () => {
     await crossDomainMessengerStubL2.setXDomainMessageSender(
       l1TokenBridge.address
     );
+    await crossDomainMessengerStubL1.setXDomainMessageSender(
+      l2TokenBridge.address
+    );
 
     // initialize token bridge
 
@@ -128,86 +116,205 @@ describe("Optimism :: bridging integration test", () => {
   });
 
   it("depositERC20() -> finalizeDeposit()", async () => {
-    // const operator = l2Deployer;
-    // const amount = wei`1 ether`;
-    // const initialBalanceL1 = await l1Token.balanceOf(operator.address);
-    // const initialBalanceL2 = await l2Token.balanceOf(operator.address);
-    // await l1Token.approve(l1TokenBridge.address, amount);
-    // const depositTx = await l1TokenBridge.depositERC20(
-    //   l1Token.address,
-    //   l2Token.address,
-    //   amount,
-    //   200000,
-    //   "0x"
-    // );
-    // const iface = new ethers.utils.Interface(L2TokenBridgeABI);
-    // const relayData = iface.encodeFunctionData("finalizeDeposit", [
-    //   l1Token.address,
-    //   l2Token.address,
-    //   l1Deployer.address,
-    //   l2Deployer.address,
-    //   amount,
-    //   "0x",
-    // ]);
-    // const a = await crossDomainMessengerStubL2.relayMessage(
-    //   l2TokenBridge.address,
-    //   l1TokenBridge.address,
-    //   relayData,
-    //   depositTx.nonce
-    // );
-    // const receipt = await a.wait();
-    // assert.strictEqual(
-    //   initialBalanceL1,
-    //   (await l1Token.balanceOf(operator.address)).add(amount)
-    // );
-    // assert.strictEqual(
-    //   initialBalanceL2,
-    //   (await l2Token.balanceOf(operator.address)).sub(amount)
-    // );
-  });
-
-  it("depositERC20() -> finalizeDeposit()", async () => {
     const operator = l2Deployer;
-    const amount = wei`1 ether`;
+    const amount = wei`2 ether`;
+    const initialBalanceL1 = await l1Token.balanceOf(operator.address);
     const initialBalanceL2 = await l2Token.balanceOf(operator.address);
+    await l1Token.approve(l1TokenBridge.address, amount);
+    const depositTx = await l1TokenBridge.depositERC20(
+      l1Token.address,
+      l2Token.address,
+      amount,
+      200000,
+      "0x"
+    );
+    const depositTxReceipt = await depositTx.wait();
+
+    assert.isNotEmpty(
+      depositTxReceipt.events?.filter(
+        (e) => e.event === "ERC20DepositInitiated"
+      )
+    );
 
     const iface = new ethers.utils.Interface(L2TokenBridgeABI);
     const relayData = iface.encodeFunctionData("finalizeDeposit", [
       l1Token.address,
       l2Token.address,
-      l1Deployer.address,
-      l2Deployer.address,
+      operator.address,
+      operator.address,
       amount,
       "0x",
     ]);
-    const a = await crossDomainMessengerStubL2.relayMessage(
+    await crossDomainMessengerStubL2.relayMessage(
       l2TokenBridge.address,
       l1TokenBridge.address,
       relayData,
-      1
+      depositTx.nonce,
+      {
+        gasLimit: 150000,
+      }
     );
-
-    const receipt = await a.wait();
-
+    assert.strictEqual(
+      initialBalanceL1,
+      (await l1Token.balanceOf(operator.address)).add(amount)
+    );
     assert.strictEqual(
       initialBalanceL2,
       (await l2Token.balanceOf(operator.address)).sub(amount)
     );
   });
 
-  // it("withdraw() -> finalizeWithdraw()", async () => {
-  //   const operator = l2Deployer;
-  //   const amount = wei`1 ether`;
-  //   const initialBalanceL1 = await l1Token.balanceOf(operator.address);
-  //   const initialBalanceL2 = await l2Token.balanceOf(operator.address);
+  it("depositERC20To() -> finalizeDeposit()", async () => {
+    const accounts = await ethers.getSigners();
+    const recipient = await accounts[accounts.length - 1].getAddress();
+    const operator = l2Deployer;
+    const amount = wei`1 ether`;
+    const initialBalanceL1 = await l1Token.balanceOf(operator.address);
+    const initialBalanceL2 = await l2Token.balanceOf(recipient);
 
-  //   await l2Token.approve(l2TokenBridge.address, amount);
+    await l1Token.approve(l1TokenBridge.address, amount);
+    const depositTx = await l1TokenBridge.depositERC20To(
+      l1Token.address,
+      l2Token.address,
+      recipient,
+      amount,
+      200000,
+      "0x"
+    );
+    const depositTxReceipt = await depositTx.wait();
 
-  //   const depositTx = await l2TokenBridge.withdraw(
-  //     l2Token.address,
-  //     amount,
-  //     200000,
-  //     "0x"
-  //   );
-  // });
+    assert.isNotEmpty(
+      depositTxReceipt.events?.filter(
+        (e) => e.event === "ERC20DepositInitiated"
+      )
+    );
+
+    const iface = new ethers.utils.Interface(L2TokenBridgeABI);
+    const relayData = iface.encodeFunctionData("finalizeDeposit", [
+      l1Token.address,
+      l2Token.address,
+      operator.address,
+      recipient,
+      amount,
+      "0x",
+    ]);
+    await crossDomainMessengerStubL2.relayMessage(
+      l2TokenBridge.address,
+      l1TokenBridge.address,
+      relayData,
+      depositTx.nonce,
+      {
+        gasLimit: 150000,
+      }
+    );
+    assert.strictEqual(
+      initialBalanceL1,
+      (await l1Token.balanceOf(operator.address)).add(amount)
+    );
+    assert.strictEqual(
+      initialBalanceL2,
+      (await l2Token.balanceOf(recipient)).sub(amount)
+    );
+  });
+
+  it("withdraw() -> finalizeWithdraw()", async () => {
+    const operator = l2Deployer;
+    const amount = wei`1 ether`;
+    const initialBalanceL1 = await l1Token.balanceOf(operator.address);
+    const initialBalanceL2 = await l2Token.balanceOf(operator.address);
+
+    await l2Token.approve(l2TokenBridge.address, amount);
+    const withdrawTx = await l2TokenBridge.withdraw(
+      l2Token.address,
+      amount,
+      200000,
+      "0x"
+    );
+    const withdrawTxReceipt = await withdrawTx.wait();
+
+    assert.isNotEmpty(
+      withdrawTxReceipt.events?.filter((e) => e.event === "WithdrawalInitiated")
+    );
+
+    const iface = new ethers.utils.Interface(L1TokenBridgeABI);
+    const relayData = iface.encodeFunctionData("finalizeERC20Withdrawal", [
+      l1Token.address,
+      l2Token.address,
+      operator.address,
+      operator.address,
+      amount,
+      "0x",
+    ]);
+
+    await crossDomainMessengerStubL1.relayMessage(
+      l1TokenBridge.address,
+      l2TokenBridge.address,
+      relayData,
+      withdrawTx.nonce,
+      {
+        gasLimit: 150000,
+      }
+    );
+
+    assert.strictEqual(
+      initialBalanceL1,
+      (await l1Token.balanceOf(operator.address)).sub(amount)
+    );
+    assert.strictEqual(
+      initialBalanceL2,
+      (await l2Token.balanceOf(operator.address)).add(amount)
+    );
+  });
+
+  it("withdrawTo() -> finalizeWithdraw()", async () => {
+    const accounts = await ethers.getSigners();
+    const recipient = await accounts[accounts.length - 1].getAddress();
+    const operator = l2Deployer;
+    const amount = wei`1 ether`;
+    const initialBalanceL1 = await l1Token.balanceOf(recipient);
+    const initialBalanceL2 = await l2Token.balanceOf(operator.address);
+
+    await l2Token.approve(l2TokenBridge.address, amount);
+    const withdrawTx = await l2TokenBridge.withdrawTo(
+      l2Token.address,
+      recipient,
+      amount,
+      200000,
+      "0x"
+    );
+    const withdrawTxReceipt = await withdrawTx.wait();
+
+    assert.isNotEmpty(
+      withdrawTxReceipt.events?.filter((e) => e.event === "WithdrawalInitiated")
+    );
+
+    const iface = new ethers.utils.Interface(L1TokenBridgeABI);
+    const relayData = iface.encodeFunctionData("finalizeERC20Withdrawal", [
+      l1Token.address,
+      l2Token.address,
+      operator.address,
+      recipient,
+      amount,
+      "0x",
+    ]);
+
+    await crossDomainMessengerStubL1.relayMessage(
+      l1TokenBridge.address,
+      l2TokenBridge.address,
+      relayData,
+      withdrawTx.nonce,
+      {
+        gasLimit: 150000,
+      }
+    );
+
+    assert.strictEqual(
+      initialBalanceL1,
+      (await l1Token.balanceOf(recipient)).sub(amount)
+    );
+    assert.strictEqual(
+      initialBalanceL2,
+      (await l2Token.balanceOf(operator.address)).add(amount)
+    );
+  });
 });

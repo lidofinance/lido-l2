@@ -10,8 +10,6 @@ import {BridgingManager} from "../BridgingManager.sol";
 import {BridgeableTokens} from "../BridgeableTokens.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 
-import "hardhat/console.sol";
-
 contract L2TokenBridge is
     IL2ERC20Bridge,
     BridgingManager,
@@ -107,9 +105,7 @@ contract L2TokenBridge is
         onlySupportedL2Token(_l2Token)
         onlyFromCrossDomainAccount(l1TokenBridge)
     {
-        console.log(123);
         IERC20Ownable(l2Token).mint(_to, _amount);
         emit DepositFinalized(_l1Token, _l2Token, _from, _to, _amount, _data);
-        console.log(123);
     }
 }

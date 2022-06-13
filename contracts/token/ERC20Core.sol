@@ -134,7 +134,6 @@ contract ERC20Core is IERC20 {
         internal
         onlyNonZeroAccount(account)
     {
-        console.log("Mint");
         totalSupply += amount;
         balanceOf[account] += amount;
         emit Transfer(address(0), account, amount);
