@@ -89,7 +89,7 @@ contract L2ERC20TokenBridge is
         uint32 _l1Gas,
         bytes calldata _data
     ) internal {
-        IERC20Ownable(l2Token).burn(msg.sender, _amount);
+        IERC20Ownable(l2Token).burn(_from, _amount);
 
         bytes memory message = abi.encodeWithSelector(
             IL1ERC20Bridge.finalizeERC20Withdrawal.selector,
