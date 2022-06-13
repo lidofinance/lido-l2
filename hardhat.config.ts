@@ -11,7 +11,15 @@ import "./tasks/fork-node";
 dotenv.config();
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.14",
+  solidity: {
+    version: "0.8.14",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 2000,
+      },
+    },
+  },
   networks: {
     local: {
       url: "http://localhost:8545",
@@ -61,6 +69,9 @@ const config: HardhatUserConfig = {
       arbitrumTestnet: process.env.RINKEBY_ARBITRUM_ETHERSCAN_API_KEY,
       optimisticKovan: process.env.KOVAN_OPTIMISM_ETHERSCAN_API_KEY,
     },
+  },
+  typechain: {
+    externalArtifacts: ["./interfaces/**/*.json"],
   },
 };
 
