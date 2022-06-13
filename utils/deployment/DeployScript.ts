@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { BigNumber, ContractFactory, Signer, Wallet } from "ethers";
+import { BigNumber, Contract, ContractFactory, Signer, Wallet } from "ethers";
 
 interface TypechainFactoryConstructor<
   T extends ContractFactory = ContractFactory
@@ -35,6 +35,7 @@ interface PrintOptions {
 
 export class DeployScript {
   private readonly steps: DeployStep<ContractFactory>[] = [];
+  private contracts: Contract[] = [];
   public readonly deployer: Wallet;
 
   constructor(deployer: Wallet) {
@@ -47,13 +48,14 @@ export class DeployScript {
   }
 
   async run() {
-    const res = [];
+    const res: Contract[] = [];
     for (let i = 0; i < this.steps.length; ++i) {
       this._printStepInfo(this._getStepInfo(i), { prefix: "Deploying " });
       const c = await this.runStep(this.deployer, i);
       res.push(c);
       console.log();
     }
+    this.contracts = res;
     return res;
   }
 
@@ -85,6 +87,10 @@ export class DeployScript {
       this._getStepInfo(index)
     );
     return contract;
+  }
+
+  getContractAddress(stepIndex: number): string {
+    return this.contracts[stepIndex].address;
   }
 
   private _getStepInfo(index: number) {

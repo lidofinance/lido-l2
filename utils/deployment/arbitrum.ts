@@ -62,14 +62,20 @@ const L2_DEPENDENCIES: Record<number, L2ArbitrumDependencies> = {
 export async function createArbitrumGatewayDeployScripts(
   l1Token: string,
   l1Params: ArbitrumL1DeployScriptParams,
-  l2Params: ArbitrumL2DeployScriptParams
+  l2Params: ArbitrumL2DeployScriptParams,
+  dependencies?: {
+    l1?: Partial<L1ArbitrumDependencies>;
+    l2?: Partial<L2ArbitrumDependencies>;
+  }
 ) {
-  const l1Dependencies = loadArbitrumL1Dependencies(
-    await l1Params.deployer.getChainId()
-  );
-  const l2Dependencies = loadArbitrumL2Dependencies(
-    await l2Params.deployer.getChainId()
-  );
+  const l1Dependencies = {
+    ...loadArbitrumL1Dependencies(await l1Params.deployer.getChainId()),
+    ...dependencies?.l2,
+  };
+  const l2Dependencies = {
+    ...loadArbitrumL2Dependencies(await l2Params.deployer.getChainId()),
+    ...dependencies?.l2,
+  };
 
   const [
     expectedL1TokensGatewayImplAddress,

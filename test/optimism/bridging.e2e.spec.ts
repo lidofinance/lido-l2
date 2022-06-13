@@ -18,7 +18,7 @@ import {
   DAIBridgeAdapter,
 } from "@eth-optimism/sdk";
 import { Wallet } from "ethers";
-import { getDeployer } from "../../utils/deployment/network";
+import { getDeployer, getNetworkConfig } from "../../utils/deployment/network";
 
 describe("Optimism :: bridging integration test", () => {
   let l1Deployer: Wallet;
@@ -29,8 +29,11 @@ describe("Optimism :: bridging integration test", () => {
   let l2Token: ERC20Ownable;
 
   before(async () => {
-    l1Deployer = getDeployer("local", hre);
-    l2Deployer = getDeployer("local_optimism", hre);
+    const l1Network = getNetworkConfig("local", hre);
+    const l2Network = getNetworkConfig("local_optimism", hre);
+
+    l1Deployer = getDeployer(l1Network.url);
+    l2Deployer = getDeployer(l2Network.url);
 
     // deploy L1Token stub
     l1Token = await new ERC20Stub__factory(l1Deployer).deploy("L1 Token", "L1");
@@ -85,7 +88,6 @@ describe("Optimism :: bridging integration test", () => {
     assert.isTrue(await l2TokenBridge.isWithdrawalsEnabled());
   });
   it("depositERC20() -> finalizeDeposit()", async () => {
-    console.log("Run");
     const amount = wei`1 ether`;
     // approve tokens before transfer
     await l1Token.approve(l1ERC20TokenBridge.address, amount);
