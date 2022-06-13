@@ -3,11 +3,15 @@
 
 pragma solidity ^0.8.0;
 
+import "hardhat/console.sol";
 import {IArbSys} from "./interfaces/IArbSys.sol";
 
 /// @author psirex
 /// @notice A helper contract to simplify Arbitrum to Ethereum communication process
 contract L2CrossDomainEnabled {
+    uint160 private constant ADDRESS_OFFSET =
+        uint160(0x1111000000000000000000000000000000001111);
+
     /// @notice Address of the Arbitrum’s ArbSys contract
     IArbSys public immutable arbSys;
 
@@ -26,12 +30,20 @@ contract L2CrossDomainEnabled {
         return IArbSys(arbSys).sendTxToL1(recipient_, data_);
     }
 
+    function applyL1ToL2Alias(address aliasedAddress_)
+        internal
+        pure
+        returns (address l1Address)
+    {
+        unchecked {
+            l1Address = address(uint160(aliasedAddress_) + ADDRESS_OFFSET);
+        }
+    }
+
     /// @notice Validates that the sender address with applied Arbitrum's aliasing is equal to
     ///     the crossDomainAccount_ address
     modifier onlyFromCrossDomainAccount(address crossDomainAccount_) {
-        uint160 offset = uint160(0x1111000000000000000000000000000000001111);
-        address aliasedAccount = address(uint160(crossDomainAccount_) + offset);
-        if (msg.sender != aliasedAccount) {
+        if (msg.sender != applyL1ToL2Alias(crossDomainAccount_)) {
             revert ErrorWrongCrossDomainSender();
         }
         _;
