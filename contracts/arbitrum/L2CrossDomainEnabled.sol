@@ -3,7 +3,6 @@
 
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
 import {IArbSys} from "./interfaces/IArbSys.sol";
 
 /// @author psirex

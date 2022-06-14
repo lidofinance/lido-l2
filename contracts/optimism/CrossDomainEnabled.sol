@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import {ICrossDomainMessenger} from "./interfaces/ICrossDomainMessenger.sol";
-import "hardhat/console.sol";
 
 /// @title CrossDomainEnabled
 /// @dev Helper contract for contracts performing cross-domain communications
