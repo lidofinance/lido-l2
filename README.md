@@ -2,42 +2,93 @@
 
 This project contains the implementation of the L2 ERC20 token bridges for Arbitrum and Optimism chains. The current solution allows transferring ERC20 tokens between L1 and L2 chains.
 
-## Common Commands
+## Project Setup
 
-```shell
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-npx hardhat help
-REPORT_GAS=true npx hardhat test
-npx hardhat coverage
-npx hardhat run scripts/deploy.ts
-TS_NODE_FILES=true npx ts-node scripts/deploy.ts
-npx eslint '**/*.{js,ts}'
-npx eslint '**/*.{js,ts}' --fix
-npx prettier '**/*.{json,sol,md}' --check
-npx prettier '**/*.{json,sol,md}' --write
-npx solhint 'contracts/**/*.sol'
-npx solhint 'contracts/**/*.sol' --fix
+1. Clone the repo:
+
+```bash
+git clone git@github.com:lidofinance/lido-l2.git
+cd ./lido-l2
 ```
 
-## Etherscan verification
+2. Install dependencies:
 
-To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
-
-In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
-
-```shell
-hardhat run --network ropsten scripts/deploy.ts
+```bash
+npm install
 ```
 
-Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
+3. Compile the contracts:
 
-```shell
-npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
+```bash
+npm run compile
 ```
 
-## Performance optimizations
+## Create .env File
 
-For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
+Create `.env` file in the project root:
+
+```bash
+cp .env.example .env
+```
+
+Fill the newly created `.env` file with required variables
+
+## Running Tests
+
+### Unit tests:
+
+To run unit tests use:
+
+```bash
+npm run test:unit
+```
+
+### Integration Tests:
+
+Before running integration tests, run the hardhat forked nodes:
+
+```bash
+npm run fork:ethereum
+npm run fork:optimism
+npm run fork:arbitrum
+```
+
+Run the integration tests via:
+
+```bash
+npm run test:integration
+```
+
+### e2e Tests
+
+To run e2e tests:
+
+```bash
+npm run test:e2e
+```
+
+## Measuring Test Coverage
+
+To run coverage measurement for unit tests:
+
+```bash
+npm run coverage
+```
+
+## Deploying Contracts
+
+### Deploying Arbitrum Gateway
+
+Fill the required variables in the `.env` file before the script execution.
+
+```bash
+npm run arbitrum:deploy-gateway
+```
+
+### Deploying Optimism Bridge
+
+Fill the required variables in the `.env` file before the script execution.
+
+```bash
+npm run optimism:deploy-bridge
+```
