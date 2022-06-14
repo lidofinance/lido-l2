@@ -29,13 +29,16 @@ library L1OutboundDataParser {
     function _parseSubmissionCostData(bytes memory data_)
         private
         pure
-        returns (uint256 maxSubmissionCost)
+        returns (uint256)
     {
-        bytes memory extraData;
-        (maxSubmissionCost, extraData) = abi.decode(data_, (uint256, bytes));
+        (uint256 maxSubmissionCost, bytes memory extraData) = abi.decode(
+            data_,
+            (uint256, bytes)
+        );
         if (extraData.length != 0) {
             revert ExtraDataNotEmpty();
         }
+        return maxSubmissionCost;
     }
 
     error ExtraDataNotEmpty();

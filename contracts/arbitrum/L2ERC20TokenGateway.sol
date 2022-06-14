@@ -3,8 +3,8 @@
 
 pragma solidity ^0.8.0;
 
-import {IL2TokenGateway} from "./interfaces/IL2TokenGateway.sol";
 import {IERC20Ownable} from "../token/interfaces/IERC20Ownable.sol";
+import {IL2TokenGateway, IInterchainTokenGateway} from "./interfaces/IL2TokenGateway.sol";
 
 import {L2CrossDomainEnabled} from "./L2CrossDomainEnabled.sol";
 import {L2OutboundDataParser} from "./libraries/L2OutboundDataParser.sol";
@@ -39,18 +39,14 @@ contract L2ERC20TokenGateway is
         L2CrossDomainEnabled(arbSys_)
     {}
 
-    /// @notice Initiates the withdrawing process from the Arbitrum chain into the Ethereum chain
-    /// @param l1Token_ Address in the L1 chain of the token to withdraw
-    /// @param to_ Address of the recipient of the token on the corresponding chain
-    /// @param amount_ Amount of tokens to bridge
-    /// @param data_ Additional data required for transaction
+    /// @inheritdoc IL2TokenGateway
     function outboundTransfer(
         address l1Token_,
         address to_,
         uint256 amount_,
         uint256, // maxGas
         uint256, // gasPriceBid
-        bytes memory data_
+        bytes calldata data_
     )
         external
         whenWithdrawalsEnabled
@@ -67,11 +63,7 @@ contract L2ERC20TokenGateway is
         return abi.encode(id);
     }
 
-    /// @notice Finalizes the bridging from the Ethereum chain
-    /// @param l1Token_ Address in the L1 chain of the token to bridge
-    /// @param from_ Address of the account initiated bridging
-    /// @param to_ Address of the recipient of the tokens
-    /// @param amount_ Amount of tokens to bridge
+    /// @inheritdoc IInterchainTokenGateway
     function finalizeInboundTransfer(
         address l1Token_,
         address from_,
@@ -80,6 +72,7 @@ contract L2ERC20TokenGateway is
         bytes calldata
     )
         external
+        whenDepositsEnabled
         onlySupportedL1Token(l1Token_)
         onlyFromCrossDomainAccount(counterpartGateway)
     {

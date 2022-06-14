@@ -406,6 +406,36 @@ testsuite("L1TokensGateway unit tests", ctxProvider, (ctx) => {
     assert.equalBN(await l1Token.balanceOf(l1TokensGateway.address), amount);
   });
 
+  it("finalizeInboundTransfer() :: withdrawals disabled", async () => {
+    const {
+      l1TokensGateway,
+      accounts: { deployer, bridgeAsEOA, sender, recipient },
+      stubs: { l1Token },
+    } = ctx;
+
+    // initialize gateway
+    await l1TokensGateway.initialize(deployer.address);
+
+    // validate gateway was initialized
+    assert.isTrue(await l1TokensGateway.isInitialized());
+
+    // validate withdrawals disabled
+    assert.isFalse(await l1TokensGateway.isWithdrawalsEnabled());
+
+    await assert.revertsWith(
+      l1TokensGateway
+        .connect(bridgeAsEOA)
+        .finalizeInboundTransfer(
+          l1Token.address,
+          sender.address,
+          recipient.address,
+          wei`10 ether`,
+          "0x"
+        ),
+      "ErrorWithdrawalsDisabled()"
+    );
+  });
+
   it("finalizeInboundTransfer() :: unauthorized bridge", async () => {
     const {
       l1TokensGateway,

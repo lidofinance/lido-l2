@@ -6,7 +6,7 @@ pragma solidity ^0.8.0;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import {IL1TokenGateway} from "./interfaces/IL1TokenGateway.sol";
+import {IL1TokenGateway, IInterchainTokenGateway} from "./interfaces/IL1TokenGateway.sol";
 
 import {L1CrossDomainEnabled} from "./L1CrossDomainEnabled.sol";
 import {L1OutboundDataParser} from "./libraries/L1OutboundDataParser.sol";
@@ -43,13 +43,7 @@ contract L1ERC20TokenGateway is
         L1CrossDomainEnabled(inbox_)
     {}
 
-    /// @notice Initiates the tokens bridging from the Ethereum into the Arbitrum chain
-    /// @param l1Token_ Address in the L1 chain of the token to bridge
-    /// @param to_ Address of the recipient of the token on the corresponding chain
-    /// @param amount_ Amount of tokens to bridge
-    /// @param maxGas_ Gas limit for immediate L2 execution attempt
-    /// @param gasPriceBid_ L2 gas price bid for immediate L2 execution attempt
-    /// @param data_ Additional data required for the transaction
+    /// @inheritdoc IL1TokenGateway
     function outboundTransfer(
         address l1Token_,
         address to_,
@@ -62,54 +56,49 @@ contract L1ERC20TokenGateway is
         payable
         whenDepositsEnabled
         onlySupportedL1Token(l1Token_)
-        returns (bytes memory res)
+        returns (bytes memory)
     {
         (address from, uint256 maxSubmissionCost) = L1OutboundDataParser.decode(
             router,
             data_
         );
+
         IERC20(l1Token_).safeTransferFrom(from, address(this), amount_);
-        res = abi.encode(
-            sendCrossDomainMessage(
-                counterpartGateway,
-                getOutboundCalldata(l1Token, from, to_, amount_),
-                CrossDomainMessageOptions({
-                    maxGas: maxGas_,
-                    callValue: 0,
-                    gasPriceBid: gasPriceBid_,
-                    refundAddress: from,
-                    maxSubmissionCost: maxSubmissionCost
-                })
-            )
+
+        uint256 retryableTicketId = sendCrossDomainMessage(
+            counterpartGateway,
+            getOutboundCalldata(l1Token, from, to_, amount_),
+            CrossDomainMessageOptions({
+                maxGas: maxGas_,
+                callValue: 0,
+                gasPriceBid: gasPriceBid_,
+                refundAddress: from,
+                maxSubmissionCost: maxSubmissionCost
+            })
         );
-        emit DepositInitiated(
-            l1Token,
-            from,
-            to_,
-            abi.decode(res, (uint256)),
-            amount_
-        );
+
+        emit DepositInitiated(l1Token, from, to_, retryableTicketId, amount_);
+
+        return abi.encode(retryableTicketId);
     }
 
-    /// @notice Finalizes the withdrawal of the tokens from the L2 chain
-    /// @param l1Token_ Address in the L1 chain of the token to withdraw
-    /// @param from_ Address of the account initiated withdrawing
-    /// @param to_ Address of the recipient of the tokens
-    /// @param amount_ Amount of tokens to withdraw
+    /// @inheritdoc IInterchainTokenGateway
     function finalizeInboundTransfer(
         address l1Token_,
         address from_,
         address to_,
         uint256 amount_,
-        bytes calldata
+        bytes calldata // data_
     )
         external
+        whenWithdrawalsEnabled
         onlySupportedL1Token(l1Token_)
         onlyFromCrossDomainAccount(counterpartGateway)
     {
         IERC20(l1Token_).safeTransfer(to_, amount_);
+
+        // exitNum argument always is equal to 0 in the event cause the current implementation
+        // doesn’t support fast withdraws.
         emit WithdrawalFinalized(l1Token_, from_, to_, 0, amount_);
     }
-
-    error ErrorNotFromBridge();
 }

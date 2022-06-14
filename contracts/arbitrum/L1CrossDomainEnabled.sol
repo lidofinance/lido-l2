@@ -62,6 +62,8 @@ contract L1CrossDomainEnabled {
     ///     the L2 chain
     modifier onlyFromCrossDomainAccount(address crossDomainAccount_) {
         address bridge = inbox.bridge();
+
+        // a message coming from the counterpart gateway was executed by the bridge
         if (msg.sender != bridge) {
             revert ErrorUnauthorizedBridge();
         }
@@ -69,6 +71,7 @@ contract L1CrossDomainEnabled {
         address l2ToL1Sender = IOutbox(IBridge(bridge).activeOutbox())
             .l2ToL1Sender();
 
+        // and the outbox reports that the L2 address of the sender is the counterpart gateway
         if (l2ToL1Sender != crossDomainAccount_) {
             revert ErrorWrongCrossDomainSender();
         }

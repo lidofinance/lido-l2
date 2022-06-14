@@ -364,6 +364,36 @@ testsuite("L1TokensGateway unit tests", ctxProvider, (ctx) => {
     ]);
   });
 
+  it("finalizeInboundTransfer() :: deposits disabled", async () => {
+    const {
+      l2TokensGateway,
+      accounts: { deployer, l1TokensGatewayAliasedEOA, sender, recipient },
+      stubs: { l1Token },
+    } = ctx;
+
+    // initialize gateway
+    await l2TokensGateway.initialize(deployer.address);
+
+    // validate gateway was initialized
+    assert.isTrue(await l2TokensGateway.isInitialized());
+
+    // validate withdrawals disabled
+    assert.isFalse(await l2TokensGateway.isWithdrawalsEnabled());
+
+    await assert.revertsWith(
+      l2TokensGateway
+        .connect(l1TokensGatewayAliasedEOA)
+        .finalizeInboundTransfer(
+          l1Token.address,
+          sender.address,
+          recipient.address,
+          wei`10 ether`,
+          "0x"
+        ),
+      "ErrorDepositsDisabled()"
+    );
+  });
+
   it("finalizeInboundTransfer() :: wrong token", async () => {
     const {
       l2TokensGateway,

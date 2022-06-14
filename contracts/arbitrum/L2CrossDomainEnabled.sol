@@ -21,7 +21,7 @@ contract L2CrossDomainEnabled {
 
     /// @notice Sends the message to the Ethereum chain
     /// @param recipient_ Address of the recipient of the message on the Ethereum chain
-    /// @param data_ Data passed to the recipient_ in the message
+    /// @param data_ Data passed to the recipient in the message
     function sendCrossDomainMessage(address recipient_, bytes memory data_)
         internal
         returns (uint256)
@@ -29,8 +29,9 @@ contract L2CrossDomainEnabled {
         return IArbSys(arbSys).sendTxToL1(recipient_, data_);
     }
 
+    /// @dev L1 addresses are transformed durng l1 -> l2 calls
     function applyL1ToL2Alias(address aliasedAddress_)
-        internal
+        private
         pure
         returns (address l1Address)
     {
