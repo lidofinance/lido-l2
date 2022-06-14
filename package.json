@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "hardhat test",
-    "test:integration": "hardhat test ./test/helpers/**.ts ./test/**/*.integration.spec.ts",
+    "test:unit": "hardhat test ./test/helpers/**.ts ./test/**/*.unit.test.ts",
+    "test:integration": "hardhat test ./test/helpers/**.ts ./test/**/*.integration.test.ts",
     "compile": "hardhat compile",
     "compile:force": "hardhat compile --force",
     "coverage": "hardhat coverage",
