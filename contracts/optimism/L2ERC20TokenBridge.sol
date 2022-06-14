@@ -103,14 +103,7 @@ contract L2ERC20TokenBridge is
 
         sendCrossDomainMessage(l1TokenBridge, _l1Gas, message);
 
-        emit WithdrawalInitiated(
-            l1Token,
-            l2Token,
-            msg.sender,
-            _to,
-            _amount,
-            _data
-        );
+        emit WithdrawalInitiated(l1Token, l2Token, _from, _to, _amount, _data);
     }
 
     /// @notice Completes a deposit from L1 to L2, and credits funds to the recipient's balance of
