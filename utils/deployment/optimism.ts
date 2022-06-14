@@ -7,7 +7,7 @@ import {
   L2ERC20TokenBridge__factory,
   OssifiableProxy__factory,
 } from "../../typechain";
-import { DeployScript } from "./DeployScript";
+import { DeployScript, Logger } from "./DeployScript";
 import { predictAddresses } from "./network";
 
 interface OptimismCommonDependencies {
@@ -42,18 +42,21 @@ export async function createOptimismBridgeDeployScripts(
   l1Token: string,
   l1Params: OptimismL1DeployScriptParams,
   l2Params: OptimismL2DeployScriptParams,
-  dependencies?: {
-    l1?: Partial<OptimismCommonDependencies>;
-    l2?: Partial<OptimismCommonDependencies>;
+  options?: {
+    dependencies?: {
+      l1?: Partial<OptimismCommonDependencies>;
+      l2?: Partial<OptimismCommonDependencies>;
+    };
+    logger?: Logger;
   }
 ) {
   const l1Dependencies = {
     ...loadOptimismL1Dependencies(await l1Params.deployer.getChainId()),
-    ...dependencies?.l1,
+    ...options?.dependencies?.l1,
   };
   const l2Dependencies = {
     ...loadOptimismL2Dependencies(await l2Params.deployer.getChainId()),
-    ...dependencies?.l2,
+    ...options?.dependencies?.l2,
   };
 
   const [expectedL1TokenBridgeImplAddress, expectedL1TokenBridgeProxyAddress] =
@@ -66,7 +69,7 @@ export async function createOptimismBridgeDeployScripts(
     expectedL2TokenBridgeProxyAddress,
   ] = await predictAddresses(l2Params.deployer, 4);
 
-  const l1DeployScript = new DeployScript(l1Params.deployer)
+  const l1DeployScript = new DeployScript(l1Params.deployer, options?.logger)
     .addStep({
       factory: L1ERC20TokenBridge__factory,
       args: [
@@ -103,7 +106,7 @@ export async function createOptimismBridgeDeployScripts(
     l2Params.l2Token?.symbol ?? l1TokenInfo.symbol(),
   ]);
 
-  const l2DeployScript = new DeployScript(l2Params.deployer)
+  const l2DeployScript = new DeployScript(l2Params.deployer, options?.logger)
     .addStep({
       factory: ERC20Ownable__factory,
       args: [

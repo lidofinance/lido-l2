@@ -33,13 +33,19 @@ interface PrintOptions {
   prefix?: string;
 }
 
+export interface Logger {
+  log(...args: any[]): void;
+}
+
 export class DeployScript {
+  private readonly logger?: Logger;
   private readonly steps: DeployStep<ContractFactory>[] = [];
   private contracts: Contract[] = [];
   public readonly deployer: Wallet;
 
-  constructor(deployer: Wallet) {
+  constructor(deployer: Wallet, logger?: Logger) {
     this.deployer = deployer;
+    this.logger = logger;
   }
 
   addStep<T extends ContractFactory>(step: DeployStep<T>): DeployScript {
@@ -53,7 +59,7 @@ export class DeployScript {
       this._printStepInfo(this._getStepInfo(i), { prefix: "Deploying " });
       const c = await this.runStep(this.deployer, i);
       res.push(c);
-      console.log();
+      this._log();
     }
     this.contracts = res;
     return res;
@@ -62,7 +68,7 @@ export class DeployScript {
   print() {
     for (let i = 0; i < this.steps.length; ++i) {
       this._printStepInfo(this._getStepInfo(i), { padding: 2 });
-      console.log();
+      this._log();
     }
   }
 
@@ -72,9 +78,9 @@ export class DeployScript {
     const factoryName = Factory.name.split("_")[0];
     const contract = await new Factory(deployer).deploy(...step.args);
     const deployTx = contract.deployTransaction;
-    console.log(`Waiting for tx: ${deployTx.hash}`);
+    this._log(`Waiting for tx: ${deployTx.hash}`);
     await deployTx.wait();
-    console.log(
+    this._log(
       `Contract ${chalk.yellow(factoryName)} deployed at: ${chalk.underline(
         contract.address
       )}`
@@ -121,12 +127,12 @@ export class DeployScript {
     const title = `${padString}${stepInfo.index + 1}/${this.steps.length}: ${
       printOptions.prefix || ""
     }${contractName}`;
-    console.log(title);
+    this._log(title);
 
     for (const arg of stepInfo.args) {
       const name = chalk.italic.cyan(arg.name);
       const value = formatValue(arg.value);
-      console.log(
+      this._log(
         `${padString}  ${chalk.cyan(arg.index + ":")} ${name}  ${value}`
       );
     }
@@ -149,10 +155,14 @@ export class DeployScript {
     };
     const networkName = networkNameByChainId[chainId] || "<NETWORK_NAME>";
     const arsString = stepInfo.args.map((a) => `"${a.value}"`).join(" ");
-    console.log("To verify the contract on Etherscan, use command:");
-    console.log(
+    this._log("To verify the contract on Etherscan, use command:");
+    this._log(
       `npx hardhat verify --network ${networkName} ${address} ${arsString}`
     );
+  }
+
+  private _log(message: string = "\n") {
+    this.logger?.log(message);
   }
 }
 

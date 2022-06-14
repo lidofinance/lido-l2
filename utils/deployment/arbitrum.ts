@@ -7,7 +7,7 @@ import {
   L2ERC20TokenGateway__factory,
   OssifiableProxy__factory,
 } from "../../typechain";
-import { DeployScript } from "../../utils/deployment/DeployScript";
+import { DeployScript, Logger } from "../../utils/deployment/DeployScript";
 import { predictAddresses } from "../../utils/deployment/network";
 
 interface ArbitrumL1DeployScriptParams {
@@ -63,18 +63,21 @@ export async function createArbitrumGatewayDeployScripts(
   l1Token: string,
   l1Params: ArbitrumL1DeployScriptParams,
   l2Params: ArbitrumL2DeployScriptParams,
-  dependencies?: {
-    l1?: Partial<L1ArbitrumDependencies>;
-    l2?: Partial<L2ArbitrumDependencies>;
+  options?: {
+    dependencies?: {
+      l1?: Partial<L1ArbitrumDependencies>;
+      l2?: Partial<L2ArbitrumDependencies>;
+    };
+    logger?: Logger;
   }
 ) {
   const l1Dependencies = {
     ...loadArbitrumL1Dependencies(await l1Params.deployer.getChainId()),
-    ...dependencies?.l2,
+    ...options?.dependencies?.l2,
   };
   const l2Dependencies = {
     ...loadArbitrumL2Dependencies(await l2Params.deployer.getChainId()),
-    ...dependencies?.l2,
+    ...options?.dependencies?.l2,
   };
 
   const [

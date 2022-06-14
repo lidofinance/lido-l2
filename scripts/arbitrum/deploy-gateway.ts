@@ -29,6 +29,9 @@ async function main() {
       {
         deployer: l2Deployer,
         admins: { proxy: l2ProxyAdmin, bridge: l2BridgeAdmin },
+      },
+      {
+        logger: console,
       }
     );
 
@@ -39,6 +42,7 @@ async function main() {
   console.log(`  · L1 Gateway Admin: ${chalk.underline(l1BridgeAdmin)}`);
   console.log(`  · L1 Deployer: ${chalk.underline(l1Deployer.address)}`);
   console.log();
+
   l1DeployScript.print();
   console.log(chalk.bold("L2 Gateway Deployment Script:"));
   console.log(`  · L2 Network: ${l2NetworkName}`);

@@ -381,7 +381,9 @@ async function ctxProvider() {
         deployer: l2Deployer,
         admins: { proxy: l2Deployer.address, bridge: l2Deployer.address },
       },
-      { l1: { messenger: l1CrossDomainMessengerStub.address } }
+      {
+        dependencies: { l1: { messenger: l1CrossDomainMessengerStub.address } },
+      }
     );
 
   await l1DeployScript.run();

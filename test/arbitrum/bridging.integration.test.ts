@@ -165,8 +165,12 @@ scenario("Arbitrum :: Bridging integration test", ctxProvider, async (ctx) => {
   it("6. Withdraw tokens from L2 ", async () => {
     const { l1Token, l1ERC20TokenGateway } = ctx.l1;
     const { recipient } = ctx.l1.accounts;
-    const { l2GatewayRouter, l2Token, arbySysStub, l2ERC20TokenGateway } =
-      ctx.l2;
+    const {
+      l2GatewayRouter,
+      l2Token,
+      arbSysStub: arbySysStub,
+      l2ERC20TokenGateway,
+    } = ctx.l2;
     const { admin } = ctx.l2.accounts;
     const { amount, finalizeInboundTransferCalldata } = ctx.common;
 
@@ -211,7 +215,7 @@ async function ctxProvider() {
     "TT"
   );
 
-  const arbySysStub = await new ArbSysStub__factory(l2Deployer).deploy();
+  const arbSysStub = await new ArbSysStub__factory(l2Deployer).deploy();
 
   const [l1DeployScript, l2DeployScript] =
     await createArbitrumGatewayDeployScripts(
@@ -224,7 +228,7 @@ async function ctxProvider() {
         deployer: l2Deployer,
         admins: { proxy: l2Deployer.address, bridge: l2Deployer.address },
       },
-      { l2: { arbSys: arbySysStub.address } }
+      { dependencies: { l2: { arbSys: arbSysStub.address } } }
     );
 
   await l1DeployScript.run();
@@ -287,7 +291,7 @@ async function ctxProvider() {
       l2Token,
       l2GatewayRouter,
       l2ERC20TokenGateway,
-      arbySysStub,
+      arbSysStub,
       accounts: {
         admin: l2Deployer,
         recipient: l2Deployer,

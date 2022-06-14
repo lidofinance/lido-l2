@@ -30,7 +30,8 @@ async function main() {
       {
         deployer: l2Deployer,
         admins: { proxy: l2ProxyAdmin, bridge: l2BridgeAdmin },
-      }
+      },
+      { logger: console }
     );
 
   console.log(chalk.bold("L1 Bridge Deployment Script:"));
