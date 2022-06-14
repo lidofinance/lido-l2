@@ -41,14 +41,20 @@ export const OPT_L2_DEPENDENCIES: Record<number, OptimismCommonDependencies> = {
 export async function createOptimismBridgeDeployScripts(
   l1Token: string,
   l1Params: OptimismL1DeployScriptParams,
-  l2Params: OptimismL2DeployScriptParams
+  l2Params: OptimismL2DeployScriptParams,
+  dependencies?: {
+    l1?: Partial<OptimismCommonDependencies>;
+    l2?: Partial<OptimismCommonDependencies>;
+  }
 ) {
-  const l1Dependencies = loadOptimismL1Dependencies(
-    await l1Params.deployer.getChainId()
-  );
-  const l2Dependencies = loadOptimismL2Dependencies(
-    await l2Params.deployer.getChainId()
-  );
+  const l1Dependencies = {
+    ...loadOptimismL1Dependencies(await l1Params.deployer.getChainId()),
+    ...dependencies?.l1,
+  };
+  const l2Dependencies = {
+    ...loadOptimismL2Dependencies(await l2Params.deployer.getChainId()),
+    ...dependencies?.l2,
+  };
 
   const [expectedL1TokenBridgeImplAddress, expectedL1TokenBridgeProxyAddress] =
     await predictAddresses(l1Params.deployer, 2);

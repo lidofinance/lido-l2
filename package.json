@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
-    "test:integration": "hardhat test ./test/helpers/**.ts ./test/**/*.integration.test.ts",
+    "test:integration": "hardhat test ./test/helpers/**.ts ./test/**/*.integration.spec.ts",
     "compile": "hardhat compile",
     "compile:force": "hardhat compile --force",
     "coverage": "hardhat coverage",
