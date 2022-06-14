@@ -4,11 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "hardhat test",
-    "test:integration": "hardhat test ./test/helpers/**.ts ./test/**/*.integration.test.ts",
     "compile": "hardhat compile",
     "compile:force": "hardhat compile --force",
-    "coverage": "hardhat coverage",
+    "test:unit": "hardhat test ./test/helpers/**.ts ./test/**/*.unit.test.ts",
+    "test:integration": "hardhat test ./test/helpers/**.ts ./test/**/*.integration.test.ts",
+    "coverage": "hardhat coverage --testfiles './test/{helpers/**.ts,**/*.unit.test.ts}'",
     "manager:grant-role": "ts-node --files ./scripts/bridging-manager/grant-role.ts",
     "optimism:deploy-bridge": "ts-node --files ./scripts/optimism/deploy-bridge.ts",
     "arbitrum:deploy-gateway": "ts-node --files ./scripts/arbitrum/deploy-gateway.ts",
@@ -53,7 +53,10 @@
   },
   "dependencies": {
     "@eth-optimism/sdk": "^1.1.7",
+    "@ethersproject/providers": "^5.6.8",
     "@openzeppelin/contracts": "^4.6.0",
-    "chalk": "4.1.2"
+    "chalk": "4.1.2",
+    "hardhat-ethernal": "^1.0.0",
+    "hardhat-tracer": "^1.1.0-rc.6"
   }
 }

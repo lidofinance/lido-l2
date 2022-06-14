@@ -23,14 +23,14 @@ interface OptimismL2DeployScriptParams extends OptimismL1DeployScriptParams {
   l2Token?: { name?: string; symbol?: string };
 }
 
-const OPT_L1_DEPENDENCIES: Record<number, OptimismCommonDependencies> = {
+export const OPT_L1_DEPENDENCIES: Record<number, OptimismCommonDependencies> = {
   1: { messenger: "0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1" },
   17: { messenger: "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318" },
   42: { messenger: "0x4361d0F75A0186C05f971c566dC6bEa5957483fD" },
   31337: { messenger: "0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1" },
 };
 
-const OPT_L2_DEPENDENCIES: Record<number, OptimismCommonDependencies> = {
+export const OPT_L2_DEPENDENCIES: Record<number, OptimismCommonDependencies> = {
   1: { messenger: "0x4200000000000000000000000000000000000007" },
   10: { messenger: "0x4200000000000000000000000000000000000007" },
   42: { messenger: "0x4200000000000000000000000000000000000007" },
@@ -41,14 +41,20 @@ const OPT_L2_DEPENDENCIES: Record<number, OptimismCommonDependencies> = {
 export async function createOptimismBridgeDeployScripts(
   l1Token: string,
   l1Params: OptimismL1DeployScriptParams,
-  l2Params: OptimismL2DeployScriptParams
+  l2Params: OptimismL2DeployScriptParams,
+  dependencies?: {
+    l1?: Partial<OptimismCommonDependencies>;
+    l2?: Partial<OptimismCommonDependencies>;
+  }
 ) {
-  const l1Dependencies = loadOptimismL1Dependencies(
-    await l1Params.deployer.getChainId()
-  );
-  const l2Dependencies = loadOptimismL2Dependencies(
-    await l2Params.deployer.getChainId()
-  );
+  const l1Dependencies = {
+    ...loadOptimismL1Dependencies(await l1Params.deployer.getChainId()),
+    ...dependencies?.l1,
+  };
+  const l2Dependencies = {
+    ...loadOptimismL2Dependencies(await l2Params.deployer.getChainId()),
+    ...dependencies?.l2,
+  };
 
   const [expectedL1TokenBridgeImplAddress, expectedL1TokenBridgeProxyAddress] =
     await predictAddresses(l1Params.deployer, 2);
