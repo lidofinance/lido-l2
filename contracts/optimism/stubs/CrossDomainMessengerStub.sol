@@ -34,7 +34,8 @@ contract CrossDomainMessengerStub is ICrossDomainMessenger {
         bytes memory _message,
         uint256 _messageNonce
     ) public {
-        _target.call(_message);
+        (bool success, ) = _target.call(_message);
+        require(success, "CALL_FAILED");
     }
 
     event SentMessage(
