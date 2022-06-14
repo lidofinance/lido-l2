@@ -7,8 +7,8 @@ import {IERC20Metadata} from "./interfaces/IERC20Metadata.sol";
 
 /// @author psirex
 /// @notice Contains the optional metadata functions from the ERC20 standard
-/// @dev Uses the UnstructuredStorage pattern to store dynamic name and symbol data.
-///     Might be used with the upgradable proxies
+/// @dev Uses the UnstructuredStorage pattern to store dynamic name and symbol data. Might be used
+///     with the upgradable proxies
 contract ERC20Metadata is IERC20Metadata {
     /// @dev Stores the dynamic metadata of the ERC20 token. Allows safely use of this
     ///     contract with upgradable proxies
@@ -17,16 +17,16 @@ contract ERC20Metadata is IERC20Metadata {
         string symbol;
     }
 
-    /// @dev The location of the slot with DynamicMetdata
+    /// @dev Location of the slot with DynamicMetdata
     bytes32 private constant DYNAMIC_METADATA_SLOT =
         keccak256("ERC20Metdata.synamicMetadata");
 
-    /// @notice The decimals places of the token
+    /// @inheritdoc IERC20Metadata
     uint8 public immutable decimals;
 
-    /// @param name_ The name of the token
-    /// @param symbol_ The symbol of the token
-    /// @param decimals_  The decimals places of the token
+    /// @param name_ Name of the token
+    /// @param symbol_ Symbol of the token
+    /// @param decimals_ Decimals places of the token
     constructor(
         string memory name_,
         string memory symbol_,
@@ -37,12 +37,12 @@ contract ERC20Metadata is IERC20Metadata {
         _setERC20MetadataSymbol(symbol_);
     }
 
-    /// @notice Returns the name of the token
+    /// @inheritdoc IERC20Metadata
     function name() public view returns (string memory) {
         return _loadDynamicMetadata().name;
     }
 
-    /// @notice Returns the symbol of the token
+    /// @inheritdoc IERC20Metadata
     function symbol() public view returns (string memory) {
         return _loadDynamicMetadata().symbol;
     }

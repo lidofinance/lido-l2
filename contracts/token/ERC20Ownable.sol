@@ -11,7 +11,7 @@ import {ERC20Metadata} from "./ERC20Metadata.sol";
 /// @author psirex
 /// @notice Extends the ERC20 functionality that allows the owner to mint/burn tokens
 contract ERC20Ownable is IERC20Ownable, ERC20Core, ERC20Metadata {
-    /// @notice An owner of the token who can mint/burn tokens
+    /// @inheritdoc IERC20Ownable
     address public immutable owner;
 
     /// @param name_ The name of the token
@@ -35,16 +35,12 @@ contract ERC20Ownable is IERC20Ownable, ERC20Core, ERC20Metadata {
         _setERC20MetadataSymbol(symbol_);
     }
 
-    /// @notice Creates amount_ tokens and assigns them to account_, increasing the total supply
-    /// @param account_ An address of the account to mint tokens
-    /// @param amount_ An amount of tokens to mint
+    /// @inheritdoc IERC20Ownable
     function mint(address account_, uint256 amount_) public onlyOwner {
         _mint(account_, amount_);
     }
 
-    /// @notice Destroys amount_ tokens from account_, reducing the total supply
-    /// @param account_ An address of the account to burn tokens
-    /// @param amount_ An amount of tokens to burn
+    /// @inheritdoc IERC20Ownable
     function burn(address account_, uint256 amount_) external onlyOwner {
         _burn(account_, amount_);
     }

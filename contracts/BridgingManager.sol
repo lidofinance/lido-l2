@@ -18,10 +18,6 @@ contract BridgingManager is AccessControl {
         bool isWithdrawalsEnabled;
     }
 
-    /// @dev The location of the slot with State
-    bytes32 private constant STATE_SLOT =
-        keccak256("BridgingManager.bridgingState");
-
     bytes32 public constant DEPOSITS_DISABLER_ROLE =
         keccak256("GatewayManager.DEPOSITS_DISABLER_ROLE");
     bytes32 public constant DEPOSITS_ENABLER_ROLE =
@@ -31,9 +27,13 @@ contract BridgingManager is AccessControl {
     bytes32 public constant WITHDRAWALS_DISABLER_ROLE =
         keccak256("GatewayManager.WITHDRAWALS_DISABLER_ROLE");
 
+    /// @dev The location of the slot with State
+    bytes32 private constant STATE_SLOT =
+        keccak256("BridgingManager.bridgingState");
+
     /// @notice Initializes the contract to grant DEFAULT_ADMIN_ROLE to the admin_ address
     /// @dev This method might be called only once
-    /// @param admin_ An address of the account to grant the DEFAULT_ADMIN_ROLE
+    /// @param admin_ Address of the account to grant the DEFAULT_ADMIN_ROLE
     function initialize(address admin_) external {
         State storage s = _loadState();
         if (s.isInitialized) {
@@ -41,6 +41,7 @@ contract BridgingManager is AccessControl {
         }
         _setupRole(DEFAULT_ADMIN_ROLE, admin_);
         s.isInitialized = true;
+        emit Initialized(admin_);
     }
 
     /// @notice Returns whether the contract is initialized or not
@@ -124,6 +125,7 @@ contract BridgingManager is AccessControl {
     event DepositsDisabled(address indexed disabler);
     event WithdrawalsDisabled(address indexed enabler);
     event WithdrawalsEnabled(address indexed disabler);
+    event Initialized(address indexed admin);
 
     error ErrorDepositsEnabled();
     error ErrorDepositsDisabled();

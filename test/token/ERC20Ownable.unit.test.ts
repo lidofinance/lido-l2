@@ -154,62 +154,68 @@ testsuite("ERC20Ownable unit tests", ctxProvider, (ctx) => {
 
   it("transferFrom()", async () => {
     const {
-      erc20Ownable: l2Token,
+      erc20Ownable,
       constants: { premint },
       accounts: { recipient, spender, holder },
     } = ctx;
 
     const initialAllowance = wei`2 ether`;
 
-    // set allowance
-    await l2Token.approve(recipient.address, initialAllowance);
+    // holder sets allowance for spender
+    await erc20Ownable.approve(spender.address, initialAllowance);
 
     // validate allowance is set
     assert.equalBN(
-      await l2Token.allowance(holder.address, recipient.address),
+      await erc20Ownable.allowance(holder.address, spender.address),
       initialAllowance
     );
 
     // validate balance before transfer
-    assert.equalBN(await l2Token.balanceOf(holder.address), premint);
+    assert.equalBN(await erc20Ownable.balanceOf(holder.address), premint);
 
     const amount = wei`1 ether`;
 
-    const holderBalanceBefore = await l2Token.balanceOf(holder.address);
+    const holderBalanceBefore = await erc20Ownable.balanceOf(holder.address);
 
     // transfer tokens
-    const tx = await l2Token
+    const tx = await erc20Ownable
       .connect(spender)
       .transferFrom(holder.address, recipient.address, amount);
 
+    console.log("1");
+
     // validate Approval event was emitted
-    await assert.emits(l2Token, tx, "Approval", [
+    await assert.emits(erc20Ownable, tx, "Approval", [
       holder.address,
-      recipient.address,
+      spender.address,
       wei.toBigNumber(initialAllowance).sub(amount),
     ]);
 
+    console.log("2");
+
     // validate Transfer event was emitted
-    await assert.emits(l2Token, tx, "Transfer", [
+    await assert.emits(erc20Ownable, tx, "Transfer", [
       holder.address,
       recipient.address,
       amount,
     ]);
 
+    console.log("3");
+
     // validate allowance updated
     assert.equalBN(
-      await l2Token.allowance(holder.address, recipient.address),
+      await erc20Ownable.allowance(holder.address, spender.address),
       wei.toBigNumber(initialAllowance).sub(amount)
     );
 
     // validate holder balance updated
     assert.equalBN(
-      await l2Token.balanceOf(holder.address),
+      await erc20Ownable.balanceOf(holder.address),
       holderBalanceBefore.sub(amount)
     );
 
     // validate recipient balance updated
-    assert.equalBN(await l2Token.balanceOf(recipient.address), amount);
+    assert.equalBN(await erc20Ownable.balanceOf(recipient.address), amount);
   });
 
   it("transferFrom() :: max allowance", async () => {
@@ -222,11 +228,11 @@ testsuite("ERC20Ownable unit tests", ctxProvider, (ctx) => {
     const initialAllowance = hre.ethers.constants.MaxUint256;
 
     // set allowance
-    await l2Token.approve(recipient.address, initialAllowance);
+    await l2Token.approve(spender.address, initialAllowance);
 
     // validate allowance is set
     assert.equalBN(
-      await l2Token.allowance(holder.address, recipient.address),
+      await l2Token.allowance(holder.address, spender.address),
       initialAllowance
     );
 
@@ -254,7 +260,7 @@ testsuite("ERC20Ownable unit tests", ctxProvider, (ctx) => {
 
     // validate allowance wasn't changed
     assert.equalBN(
-      await l2Token.allowance(holder.address, recipient.address),
+      await l2Token.allowance(holder.address, spender.address),
       initialAllowance
     );
 
@@ -270,7 +276,7 @@ testsuite("ERC20Ownable unit tests", ctxProvider, (ctx) => {
 
   it("transferFrom() :: not enough allowance", async () => {
     const {
-      erc20Ownable: l2Token,
+      erc20Ownable,
       constants: { premint },
       accounts: { recipient, spender, holder },
     } = ctx;
@@ -278,22 +284,22 @@ testsuite("ERC20Ownable unit tests", ctxProvider, (ctx) => {
     const initialAllowance = wei`0.9 ether`;
 
     // set allowance
-    await l2Token.approve(recipient.address, initialAllowance);
+    await erc20Ownable.approve(recipient.address, initialAllowance);
 
     // validate allowance is set
     assert.equalBN(
-      await l2Token.allowance(holder.address, recipient.address),
+      await erc20Ownable.allowance(holder.address, recipient.address),
       initialAllowance
     );
 
     // validate balance before transfer
-    assert.equalBN(await l2Token.balanceOf(holder.address), premint);
+    assert.equalBN(await erc20Ownable.balanceOf(holder.address), premint);
 
     const amount = wei`1 ether`;
 
     // transfer tokens
     await assert.revertsWith(
-      l2Token
+      erc20Ownable
         .connect(spender)
         .transferFrom(holder.address, recipient.address, amount),
       "ErrorNotEnoughAllowance()"
@@ -302,26 +308,26 @@ testsuite("ERC20Ownable unit tests", ctxProvider, (ctx) => {
 
   it("increaseAllowance() :: initial allowance is zero", async () => {
     const {
-      erc20Ownable: l2Token,
+      erc20Ownable,
       accounts: { holder, spender },
     } = ctx;
 
     // validate allowance before increasing
     assert.equalBN(
-      await l2Token.allowance(holder.address, spender.address),
+      await erc20Ownable.allowance(holder.address, spender.address),
       "0"
     );
 
     const allowanceIncrease = wei`1 ether`;
 
     // increase allowance
-    const tx = await l2Token.increaseAllowance(
+    const tx = await erc20Ownable.increaseAllowance(
       spender.address,
       allowanceIncrease
     );
 
     // validate Approval event was emitted
-    await assert.emits(l2Token, tx, "Approval", [
+    await assert.emits(erc20Ownable, tx, "Approval", [
       holder.address,
       spender.address,
       allowanceIncrease,
@@ -329,7 +335,7 @@ testsuite("ERC20Ownable unit tests", ctxProvider, (ctx) => {
 
     // validate allowance was updated correctly
     assert.equalBN(
-      await l2Token.allowance(holder.address, spender.address),
+      await erc20Ownable.allowance(holder.address, spender.address),
       allowanceIncrease
     );
   });

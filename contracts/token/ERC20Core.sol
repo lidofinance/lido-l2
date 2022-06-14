@@ -9,51 +9,34 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @notice Contains the required logic of the ERC20 standard as defined in the EIP. Additionally
 ///     provides methods for direct allowance increasing/decreasing.
 contract ERC20Core is IERC20 {
-    /// @notice The amount of tokens in existence
+    /// @inheritdoc IERC20
     uint256 public totalSupply;
 
-    /// @notice Stores the amount of tokens owned by account
+    /// @inheritdoc IERC20
     mapping(address => uint256) public balanceOf;
 
-    /// @notice Stores the remaining amount of tokens that spender will be
-    ///     allowed to spend on behalf of owner through transferFrom.
+    /// @inheritdoc IERC20
     mapping(address => mapping(address => uint256)) public allowance;
 
-    /// @notice Sets amount_ as the allowance of spender_ over the caller's tokens.
-    /// @param spender_ An address of the tokens spender
-    /// @param amount_ An amount of tokens to allow to spend
-    function approve(address spender_, uint256 amount_)
-        public
-        returns (bool success)
-    {
-        allowance[msg.sender][spender_] = amount_;
-
-        emit Approval(msg.sender, spender_, amount_);
+    /// @inheritdoc IERC20
+    function approve(address spender_, uint256 amount_) public returns (bool) {
+        _approve(msg.sender, spender_, amount_);
         return true;
     }
 
-    /// @notice Moves amount_ tokens from the caller's account to to_
-    /// @param to_ An address of the recipient of the tokens
-    /// @param amount_ An amount of tokens to transfer
-    function transfer(address to_, uint256 amount_)
-        public
-        returns (bool success)
-    {
+    /// @inheritdoc IERC20
+    function transfer(address to_, uint256 amount_) public returns (bool) {
         _transfer(msg.sender, to_, amount_);
         return true;
     }
 
-    /// @notice Moves amount_ tokens from from_ to to_ using the allowance mechanism.
-    ///     amount_ is then deducted from the caller's allowance.
-    /// @param from_ An address to transfer tokens from
-    /// @param to_ An address of the recipient of the tokens
-    /// @param amount_ An amount of tokens to transfer
+    /// @inheritdoc IERC20
     function transferFrom(
         address from_,
         address to_,
         uint256 amount_
-    ) public returns (bool success) {
-        _spendAllowance(from_, to_, amount_);
+    ) public returns (bool) {
+        _spendAllowance(from_, msg.sender, amount_);
         _transfer(from_, to_, amount_);
         return true;
     }
