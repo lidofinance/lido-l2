@@ -11,7 +11,7 @@ import { assert } from "chai";
 import { testsuite } from "../../utils/testing";
 import { ArbSysStub__factory } from "../../typechain/factories/ArbSysStub__factory";
 
-testsuite("L1TokensGateway unit tests", ctxProvider, (ctx) => {
+testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
   it("l1Token()", async () => {
     assert.equal(
       await ctx.l2TokensGateway.l1Token(),
