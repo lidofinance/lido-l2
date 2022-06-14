@@ -3,10 +3,9 @@ pragma solidity ^0.8.0;
 
 import {ICrossDomainMessenger} from "./interfaces/ICrossDomainMessenger.sol";
 
-/// @title CrossDomainEnabled
 /// @dev Helper contract for contracts performing cross-domain communications
 contract CrossDomainEnabled {
-    /// @notice Messenger contract used to send and recieve messages from the other domain.
+    /// @notice Messenger contract used to send and recieve messages from the other domain
     ICrossDomainMessenger public immutable messenger;
 
     /// @param messenger_ Address of the CrossDomainMessenger on the current layer
@@ -17,7 +16,7 @@ contract CrossDomainEnabled {
     /// @dev Sends a message to an account on another domain
     /// @param crossDomainTarget_ The intended recipient on the destination domain
     /// @param message_ The data to send to the target (usually calldata to a function with
-    ///  `onlyFromCrossDomainAccount()`)
+    ///     `onlyFromCrossDomainAccount()`)
     /// @param gasLimit_ The gasLimit for the receipt of the message on the target domain.
     function sendCrossDomainMessage(
         address crossDomainTarget_,
@@ -29,7 +28,7 @@ contract CrossDomainEnabled {
 
     /// @dev Enforces that the modified function is only callable by a specific cross-domain account
     /// @param sourceDomainAccount_ The only account on the originating domain which is
-    ///  authenticated to call this function
+    ///     authenticated to call this function
     modifier onlyFromCrossDomainAccount(address sourceDomainAccount_) {
         if (msg.sender != address(messenger)) {
             revert ErrorUnauthorizedMessenger();

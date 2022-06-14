@@ -14,7 +14,8 @@ import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 
 /// @author psirex
 /// @notice The L1 ERC20 token bridge locks bridged tokens on the L1 side, sends deposit messages
-///     on the L2 side, and finalizes token withdrawals from L2.
+///     on the L2 side, and finalizes token withdrawals from L2. Additionally, adds the methods for
+///     bridging management: enabling and disabling withdrawals/deposits
 contract L1ERC20TokenBridge is
     IL1ERC20Bridge,
     BridgingManager,
@@ -23,7 +24,7 @@ contract L1ERC20TokenBridge is
 {
     using SafeERC20 for IERC20;
 
-    /// @notice Address of the corresponding L2 bridge contract
+    /// @inheritdoc IL1ERC20Bridge
     address public immutable l2TokenBridge;
 
     /// @param messenger_ L1 messenger address being used for cross-chain communications
@@ -39,14 +40,7 @@ contract L1ERC20TokenBridge is
         l2TokenBridge = l2TokenBridge_;
     }
 
-    /// @notice Deposits an amount of the ERC20 to the caller's balance on L2
-    /// @param l1Token_ Address of the L1 ERC20 to be deposited
-    /// @param l2Token_ Address of the L1 respective L2 ERC20
-    /// @param amount_ Amount of the ERC20 to deposit
-    /// @param l2Gas_ Gas limit required to complete the deposit on L2
-    /// @param data_ Optional data to forward to L2. This data is provided solely as a
-    ///     convenience for external contracts. Aside from enforcing a maximum length, these
-    ///     contracts provide no guarantees about its content
+    /// @inheritdoc IL1ERC20Bridge
     function depositERC20(
         address l1Token_,
         address l2Token_,
@@ -65,15 +59,7 @@ contract L1ERC20TokenBridge is
         _initiateERC20Deposit(msg.sender, msg.sender, amount_, l2Gas_, data_);
     }
 
-    /// @notice Deposits an amount of ERC20 to a recipient's balance on L2
-    /// @param l1Token_ Address of the L1 ERC20 to be deposited
-    /// @param l2Token_ Address of the L1 respective L2 ERC20
-    /// @param to_ Account to give the deposit to on L2
-    /// @param amount_ Amount of the ERC20 to deposit.
-    /// @param l2Gas_ Gas limit required to complete the deposit on L2.
-    /// @param data_ Optional data to forward to L2. This data is provided solely as a
-    ///     convenience for external contracts. Aside from enforcing a maximum length, these
-    /// contracts provide no guarantees about its content.
+    /// @inheritdoc IL1ERC20Bridge
     function depositERC20To(
         address l1Token_,
         address l2Token_,
@@ -90,17 +76,7 @@ contract L1ERC20TokenBridge is
         _initiateERC20Deposit(msg.sender, to_, amount_, l2Gas_, data_);
     }
 
-    /// @notice Completes a withdrawal from L2 to L1, and credit funds to the recipient’s balance
-    ///     of the L1 ERC20 token.
-    /// @dev This call will fail if the initialized withdrawal from L2 has not been finalized.
-    /// @param l1Token_ Address of L1 token to finalizeWithdrawal for
-    /// @param l2Token_ Address of L2 token where withdrawal was initiated.
-    /// @param from_ L2 address initiating the transfer
-    /// @param to_ L1 address to credit the withdrawal to
-    /// @param amount_ Amount of the ERC20 to deposit
-    /// @param data_ Data provided by the sender on L2. This data is provided solely as a
-    ///     convenience for external contracts. Aside from enforcing a maximum length, these
-    ///     contracts provide no guarantees about its content.
+    /// @inheritdoc IL1ERC20Bridge
     function finalizeERC20Withdrawal(
         address l1Token_,
         address l2Token_,
@@ -115,11 +91,11 @@ contract L1ERC20TokenBridge is
         onlySupportedL2Token(l2Token_)
         onlyFromCrossDomainAccount(l2TokenBridge)
     {
-        IERC20(l1Token).safeTransfer(to_, amount_);
+        IERC20(l1Token_).safeTransfer(to_, amount_);
 
         emit ERC20WithdrawalFinalized(
-            l1Token,
-            l2Token,
+            l1Token_,
+            l2Token_,
             from_,
             to_,
             amount_,

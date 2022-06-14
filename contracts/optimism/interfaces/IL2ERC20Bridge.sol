@@ -39,7 +39,7 @@ interface IL2ERC20Bridge {
     /// @notice Initiates a withdraw of some tokens to the caller's account on L1
     /// @param l2Token_ Address of L2 token where withdrawal was initiated.
     /// @param amount_ Amount of the token to withdraw.
-    ///     param _l1Gas Unused, but included for potential forward compatibility considerations.
+    /// @param l1Gas_ Unused, but included for potential forward compatibility considerations.
     /// @param data_ Optional data to forward to L1. This data is provided
     ///     solely as a convenience for external contracts. Aside from enforcing a maximum
     ///     length, these contracts provide no guarantees about its content.
@@ -54,7 +54,7 @@ interface IL2ERC20Bridge {
     /// @param l2Token_ Address of L2 token where withdrawal is initiated.
     /// @param to_ L1 adress to credit the withdrawal to.
     /// @param amount_ Amount of the token to withdraw.
-    ///     param _l1Gas Unused, but included for potential forward compatibility considerations.
+    /// @param l1Gas_ Unused, but included for potential forward compatibility considerations.
     /// @param data_ Optional data to forward to L1. This data is provided
     ///     solely as a convenience for external contracts. Aside from enforcing a maximum
     ///     length, these contracts provide no guarantees about its content.

@@ -30,9 +30,9 @@ contract CrossDomainMessengerStub is ICrossDomainMessenger {
 
     function relayMessage(
         address _target,
-        address _sender,
+        address, // sender
         bytes memory _message,
-        uint256 _messageNonce
+        uint256 // _messageNonce
     ) public {
         (bool success, ) = _target.call(_message);
         require(success, "CALL_FAILED");

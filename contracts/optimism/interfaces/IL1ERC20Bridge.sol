@@ -62,7 +62,7 @@ interface IL1ERC20Bridge {
 
     /// @notice Complete a withdrawal from L2 to L1, and credit funds to the recipient's balance of the
     /// L1 ERC20 token.
-    /// This call will fail if the initialized withdrawal from L2 has not been finalized.
+    /// @dev This call will fail if the initialized withdrawal from L2 has not been finalized.
     /// @param l1Token_ Address of L1 token to finalizeWithdrawal for.
     /// @param l2Token_ Address of L2 token where withdrawal was initiated.
     /// @param from_ L2 address initiating the transfer.
