@@ -489,7 +489,7 @@ Sends the message to the Ethereum chain via `ArbSys.sendTxToL1()` method.
 >
 > **Arguments**:
 >
-> - **`aliasedAddress_`** - an address to apply aliasing
+> - **`l1Address_`** - an L1 address to apply aliasing
 
 Applies the [Arbitrum's L1 -> L2 aliasing](https://developer.offchainlabs.com/docs/l1_l2_messages#address-aliasing) to the address.
 

@@ -34,13 +34,13 @@ contract L2CrossDomainEnabled {
     }
 
     /// @dev L1 addresses are transformed durng l1 -> l2 calls
-    function applyL1ToL2Alias(address aliasedAddress_)
+    function applyL1ToL2Alias(address l1Address_)
         private
         pure
         returns (address l1Address)
     {
         unchecked {
-            l1Address = address(uint160(aliasedAddress_) + ADDRESS_OFFSET);
+            l1Address = address(uint160(l1Address_) + ADDRESS_OFFSET);
         }
     }
 
