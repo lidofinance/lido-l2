@@ -724,7 +724,7 @@ Atomically decreases the allowance granted to `spender` by the caller. Returns a
 
 ## `ERC20Bridged`
 
-**Implements:** [`ERC20Bridged`](https://github.com/lidofinance/lido-l2/blob/main/contracts/token/interfaces/IERC20Bridged.sol)
+**Implements:** [`IERC20Bridged`](https://github.com/lidofinance/lido-l2/blob/main/contracts/token/interfaces/IERC20Bridged.sol)
 **Inherits:** [`ERC20Metadata`](#ERC20Metadata) [`ERC20Core`](#ERC20CoreLogic)
 
 Inherits the `ERC20` default functionality that allows the bridge to mint and burn tokens.
