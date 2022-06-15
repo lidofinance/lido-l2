@@ -7,6 +7,7 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "./tasks/fork-node";
+import { getEnvVariable } from "./utils/env";
 
 dotenv.config();
 
@@ -31,43 +32,43 @@ const config: HardhatUserConfig = {
       url: "http://localhost:9545",
     },
     kovan: {
-      url: process.env.KOVAN_URL || "",
+      url: getEnvVariable("KOVAN_URL", ""),
     },
     kovan_optimism: {
-      url: process.env.KOVAN_OPTIMISM_URL || "",
+      url: getEnvVariable("KOVAN_OPTIMISM_URL", ""),
     },
     rinkeby: {
-      url: process.env.RINKEBY_URL || "",
+      url: getEnvVariable("RINKEBY_URL", ""),
     },
     rinkeby_arbitrum: {
-      url: process.env.RINKEBY_ARBITRUM_URL || "",
+      url: getEnvVariable("RINKEBY_ARBITRUM_URL", ""),
     },
     mainnet: {
-      url: process.env.MAINNET_URL || "",
+      url: getEnvVariable("MAINNET_URL", ""),
     },
     mainnet_fork: {
-      url: process.env.MAINNET_URL || "",
+      url: getEnvVariable("MAINNET_URL", ""),
       forking: {
-        url: process.env.MAINNET_URL || "",
+        url: getEnvVariable("MAINNET_URL", ""),
       },
     },
     mainnet_arbitrum: {
-      url: process.env.MAINNET_ARBITRUM_URL || "",
+      url: getEnvVariable("MAINNET_ARBITRUM_URL", ""),
     },
     mainnet_optimism: {
-      url: process.env.MAINNET_OPTIMISM_URL || "",
+      url: getEnvVariable("MAINNET_OPTIMISM_URL", ""),
     },
   },
   gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
+    enabled: getEnvVariable("REPORT_GAS", "false") !== "false",
     currency: "USD",
   },
   etherscan: {
     apiKey: {
-      rinkeby: process.env.RINKEBY_ETHERSCAN_API_KEY,
-      kovan: process.env.KOVAN_ETHERSCAN_API_KEY,
-      arbitrumTestnet: process.env.RINKEBY_ARBITRUM_ETHERSCAN_API_KEY,
-      optimisticKovan: process.env.KOVAN_OPTIMISM_ETHERSCAN_API_KEY,
+      rinkeby: getEnvVariable("RINKEBY_ETHERSCAN_API_KEY", ""),
+      kovan: getEnvVariable("KOVAN_ETHERSCAN_API_KEY", ""),
+      arbitrumTestnet: getEnvVariable("RINKEBY_ARBITRUM_ETHERSCAN_API_KEY", ""),
+      optimisticKovan: getEnvVariable("KOVAN_OPTIMISM_ETHERSCAN_API_KEY", ""),
     },
   },
   typechain: {
