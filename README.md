@@ -74,9 +74,11 @@ npm run coverage
 
 ## Deploying Contracts
 
+Fill the required variables `PRIVATE_KEY`, `L1_NETWORK`, and `L2_NETWORK` in the `.env` file before the script execution.
+
 ### Deploying Arbitrum Gateway
 
-Fill the required variables in the `.env` file before the script execution.
+Run the deployment of the ERC20 token gateway for Ethereum/Arbitrum chain:
 
 ```bash
 npm run arbitrum:deploy-gateway
@@ -84,7 +86,7 @@ npm run arbitrum:deploy-gateway
 
 ### Deploying Optimism Bridge
 
-Fill the required variables in the `.env` file before the script execution.
+Run the deployment of the ERC20 token bridge for Ethereum/Optimism chain:
 
 ```bash
 npm run optimism:deploy-bridge
