@@ -1,6 +1,7 @@
 import hre from "hardhat";
 import chalk from "chalk";
-import { getDeployer, getNetworkConfig } from "../../utils/deployment/network";
+import { writeFileSync } from "fs";
+import { getDeployer, predictAddresses, getNetworkConfig } from "../../utils/deployment/network";
 import { promptProceed } from "../../utils/prompt";
 import { createOptimismBridgeDeployScripts } from "../../utils/deployment/optimism";
 import { getAddress, getEnvVariable } from "../../utils/env";
@@ -51,10 +52,22 @@ async function main() {
   console.log();
   l2DeployScript.print();
 
+  const [, expectedL1TokenBridgeProxyAddress] = await predictAddresses(l1Deployer, 2);
+  const [, expectedL2TokenProxyAddress,, expectedL2TokenBridgeProxyAddress] = await predictAddresses(l2Deployer, 4);
+  
+  const expected_addresses = {
+    l1wstETHAddress: l1Token,
+    l1BridgeAddress: expectedL1TokenBridgeProxyAddress,
+    l2BridgeAddress: expectedL2TokenBridgeProxyAddress,
+    l2wstETHAddress: expectedL2TokenProxyAddress,
+  }
+  console.log(expected_addresses)
   await promptProceed();
 
   await l1DeployScript.run();
   await l2DeployScript.run();
+
+  writeFileSync(`deployed-${l2Network}.json`, JSON.stringify(expected_addresses))
 }
 
 main().catch((error) => {
