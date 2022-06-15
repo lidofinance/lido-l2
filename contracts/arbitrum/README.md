@@ -222,7 +222,7 @@ Returns whether the withdrawals enabled or not.
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyRole(DEPOSITS_ENABLER_ROLE)`]()
+> **Modifiers:** &nbsp;&nbsp; [`onlyRole(DEPOSITS_ENABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69)
 >
 > **Emits:** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `DepositsEnabled(address account)`
 
@@ -375,7 +375,7 @@ The contract declares one immutable variable **`inbox_`** - an address of the Ar
 >   - **`refundAddress`** - an address to credit all excess ETH from gas and call-value on the Arbitrum chain. Call-value is refunded if the retryable ticket times out or is canceled. `refundAddress` is also the address with the right to cancel a Retryable Ticket.
 >   - **`maxSubmissionCost`** - an amount of ETH allocated to pay for the base submission fee
 
-Creates a Retryable Ticket via [`Inbox.createRetryableTicket`]() function using the provided arguments. Sends all passed ether with Retryable Ticket into Arbitrum chain. Returns a unique id of created Retryable Ticket.
+Creates a Retryable Ticket via [`Inbox.createRetryableTicket`](https://github.com/OffchainLabs/arbitrum/blob/52356eeebc573de8c4dd571c8f1c2a6f5585f359/packages/arb-bridge-eth/contracts/bridge/Inbox.sol#L325) function using the provided arguments. Sends all passed ether with Retryable Ticket into Arbitrum chain. Returns a unique id of created Retryable Ticket.
 
 ### Modifiers
 
@@ -719,7 +719,7 @@ Atomically decreases the allowance granted to `spender` by the caller. Returns a
 
 ## `ERC20Ownable`
 
-**Implements:** [`IERC20Ownable`]()
+**Implements:** [`IERC20Ownable`](https://github.com/lidofinance/lido-l2/blob/main/contracts/token/interfaces/IERC20Ownable.sol)
 **Inherits:** [`ERC20Metadata`](#ERC20Metadata) [`ERC20Core`](#ERC20CoreLogic)
 
 Inherits the `ERC20` default functionality that allows the owner to mint and burn tokens.
@@ -734,7 +734,7 @@ Contract declares an immutable variable **`owner`**, which stores the address of
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyOwner`]()
+> **Modifiers:** &nbsp;&nbsp; [`onlyOwner`](#onlyowner)
 >
 > **Arguments:**
 >
@@ -749,7 +749,7 @@ Mints the `amount_` of tokens to the `account_`. The method might be called only
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyOwner`]()
+> **Modifiers:** &nbsp;&nbsp; [`onlyOwner`](#onlyowner)
 >
 > **Arguments:**
 >
