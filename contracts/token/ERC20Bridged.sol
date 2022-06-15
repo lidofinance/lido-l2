@@ -3,28 +3,28 @@
 
 pragma solidity ^0.8.0;
 
-import {IERC20Ownable} from "./interfaces/IERC20Ownable.sol";
+import {IERC20Bridged} from "./interfaces/IERC20Bridged.sol";
 
 import {ERC20Core} from "./ERC20Core.sol";
 import {ERC20Metadata} from "./ERC20Metadata.sol";
 
 /// @author psirex
-/// @notice Extends the ERC20 functionality that allows the owner to mint/burn tokens
-contract ERC20Ownable is IERC20Ownable, ERC20Core, ERC20Metadata {
-    /// @inheritdoc IERC20Ownable
-    address public immutable owner;
+/// @notice Extends the ERC20 functionality that allows the bridge to mint/burn tokens
+contract ERC20Bridged is IERC20Bridged, ERC20Core, ERC20Metadata {
+    /// @inheritdoc IERC20Bridged
+    address public immutable bridge;
 
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
     /// @param decimals_ The decimals places of the token
-    /// @param owner_ The owner of the token
+    /// @param bridge_ The bridge address which allowd to mint/burn tokens
     constructor(
         string memory name_,
         string memory symbol_,
         uint8 decimals_,
-        address owner_
+        address bridge_
     ) ERC20Metadata(name_, symbol_, decimals_) {
-        owner = owner_;
+        bridge = bridge_;
     }
 
     /// @notice Sets the name and the symbol of the tokens if they both are empty
@@ -35,23 +35,23 @@ contract ERC20Ownable is IERC20Ownable, ERC20Core, ERC20Metadata {
         _setERC20MetadataSymbol(symbol_);
     }
 
-    /// @inheritdoc IERC20Ownable
-    function mint(address account_, uint256 amount_) public onlyOwner {
+    /// @inheritdoc IERC20Bridged
+    function bridgeMint(address account_, uint256 amount_) public onlyBridge {
         _mint(account_, amount_);
     }
 
-    /// @inheritdoc IERC20Ownable
-    function burn(address account_, uint256 amount_) external onlyOwner {
+    /// @inheritdoc IERC20Bridged
+    function bridgeBurn(address account_, uint256 amount_) external onlyBridge {
         _burn(account_, amount_);
     }
 
-    /// @dev Validates that sender of the transaction is the owner
-    modifier onlyOwner() {
-        if (msg.sender != owner) {
-            revert ErrorNotOwner();
+    /// @dev Validates that sender of the transaction is the bridge
+    modifier onlyBridge() {
+        if (msg.sender != bridge) {
+            revert ErrorNotBridge();
         }
         _;
     }
 
-    error ErrorNotOwner();
+    error ErrorNotBridge();
 }

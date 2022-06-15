@@ -110,7 +110,7 @@ A high-level overview of the proposed solution might be found in the below diagr
   - [**`L1ERC20TokenGateway`**](#L1ERC20TokenGateway) - Ethereum's counterpart of the gateway to bridge registered ERC20 compatible tokens between Ethereum and Arbitrum chains.
   - [**`L2CrossDomainEnabled`**](#L2Messenger) - helper contract to simplify Arbitrum to Ethereum communication process
   - [**`L2ERC20TokenGateway`**](#L2ERC20TokenGateway) - Arbitrum's counterpart of the gateway to bridge registered ERC20 compatible tokens between Ethereum and Arbitrum chains
-  - [**`ERC20Ownable`**](#ERC20Ownable) - an implementation of the `ERC20` token with administrative methods to mint and burn tokens.
+  - [**`ERC20Bridged`**](#ERC20Bridged) - an implementation of the `ERC20` token with administrative methods to mint and burn tokens.
   - [**`OssifiableProxy`**](#OssifiableProxy) - the ERC1967 proxy with extra admin functionality.
 
 ## L1OutboundDataParser
@@ -722,16 +722,16 @@ Atomically increases the allowance granted to `spender` by the caller. Returns a
 
 Atomically decreases the allowance granted to `spender` by the caller. Returns a `bool` value indicating whether the operation succeed.
 
-## `ERC20Ownable`
+## `ERC20Bridged`
 
-**Implements:** [`IERC20Ownable`](https://github.com/lidofinance/lido-l2/blob/main/contracts/token/interfaces/IERC20Ownable.sol)
+**Implements:** [`ERC20Bridged`](https://github.com/lidofinance/lido-l2/blob/main/contracts/token/interfaces/IERC20Bridged.sol)
 **Inherits:** [`ERC20Metadata`](#ERC20Metadata) [`ERC20Core`](#ERC20CoreLogic)
 
-Inherits the `ERC20` default functionality that allows the owner to mint and burn tokens.
+Inherits the `ERC20` default functionality that allows the bridge to mint and burn tokens.
 
 ### Variables
 
-Contract declares an immutable variable **`owner`**, which stores the address of the owner of the token.
+Contract declares an immutable variable **`bridge`** which can mint/burn the token.
 
 ### Functions
 
@@ -739,7 +739,7 @@ Contract declares an immutable variable **`owner`**, which stores the address of
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyOwner`](#onlyowner)
+> **Modifiers:** &nbsp;&nbsp; [`onlyBridge`](#onlybridge)
 >
 > **Arguments:**
 >
@@ -748,13 +748,13 @@ Contract declares an immutable variable **`owner`**, which stores the address of
 >
 > **Emits:** `Transfer(address indexed from, address indexed to, uint256 value)`
 
-Mints the `amount_` of tokens to the `account_`. The method might be called only by the owner of the token. Reverts with the error `ErrorNotOwner()` when called not by owner.
+Mints the `amount_` of tokens to the `account_`. The method might be called only by the bridge. Reverts with the error `ErrorNotBridge()` when called not by bridge.
 
 #### `burn(address,uint256)`
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyOwner`](#onlyowner)
+> **Modifiers:** &nbsp;&nbsp; [`onlyBridge`](#onlybridge)
 >
 > **Arguments:**
 >
@@ -763,13 +763,13 @@ Mints the `amount_` of tokens to the `account_`. The method might be called only
 >
 > **Emits:** `Transfer(address indexed from, address indexed to, uint256 value)`
 
-Destroys the `amount_` of tokens from the `account_`. The method might be called only by the owner of the token. Reverts with the error `ErrorNotOwner()` when called not by owner.
+Destroys the `amount_` of tokens from the `account_`. The method might be called only by the bridge. Reverts with the error `ErrorNotBridge()` when called not by bridge.
 
 ### Modifiers
 
-#### `onlyOwner()`
+#### `onlyBridge()`
 
-Validates that the `msg.sender` of the method is the `owner`. Reverts with error `ErrorNotOwner()` in other cases.
+Validates that the `msg.sender` of the method is the `bridge`. Reverts with error `ErrorNotBridge()` in other cases.
 
 ## `OssifiableProxy`
 

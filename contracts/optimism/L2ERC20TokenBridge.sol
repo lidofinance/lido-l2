@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
-import {IERC20Ownable} from "../token/interfaces/IERC20Ownable.sol";
+import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
 
 import {BridgingManager} from "../BridgingManager.sol";
 import {BridgeableTokens} from "../BridgeableTokens.sol";
@@ -73,7 +73,7 @@ contract L2ERC20TokenBridge is
         onlySupportedL2Token(l2Token_)
         onlyFromCrossDomainAccount(l1TokenBridge)
     {
-        IERC20Ownable(l2Token_).mint(to_, amount_);
+        IERC20Bridged(l2Token_).bridgeMint(to_, amount_);
         emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, data_);
     }
 
@@ -93,7 +93,7 @@ contract L2ERC20TokenBridge is
         uint32 l1Gas_,
         bytes calldata data_
     ) internal {
-        IERC20Ownable(l2Token).burn(from_, amount_);
+        IERC20Bridged(l2Token).bridgeBurn(from_, amount_);
 
         bytes memory message = abi.encodeWithSelector(
             IL1ERC20Bridge.finalizeERC20Withdrawal.selector,

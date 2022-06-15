@@ -6,8 +6,8 @@ import { impersonate } from "../../utils/account";
 import { createOptimismBridgeDeployScripts } from "../../utils/deployment/optimism";
 import {
   CrossDomainMessengerStub__factory,
-  ERC20Ownable__factory,
-  ERC20Stub__factory,
+  ERC20Bridged__factory,
+  ERC20BridgedStub__factory,
   L1ERC20TokenBridge__factory,
   L2ERC20TokenBridge__factory,
 } from "../../typechain";
@@ -362,7 +362,7 @@ async function ctxProvider() {
   const l1Deployer = new Wallet(privateKeys.deployer, l1Provider);
   const l2Deployer = new Wallet(privateKeys.deployer, l2Provider);
 
-  const l1Token = await new ERC20Stub__factory(l1Deployer).deploy(
+  const l1Token = await new ERC20BridgedStub__factory(l1Deployer).deploy(
     "Test Token",
     "TT"
   );
@@ -389,7 +389,7 @@ async function ctxProvider() {
   await l1DeployScript.run();
   await l2DeployScript.run();
 
-  const l2Token = ERC20Ownable__factory.connect(
+  const l2Token = ERC20Bridged__factory.connect(
     l2DeployScript.getContractAddress(1),
     l2Deployer
   );

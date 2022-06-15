@@ -41,7 +41,7 @@ A high-level overview of the proposed solution might be found in the below diagr
 - [**`CrossDomainEnabled`**](#CrossDomainEnabled) - helper contract for contracts performing cross-domain communications
 - [**`L1ERC20TokenBridge`**](#L1ERC20TokenBridge) - Ethereum's counterpart of the bridge to bridge registered ERC20 compatible tokens between Ethereum and Optimism chains.
 - [**`L2ERC20TokenBridge`**](#L2ERC20TokenBridge) - Optimism's counterpart of the bridge to bridge registered ERC20 compatible tokens between Ethereum and Optimism chains
-- [**`ERC20Ownable`**](#ERC20Ownable) - an implementation of the `ERC20` token with administrative methods to mint and burn tokens.
+- [**`ERC20Bridged`**](#ERC20Bridged) - an implementation of the `ERC20` token with administrative methods to mint and burn tokens.
 - [**`OssifiableProxy`**](#OssifiableProxy) - the ERC1967 proxy with extra admin functionality.
 
 ## BridgingManager
@@ -540,16 +540,16 @@ Atomically increases the allowance granted to `spender` by the caller. Returns a
 
 Atomically decreases the allowance granted to `spender` by the caller. Returns a `bool` value indicating whether the operation succeed.
 
-## `ERC20Ownable`
+## `ERC20Bridged`
 
-**Implements:** [`IERC20Ownable`](https://github.com/lidofinance/lido-l2/blob/main/contracts/token/interfaces/IERC20Ownable.sol)
+**Implements:** [`ERC20Bridged`](https://github.com/lidofinance/lido-l2/blob/main/contracts/token/interfaces/IERC20Bridged.sol)
 **Inherits:** [`ERC20Metadata`](#ERC20Metadata) [`ERC20Core`](#ERC20CoreLogic)
 
-Inherits the `ERC20` default functionality that allows the owner to mint and burn tokens.
+Inherits the `ERC20` default functionality that allows the bridge to mint and burn tokens.
 
 ### Variables
 
-Contract declares an immutable variable **`owner`**, which stores the address of the owner of the token.
+Contract declares an immutable variable **`bridge`** which can mint/burn the token.
 
 ### Functions
 
@@ -557,7 +557,7 @@ Contract declares an immutable variable **`owner`**, which stores the address of
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyOwner`](#onlyowner)
+> **Modifiers:** &nbsp;&nbsp; [`onlyBridge`](#onlybridge)
 >
 > **Arguments:**
 >
@@ -566,13 +566,13 @@ Contract declares an immutable variable **`owner`**, which stores the address of
 >
 > **Emits:** `Transfer(address indexed from, address indexed to, uint256 value)`
 
-Mints the `amount_` of tokens to the `account_`. The method might be called only by the owner of the token. Reverts with the error `ErrorNotOwner()` when called not by owner.
+Mints the `amount_` of tokens to the `account_`. The method might be called only by the bridge. Reverts with the error `ErrorNotBridge()` when called not by bridge.
 
 #### `burn(address,uint256)`
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyOwner`](#onlyowner)
+> **Modifiers:** &nbsp;&nbsp; [`onlyBridge`](#onlybridge)
 >
 > **Arguments:**
 >
@@ -581,13 +581,13 @@ Mints the `amount_` of tokens to the `account_`. The method might be called only
 >
 > **Emits:** `Transfer(address indexed from, address indexed to, uint256 value)`
 
-Destroys the `amount_` of tokens from the `account_`. The method might be called only by the owner of the token. Reverts with the error `ErrorNotOwner()` when called not by owner.
+Destroys the `amount_` of tokens from the `account_`. The method might be called only by the bridge. Reverts with the error `ErrorNotBridge()` when called not by bridge.
 
 ### Modifiers
 
-#### `onlyOwner()`
+#### `onlyBridge()`
 
-Validates that the `msg.sender` of the method is the `owner`. Reverts with error `ErrorNotOwner()` in other cases.
+Validates that the `msg.sender` of the method is the `bridge`. Reverts with error `ErrorNotBridge()` in other cases.
 
 ## `OssifiableProxy`
 
@@ -693,7 +693,7 @@ Validates that method is called by the admin of the proxy. Reverts with error `E
 
 ## Deployment Process
 
-To reduce the gas costs for users, contracts `L1ERC20TokenBridge`, `L2ERC20TokenBridge`, and `ERC20Ownable` contracts use immutable variables as much as possible. But some of those variables are cross-referred. For example, `L1ERC20TokenBridge` has reference to `L2ERC20TokenBridge` and vice versa. As we use proxies, we can deploy proxies at first and stub the implementation with an empty contract. Then deploy actual implementations with addresses of deployed proxies and then upgrade proxies with new implementations. For stub, the following contract might be used:
+To reduce the gas costs for users, contracts `L1ERC20TokenBridge`, `L2ERC20TokenBridge`, and `ERC20Bridged` contracts use immutable variables as much as possible. But some of those variables are cross-referred. For example, `L1ERC20TokenBridge` has reference to `L2ERC20TokenBridge` and vice versa. As we use proxies, we can deploy proxies at first and stub the implementation with an empty contract. Then deploy actual implementations with addresses of deployed proxies and then upgrade proxies with new implementations. For stub, the following contract might be used:
 
 ```
 pragma solidity ^0.8.0;

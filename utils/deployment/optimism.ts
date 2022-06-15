@@ -1,7 +1,7 @@
 import { assert } from "chai";
 import { Wallet } from "ethers";
 import {
-  ERC20Ownable__factory,
+  ERC20Bridged__factory,
   IERC20Metadata__factory,
   L1ERC20TokenBridge__factory,
   L2ERC20TokenBridge__factory,
@@ -108,7 +108,7 @@ export async function createOptimismBridgeDeployScripts(
 
   const l2DeployScript = new DeployScript(l2Params.deployer, options?.logger)
     .addStep({
-      factory: ERC20Ownable__factory,
+      factory: ERC20Bridged__factory,
       args: [
         l2TokenName,
         l2TokenSymbol,
@@ -122,7 +122,7 @@ export async function createOptimismBridgeDeployScripts(
       args: [
         expectedL2TokenImplAddress,
         l2Params.admins.proxy,
-        ERC20Ownable__factory.createInterface().encodeFunctionData(
+        ERC20Bridged__factory.createInterface().encodeFunctionData(
           "initialize",
           [l2TokenName, l2TokenSymbol]
         ),

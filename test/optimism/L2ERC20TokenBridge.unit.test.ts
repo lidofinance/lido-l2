@@ -1,6 +1,6 @@
 import hre from "hardhat";
 import {
-  ERC20Stub__factory,
+  ERC20BridgedStub__factory,
   L1ERC20TokenBridge__factory,
   L2ERC20TokenBridge__factory,
   OssifiableProxy__factory,
@@ -384,12 +384,12 @@ async function ctxProvider() {
 
   const l2MessengerStubEOA = await account.impersonate(l2Messenger.address);
 
-  const l1Token = await new ERC20Stub__factory(deployer).deploy(
+  const l1Token = await new ERC20BridgedStub__factory(deployer).deploy(
     "L1 Token",
     "L1"
   );
 
-  const l2Token = await new ERC20Stub__factory(deployer).deploy(
+  const l2Token = await new ERC20BridgedStub__factory(deployer).deploy(
     "L2 Token",
     "L2"
   );

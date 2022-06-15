@@ -1,7 +1,7 @@
 import hre, { ethers } from "hardhat";
 import { wei } from "../../utils/wei";
 import {
-  ERC20Stub__factory,
+  ERC20BridgedStub__factory,
   L1ERC20TokenGateway__factory,
   L2ERC20TokenGateway__factory,
   OssifiableProxy__factory,
@@ -11,7 +11,7 @@ import { assert } from "chai";
 import { testsuite } from "../../utils/testing";
 import { ArbSysStub__factory } from "../../typechain/factories/ArbSysStub__factory";
 
-testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
+testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
   it("l1Token()", async () => {
     assert.equal(
       await ctx.l2TokensGateway.l1Token(),
@@ -576,11 +576,11 @@ async function ctxProvider() {
     method: "hardhat_impersonateAccount",
     params: [l1TokensGatewayStub.address],
   });
-  const l2TokenStub = await new ERC20Stub__factory(deployer).deploy(
+  const l2TokenStub = await new ERC20BridgedStub__factory(deployer).deploy(
     "L2Token stub",
     "L2ERC20"
   );
-  const l1TokenStub = await new ERC20Stub__factory(deployer).deploy(
+  const l1TokenStub = await new ERC20BridgedStub__factory(deployer).deploy(
     "ERC20 Mock",
     "ERC20"
   );
