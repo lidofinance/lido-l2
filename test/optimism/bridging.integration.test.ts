@@ -83,7 +83,7 @@ scenario("Optimism :: Bridging integration test", ctxProvider, (ctx) => {
     );
   });
 
-  it("3. Finalize deposit via finalizeDeposit()", async () => {
+  it("3. Finalize deposit via finalizeDeposit() on L2", async () => {
     const { sender } = ctx.l1.accounts;
     const { l1Token, l1ERC20TokenBridge } = ctx.l1;
     const { l2Token, l2CrossDomainMessenger, l2ERC20TokenBridge } = ctx.l2;

@@ -73,7 +73,7 @@ export async function createArbitrumGatewayDeployScripts(
 ) {
   const l1Dependencies = {
     ...loadArbitrumL1Dependencies(await l1Params.deployer.getChainId()),
-    ...options?.dependencies?.l2,
+    ...options?.dependencies?.l1,
   };
   const l2Dependencies = {
     ...loadArbitrumL2Dependencies(await l2Params.deployer.getChainId()),

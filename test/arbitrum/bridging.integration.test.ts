@@ -1,18 +1,17 @@
 import hre, { ethers } from "hardhat";
-import {
-  getDeployer,
-  getNetworkConfig,
-  getProvider,
-} from "../../utils/deployment/network";
+import { getNetworkConfig, getProvider } from "../../utils/deployment/network";
 import { impersonate } from "../../utils/account";
 import { createArbitrumGatewayDeployScripts } from "../../utils/deployment/arbitrum";
 import {
   ArbSysStub__factory,
+  BridgeStub__factory,
   ERC20Ownable__factory,
   ERC20Stub__factory,
   IMessageProvider__factory,
+  InboxStub__factory,
   L1ERC20TokenGateway__factory,
   L2ERC20TokenGateway__factory,
+  OutboxStub__factory,
 } from "../../typechain";
 import { wei } from "../../utils/wei";
 import { assert } from "chai";
@@ -20,8 +19,17 @@ import { assert } from "chai";
 import arbitrum from "../../utils/arbitrum";
 import bridging from "../../utils/bridging";
 import { scenario } from "../../utils/testing";
+import { Wallet } from "ethers";
+
+let l1EVMSnapshotId: string;
+let l2EVMSnapshotId: string;
 
 scenario("Arbitrum :: Bridging integration test", ctxProvider, async (ctx) => {
+  before(async () => {
+    l1EVMSnapshotId = await ctx.l1.provider.send("evm_snapshot", []);
+    l2EVMSnapshotId = await ctx.l2.provider.send("evm_snapshot", []);
+  });
+
   it("1. Activate Bridging", async () => {
     const {
       l1: {
@@ -49,8 +57,8 @@ scenario("Arbitrum :: Bridging integration test", ctxProvider, async (ctx) => {
   });
 
   it("2. Set L1ERC20TokenGateway for new token in L1GatewayRouter", async () => {
-    const { l1GatewayRouter, l1ERC20TokenGateway, l1Token } = ctx.l1;
     const { l1GatewayRouterAdmin } = ctx.l1.accounts;
+    const { l1GatewayRouter, l1ERC20TokenGateway, l1Token } = ctx.l1;
     const { maxGas, gasPriceBid, maxSubmissionCost, callValue } = ctx.common;
 
     await l1GatewayRouter
@@ -85,29 +93,31 @@ scenario("Arbitrum :: Bridging integration test", ctxProvider, async (ctx) => {
     );
   });
 
-  it("4. Bridge tokens via L1ERC20TokenGateway", async () => {
-    const { recipient } = ctx.l1.accounts;
+  it("4. Sender bridges tokens to himself via L1GatewayRouter", async () => {
+    const { sender } = ctx.l1.accounts;
     const { l1Token, l1ERC20TokenGateway, l1GatewayRouter } = ctx.l1;
-    const {
-      amount,
-      outbdoundTransferData,
-      maxGas,
-      gasPriceBid,
-      callValue,
-      finalizeInboundTransferCalldata,
-    } = ctx.common;
+    const { l2ERC20TokenGateway } = ctx.l2;
+    const { amount, outbdoundTransferData, maxGas, gasPriceBid, callValue } =
+      ctx.common;
 
-    await l1Token.approve(l1ERC20TokenGateway.address, amount);
+    await l1Token.connect(sender).approve(l1ERC20TokenGateway.address, amount);
 
-    const tx = await l1GatewayRouter.outboundTransfer(
-      l1Token.address,
-      recipient.address,
-      amount,
-      maxGas,
-      gasPriceBid,
-      outbdoundTransferData,
-      { value: callValue }
+    const senderBalanceBefore = await l1Token.balanceOf(sender.address);
+    const l1ERC20TokenGatewayBalanceBefore = await l1Token.balanceOf(
+      l1ERC20TokenGateway.address
     );
+
+    const tx = await l1GatewayRouter
+      .connect(sender)
+      .outboundTransfer(
+        l1Token.address,
+        sender.address,
+        amount,
+        maxGas,
+        gasPriceBid,
+        outbdoundTransferData,
+        { value: callValue }
+      );
 
     const receipt = await tx.wait();
 
@@ -125,90 +135,131 @@ scenario("Arbitrum :: Bridging integration test", ctxProvider, async (ctx) => {
     const messageDeliveredEvent =
       messageProviderInterface.parseLog(messageDeliveredLog);
 
+    const expectedFinalizeDepositMessage =
+      l2ERC20TokenGateway.interface.encodeFunctionData(
+        "finalizeInboundTransfer",
+        [l1Token.address, sender.address, sender.address, amount, "0x"]
+      );
+
     // Validate that message data were passed correctly.
     // Inbox contract uses the abi.encodePackedValue(), so it's an overhead
     // to parse all data of the event when we only need the last one
     assert.isTrue(
       messageDeliveredEvent.args.data.endsWith(
-        finalizeInboundTransferCalldata.slice(2)
+        expectedFinalizeDepositMessage.slice(2)
       )
+    );
+
+    assert.equalBN(
+      await l1Token.balanceOf(sender.address),
+      senderBalanceBefore.sub(amount)
+    );
+
+    assert.equalBN(
+      await l1Token.balanceOf(l1ERC20TokenGateway.address),
+      l1ERC20TokenGatewayBalanceBefore.add(amount)
     );
   });
 
-  it("5. Simulate finalizeTransfer() on L2", async () => {
+  it("5. Finalize bridging via finalizeInboundTransfer() on L2", async () => {
     const { l1Token } = ctx.l1;
-    const { admin } = ctx.l1.accounts;
+    const { amount } = ctx.common;
+    const { sender } = ctx.l1.accounts;
     const { l2Token, l2ERC20TokenGateway } = ctx.l2;
-    const { l1ERC20TokenGatewayAliased, recipient } = ctx.l2.accounts;
-    const { finalizeInboundTransferCalldata, amount } = ctx.common;
+    const { l1ERC20TokenGatewayAliased } = ctx.l2.accounts;
+
+    const finalizeDepositMessage =
+      l2ERC20TokenGateway.interface.encodeFunctionData(
+        "finalizeInboundTransfer",
+        [l1Token.address, sender.address, sender.address, amount, "0x"]
+      );
 
     const tx = await l1ERC20TokenGatewayAliased.sendTransaction({
       to: l2ERC20TokenGateway.address,
-      data: finalizeInboundTransferCalldata,
+      data: finalizeDepositMessage,
     });
 
     await assert.emits(l2Token, tx, "Transfer", [
       ethers.constants.AddressZero,
-      recipient.address,
+      sender.address,
       amount,
     ]);
     await assert.emits(l2ERC20TokenGateway, tx, "DepositFinalized", [
       l1Token.address,
-      admin.address,
-      recipient.address,
+      sender.address,
+      sender.address,
       amount,
     ]);
     assert.equalBN(await l2Token.totalSupply(), amount);
-    assert.equalBN(await l2Token.balanceOf(recipient.address), amount);
+    assert.equalBN(await l2Token.balanceOf(sender.address), amount);
   });
 
-  it("6. Withdraw tokens from L2 ", async () => {
+  it("6. Sender withdraws tokens to himself from via L2GatewayRouter", async () => {
+    const { sender } = ctx.l2.accounts;
     const { l1Token, l1ERC20TokenGateway } = ctx.l1;
-    const { recipient } = ctx.l1.accounts;
-    const {
-      l2GatewayRouter,
-      l2Token,
-      arbSysStub: arbySysStub,
-      l2ERC20TokenGateway,
-    } = ctx.l2;
-    const { admin } = ctx.l2.accounts;
-    const { amount, finalizeInboundTransferCalldata } = ctx.common;
+    const { amount } = ctx.common;
+    const { l2GatewayRouter, l2Token, arbSysStub, l2ERC20TokenGateway } =
+      ctx.l2;
 
-    const tx = await l2GatewayRouter[
-      "outboundTransfer(address,address,uint256,bytes)"
-    ](l1Token.address, recipient.address, amount, "0x");
+    const tx = await l2GatewayRouter
+      .connect(sender)
+      ["outboundTransfer(address,address,uint256,bytes)"](
+        l1Token.address,
+        sender.address,
+        amount,
+        "0x"
+      );
 
     await assert.emits(l2Token, tx, "Transfer", [
-      recipient.address,
+      sender.address,
       ethers.constants.AddressZero,
       amount,
     ]);
 
-    await assert.emits(arbySysStub, tx, "CreateL2ToL1Tx", [
+    const finalizeDepositMessage =
+      l2ERC20TokenGateway.interface.encodeFunctionData(
+        "finalizeInboundTransfer",
+        [l1Token.address, sender.address, sender.address, amount, "0x"]
+      );
+
+    await assert.emits(arbSysStub, tx, "CreateL2ToL1Tx", [
       l1ERC20TokenGateway.address,
-      finalizeInboundTransferCalldata,
+      finalizeDepositMessage,
     ]);
 
     await assert.emits(l2ERC20TokenGateway, tx, "WithdrawalInitiated", [
       l1Token.address,
-      admin.address,
-      recipient.address,
+      sender.address,
+      sender.address,
       0,
       0,
       amount,
     ]);
   });
 
-  it("7. Simulate finalizeTransfer() on L1", async () => {});
+  after(async () => {
+    await ctx.l1.provider.send("evm_revert", [l1EVMSnapshotId]);
+    await ctx.l2.provider.send("evm_revert", [l2EVMSnapshotId]);
+  });
 });
 
 async function ctxProvider() {
+  const privateKeys = {
+    deployer:
+      "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+    sender:
+      "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+    recipient:
+      "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
+  };
   const l1Network = getNetworkConfig("local", hre);
   const l2Network = getNetworkConfig("local_arbitrum", hre);
+
   const l1Provider = getProvider(l1Network.url);
   const l2Provider = getProvider(l2Network.url);
-  const l1Deployer = getDeployer(l1Network.url);
-  const l2Deployer = getDeployer(l2Network.url);
+
+  const l1Deployer = new Wallet(privateKeys.deployer, l1Provider);
+  const l2Deployer = new Wallet(privateKeys.deployer, l2Provider);
 
   const l1Token = await new ERC20Stub__factory(l1Deployer).deploy(
     "Test Token",
@@ -216,6 +267,14 @@ async function ctxProvider() {
   );
 
   const arbSysStub = await new ArbSysStub__factory(l2Deployer).deploy();
+
+  const outboxStub = await new OutboxStub__factory(l1Deployer).deploy();
+  const bridgeStub = await new BridgeStub__factory(l1Deployer).deploy(
+    outboxStub.address
+  );
+  const inboxStub = await new InboxStub__factory(l1Deployer).deploy(
+    bridgeStub.address
+  );
 
   const [l1DeployScript, l2DeployScript] =
     await createArbitrumGatewayDeployScripts(
@@ -228,7 +287,11 @@ async function ctxProvider() {
         deployer: l2Deployer,
         admins: { proxy: l2Deployer.address, bridge: l2Deployer.address },
       },
-      { dependencies: { l2: { arbSys: arbSysStub.address } } }
+      {
+        dependencies: {
+          l2: { arbSys: arbSysStub.address },
+        },
+      }
     );
 
   await l1DeployScript.run();
@@ -276,16 +339,29 @@ async function ctxProvider() {
   const amount = wei`1 ether`;
   const maxSubmissionCost = wei`200_000 gwei`;
 
+  const l1Sender = new Wallet(privateKeys.sender, l1Provider);
+  const l1Recipient = new Wallet(privateKeys.recipient, l1Provider);
+  await l1Token.transfer(l1Sender.address, wei`100 ether`);
+
+  await outboxStub.setL2ToL1Sender(l2ERC20TokenGateway.address);
+
   return {
     l1: {
       l1Token,
       l1ERC20TokenGateway,
+      stubs: {
+        inboxStub,
+        outboxStub,
+        bridgeStub,
+      },
       accounts: {
         admin: l1Deployer,
-        recipient: l1Deployer,
+        sender: l1Sender,
+        recipient: l1Recipient,
         l1GatewayRouterAdmin,
       },
-      l1GatewayRouter: l1GatewayRouter.connect(l1Deployer),
+      l1GatewayRouter: l1GatewayRouter.connect(l1Sender),
+      provider: l1Provider,
     },
     l2: {
       l2Token,
@@ -294,10 +370,12 @@ async function ctxProvider() {
       arbSysStub,
       accounts: {
         admin: l2Deployer,
-        recipient: l2Deployer,
+        sender: new Wallet(privateKeys.sender, l2Provider),
+        recipient: new Wallet(privateKeys.recipient, l2Provider),
         l1GatewayRouterAliased,
         l1ERC20TokenGatewayAliased,
       },
+      provider: l2Provider,
     },
     common: {
       amount,
@@ -313,13 +391,7 @@ async function ctxProvider() {
       finalizeInboundTransferCalldata:
         l2ERC20TokenGateway.interface.encodeFunctionData(
           "finalizeInboundTransfer",
-          [
-            l1Token.address,
-            l1Deployer.address,
-            l1Deployer.address,
-            amount,
-            "0x",
-          ]
+          [l1Token.address, l1Sender.address, l1Recipient.address, amount, "0x"]
         ),
     },
   };
