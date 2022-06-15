@@ -16,16 +16,16 @@ abstract contract InterchainERC20TokenGateway is
     BridgeableTokens,
     IInterchainTokenGateway
 {
-    /// @notice An address of the router in the corresponding chain
+    /// @notice Address of the router in the corresponding chain
     address public immutable router;
 
     /// @inheritdoc IInterchainTokenGateway
     address public immutable counterpartGateway;
 
-    /// @param router_ An address of the router in the corresponding chain
-    /// @param counterpartGateway_ An address of the counterpart gateway used in the bridging process
-    /// @param l1Token_ An address of the bridged token in the Ethereum chain
-    /// @param l2Token_ An address of the token minted on the Arbitrum chain when token bridged
+    /// @param router_ Address of the router in the corresponding chain
+    /// @param counterpartGateway_ Address of the counterpart gateway used in the bridging process
+    /// @param l1Token_ Address of the bridged token in the Ethereum chain
+    /// @param l2Token_ Address of the token minted on the Arbitrum chain when token bridged
     constructor(
         address router_,
         address counterpartGateway_,

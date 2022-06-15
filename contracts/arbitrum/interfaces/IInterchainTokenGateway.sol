@@ -34,11 +34,11 @@ interface IInterchainTokenGateway {
 
     /// @notice Returns encoded transaction data to send into the counterpart gateway to finalize
     ///     the tokens bridging process.
-    /// @param l1Token_ An address in the Ethereum chain of the token to bridge
-    /// @param from_ An address of the account initiated bridging in the current chain
-    /// @param to_ An address of the recipient of the token in the counterpart chain
-    /// @param amount_  An amount of tokens to bridge
-    /// @return An encoded transaction data of finalizeInboundTransfer call
+    /// @param l1Token_ Address in the Ethereum chain of the token to bridge
+    /// @param from_ Address of the account initiated bridging in the current chain
+    /// @param to_ Address of the recipient of the token in the counterpart chain
+    /// @param amount_  Amount of tokens to bridge
+    /// @return Encoded transaction data of finalizeInboundTransfer call
     function getOutboundCalldata(
         address l1Token_,
         address from_,

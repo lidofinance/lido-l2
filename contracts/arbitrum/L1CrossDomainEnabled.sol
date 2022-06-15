@@ -36,7 +36,7 @@ contract L1CrossDomainEnabled {
 
     /// @notice Creates a Retryable Ticket via Inbox.createRetryableTicket function using
     ///     the provided arguments
-    /// @param recipient_ an address of the recipient of the message on the L2 chain
+    /// @param recipient_ Address of the recipient of the message on the L2 chain
     /// @param data_ Data passed to the recipient_ in the message
     /// @param msgOptions_ Instance of the `CrossDomainMessageOptions` struct
     /// @return Unique id of created Retryable Ticket.
