@@ -86,8 +86,6 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     assert.isFalse(await l2TokensGateway.isDepositsEnabled());
 
     const amount = wei`1.2 ether`;
-    const maxGas = wei`1000 gwei`;
-    const gasPriceBid = wei`2000 gwei`;
     const maxSubmissionCost = wei`11_000 gwei`;
     const data = encodeOutboundTransferData(maxSubmissionCost);
 
@@ -95,12 +93,10 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     assert.revertsWith(
       l2TokensGateway
         .connect(sender)
-        .outboundTransfer(
+        ["outboundTransfer(address,address,uint256,bytes)"](
           ctx.stubs.l1Token.address,
           recipient.address,
           amount,
-          maxGas,
-          gasPriceBid,
           data
         ),
       "ErrorDepositsDisabled()"
@@ -109,8 +105,6 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
 
   it("outboundTransfer() :: wrong l1Token address", async () => {
     const amount = wei`1.2 ether`;
-    const maxGas = wei`1000 gwei`;
-    const gasPriceBid = wei`2000 gwei`;
     const maxSubmissionCost = wei`11_000 gwei`;
     const data = encodeOutboundTransferData(maxSubmissionCost);
 
@@ -141,12 +135,10 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     await assert.revertsWith(
       l2TokensGateway
         .connect(sender)
-        .outboundTransfer(
+        ["outboundTransfer(address,address,uint256,bytes)"](
           wrongAddress.address,
           recipient.address,
           amount,
-          maxGas,
-          gasPriceBid,
           data
         ),
       "ErrorUnsupportedL1Token()"
@@ -180,20 +172,16 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
 
     const [sender, recipient] = await hre.ethers.getSigners();
     const amount = wei`1.2 ether`;
-    const maxGas = wei`1000 gwei`;
-    const gasPriceBid = wei`2000 gwei`;
     const data = "0xdeadbeaf";
 
     // initiate outbound transfer
     await assert.revertsWith(
       l2TokensGateway
         .connect(sender)
-        .outboundTransfer(
+        ["outboundTransfer(address,address,uint256,bytes)"](
           l1Token.address,
           recipient.address,
           amount,
-          maxGas,
-          gasPriceBid,
           data
         ),
       "ExtraDataNotEmpty()"
@@ -235,8 +223,6 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
 
     const [sender, recipient] = await hre.ethers.getSigners();
     const amount = wei`1.2 ether`;
-    const maxGas = wei`1000 gwei`;
-    const gasPriceBid = wei`2000 gwei`;
     const data = hre.ethers.utils.defaultAbiCoder.encode(
       ["address", "bytes"],
       [sender.address, "0x"]
@@ -245,12 +231,10 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     // initiate outbound transfer
     const tx = await l2TokensGateway
       .connect(l2RouterAsEOA)
-      .outboundTransfer(
+      ["outboundTransfer(address,address,uint256,bytes)"](
         l1Token.address,
         recipient.address,
         amount,
-        maxGas,
-        gasPriceBid,
         data
       );
 
@@ -320,20 +304,16 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
 
     const [sender, recipient] = await hre.ethers.getSigners();
     const amount = wei`1.2 ether`;
-    const maxGas = wei`1000 gwei`;
-    const gasPriceBid = wei`2000 gwei`;
     const data = "0x";
 
     // call tx locally to check return value
     assert.equal(
       await l2TokensGateway
         .connect(sender)
-        .callStatic.outboundTransfer(
+        .callStatic["outboundTransfer(address,address,uint256,bytes)"](
           l1Token.address,
           recipient.address,
           amount,
-          maxGas,
-          gasPriceBid,
           data
         ),
       hre.ethers.utils.defaultAbiCoder.encode(["uint256"], [l2ToL1Id])
@@ -342,12 +322,10 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     // initiate outbound transfer
     const tx = await l2TokensGateway
       .connect(sender)
-      .outboundTransfer(
+      ["outboundTransfer(address,address,uint256,bytes)"](
         l1Token.address,
         recipient.address,
         amount,
-        maxGas,
-        gasPriceBid,
         data
       );
 

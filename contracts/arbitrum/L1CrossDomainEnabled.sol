@@ -23,11 +23,13 @@ contract L1CrossDomainEnabled {
     /// @param maxGas Gas limit for immediate L2 execution attempt
     /// @param callValue Call-value for L2 transaction
     /// @param gasPriceBid L2 Gas price bid for immediate L2 execution attempt
+    /// @param refundAddress Address to credit all excess ETH from gas on the Arbitrum chain
     /// @param maxSubmissionCost Amount of ETH allocated to pay for the base submission fee
     struct CrossDomainMessageOptions {
         uint256 maxGas;
         uint256 callValue;
         uint256 gasPriceBid;
+        address refundAddress;
         uint256 maxSubmissionCost;
     }
 
@@ -48,8 +50,8 @@ contract L1CrossDomainEnabled {
             recipient_,
             msgOptions_.callValue,
             msgOptions_.maxSubmissionCost,
-            sender_,
-            sender_,
+            msgOptions_.refundAddress, // only refun excess fee to the custom address
+            sender_, // user can cancel the retryable and receive call value refund
             msgOptions_.maxGas,
             msgOptions_.gasPriceBid,
             data_

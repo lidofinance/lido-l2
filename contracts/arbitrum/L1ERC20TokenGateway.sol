@@ -44,15 +44,16 @@ contract L1ERC20TokenGateway is
     {}
 
     /// @inheritdoc IL1TokenGateway
-    function outboundTransfer(
+    function outboundTransferCustomRefund(
         address l1Token_,
+        address refundTo_,
         address to_,
         uint256 amount_,
         uint256 maxGas_,
         uint256 gasPriceBid_,
         bytes calldata data_
     )
-        external
+        public
         payable
         whenDepositsEnabled
         onlySupportedL1Token(l1Token_)
@@ -65,28 +66,46 @@ contract L1ERC20TokenGateway is
 
         IERC20(l1Token_).safeTransferFrom(from, address(this), amount_);
 
-        bytes memory messageData = getOutboundCalldata(
-            l1Token,
-            from,
-            to_,
-            amount_
-        );
-
-        uint256 retryableTicketId = sendCrossDomainMessage(
-            from,
-            counterpartGateway,
-            messageData,
-            CrossDomainMessageOptions({
+        CrossDomainMessageOptions
+            memory msgOptions = CrossDomainMessageOptions({
                 maxGas: maxGas_,
                 callValue: 0,
+                refundAddress: refundTo_,
                 gasPriceBid: gasPriceBid_,
                 maxSubmissionCost: maxSubmissionCost
-            })
+            });
+
+        uint256 retryableTicketId = _sendOutboundTransferMessage(
+            from,
+            to_,
+            amount_,
+            msgOptions
         );
 
         emit DepositInitiated(l1Token, from, to_, retryableTicketId, amount_);
 
         return abi.encode(retryableTicketId);
+    }
+
+    /// @inheritdoc IL1TokenGateway
+    function outboundTransfer(
+        address l1Token_,
+        address to_,
+        uint256 amount_,
+        uint256 maxGas_,
+        uint256 gasPriceBid_,
+        bytes calldata data_
+    ) external payable returns (bytes memory) {
+        return
+            outboundTransferCustomRefund(
+                l1Token_,
+                to_,
+                to_,
+                amount_,
+                maxGas_,
+                gasPriceBid_,
+                data_
+            );
     }
 
     /// @inheritdoc IInterchainTokenGateway
@@ -107,5 +126,22 @@ contract L1ERC20TokenGateway is
         // The current implementation doesn't support fast withdrawals, so we
         // always use 0 for the exitNum argument in the event
         emit WithdrawalFinalized(l1Token_, from_, to_, 0, amount_);
+    }
+
+    /// @notice Sends cross domain message to the counterpart gateway
+    /// @dev This method was required to bypass Solidity's "stack too deep" error
+    function _sendOutboundTransferMessage(
+        address from_,
+        address to_,
+        uint256 amount_,
+        CrossDomainMessageOptions memory msgOptions_
+    ) internal returns (uint256) {
+        return
+            sendCrossDomainMessage(
+                from_,
+                counterpartGateway,
+                getOutboundCalldata(l1Token, from_, to_, amount_),
+                msgOptions_
+            );
     }
 }

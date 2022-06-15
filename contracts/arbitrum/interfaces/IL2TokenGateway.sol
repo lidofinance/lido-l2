@@ -16,6 +16,36 @@ interface IL2TokenGateway is IInterchainTokenGateway {
         address l1Token_,
         address to_,
         uint256 amount_,
+        bytes calldata data_
+    ) external returns (bytes memory);
+
+    /// @notice Initiates the withdrawing process from the Arbitrum chain into the Ethereum chain
+    /// @dev Overloaded version of the outboundTransfer(address,address,uint256,bytes calldata).
+    ///     Required for the back compatibility with L2GatewayRouter
+    /// @param l1Token_ Address in the L1 chain of the token to withdraw
+    /// @param to_ Address of the recipient of the token on the corresponding chain
+    /// @param amount_ Amount of tokens to bridge
+    /// @param data_ Additional data required for transaction
+    function outboundTransfer(
+        address l1Token_,
+        address to_,
+        uint256 amount_,
+        uint256, // maxGas_,
+        uint256, // gasPriceBid_
+        bytes calldata data_
+    ) external returns (bytes memory);
+
+    /// @notice Initiates the withdrawing process from the Arbitrum chain into the Ethereum chain
+    /// @dev This method required for the back compatibility with L2GatewayRouter
+    /// @param l1Token_ Address in the L1 chain of the token to withdraw
+    /// @param to_ Address of the recipient of the token on the corresponding chain
+    /// @param amount_ Amount of tokens to bridge
+    /// @param data_ Additional data required for transaction
+    function outboundTransferCustomRefund(
+        address l1Token_,
+        address, // refundTo_
+        address to_,
+        uint256 amount_,
         uint256 maxGas_,
         uint256 gasPriceBid_,
         bytes calldata data_

@@ -39,16 +39,13 @@ contract L2ERC20TokenGateway is
         L2CrossDomainEnabled(arbSys_)
     {}
 
-    /// @inheritdoc IL2TokenGateway
     function outboundTransfer(
         address l1Token_,
         address to_,
         uint256 amount_,
-        uint256, // maxGas
-        uint256, // gasPriceBid
         bytes calldata data_
     )
-        external
+        public
         whenWithdrawalsEnabled
         onlySupportedL1Token(l1Token_)
         returns (bytes memory res)
@@ -68,6 +65,30 @@ contract L2ERC20TokenGateway is
         emit WithdrawalInitiated(l1Token_, from, to_, id, 0, amount_);
 
         return abi.encode(id);
+    }
+
+    /// @inheritdoc IL2TokenGateway
+    function outboundTransfer(
+        address l1Token_,
+        address to_,
+        uint256 amount_,
+        uint256, // maxGas
+        uint256, // gasPriceBid
+        bytes calldata data_
+    ) external returns (bytes memory res) {
+        return outboundTransfer(l1Token_, to_, amount_, data_);
+    }
+
+    function outboundTransferCustomRefund(
+        address l1Token_,
+        address, // refundTo_,
+        address to_,
+        uint256 amount_,
+        uint256, // maxGas
+        uint256, // gasPriceBid
+        bytes calldata data_
+    ) external returns (bytes memory) {
+        return outboundTransfer(l1Token_, to_, amount_, data_);
     }
 
     /// @inheritdoc IInterchainTokenGateway
