@@ -56,6 +56,7 @@ contract L2ERC20TokenGateway is
         address from = L2OutboundDataParser.decode(router, data_);
         IERC20Ownable(l2Token).burn(from, amount_);
         uint256 id = sendCrossDomainMessage(
+            from,
             counterpartGateway,
             getOutboundCalldata(l1Token_, from, to_, amount_)
         );

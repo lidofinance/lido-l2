@@ -292,11 +292,20 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
       amount,
     ]);
 
-    // validate CreateRetryableTicketCalled event was emitted
     const expectedCalldata = l2TokensGateway.interface.encodeFunctionData(
       "finalizeInboundTransfer",
       [l1Token.address, sender.address, recipient.address, amount, "0x"]
     );
+
+    // validate TxToL2 was emitted
+    await assert.emits(l1TokensGateway, tx, "TxToL2", [
+      sender.address,
+      l2TokensGateway.address,
+      retryableTicketId,
+      expectedCalldata,
+    ]);
+
+    // validate CreateRetryableTicketCalled event was emitted
     await assert.emits(inbox, tx, "CreateRetryableTicketCalled", [
       value,
       l2TokensGateway.address,
@@ -357,6 +366,11 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     // set allowance for l1TokensGateway before transfer
     await l1Token.connect(sender).approve(l1TokensGateway.address, amount);
 
+    const retryableTicketId = 13;
+    await inbox.setRetryableTicketId(retryableTicketId);
+
+    assert.equalBN(await inbox.retryableTicketId(), retryableTicketId);
+
     // initiate outbound transfer
     const tx = await l1TokensGateway
       .connect(sender)
@@ -375,15 +389,24 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
       l1Token.address,
       sender.address,
       recipient.address,
-      0,
+      retryableTicketId,
       amount,
     ]);
 
-    // validate CreateRetryableTicketCalled event was emitted
     const expectedCalldata = l2TokensGateway.interface.encodeFunctionData(
       "finalizeInboundTransfer",
       [l1Token.address, sender.address, recipient.address, amount, "0x"]
     );
+
+    // validate TxToL2 was emitted
+    await assert.emits(l1TokensGateway, tx, "TxToL2", [
+      sender.address,
+      l2TokensGateway.address,
+      retryableTicketId,
+      expectedCalldata,
+    ]);
+
+    // validate CreateRetryableTicketCalled event was emitted
     await assert.emits(inbox, tx, "CreateRetryableTicketCalled", [
       value,
       l2TokensGateway.address,

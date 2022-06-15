@@ -254,6 +254,20 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         data
       );
 
+    const expectedCalldata =
+      ctx.stubs.l1TokensGateway.interface.encodeFunctionData(
+        "finalizeInboundTransfer",
+        [l1Token.address, sender.address, recipient.address, amount, "0x"]
+      );
+
+    // validate TxToL1 event was emitted
+    await assert.emits(l2TokensGateway, tx, "TxToL1", [
+      sender.address,
+      l1TokensGateway.address,
+      l2ToL1Id,
+      expectedCalldata,
+    ]);
+
     // validate DepositInitiated event was emitted
     await assert.emits(l2TokensGateway, tx, "WithdrawalInitiated", [
       l1Token.address,
@@ -265,11 +279,6 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     ]);
 
     // validate CreateL2ToL1Tx event was emitted
-    const expectedCalldata =
-      ctx.stubs.l1TokensGateway.interface.encodeFunctionData(
-        "finalizeInboundTransfer",
-        [l1Token.address, sender.address, recipient.address, amount, "0x"]
-      );
     await assert.emits(arbSys, tx, "CreateL2ToL1Tx", [
       l1TokensGateway.address,
       expectedCalldata,
@@ -342,6 +351,20 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         data
       );
 
+    const expectedCalldata =
+      ctx.stubs.l1TokensGateway.interface.encodeFunctionData(
+        "finalizeInboundTransfer",
+        [l1Token.address, sender.address, recipient.address, amount, "0x"]
+      );
+
+    // validate TxToL1 event was emitted
+    await assert.emits(l2TokensGateway, tx, "TxToL1", [
+      sender.address,
+      l1TokensGateway.address,
+      l2ToL1Id,
+      expectedCalldata,
+    ]);
+
     // validate DepositInitiated event was emitted
     await assert.emits(l2TokensGateway, tx, "WithdrawalInitiated", [
       l1Token.address,
@@ -353,11 +376,6 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     ]);
 
     // validate CreateL2ToL1Tx event was emitted
-    const expectedCalldata =
-      ctx.stubs.l1TokensGateway.interface.encodeFunctionData(
-        "finalizeInboundTransfer",
-        [l1Token.address, sender.address, recipient.address, amount, "0x"]
-      );
     await assert.emits(arbSys, tx, "CreateL2ToL1Tx", [
       l1TokensGateway.address,
       expectedCalldata,

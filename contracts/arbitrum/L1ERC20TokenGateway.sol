@@ -65,14 +65,21 @@ contract L1ERC20TokenGateway is
 
         IERC20(l1Token_).safeTransferFrom(from, address(this), amount_);
 
+        bytes memory messageData = getOutboundCalldata(
+            l1Token,
+            from,
+            to_,
+            amount_
+        );
+
         uint256 retryableTicketId = sendCrossDomainMessage(
+            from,
             counterpartGateway,
-            getOutboundCalldata(l1Token, from, to_, amount_),
+            messageData,
             CrossDomainMessageOptions({
                 maxGas: maxGas_,
                 callValue: 0,
                 gasPriceBid: gasPriceBid_,
-                refundAddress: from,
                 maxSubmissionCost: maxSubmissionCost
             })
         );

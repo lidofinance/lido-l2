@@ -358,7 +358,7 @@ The contract declares one immutable variable **`inbox_`** - an address of the Ar
 
 ### Functions
 
-#### `sendCrossDomainMessage(address, bytes memory)`
+#### `sendCrossDomainMessage(address, address, bytes memory, CrossDomainMessageOptions memory)`
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `internal`
 >
@@ -366,14 +366,16 @@ The contract declares one immutable variable **`inbox_`** - an address of the Ar
 >
 > **Arguments**:
 >
+> - **`sender_`** - an address of the sender of the message. It's also the address to credit all excess ETH from gas and call-value on the Arbitrum chain. Call-value is refunded if the retryable ticket times out or is canceled. `sender_` is also the address with the right to cancel a Retryable Ticket.
 > - **`recipient_`** - an address of the recipient of the message on the Arbitrum chain
 > - **`data_`** - data passed to the `recipient_` in the message
 > - **`msgOptions_`** - an instance of the `CrossDomainMessageOptions` struct. The `CrossDomainMessageOptions` struct has the following properties:
 >   - **`maxGas`** - gas limit for immediate L2 execution attempt (can be estimated via `NodeInterface.estimateRetryableTicket()`)
 >   - **`callValue`** - call-value for L2 transaction
 >   - **`gasPriceBid`** - L2 Gas price bid for immediate L2 execution attempt (queryable via standard `eth_gasPrice` RPC)
->   - **`refundAddress`** - an address to credit all excess ETH from gas and call-value on the Arbitrum chain. Call-value is refunded if the retryable ticket times out or is canceled. `refundAddress` is also the address with the right to cancel a Retryable Ticket.
 >   - **`maxSubmissionCost`** - an amount of ETH allocated to pay for the base submission fee
+>
+> **Emits:** `TxToL2(address indexed from, address indexed to, uint256 indexed seqNum, bytes data)`
 
 Creates a Retryable Ticket via [`Inbox.createRetryableTicket`](https://github.com/OffchainLabs/arbitrum/blob/52356eeebc573de8c4dd571c8f1c2a6f5585f359/packages/arb-bridge-eth/contracts/bridge/Inbox.sol#L325) function using the provided arguments. Sends all passed ether with Retryable Ticket into Arbitrum chain. Returns a unique id of created Retryable Ticket.
 
@@ -463,7 +465,7 @@ The contract declares one immutable variable **`arbSys`** - an address of the Ar
 
 ### Functions
 
-#### `sendCrossDomainMessage(address,bytes memory)`
+#### `sendCrossDomainMessage(address,address,bytes memory)`
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `internal`
 >
@@ -471,8 +473,11 @@ The contract declares one immutable variable **`arbSys`** - an address of the Ar
 >
 > **Arguments**:
 >
+> - **`sender_`** - an address of the sender of the message
 > - **`recipient_`** - an address of the recipient of the message on the Ethereum chain
 > - **`data_`** - Data passed to the `recipient_` in the message
+>
+> **Emits**: `event TxToL1(address indexed from, address indexed to, uint256 indexed id, bytes data)`
 
 Sends the message to the Ethereum chain via `ArbSys.sendTxToL1()` method.
 
