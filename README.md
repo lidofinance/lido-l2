@@ -59,14 +59,6 @@ Run the integration tests via:
 npm run test:integration
 ```
 
-### e2e Tests
-
-To run e2e tests:
-
-```bash
-npm run test:e2e
-```
-
 ## Measuring Test Coverage
 
 To run coverage measurement for unit tests:
