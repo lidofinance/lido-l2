@@ -104,8 +104,8 @@ contract L1ERC20TokenGateway is
     {
         IERC20(l1Token_).safeTransfer(to_, amount_);
 
-        // exitNum argument always is equal to 0 in the event cause the current implementation
-        // doesn’t support fast withdraws.
+        // The current implementation doesn't support fast withdrawals, so we
+        // always use 0 for the exitNum argument in the event
         emit WithdrawalFinalized(l1Token_, from_, to_, 0, amount_);
     }
 }

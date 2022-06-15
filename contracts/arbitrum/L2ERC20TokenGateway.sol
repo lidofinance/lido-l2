@@ -54,13 +54,19 @@ contract L2ERC20TokenGateway is
         returns (bytes memory res)
     {
         address from = L2OutboundDataParser.decode(router, data_);
+
         IERC20Ownable(l2Token).burn(from, amount_);
+
         uint256 id = sendCrossDomainMessage(
             from,
             counterpartGateway,
             getOutboundCalldata(l1Token_, from, to_, amount_)
         );
+
+        // The current implementation doesn't support fast withdrawals, so we
+        // always use 0 for the exitNum argument in the event
         emit WithdrawalInitiated(l1Token_, from, to_, id, 0, amount_);
+
         return abi.encode(id);
     }
 
@@ -78,6 +84,7 @@ contract L2ERC20TokenGateway is
         onlyFromCrossDomainAccount(counterpartGateway)
     {
         IERC20Ownable(l2Token).mint(to_, amount_);
+
         emit DepositFinalized(l1Token_, from_, to_, amount_);
     }
 }
