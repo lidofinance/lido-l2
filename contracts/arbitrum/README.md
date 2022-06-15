@@ -121,7 +121,13 @@ A helper library to parse data passed to `outboundTransfer()` of `L1ERC20TokenGa
 
 #### `decode(address,bytes memory)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `internal` >**Mutability:** &nbsp;&nbsp;`view` >**Returns:** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(address, uint256)` >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `internal`
+>
+> **Mutability:** &nbsp;&nbsp;`view`
+>
+> **Returns:** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(address, uint256)`
+>
+> **Arguments:**
 >
 > - **`router_`** - an address of the Arbitrum's `L1GatewayRouter`
 > - **`data_`** - bytes array encoded via the following rules:
@@ -138,7 +144,13 @@ A helper library to parse data passed to `outboundTransfer()` of `L2ERC20TokenGa
 
 #### decode(address,bytes memory)
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `internal` >**Mutability:** &nbsp;&nbsp;`view` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(address)` >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `internal`
+>
+> **Mutability:** &nbsp;&nbsp;`view`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(address)`
+>
+> **Arguments:**
 >
 > - **`router_`** - an address of the Arbitrum's `L1GatewayRouter`
 > - **`data_`** - bytes array encoded via the following rules:
@@ -176,7 +188,9 @@ struct BridgingState {
 
 #### `initialize(address)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `public` >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `public`
+>
+> **Arguments:**
 >
 > - **`admin_`** - an address of the account to grant the `DEFAULT_ADMIN_ROLE`
 >
@@ -186,43 +200,71 @@ Initializes the contract to grant `DEFAULT_ADMIN_ROLE` to the `admin_` address. 
 
 #### `isDepositsEnabled()`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `public` >**Mutability:** &nbsp; `view` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)`
+> **Visibility:** &nbsp;&nbsp;&nbsp; `public`
+>
+> **Mutability:** &nbsp; `view`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)`
 
 Returns whether the deposits enabled or not.
 
 #### `isWithdrawalsEnabled()`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `public` >**Mutability:** &nbsp; `view` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)`
+> **Visibility:** &nbsp;&nbsp;&nbsp; `public`
+>
+> **Mutability:** &nbsp; `view`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)`
 
 Returns whether the withdrawals enabled or not.
 
 #### `enableDeposits()`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Modifiers:** &nbsp;&nbsp; [`onlyRole(DEPOSITS_ENABLER_ROLE)`]() >**Emits:** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `DepositsEnabled(address account)`
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Modifiers:** &nbsp;&nbsp; [`onlyRole(DEPOSITS_ENABLER_ROLE)`]()
+>
+> **Emits:** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `DepositsEnabled(address account)`
 
 Enables the deposits if they are disabled. Reverts with the error `ErrorDepositsEnabled()` if deposits aren enabled. Only accounts with the granted `DEPOSITS_ENABLER_ROLE` can call this method.
 
 #### `disableDeposits()`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Modifiers:** &nbsp;&nbsp; [`whenDepositsEnabled`](#whenDepositsEnabled) [`onlyRole(DEPOSITS_DISABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69) >**Emits:** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; `DepositsDisabled(address account)`
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Modifiers:** &nbsp;&nbsp; [`whenDepositsEnabled`](#whenDepositsEnabled) [`onlyRole(DEPOSITS_DISABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69)
+>
+> **Emits:** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; `DepositsDisabled(address account)`
 
 Disables the deposits if they aren't disabled yet. Reverts with the error `ErrorDepositsDisabled()` if deposits have already disabled. Only accounts with the granted `DEPOSITS_DISABLER_ROLE` can call this method.
 
 #### `enableWithdrawals()`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Modifiers:** &nbsp;&nbsp; [`onlyRole(WITHDRAWALS_ENABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69) >**Emits:** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `WithdrawalsEnabled(address account)`
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Modifiers:** &nbsp;&nbsp; [`onlyRole(WITHDRAWALS_ENABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69)
+>
+> **Emits:** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `WithdrawalsEnabled(address account)`
 
 Enables the withdrawals if they are disabled. Reverts with the error `ErrorWithdrawalsEnabled()` if withdrawals are enabled. Only accounts with the granted `WITHDRAWALS_ENABLER_ROLE` can call this method.
 
 #### `disableWithdrawals()`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Modifiers:** &nbsp;&nbsp; [`whenWithdrawalsEnabled`](#whenWithdrawalsEnabled)[`onlyRole(WITHDRAWALS_DISABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69) >**Emits:** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; `WithdrawalsDisabled(address account)`
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Modifiers:** &nbsp;&nbsp; [`whenWithdrawalsEnabled`](#whenWithdrawalsEnabled)[`onlyRole(WITHDRAWALS_DISABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69)
+>
+> **Emits:** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; `WithdrawalsDisabled(address account)`
 
 Disables the withdrawals if they aren't disabled yet. Reverts with the error `ErrorWithdrawalsDisabled()` if withdrawals have already disabled. Only accounts with the granted `WITHDRAWALS_DISABLER_ROLE` can call this method.
 
 #### `_loadState()`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `private` >**Mutability:** &nbsp; `pure` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(BridgingState storage)`
+> **Visibility:** &nbsp;&nbsp;&nbsp; `private`
+>
+> **Mutability:** &nbsp; `pure`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(BridgingState storage)`
 
 Loads and returns the `BridgingState` variable from the slot at address `keccak256("BridgingManager.bridgingState")`.
 
@@ -277,7 +319,13 @@ All variables are declared as `immutable` to reduce transactions gas costs.
 
 #### `calculateL2TokenAddress(address)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Mutability:** &nbsp;&nbsp;`view` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(address)` >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Mutability:** &nbsp;&nbsp;`view`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(address)`
+>
+> **Arguments:**
 >
 > - **l1Token\_** - an address of the token on the Ethereum chain
 
@@ -285,7 +333,13 @@ Returns an address of token, which will be minted on the Arbitrum chain, on `l1T
 
 #### `getOutboundCalldata(address,address,address,uint256)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `public` >**Mutability:** &nbsp; `view` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bytes memory)` >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `public`
+>
+> **Mutability:** &nbsp; `view`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bytes memory)`
+>
+> **Arguments:**
 >
 > - **`l1Token_`** - an address in the Ethereum chain of the token to bridge
 > - **`from_`** - an address in the Ethereum chain of the account initiated bridging
@@ -306,7 +360,11 @@ The contract declares one immutable variable **`inbox_`** - an address of the Ar
 
 #### `sendCrossDomainMessage(address, bytes memory)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `internal` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(uint256)` >**Arguments**:
+> **Visibility:** &nbsp;&nbsp;&nbsp; `internal`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(uint256)`
+>
+> **Arguments**:
 >
 > - **`recipient_`** - an address of the recipient of the message on the Arbitrum chain
 > - **`data_`** - data passed to the `recipient_` in the message
@@ -338,7 +396,15 @@ Additionally, the contract provides administrative methods to temporarily disabl
 
 #### `outboundTransfer(address,address,uint256,uint256, uint256,bytes calldata)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Mutability:** &nbsp; `payble` >**Modifiers:** &nbsp;&nbsp; [`whenDepositsEnabled()`](#whenDepositsEnabled) [`onlySupportedL1Token(l1Token_)`](#onlySupportedL1Tokenaddress-l1Token_) >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bytes memory)` >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Mutability:** &nbsp; `payble`
+>
+> **Modifiers:** &nbsp;&nbsp; [`whenDepositsEnabled()`](#whenDepositsEnabled) [`onlySupportedL1Token(l1Token_)`](#onlySupportedL1Tokenaddress-l1Token_)
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bytes memory)`
+>
+> **Arguments:**
 >
 > - **l1Token\_** - an address in the Ethereum chain of the token to bridge. It must be equal to the `l1Token` address. The method will be reverted with the error `ErrorUnsupportedL1Token()` if would be called with a different address.
 > - **to\_** - an address of the recipient of the token on the corresponding chain
@@ -369,7 +435,11 @@ Returns an encoded value of the id for created Retryable Ticket. Same value is u
 
 #### `finalizeInboundTransfer(address,address,address,uint256,bytes calldata)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `internal` >**Modifiers:** &nbsp;&nbsp; [`whenWithdrawalsEnabled()`](#whenWithdrawalsEnabled) [`onlySupportedL1Token(l1Token_)`](#onlySupportedL1Tokenaddress-l1Token_) [`onlyFromCrossDomainAccount(counterpartGateway)`](#onlyFromCrossDomainAccountaddress-crossDomainAccount_) >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `internal`
+>
+> **Modifiers:** &nbsp;&nbsp; [`whenWithdrawalsEnabled()`](#whenWithdrawalsEnabled) [`onlySupportedL1Token(l1Token_)`](#onlySupportedL1Tokenaddress-l1Token_) [`onlyFromCrossDomainAccount(counterpartGateway)`](#onlyFromCrossDomainAccountaddress-crossDomainAccount_)
+>
+> **Arguments:**
 >
 > - **`l1Token_`** - an address in the Ethereum chain of the token to withdraw
 > - **`from_`** - an address of the account initiated bridging
@@ -395,7 +465,11 @@ The contract declares one immutable variable **`arbSys`** - an address of the Ar
 
 #### `sendCrossDomainMessage(address,bytes memory)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `internal` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(uint256)` >**Arguments**:
+> **Visibility:** &nbsp;&nbsp;&nbsp; `internal`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(uint256)`
+>
+> **Arguments**:
 >
 > - **`recipient_`** - an address of the recipient of the message on the Ethereum chain
 > - **`data_`** - Data passed to the `recipient_` in the message
@@ -404,7 +478,11 @@ Sends the message to the Ethereum chain via `ArbSys.sendTxToL1()` method.
 
 #### `applyL1ToL2Alias(address)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `private` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(address)` >**Arguments**:
+> **Visibility:** &nbsp;&nbsp;&nbsp; `private`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(address)`
+>
+> **Arguments**:
 >
 > - **`aliasedAddress_`** - an address to apply aliasing
 
@@ -429,7 +507,13 @@ Additionally, the contract provides administrative methods to temporarily disabl
 
 #### `outboundTransfer(address,address,uint256,uint256, uint256,bytes memory)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Modifiers:** &nbsp;&nbsp; [`whenWithdrawalsEnabled()`](#whenWithdrawalsEnabled) [`onlySupportedL1Token(l1Token_)`](#onlySupportedL1Tokenaddress-l1Token_) > **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bytes memory)` >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Modifiers:** &nbsp;&nbsp; [`whenWithdrawalsEnabled()`](#whenWithdrawalsEnabled) [`onlySupportedL1Token(l1Token_)`](#onlySupportedL1Tokenaddress-l1Token_)
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bytes memory)`
+>
+> **Arguments:**
 >
 > - **l1Token\_** - an address in the Ethereum chain of the token to bridge. It must be equal to the `l1Token` address. The method will be reverted with the error `ErrorUnsupportedL1Token()` if would be called with a different address.
 > - **to\_** - an address of the recipient of the token on the corresponding chain
@@ -455,7 +539,11 @@ Returns encoded value of the unique id for L2-to-L1 transaction. Same value is u
 
 #### `finalizeInboundTransfer(address,address,address,uint256,bytes calldata)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `internal` >**Modifiers:** &nbsp;&nbsp; [`whenDepositsEnabled()`](#whenDepositsEnabled) [`onlySupportedL1Token(l1Token_)`](#onlySupportedL1Tokenaddress-l1Token_) [`onlyFromCrossDomainAccount(counterpartGateway)`](#onlyFromCrossDomainAccountaddress-crossDomainAccount_1) >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `internal`
+>
+> **Modifiers:** &nbsp;&nbsp; [`whenDepositsEnabled()`](#whenDepositsEnabled) [`onlySupportedL1Token(l1Token_)`](#onlySupportedL1Tokenaddress-l1Token_) [`onlyFromCrossDomainAccount(counterpartGateway)`](#onlyFromCrossDomainAccountaddress-crossDomainAccount_1)
+>
+> **Arguments:**
 >
 > - **`l1Token_`** - an address in the Ethereum chain of the token to bridge
 > - **`from_`** - an address of the account initiated bridging
@@ -488,19 +576,29 @@ struct DynamicMetadata {
 
 #### `name()`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Mutability:** &nbsp; `view` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(string memory)`
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Mutability:** &nbsp; `view`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(string memory)`
 
 Returns the name of the token.
 
 #### `symbol()`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Mutability:** &nbsp; `view` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(string memory)`
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Mutability:** &nbsp; `view`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(string memory)`
 
 Returns the symbol of the token.
 
 #### `_setERC20MetadataName(string memory)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `internal` >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `internal`
+>
+> **Arguments:**
 >
 > - **`name_`** - string with name of the token
 
@@ -508,7 +606,9 @@ Sets the `name` of the token. Might be called only when the `name` is empty.
 
 #### `_setERC20MetadataSymbol(string memory)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `internal` >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `internal`
+>
+> **Arguments:**
 >
 > - **`symbol_`** - string with symbol of the token
 
@@ -516,7 +616,11 @@ Sets the `symbol` of the token. Might be called only when the `symbol` is empty.
 
 #### `_loadDynamicMetadata()`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `private` >**Mutability:** &nbsp; `pure` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(DynamicMetadata storage r)`
+> **Visibility:** &nbsp;&nbsp;&nbsp; `private`
+>
+> **Mutability:** &nbsp; `pure`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(DynamicMetadata storage r)`
 
 Returns the reference to the slot with `DynamicMetadta` struct
 
@@ -538,7 +642,11 @@ Contract declares the following variables to store state of the token:
 
 #### `approve(address,uint256)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)` >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)`
+>
+> **Arguments:**
 >
 > - **`spender_`** - an address of the tokens spender
 > - **`amount_`** - a number of tokens to allow to spend
@@ -549,7 +657,11 @@ Allows _spender to withdraw from the `msg.sender` account multiple times, up to 
 
 #### `transfer(address,uint256)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)` >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)`
+>
+> **Arguments:**
 >
 > - **`to_`** - an address of the recipient of the tokens
 > - **`amount_`** - a number of tokens to transfer
@@ -561,7 +673,11 @@ Returns a `bool` value indicating whether the operation succeeded.
 
 #### `transferFrom(address,address,uint256)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)` >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)`
+>
+> **Arguments:**
 >
 > - **`from_`** - an address to transfer tokens from
 > - **`to_`** - an address of the recipient of the tokens
@@ -573,7 +689,11 @@ Transfers `amount` of token from the `from_` account to `to_` using the allowanc
 
 #### `increaseAllowance(address,uint256)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)` >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)`
+>
+> **Arguments:**
 >
 > - **`spender_`** - an address of the tokens spender
 > - **`addedValue_`** - a number to increase allowance
@@ -584,7 +704,11 @@ Atomically increases the allowance granted to `spender` by the caller. Returns a
 
 #### `decreaseAllowance(address,uint256)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)` >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)`
+>
+> **Arguments:**
 >
 > - **`spender_`** - an address of the tokens spender
 > - **`subtractedValue_`** - a number to decrease allowance
@@ -608,7 +732,11 @@ Contract declares an immutable variable **`owner`**, which stores the address of
 
 #### `mint(address,uint256)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Modifiers:** &nbsp;&nbsp; [`onlyOwner`]() >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Modifiers:** &nbsp;&nbsp; [`onlyOwner`]()
+>
+> **Arguments:**
 >
 > - **`account_`** - an address of the tokens recipient
 > - **`amount_`** - a number to mint
@@ -619,7 +747,11 @@ Mints the `amount_` of tokens to the `account_`. The method might be called only
 
 #### `burn(address,uint256)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Modifiers:** &nbsp;&nbsp; [`onlyOwner`]() >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Modifiers:** &nbsp;&nbsp; [`onlyOwner`]()
+>
+> **Arguments:**
 >
 > - **`account_`** - an address of the tokens recipient
 > - **`amount_`** - a number to burn
@@ -644,31 +776,51 @@ Extends the [`ERC1967Proxy`](https://github.com/OpenZeppelin/openzeppelin-contra
 
 #### `proxy__getAdmin()`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Mutability:** &nbsp; `view` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(address)`
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Mutability:** &nbsp; `view`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(address)`
 
 Returns the admin of the proxy.
 
 #### `proxy__getImplementation()`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Mutability:** &nbsp; `view` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(address)`
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Mutability:** &nbsp; `view`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(address)`
 
 Returns the address of the implementation.
 
 #### `proxy__getIsOssified()`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Mutability:** &nbsp; `view` >**Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)`
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Mutability:** &nbsp; `view`
+>
+> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)`
 
 Returns whether the proxy is ossified or not.
 
 #### `proxy__ossify()`
 
-> **Visibility:** &nbsp; &nbsp; `external` >**Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified) >**Emits:** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; `AdminChanged(address previousAdmin, address newAdmin)`
+> **Visibility:** &nbsp; &nbsp; `external`
+>
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified)
+>
+> **Emits:** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; `AdminChanged(address previousAdmin, address newAdmin)`
 
 Allows to transfer admin rights to zero address and prevent future upgrades of the proxy.
 
 #### `proxy__changeAdmin(address)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified) >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified)
+>
+> **Arguments:**
 >
 > - **`newAdmin_`** - an address of the new admin. Must not be zero address.
 >
@@ -678,7 +830,11 @@ Changes the admin of the proxy. Reverts with message "ERC1967: new admin is the 
 
 #### `proxy__upgradeTo(address)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified) >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified)
+>
+> **Arguments:**
 >
 > - **`newImplementation_`** - an address of the new implementation. Must be a contract.
 >
@@ -688,7 +844,11 @@ Upgrades the implementation of the proxy. Reverts with the error "ERC1967: new i
 
 #### `proxy__upgradeToAndCall(address,bytes memory,bool)`
 
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external` >**Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified) >**Arguments:**
+> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
+>
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified)
+>
+> **Arguments:**
 >
 > - **`newImplementation_`** - an address of the new implementation. Must be a contract.
 > - **`setupCalldata_`** - a data to pass into setup call after implementation upgrade.
