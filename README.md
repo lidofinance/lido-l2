@@ -2,6 +2,11 @@
 
 This project contains the implementation of the L2 ERC20 token bridges for Arbitrum and Optimism chains. The current solution allows transferring ERC20 tokens between L1 and L2 chains.
 
+More detailed info about the bridging process might be found in the specifications for certain chains:
+
+- [Lido's Arbitrum Gateway](https://github.com/lidofinance/lido-l2/blob/main/contracts/arbitrum/README.md).
+- [Lido's Optimism Bridge](https://github.com/lidofinance/lido-l2/blob/main/contracts/optimism/README.md).
+
 ## Project Setup
 
 1. Clone the repo:
