@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.0;
 
-import {IERC20Ownable} from "../token/interfaces/IERC20Ownable.sol";
+import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
 import {IL2TokenGateway, IInterchainTokenGateway} from "./interfaces/IL2TokenGateway.sol";
 
 import {L2CrossDomainEnabled} from "./L2CrossDomainEnabled.sol";
@@ -54,12 +54,19 @@ contract L2ERC20TokenGateway is
         returns (bytes memory res)
     {
         address from = L2OutboundDataParser.decode(router, data_);
-        IERC20Ownable(l2Token).burn(from, amount_);
+
+        IERC20Bridged(l2Token).bridgeBurn(from, amount_);
+
         uint256 id = sendCrossDomainMessage(
+            from,
             counterpartGateway,
             getOutboundCalldata(l1Token_, from, to_, amount_)
         );
+
+        // The current implementation doesn't support fast withdrawals, so we
+        // always use 0 for the exitNum argument in the event
         emit WithdrawalInitiated(l1Token_, from, to_, id, 0, amount_);
+
         return abi.encode(id);
     }
 
@@ -76,7 +83,8 @@ contract L2ERC20TokenGateway is
         onlySupportedL1Token(l1Token_)
         onlyFromCrossDomainAccount(counterpartGateway)
     {
-        IERC20Ownable(l2Token).mint(to_, amount_);
+        IERC20Bridged(l2Token).bridgeMint(to_, amount_);
+
         emit DepositFinalized(l1Token_, from_, to_, amount_);
     }
 }

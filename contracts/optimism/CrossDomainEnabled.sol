@@ -14,10 +14,10 @@ contract CrossDomainEnabled {
     }
 
     /// @dev Sends a message to an account on another domain
-    /// @param crossDomainTarget_ The intended recipient on the destination domain
-    /// @param message_ The data to send to the target (usually calldata to a function with
+    /// @param crossDomainTarget_ Intended recipient on the destination domain
+    /// @param message_ Data to send to the target (usually calldata to a function with
     ///     `onlyFromCrossDomainAccount()`)
-    /// @param gasLimit_ The gasLimit for the receipt of the message on the target domain.
+    /// @param gasLimit_ gasLimit for the receipt of the message on the target domain.
     function sendCrossDomainMessage(
         address crossDomainTarget_,
         uint32 gasLimit_,

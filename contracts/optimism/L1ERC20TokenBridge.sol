@@ -28,7 +28,7 @@ contract L1ERC20TokenBridge is
     address public immutable l2TokenBridge;
 
     /// @param messenger_ L1 messenger address being used for cross-chain communications
-    /// @param l2TokenBridge_  Address of the corresponding L2 bridge
+    /// @param l2TokenBridge_ Address of the corresponding L2 bridge
     /// @param l1Token_ Address of the bridged token in the L1 chain
     /// @param l2Token_ Address of the token minted on the L2 chain when token bridged
     constructor(

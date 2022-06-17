@@ -18,14 +18,14 @@ contract BridgingManager is AccessControl {
         bool isWithdrawalsEnabled;
     }
 
-    bytes32 public constant DEPOSITS_DISABLER_ROLE =
-        keccak256("GatewayManager.DEPOSITS_DISABLER_ROLE");
     bytes32 public constant DEPOSITS_ENABLER_ROLE =
-        keccak256("GatewayManager.DEPOSITS_ENABLER_ROLE");
+        keccak256("BridgingManager.DEPOSITS_ENABLER_ROLE");
+    bytes32 public constant DEPOSITS_DISABLER_ROLE =
+        keccak256("BridgingManager.DEPOSITS_DISABLER_ROLE");
     bytes32 public constant WITHDRAWALS_ENABLER_ROLE =
-        keccak256("GatewayManager.WITHDRAWALS_ENABLER_ROLE");
+        keccak256("BridgingManager.WITHDRAWALS_ENABLER_ROLE");
     bytes32 public constant WITHDRAWALS_DISABLER_ROLE =
-        keccak256("GatewayManager.WITHDRAWALS_DISABLER_ROLE");
+        keccak256("BridgingManager.WITHDRAWALS_DISABLER_ROLE");
 
     /// @dev The location of the slot with State
     bytes32 private constant STATE_SLOT =

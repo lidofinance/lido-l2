@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
 /// @notice A helper library to parse data passed to outboundTransfer() of L1TokensGateway
 library L1OutboundDataParser {
     /// @dev Decodes value contained in data_ bytes array and returns it
-    /// @param router_  Address of the Arbitrum’s L1GatewayRouter
+    /// @param router_ Address of the Arbitrum’s L1GatewayRouter
     /// @param data_ Data encoded for the outboundTransfer() method
     /// @return Decoded (from, maxSubmissionCost) values
     function decode(address router_, bytes memory data_)

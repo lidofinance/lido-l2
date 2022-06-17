@@ -23,39 +23,38 @@ contract L1CrossDomainEnabled {
     /// @param maxGas Gas limit for immediate L2 execution attempt
     /// @param callValue Call-value for L2 transaction
     /// @param gasPriceBid L2 Gas price bid for immediate L2 execution attempt
-    /// @param refundAddress Address to credit all excess ETH from gas and call-value on
-    ///     the Arbitrum chain
     /// @param maxSubmissionCost Amount of ETH allocated to pay for the base submission fee
     struct CrossDomainMessageOptions {
         uint256 maxGas;
         uint256 callValue;
         uint256 gasPriceBid;
-        address refundAddress;
         uint256 maxSubmissionCost;
     }
 
     /// @notice Creates a Retryable Ticket via Inbox.createRetryableTicket function using
     ///     the provided arguments
-    /// @param recipient_ an address of the recipient of the message on the L2 chain
+    /// @param sender_ Address of the sender of the message
+    /// @param recipient_ Address of the recipient of the message on the L2 chain
     /// @param data_ Data passed to the recipient_ in the message
     /// @param msgOptions_ Instance of the `CrossDomainMessageOptions` struct
-    /// @return Unique id of created Retryable Ticket.
+    /// @return seqNum Unique id of created Retryable Ticket.
     function sendCrossDomainMessage(
+        address sender_,
         address recipient_,
         bytes memory data_,
         CrossDomainMessageOptions memory msgOptions_
-    ) internal returns (uint256) {
-        return
-            inbox.createRetryableTicket{value: msg.value}(
-                recipient_,
-                msgOptions_.callValue,
-                msgOptions_.maxSubmissionCost,
-                msgOptions_.refundAddress,
-                msgOptions_.refundAddress,
-                msgOptions_.maxGas,
-                msgOptions_.gasPriceBid,
-                data_
-            );
+    ) internal returns (uint256 seqNum) {
+        seqNum = inbox.createRetryableTicket{value: msg.value}(
+            recipient_,
+            msgOptions_.callValue,
+            msgOptions_.maxSubmissionCost,
+            sender_,
+            sender_,
+            msgOptions_.maxGas,
+            msgOptions_.gasPriceBid,
+            data_
+        );
+        emit TxToL2(sender_, recipient_, seqNum, data_);
     }
 
     /// @notice Validates that transaction was initiated by the crossDomainAccount_ address from
@@ -77,6 +76,13 @@ contract L1CrossDomainEnabled {
         }
         _;
     }
+
+    event TxToL2(
+        address indexed from,
+        address indexed to,
+        uint256 indexed seqNum,
+        bytes data
+    );
 
     error ErrorUnauthorizedBridge();
     error ErrorWrongCrossDomainSender();

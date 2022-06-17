@@ -1,7 +1,7 @@
 import hre, { ethers } from "hardhat";
 import { wei } from "../../utils/wei";
 import {
-  ERC20Stub__factory,
+  ERC20BridgedStub__factory,
   L1ERC20TokenGateway__factory,
   L2ERC20TokenGateway__factory,
   OssifiableProxy__factory,
@@ -11,7 +11,7 @@ import { assert } from "chai";
 import { testsuite } from "../../utils/testing";
 import { ArbSysStub__factory } from "../../typechain/factories/ArbSysStub__factory";
 
-testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
+testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
   it("l1Token()", async () => {
     assert.equal(
       await ctx.l2TokensGateway.l1Token(),
@@ -254,6 +254,20 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         data
       );
 
+    const expectedCalldata =
+      ctx.stubs.l1TokensGateway.interface.encodeFunctionData(
+        "finalizeInboundTransfer",
+        [l1Token.address, sender.address, recipient.address, amount, "0x"]
+      );
+
+    // validate TxToL1 event was emitted
+    await assert.emits(l2TokensGateway, tx, "TxToL1", [
+      sender.address,
+      l1TokensGateway.address,
+      l2ToL1Id,
+      expectedCalldata,
+    ]);
+
     // validate DepositInitiated event was emitted
     await assert.emits(l2TokensGateway, tx, "WithdrawalInitiated", [
       l1Token.address,
@@ -265,11 +279,6 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     ]);
 
     // validate CreateL2ToL1Tx event was emitted
-    const expectedCalldata =
-      ctx.stubs.l1TokensGateway.interface.encodeFunctionData(
-        "finalizeInboundTransfer",
-        [l1Token.address, sender.address, recipient.address, amount, "0x"]
-      );
     await assert.emits(arbSys, tx, "CreateL2ToL1Tx", [
       l1TokensGateway.address,
       expectedCalldata,
@@ -342,6 +351,20 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         data
       );
 
+    const expectedCalldata =
+      ctx.stubs.l1TokensGateway.interface.encodeFunctionData(
+        "finalizeInboundTransfer",
+        [l1Token.address, sender.address, recipient.address, amount, "0x"]
+      );
+
+    // validate TxToL1 event was emitted
+    await assert.emits(l2TokensGateway, tx, "TxToL1", [
+      sender.address,
+      l1TokensGateway.address,
+      l2ToL1Id,
+      expectedCalldata,
+    ]);
+
     // validate DepositInitiated event was emitted
     await assert.emits(l2TokensGateway, tx, "WithdrawalInitiated", [
       l1Token.address,
@@ -353,11 +376,6 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     ]);
 
     // validate CreateL2ToL1Tx event was emitted
-    const expectedCalldata =
-      ctx.stubs.l1TokensGateway.interface.encodeFunctionData(
-        "finalizeInboundTransfer",
-        [l1Token.address, sender.address, recipient.address, amount, "0x"]
-      );
     await assert.emits(arbSys, tx, "CreateL2ToL1Tx", [
       l1TokensGateway.address,
       expectedCalldata,
@@ -558,11 +576,11 @@ async function ctxProvider() {
     method: "hardhat_impersonateAccount",
     params: [l1TokensGatewayStub.address],
   });
-  const l2TokenStub = await new ERC20Stub__factory(deployer).deploy(
+  const l2TokenStub = await new ERC20BridgedStub__factory(deployer).deploy(
     "L2Token stub",
     "L2ERC20"
   );
-  const l1TokenStub = await new ERC20Stub__factory(deployer).deploy(
+  const l1TokenStub = await new ERC20BridgedStub__factory(deployer).deploy(
     "ERC20 Mock",
     "ERC20"
   );

@@ -1,7 +1,7 @@
 import { assert } from "chai";
 import { Wallet } from "ethers";
 import {
-  ERC20Ownable__factory,
+  ERC20Bridged__factory,
   IERC20Metadata__factory,
   L1ERC20TokenGateway__factory,
   L2ERC20TokenGateway__factory,
@@ -92,7 +92,7 @@ export async function createArbitrumGatewayDeployScripts(
     expectedL2TokensGatewayProxyAddress,
   ] = await predictAddresses(l2Params.deployer, 4);
 
-  const l1DeployScript = new DeployScript(l1Params.deployer)
+  const l1DeployScript = new DeployScript(l1Params.deployer, options?.logger)
     .addStep({
       factory: L1ERC20TokenGateway__factory,
       args: [
@@ -130,9 +130,9 @@ export async function createArbitrumGatewayDeployScripts(
     l2Params.l2Token?.symbol ?? l1TokenInfo.symbol(),
   ]);
 
-  const l2DeployScript = new DeployScript(l2Params.deployer)
+  const l2DeployScript = new DeployScript(l2Params.deployer, options?.logger)
     .addStep({
-      factory: ERC20Ownable__factory,
+      factory: ERC20Bridged__factory,
       args: [
         l2TokenName,
         l2TokenSymbol,
@@ -146,7 +146,7 @@ export async function createArbitrumGatewayDeployScripts(
       args: [
         expectedL2TokenImplAddress,
         l2Params.admins.proxy,
-        ERC20Ownable__factory.createInterface().encodeFunctionData(
+        ERC20Bridged__factory.createInterface().encodeFunctionData(
           "initialize",
           [l2TokenName, l2TokenSymbol]
         ),

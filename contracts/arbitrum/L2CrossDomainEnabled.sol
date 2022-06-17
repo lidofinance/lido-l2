@@ -20,23 +20,27 @@ contract L2CrossDomainEnabled {
     }
 
     /// @notice Sends the message to the Ethereum chain
+    /// @param sender_ Address of the sender of the message
     /// @param recipient_ Address of the recipient of the message on the Ethereum chain
     /// @param data_ Data passed to the recipient in the message
-    function sendCrossDomainMessage(address recipient_, bytes memory data_)
-        internal
-        returns (uint256)
-    {
-        return IArbSys(arbSys).sendTxToL1(recipient_, data_);
+    /// @return id Unique identifier for this L2-to-L1 transaction
+    function sendCrossDomainMessage(
+        address sender_,
+        address recipient_,
+        bytes memory data_
+    ) internal returns (uint256 id) {
+        id = IArbSys(arbSys).sendTxToL1(recipient_, data_);
+        emit TxToL1(sender_, recipient_, id, data_);
     }
 
     /// @dev L1 addresses are transformed durng l1 -> l2 calls
-    function applyL1ToL2Alias(address aliasedAddress_)
+    function applyL1ToL2Alias(address l1Address_)
         private
         pure
         returns (address l1Address)
     {
         unchecked {
-            l1Address = address(uint160(aliasedAddress_) + ADDRESS_OFFSET);
+            l1Address = address(uint160(l1Address_) + ADDRESS_OFFSET);
         }
     }
 
@@ -48,6 +52,13 @@ contract L2CrossDomainEnabled {
         }
         _;
     }
+
+    event TxToL1(
+        address indexed from,
+        address indexed to,
+        uint256 indexed id,
+        bytes data
+    );
 
     error ErrorWrongCrossDomainSender();
 }

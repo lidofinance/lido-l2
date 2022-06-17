@@ -19,7 +19,7 @@ contract ERC20Metadata is IERC20Metadata {
 
     /// @dev Location of the slot with DynamicMetdata
     bytes32 private constant DYNAMIC_METADATA_SLOT =
-        keccak256("ERC20Metdata.synamicMetadata");
+        keccak256("ERC20Metdata.dynamicMetadata");
 
     /// @inheritdoc IERC20Metadata
     uint8 public immutable decimals;
