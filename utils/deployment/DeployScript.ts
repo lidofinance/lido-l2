@@ -65,9 +65,13 @@ export class DeployScript {
     return res;
   }
 
-  print() {
+  print(printOptions?: PrintOptions) {
     for (let i = 0; i < this.steps.length; ++i) {
-      this._printStepInfo(this._getStepInfo(i), { padding: 2 });
+      this._printStepInfo(this._getStepInfo(i), {
+        padding: 2,
+        prefix: "Deploy ",
+        ...printOptions,
+      });
       this._log();
     }
   }
@@ -161,7 +165,7 @@ export class DeployScript {
     );
   }
 
-  private _log(message: string = "\n") {
+  private _log(message: string = "") {
     this.logger?.log(message);
   }
 }

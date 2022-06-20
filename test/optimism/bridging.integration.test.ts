@@ -3,7 +3,6 @@ import { getNetworkConfig, getProvider } from "../../utils/deployment/network";
 import { scenario } from "../../utils/testing";
 import optimism from "../../utils/optimism";
 import { impersonate } from "../../utils/account";
-import { createOptimismBridgeDeployScripts } from "../../utils/deployment/optimism";
 import {
   CrossDomainMessengerStub__factory,
   ERC20Bridged__factory,
@@ -371,7 +370,7 @@ async function ctxProvider() {
     await new CrossDomainMessengerStub__factory(l1Deployer).deploy();
 
   const [l1DeployScript, l2DeployScript] =
-    await createOptimismBridgeDeployScripts(
+    await optimism.deployment.createOptimismBridgeDeployScripts(
       l1Token.address,
       {
         deployer: l1Deployer,

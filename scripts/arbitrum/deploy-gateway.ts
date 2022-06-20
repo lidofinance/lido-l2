@@ -2,25 +2,25 @@ import hre from "hardhat";
 import chalk from "chalk";
 import { getDeployer, getNetworkConfig } from "../../utils/deployment/network";
 import { promptProceed } from "../../utils/prompt";
-import { createArbitrumGatewayDeployScripts } from "../../utils/deployment/arbitrum";
-import { getAddress, getEnvVariable } from "../../utils/env";
+import arbitrum from "../../utils/arbitrum";
+import env from "../../utils/env";
 
 async function main() {
-  const l1NetworkName = getEnvVariable("L1_NETWORK");
-  const l2NetworkName = getEnvVariable("L2_NETWORK");
+  const l1NetworkName = env.string("L1_NETWORK");
+  const l2NetworkName = env.string("L2_NETWORK");
   const l1Network = getNetworkConfig(l1NetworkName, hre);
   const l2Network = getNetworkConfig(l2NetworkName, hre);
-  const l1Token = getAddress("L1_TOKEN", hre);
-  const l1ProxyAdmin = getAddress("L1_PROXY_ADMIN", hre);
-  const l1BridgeAdmin = getAddress("L1_BRIDGE_ADMIN", hre);
-  const l2ProxyAdmin = getAddress("L2_PROXY_ADMIN", hre);
-  const l2BridgeAdmin = getAddress("L2_BRIDGE_ADMIN", hre);
+  const l1Token = env.address("L1_TOKEN");
+  const l1ProxyAdmin = env.address("L1_PROXY_ADMIN");
+  const l1BridgeAdmin = env.address("L1_BRIDGE_ADMIN");
+  const l2ProxyAdmin = env.address("L2_PROXY_ADMIN");
+  const l2BridgeAdmin = env.address("L2_BRIDGE_ADMIN");
 
   const l1Deployer = getDeployer(l1Network.url);
   const l2Deployer = getDeployer(l2Network.url);
 
   const [l1DeployScript, l2DeployScript] =
-    await createArbitrumGatewayDeployScripts(
+    await arbitrum.deployment.createGatewayDeployScripts(
       l1Token,
       {
         deployer: l1Deployer,

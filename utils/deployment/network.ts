@@ -1,5 +1,5 @@
 import { providers, Wallet } from "ethers";
-import { getEnvVariable } from "../env";
+import env from "../env";
 import { getContractAddress } from "ethers/lib/utils";
 import { HardhatRuntimeEnvironment, HttpNetworkConfig } from "hardhat/types";
 
@@ -21,7 +21,7 @@ export function getProvider(rpcURL: string) {
 }
 
 export function getDeployer(rpcURL: string) {
-  const PRIVATE_KEY = getEnvVariable("PRIVATE_KEY");
+  const PRIVATE_KEY = env.string("PRIVATE_KEY");
   return new Wallet(PRIVATE_KEY, getProvider(rpcURL));
 }
 
@@ -40,3 +40,12 @@ export async function predictAddresses(account: Wallet, txsCount: number) {
   }
   return res;
 }
+
+function loadAccount(rpcURL: string, accountPrivateKeyName: string) {
+  const privateKey = env.string(accountPrivateKeyName);
+  return new Wallet(privateKey, getProvider(rpcURL));
+}
+
+export default {
+  loadAccount,
+};
