@@ -1,8 +1,6 @@
 import hre, { ethers } from "hardhat";
-import { getNetworkConfig, getProvider } from "../../utils/deployment/network";
-import { scenario } from "../../utils/testing";
+import testing from "../../utils/testing";
 import optimism from "../../utils/optimism";
-import { impersonate } from "../../utils/account";
 import {
   CrossDomainMessengerStub__factory,
   ERC20Bridged__factory,
@@ -13,24 +11,41 @@ import {
 import { wei } from "../../utils/wei";
 import { Wallet } from "ethers";
 import { assert } from "chai";
-import bridging from "../../utils/bridging";
+import { BridgingManagement } from "../../utils/bridging-management";
+import network from "../../utils/network";
 
-scenario("Optimism :: Bridging integration test", ctxProvider, (ctx) => {
+testing.scenario("Optimism :: Bridging integration test", ctx, (ctx) => {
   it("1. Activate Bridging", async () => {
-    const { admin } = ctx.l1.accounts;
+    const { admin: l1Admin } = ctx.l1.accounts;
+    const { admin: l2Admin } = ctx.l2.accounts;
     const { l1ERC20TokenBridge } = ctx.l1;
     const { l2ERC20TokenBridge } = ctx.l2;
 
-    await bridging.grantRoles(l1ERC20TokenBridge, {
-      depositEnablers: [admin.address],
-      withdrawalsEnablers: [admin.address],
+    const l1BridgingManagement = new BridgingManagement(
+      l1ERC20TokenBridge.address,
+      l1Admin
+    );
+
+    await l1BridgingManagement.setup({
+      bridgeAdmin: l1Admin.address,
+      depositsEnabled: true,
+      withdrawalsEnabled: true,
+      depositsEnablers: [l1Admin.address],
+      withdrawalsEnablers: [l1Admin.address],
     });
-    await bridging.grantRoles(l2ERC20TokenBridge, {
-      depositEnablers: [admin.address],
-      withdrawalsEnablers: [admin.address],
+
+    const l2BridgingManagement = new BridgingManagement(
+      l2ERC20TokenBridge.address,
+      l2Admin
+    );
+
+    await l2BridgingManagement.setup({
+      bridgeAdmin: l2Admin.address,
+      depositsEnabled: true,
+      withdrawalsEnabled: true,
+      depositsEnablers: [l2Admin.address],
+      withdrawalsEnablers: [l2Admin.address],
     });
-    await bridging.activate(l1ERC20TokenBridge);
-    await bridging.activate(l2ERC20TokenBridge);
 
     assert.isTrue(await l1ERC20TokenBridge.isDepositsEnabled());
     assert.isTrue(await l1ERC20TokenBridge.isWithdrawalsEnabled());
@@ -344,7 +359,7 @@ scenario("Optimism :: Bridging integration test", ctxProvider, (ctx) => {
   });
 });
 
-async function ctxProvider() {
+async function ctx() {
   const privateKeys = {
     deployer:
       "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
@@ -353,13 +368,10 @@ async function ctxProvider() {
     recipient:
       "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
   };
-  const l1Network = getNetworkConfig("local", hre);
-  const l2Network = getNetworkConfig("local_optimism", hre);
-  const l1Provider = getProvider(l1Network.url);
-  const l2Provider = getProvider(l2Network.url);
-
-  const l1Deployer = new Wallet(privateKeys.deployer, l1Provider);
-  const l2Deployer = new Wallet(privateKeys.deployer, l2Provider);
+  const {
+    l1: { signer: l1Deployer, provider: l1Provider },
+    l2: { signer: l2Deployer, provider: l2Provider },
+  } = network.getMultichainNetwork("optimism", "local", privateKeys.deployer);
 
   const l1Token = await new ERC20BridgedStub__factory(l1Deployer).deploy(
     "Test Token",
@@ -404,7 +416,7 @@ async function ctxProvider() {
   const l1CrossDomainMessenger =
     await optimism.contracts.l1.L1CrossDomainMessenger(l1Deployer);
 
-  const l1CrossDomainMessengerAliased = await impersonate(
+  const l1CrossDomainMessengerAliased = await testing.impersonate(
     applyL1ToL2Alias(l1CrossDomainMessenger.address),
     l2Provider
   );

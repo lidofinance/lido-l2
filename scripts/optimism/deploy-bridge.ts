@@ -1,53 +1,60 @@
-import interchain from "../../utils/interchain";
-import { promptProceed } from "../../utils/prompt";
+import prompt from "../../utils/prompt";
+import network from "../../utils/network";
 import optimism from "../../utils/optimism";
+import deployment from "../../utils/deployment";
+import { BridgingManagement } from "../../utils/bridging-management";
 
 async function main() {
-  const params = interchain.loadDeploymentParams();
+  const networkConfig = network.getMultichainNetwork("optimism");
+  const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
 
   const [l1DeployScript, l2DeployScript] =
     await optimism.deployment.createOptimismBridgeDeployScripts(
-      params.token,
+      deploymentConfig.token,
       {
-        deployer: params.l1.deployer,
+        deployer: networkConfig.l1.signer,
         admins: {
-          proxy: params.l1.proxyAdmin,
-          bridge: params.l1.deployer.address,
+          proxy: deploymentConfig.l1.proxyAdmin,
+          bridge: networkConfig.l1.signer.address,
         },
       },
       {
-        deployer: params.l2.deployer,
+        deployer: networkConfig.l2.signer,
         admins: {
-          proxy: params.l2.proxyAdmin,
-          bridge: params.l2.deployer.address,
+          proxy: deploymentConfig.l2.proxyAdmin,
+          bridge: networkConfig.l2.signer.address,
         },
       },
       { logger: console }
     );
 
-  interchain.printDeploymentInfo(
+  deployment.printMultiChainDeploymentConfig(
     "Deploy Optimism Bridge",
-    params,
+    networkConfig,
+    deploymentConfig,
     l1DeployScript,
     l2DeployScript
   );
 
-  await promptProceed();
+  await prompt.proceed();
 
   await l1DeployScript.run();
   await l2DeployScript.run();
 
-  await interchain.setupBridgingManager(
+  const l1BridgingManagement = new BridgingManagement(
     l1DeployScript.getContractAddress(1),
-    params.l1,
-    { title: "Setup Optimism L1 Bridge", logger: console }
+    networkConfig.l1.signer,
+    { logger: console }
   );
 
-  await interchain.setupBridgingManager(
+  const l2BridgingManagement = new BridgingManagement(
     l2DeployScript.getContractAddress(3),
-    params.l2,
-    { title: "Setup Optimism L2 Bridge", logger: console }
+    networkConfig.l2.signer,
+    { logger: console }
   );
+
+  await l1BridgingManagement.setup(deploymentConfig.l1);
+  await l2BridgingManagement.setup(deploymentConfig.l2);
 }
 
 main().catch((error) => {

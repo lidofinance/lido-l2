@@ -8,7 +8,7 @@ import {
   OssifiableProxy__factory,
 } from "../../typechain";
 import addresses from "./addresses";
-import { predictAddresses } from "../deployment/network";
+import network from "../network";
 import { DeployScript, Logger } from "../deployment/DeployScript";
 
 interface OptimismCommonDependencies {
@@ -46,14 +46,14 @@ export async function createOptimismBridgeDeployScripts(
   };
 
   const [expectedL1TokenBridgeImplAddress, expectedL1TokenBridgeProxyAddress] =
-    await predictAddresses(l1Params.deployer, 2);
+    await network.predictAddresses(l1Params.deployer, 2);
 
   const [
     expectedL2TokenImplAddress,
     expectedL2TokenProxyAddress,
     expectedL2TokenBridgeImplAddress,
     expectedL2TokenBridgeProxyAddress,
-  ] = await predictAddresses(l2Params.deployer, 4);
+  ] = await network.predictAddresses(l2Params.deployer, 4);
 
   const l1DeployScript = new DeployScript(l1Params.deployer, options?.logger)
     .addStep({

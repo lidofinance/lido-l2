@@ -1,6 +1,5 @@
 import hre from "hardhat";
 import { ERC20Mintable__factory } from "../../typechain";
-import network, { getNetworkConfig } from "../../utils/deployment/network";
 import { wei } from "../../utils/wei";
 import {
   CrossChainMessenger,
@@ -9,6 +8,8 @@ import {
 } from "@eth-optimism/sdk";
 import { assert } from "chai";
 import { TransactionResponse } from "@ethersproject/providers";
+import network from "../../utils/network";
+import env from "../../utils/env";
 
 const L1_TOKEN = "0xaF8a2F0aE374b03376155BF745A3421Dac711C12";
 
@@ -26,16 +27,13 @@ const E2E_TEST_CONTRACTS = {
 describe("Optimism :: Bridging E2E test", () => {
   const KOVAN_CHAIN_ID = 42;
 
-  const l1Network = getNetworkConfig("kovan", hre);
-  const l2Network = getNetworkConfig("kovan_optimism", hre);
-
-  const l1Tester = network.loadAccount(
-    l1Network.url,
-    "E2E_OPTIMISM_TESTER_PRIVATE_KEY"
-  );
-  const l2Tester = network.loadAccount(
-    l2Network.url,
-    "E2E_OPTIMISM_TESTER_PRIVATE_KEY"
+  const {
+    l1: { signer: l1Tester },
+    l2: { signer: l2Tester },
+  } = network.getMultichainNetwork(
+    "optimism",
+    "testnet",
+    env.string("E2E_OPTIMISM_TESTER_PRIVATE_KEY")
   );
 
   const contracts = E2E_TEST_CONTRACTS;

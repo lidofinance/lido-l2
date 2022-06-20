@@ -1,6 +1,7 @@
 import { toAddress } from "@eth-optimism/sdk";
+import { Network } from "./network";
 
-export function loadString(variableName: string, defaultValue?: string) {
+function getString(variableName: string, defaultValue?: string) {
   const value = process.env[variableName];
   if (value === undefined && defaultValue === undefined) {
     throw new Error(
@@ -10,16 +11,16 @@ export function loadString(variableName: string, defaultValue?: string) {
   return (value || defaultValue) as string;
 }
 
-export function getAddress(variableName: string, defaultValue?: string) {
-  return toAddress(loadString(variableName, defaultValue));
+function getAddress(variableName: string, defaultValue?: string) {
+  return toAddress(getString(variableName, defaultValue));
 }
 
-export function getEnum(
+function getEnum(
   variableName: string,
   allowedValues: string[],
   defaultValue?: string
 ) {
-  const value = loadString(variableName, defaultValue);
+  const value = getString(variableName, defaultValue);
   if (!allowedValues.includes(value)) {
     throw new Error(
       `Variable ${variableName} not in allowed values: ${allowedValues}`
@@ -28,13 +29,13 @@ export function getEnum(
   return value;
 }
 
-export function getBool(variableName: string, defaultValue?: boolean) {
-  return loadString(variableName, defaultValue?.toString()) === "true";
+function getBool(variableName: string, defaultValue?: boolean) {
+  return getString(variableName, defaultValue?.toString()) === "true";
 }
 
-export function getList(variableName: string, defaultValue?: string[]) {
+function getList(variableName: string, defaultValue?: string[]) {
   const value = JSON.parse(
-    loadString(variableName, JSON.stringify(defaultValue))
+    getString(variableName, JSON.stringify(defaultValue))
   );
   if (!Array.isArray(value)) {
     throw new Error(`ENV variable ${variableName} is not valid array`);
@@ -42,15 +43,25 @@ export function getList(variableName: string, defaultValue?: string[]) {
   return value;
 }
 
-export function getAddressList(variableName: string, defaultValue?: string[]) {
+function getAddressList(variableName: string, defaultValue?: string[]) {
   return getList(variableName, defaultValue).map(toAddress);
 }
 
+function getNetwork() {
+  return getEnum("NETWORK", ["local", "testnet", "mainnet"]) as Network;
+}
+
+function getPrivateKey() {
+  return getString("PRIVATE_KEY");
+}
+
 export default {
-  string: loadString,
+  string: getString,
   list: getList,
   enum: getEnum,
   bool: getBool,
   address: getAddress,
   addresses: getAddressList,
+  network: getNetwork,
+  privateKey: getPrivateKey,
 };

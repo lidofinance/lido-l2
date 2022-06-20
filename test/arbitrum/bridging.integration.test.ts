@@ -1,7 +1,5 @@
 import hre, { ethers } from "hardhat";
-import { getNetworkConfig, getProvider } from "../../utils/deployment/network";
-import { impersonate } from "../../utils/account";
-import { createArbitrumGatewayDeployScripts } from "../../utils/deployment/arbitrum";
+import testing from "../../utils/testing";
 import {
   ArbSysStub__factory,
   BridgeStub__factory,
@@ -17,14 +15,14 @@ import { wei } from "../../utils/wei";
 import { assert } from "chai";
 
 import arbitrum from "../../utils/arbitrum";
-import bridging from "../../utils/bridging";
-import { scenario } from "../../utils/testing";
 import { Wallet } from "ethers";
+import { BridgingManagement } from "../../utils/bridging-management";
+import network from "../../utils/network";
 
 let l1EVMSnapshotId: string;
 let l2EVMSnapshotId: string;
 
-scenario("Arbitrum :: Bridging integration test", ctxProvider, async (ctx) => {
+testing.scenario("Arbitrum :: Bridging integration test", ctx, async (ctx) => {
   before(async () => {
     l1EVMSnapshotId = await ctx.l1.provider.send("evm_snapshot", []);
     l2EVMSnapshotId = await ctx.l2.provider.send("evm_snapshot", []);
@@ -34,21 +32,39 @@ scenario("Arbitrum :: Bridging integration test", ctxProvider, async (ctx) => {
     const {
       l1: {
         l1ERC20TokenGateway,
-        accounts: { admin },
+        accounts: { admin: l1Admin },
       },
-      l2: { l2ERC20TokenGateway },
+      l2: {
+        l2ERC20TokenGateway,
+        accounts: { admin: l2Admin },
+      },
     } = ctx;
 
-    await bridging.grantRoles(l1ERC20TokenGateway, {
-      depositEnablers: [admin.address],
-      withdrawalsEnablers: [admin.address],
+    const l1BridgingManagement = new BridgingManagement(
+      l1ERC20TokenGateway.address,
+      l1Admin
+    );
+
+    await l1BridgingManagement.setup({
+      bridgeAdmin: l1Admin.address,
+      depositsEnabled: true,
+      withdrawalsEnabled: true,
+      depositsEnablers: [l1Admin.address],
+      withdrawalsEnablers: [l1Admin.address],
     });
-    await bridging.grantRoles(l2ERC20TokenGateway, {
-      depositEnablers: [admin.address],
-      withdrawalsEnablers: [admin.address],
+
+    const l2BridgingManagement = new BridgingManagement(
+      l2ERC20TokenGateway.address,
+      l2Admin
+    );
+
+    await l2BridgingManagement.setup({
+      bridgeAdmin: l2Admin.address,
+      depositsEnabled: true,
+      withdrawalsEnabled: true,
+      depositsEnablers: [l2Admin.address],
+      withdrawalsEnablers: [l2Admin.address],
     });
-    await bridging.activate(l1ERC20TokenGateway);
-    await bridging.activate(l2ERC20TokenGateway);
 
     assert.isTrue(await l1ERC20TokenGateway.isDepositsEnabled());
     assert.isTrue(await l1ERC20TokenGateway.isWithdrawalsEnabled());
@@ -243,7 +259,7 @@ scenario("Arbitrum :: Bridging integration test", ctxProvider, async (ctx) => {
   });
 });
 
-async function ctxProvider() {
+async function ctx() {
   const privateKeys = {
     deployer:
       "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
@@ -252,14 +268,10 @@ async function ctxProvider() {
     recipient:
       "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
   };
-  const l1Network = getNetworkConfig("local", hre);
-  const l2Network = getNetworkConfig("local_arbitrum", hre);
-
-  const l1Provider = getProvider(l1Network.url);
-  const l2Provider = getProvider(l2Network.url);
-
-  const l1Deployer = new Wallet(privateKeys.deployer, l1Provider);
-  const l2Deployer = new Wallet(privateKeys.deployer, l2Provider);
+  const {
+    l1: { signer: l1Deployer, provider: l1Provider },
+    l2: { signer: l2Deployer, provider: l2Provider },
+  } = network.getMultichainNetwork("arbitrum", "local", privateKeys.deployer);
 
   const l1Token = await new ERC20BridgedStub__factory(l1Deployer).deploy(
     "Test Token",
@@ -277,7 +289,7 @@ async function ctxProvider() {
   );
 
   const [l1DeployScript, l2DeployScript] =
-    await createArbitrumGatewayDeployScripts(
+    await arbitrum.deployment.createGatewayDeployScripts(
       l1Token.address,
       {
         deployer: l1Deployer,
@@ -317,12 +329,12 @@ async function ctxProvider() {
     l1GatewayRouterAdmin
   );
 
-  const l1ERC20TokenGatewayAliased = await impersonate(
+  const l1ERC20TokenGatewayAliased = await testing.impersonate(
     applyL1ToL2Alias(l1ERC20TokenGateway.address),
     l2Provider
   );
 
-  const l1GatewayRouterAliased = await impersonate(
+  const l1GatewayRouterAliased = await testing.impersonate(
     applyL1ToL2Alias(l1GatewayRouter.address),
     l2Provider
   );

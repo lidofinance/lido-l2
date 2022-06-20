@@ -7,14 +7,13 @@ import {
   EmptyContractStub__factory,
   CrossDomainMessengerStub__factory,
 } from "../../typechain";
-import { testsuite } from "../../utils/testing";
+import testing from "../../utils/testing";
 import { wei } from "../../utils/wei";
-import * as account from "../../utils/account";
 import { assert } from "chai";
 
-testsuite(
+testing.testsuite(
   "Optimism:: L2ERC20TokenBridge unit tests",
-  ctxProvider,
+  ctx,
   async (ctx) => {
     it("l1TokenBridge()", async () => {
       assert.equal(
@@ -390,7 +389,7 @@ testsuite(
   }
 );
 
-async function ctxProvider() {
+async function ctx() {
   const [deployer, stranger, recipient, l1TokenBridgeEOA] =
     await hre.ethers.getSigners();
 
@@ -398,7 +397,7 @@ async function ctxProvider() {
     deployer
   ).deploy({ value: wei.toBigNumber(wei`1 ether`) });
 
-  const l2MessengerStubEOA = await account.impersonate(l2Messenger.address);
+  const l2MessengerStubEOA = await testing.impersonate(l2Messenger.address);
 
   const l1Token = await new ERC20BridgedStub__factory(deployer).deploy(
     "L1 Token",
@@ -413,7 +412,7 @@ async function ctxProvider() {
   const emptyContract = await new EmptyContractStub__factory(deployer).deploy({
     value: wei.toBigNumber(wei`1 ether`),
   });
-  const emptyContractEOA = await account.impersonate(emptyContract.address);
+  const emptyContractEOA = await testing.impersonate(emptyContract.address);
 
   const l2TokenBridgeImpl = await new L2ERC20TokenBridge__factory(
     deployer

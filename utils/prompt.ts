@@ -27,3 +27,5 @@ export async function promptProceed() {
     throw new Error("User discarded prompt to proceed");
   }
 }
+
+export default { proceed: promptProceed, message: prompt };
