@@ -13,7 +13,7 @@ import {
 import { assert } from "chai";
 import { testsuite } from "../../utils/testing";
 
-testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
+testsuite("Arbitrum :: L1ERC20TokenGateway unit tests", ctxProvider, (ctx) => {
   it("l1Token() returns correct value after deployment", async () => {
     assert.equal(
       await ctx.l1TokensGateway.l1Token(),
@@ -64,7 +64,8 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
       ctx.stubs.l1Token.address,
       sender.address,
       recipient.address,
-      amount
+      amount,
+      "0x"
     );
 
     const expectedCalldata =

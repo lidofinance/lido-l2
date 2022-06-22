@@ -69,7 +69,8 @@ contract L1ERC20TokenGateway is
             l1Token,
             from,
             to_,
-            amount_
+            amount_,
+            ""
         );
 
         uint256 retryableTicketId = sendCrossDomainMessage(

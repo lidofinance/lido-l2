@@ -60,7 +60,7 @@ contract L2ERC20TokenGateway is
         uint256 id = sendCrossDomainMessage(
             from,
             counterpartGateway,
-            getOutboundCalldata(l1Token_, from, to_, amount_)
+            getOutboundCalldata(l1Token_, from, to_, amount_, "")
         );
 
         // The current implementation doesn't support fast withdrawals, so we

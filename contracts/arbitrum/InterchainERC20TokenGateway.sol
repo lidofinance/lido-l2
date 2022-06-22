@@ -55,7 +55,8 @@ abstract contract InterchainERC20TokenGateway is
         address l1Token_,
         address from_,
         address to_,
-        uint256 amount_
+        uint256 amount_,
+        bytes memory // data_
     ) public pure returns (bytes memory) {
         return
             abi.encodeWithSelector(
