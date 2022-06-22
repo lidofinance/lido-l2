@@ -13,13 +13,26 @@ dotenv.config();
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.14",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 2000,
+    compilers: [
+      {
+        version: "0.6.11",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 100,
+          },
+        },
       },
-    },
+      {
+        version: "0.8.14",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 2000,
+          },
+        },
+      },
+    ],
   },
   networks: {
     local: {
@@ -72,7 +85,10 @@ const config: HardhatUserConfig = {
     },
   },
   typechain: {
-    externalArtifacts: ["./interfaces/**/*.json"],
+    externalArtifacts: [
+      "./interfaces/**/*.json",
+      "./utils/arbitrum/artifacts/*.json",
+    ],
   },
   mocha: {
     timeout: 20 * 60 * 60 * 1000, // 20 minutes for e2e tests

@@ -1,4 +1,3 @@
-import hre from "hardhat";
 import { ERC20Mintable__factory } from "../../typechain";
 import { wei } from "../../utils/wei";
 import {
