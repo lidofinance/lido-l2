@@ -1,23 +1,24 @@
 import hre from "hardhat";
 import { assert } from "chai";
-import { testsuite } from "../../utils/testing";
+import { unit } from "../../utils/testing";
 import { ERC20Metadata__factory } from "../../typechain";
 
-testsuite("ERC20Metadata unit tests", ctxProvider, (ctx) => {
-  it("decimals()", async () => {
-    assert.equal(await ctx.erc20Metadata.decimals(), ctx.constants.decimals);
-  });
+unit("ERC20Metadata", ctxFactory)
+  .test("decimals()", async (ctx) =>
+    assert.equal(await ctx.erc20Metadata.decimals(), ctx.constants.decimals)
+  )
 
-  it("name()", async () => {
-    assert.equal(await ctx.erc20Metadata.name(), ctx.constants.name);
-  });
+  .test("name()", async (ctx) =>
+    assert.equal(await ctx.erc20Metadata.name(), ctx.constants.name)
+  )
 
-  it("symbol()", async () => {
-    assert.equal(await ctx.erc20Metadata.symbol(), ctx.constants.symbol);
-  });
-});
+  .test("symbol()", async (ctx) =>
+    assert.equal(await ctx.erc20Metadata.symbol(), ctx.constants.symbol)
+  )
 
-async function ctxProvider() {
+  .run();
+
+async function ctxFactory() {
   const decimals = 18;
   const symbol = "ERC20";
   const name = "ERC20 Test Token";

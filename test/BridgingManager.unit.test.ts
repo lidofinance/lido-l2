@@ -4,22 +4,22 @@ import {
   OssifiableProxy__factory,
 } from "../typechain";
 import { assert } from "chai";
-import { testsuite, accessControlRevertMessage } from "../utils/testing";
+import testing, { unit } from "../utils/testing";
 
-testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
-  it("isInitialized() :: on uninitialized contract", async () => {
+unit("BridgingManager", ctxFactory)
+  .test("isInitialized() :: on uninitialized contract", async (ctx) => {
     assert.isFalse(await ctx.bridgingManagerRaw.isInitialized());
-  });
+  })
 
-  it("isDepositsEnabled() :: on uninitialized contract", async () => {
+  .test("isDepositsEnabled() :: on uninitialized contract", async (ctx) => {
     assert.isFalse(await ctx.bridgingManagerRaw.isDepositsEnabled());
-  });
+  })
 
-  it("isWithdrawalsEnabled() :: on uninitialized contract", async () => {
+  .test("isWithdrawalsEnabled() :: on uninitialized contract", async (ctx) => {
     assert.isFalse(await ctx.bridgingManagerRaw.isWithdrawalsEnabled());
-  });
+  })
 
-  it("initialize() :: on uninitialized contract", async () => {
+  .test("initialize() :: on uninitialized contract", async (ctx) => {
     const {
       bridgingManagerRaw,
       roles: { DEFAULT_ADMIN_ROLE },
@@ -48,9 +48,9 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
       bridgingManagerRaw.connect(stranger).initialize(stranger.address),
       "ErrorAlreadyInitialized()"
     );
-  });
+  })
 
-  it("enableDeposits() :: role is not granted", async () => {
+  .test("enableDeposits() :: role is not granted", async (ctx) => {
     const {
       bridgingManager,
       accounts: { stranger },
@@ -67,11 +67,14 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
 
     await assert.revertsWith(
       bridgingManager.connect(stranger).enableDeposits(),
-      accessControlRevertMessage(DEPOSITS_ENABLER_ROLE, stranger.address)
+      testing.accessControlRevertMessage(
+        DEPOSITS_ENABLER_ROLE,
+        stranger.address
+      )
     );
-  });
+  })
 
-  it("enableDeposits() :: role is granted", async () => {
+  .test("enableDeposits() :: role is granted", async (ctx) => {
     const {
       bridgingManager,
       accounts: { depositsEnabler },
@@ -96,9 +99,9 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
       bridgingManager.connect(depositsEnabler).enableDeposits(),
       "ErrorDepositsEnabled()"
     );
-  });
+  })
 
-  it("disableDeposits() :: deposits disabled", async () => {
+  .test("disableDeposits() :: deposits disabled", async (ctx) => {
     const {
       bridgingManager,
       accounts: { depositsDisabler },
@@ -112,9 +115,9 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
       bridgingManager.connect(depositsDisabler).disableDeposits(),
       "ErrorDepositsDisabled()"
     );
-  });
+  })
 
-  it("disableDeposits() :: role is not granted", async () => {
+  .test("disableDeposits() :: role is not granted", async (ctx) => {
     const {
       bridgingManager,
       accounts: { stranger, depositsEnabler },
@@ -134,11 +137,14 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
 
     await assert.revertsWith(
       bridgingManager.connect(stranger).disableDeposits(),
-      accessControlRevertMessage(DEPOSITS_DISABLER_ROLE, stranger.address)
+      testing.accessControlRevertMessage(
+        DEPOSITS_DISABLER_ROLE,
+        stranger.address
+      )
     );
-  });
+  })
 
-  it("disableDeposits() :: role is granted", async () => {
+  .test("disableDeposits() :: role is granted", async (ctx) => {
     const {
       bridgingManager,
       accounts: { depositsEnabler, depositsDisabler },
@@ -168,9 +174,9 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
       bridgingManager.connect(depositsDisabler).disableDeposits(),
       "ErrorDepositsDisabled()"
     );
-  });
+  })
 
-  it("enableWithdrawals() :: role is not granted", async () => {
+  .test("enableWithdrawals() :: role is not granted", async (ctx) => {
     const {
       bridgingManager,
       accounts: { stranger },
@@ -187,11 +193,14 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
 
     await assert.revertsWith(
       bridgingManager.connect(stranger).enableWithdrawals(),
-      accessControlRevertMessage(WITHDRAWALS_ENABLER_ROLE, stranger.address)
+      testing.accessControlRevertMessage(
+        WITHDRAWALS_ENABLER_ROLE,
+        stranger.address
+      )
     );
-  });
+  })
 
-  it("enableWithdrawals() :: role is granted", async () => {
+  .test("enableWithdrawals() :: role is granted", async (ctx) => {
     const {
       bridgingManager,
       accounts: { withdrawalsEnabler },
@@ -218,9 +227,9 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
       bridgingManager.connect(withdrawalsEnabler).enableWithdrawals(),
       "ErrorWithdrawalsEnabled()"
     );
-  });
+  })
 
-  it("disableWithdrawals() :: withdrawals disabled", async () => {
+  .test("disableWithdrawals() :: withdrawals disabled", async (ctx) => {
     const {
       bridgingManager,
       accounts: { withdrawalsDisabler },
@@ -234,9 +243,9 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
       bridgingManager.connect(withdrawalsDisabler).disableWithdrawals(),
       "ErrorWithdrawalsDisabled()"
     );
-  });
+  })
 
-  it("disableWithdrawals() :: role is not granted", async () => {
+  .test("disableWithdrawals() :: role is not granted", async (ctx) => {
     const {
       bridgingManager,
       accounts: { stranger, withdrawalsEnabler },
@@ -256,11 +265,14 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
 
     await assert.revertsWith(
       bridgingManager.connect(stranger).disableWithdrawals(),
-      accessControlRevertMessage(WITHDRAWALS_DISABLER_ROLE, stranger.address)
+      testing.accessControlRevertMessage(
+        WITHDRAWALS_DISABLER_ROLE,
+        stranger.address
+      )
     );
-  });
+  })
 
-  it("disableWithdrawals() :: role is granted", async () => {
+  .test("disableWithdrawals() :: role is granted", async (ctx) => {
     const {
       bridgingManager,
       accounts: { withdrawalsEnabler, withdrawalsDisabler },
@@ -290,10 +302,11 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
       bridgingManager.connect(withdrawalsDisabler).disableWithdrawals(),
       "ErrorWithdrawalsDisabled()"
     );
-  });
-});
+  })
 
-async function ctxBuilder() {
+  .run();
+
+async function ctxFactory() {
   const [
     deployer,
     stranger,

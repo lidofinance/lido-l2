@@ -4,28 +4,28 @@ import {
   InitializableImplementationStub__factory,
   OssifiableProxy__factory,
 } from "../../typechain";
-import { testsuite } from "../../utils/testing";
+import { unit } from "../../utils/testing";
 
-testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
-  it("proxy__getAdmin()", async () => {
+unit("OssifiableProxy", ctxFactory)
+  .test("proxy__getAdmin()", async (ctx) => {
     assert.equal(
       await ctx.ossifiableProxy.proxy__getAdmin(),
       ctx.accounts.admin.address
     );
-  });
+  })
 
-  it("proxy__getImplementation()", async () => {
+  .test("proxy__getImplementation()", async (ctx) => {
     assert.equal(
       await ctx.ossifiableProxy.proxy__getImplementation(),
       ctx.implementations.current.address
     );
-  });
+  })
 
-  it("proxy__getIsOssified()", async () => {
+  .test("proxy__getIsOssified()", async (ctx) => {
     assert.isFalse(await ctx.ossifiableProxy.proxy__getIsOssified());
-  });
+  })
 
-  it("proxy__ossify() :: called by stranger", async () => {
+  .test("proxy__ossify() :: called by stranger", async (ctx) => {
     const {
       ossifiableProxy,
       accounts: { stranger },
@@ -35,9 +35,9 @@ testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
       ossifiableProxy.connect(stranger).proxy__ossify(),
       "ErrorNotAdmin()"
     );
-  });
+  })
 
-  it("proxy__ossify() :: ossified", async () => {
+  .test("proxy__ossify() :: ossified", async (ctx) => {
     const { ossifiableProxy } = ctx;
 
     // ossify proxy
@@ -50,9 +50,9 @@ testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
       ossifiableProxy.proxy__ossify(),
       "ErrorProxyIsOssified()"
     );
-  });
+  })
 
-  it("proxy__ossify()", async () => {
+  .test("proxy__ossify()", async (ctx) => {
     const {
       ossifiableProxy,
       accounts: { admin },
@@ -71,9 +71,9 @@ testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
 
     // validate proxy is ossified
     assert.isTrue(await ossifiableProxy.proxy__getIsOssified());
-  });
+  })
 
-  it("proxy__changeAdmin() :: called by stranger", async () => {
+  .test("proxy__changeAdmin() :: called by stranger", async (ctx) => {
     const {
       ossifiableProxy,
       accounts: { stranger },
@@ -83,9 +83,9 @@ testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
       ossifiableProxy.connect(stranger).proxy__changeAdmin(stranger.address),
       "ErrorNotAdmin()"
     );
-  });
+  })
 
-  it("proxy__changeAdmin() :: ossified", async () => {
+  .test("proxy__changeAdmin() :: ossified", async (ctx) => {
     const {
       ossifiableProxy,
       accounts: { stranger },
@@ -101,9 +101,9 @@ testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
       ossifiableProxy.proxy__changeAdmin(stranger.address),
       "ErrorProxyIsOssified()"
     );
-  });
+  })
 
-  it("proxy__changeAdmin()", async () => {
+  .test("proxy__changeAdmin()", async (ctx) => {
     const {
       ossifiableProxy,
       accounts: { admin, stranger },
@@ -122,9 +122,9 @@ testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
       await ossifiableProxy.proxy__getAdmin(),
       stranger.address
     );
-  });
+  })
 
-  it("proxy__upgradeTo() :: called by stranger", async () => {
+  .test("proxy__upgradeTo() :: called by stranger", async (ctx) => {
     const {
       ossifiableProxy,
       accounts: { stranger },
@@ -135,9 +135,9 @@ testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
       ossifiableProxy.connect(stranger).proxy__upgradeTo(next.address),
       "ErrorNotAdmin()"
     );
-  });
+  })
 
-  it("proxy__upgradeTo() :: ossified", async () => {
+  .test("proxy__upgradeTo() :: ossified", async (ctx) => {
     const {
       ossifiableProxy,
       implementations: { next },
@@ -153,9 +153,9 @@ testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
       ossifiableProxy.proxy__upgradeTo(next.address),
       "ErrorProxyIsOssified()"
     );
-  });
+  })
 
-  it("proxy__upgradeTo()", async () => {
+  .test("proxy__upgradeTo()", async (ctx) => {
     const {
       ossifiableProxy,
       implementations: { next },
@@ -171,9 +171,9 @@ testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
       await ossifiableProxy.proxy__getImplementation(),
       next.address
     );
-  });
+  })
 
-  it("proxy__upgradeToAndCall() :: called by stranger", async () => {
+  .test("proxy__upgradeToAndCall() :: called by stranger", async (ctx) => {
     const {
       ossifiableProxy,
       accounts: { stranger },
@@ -190,9 +190,9 @@ testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
         ),
       "ErrorNotAdmin()"
     );
-  });
+  })
 
-  it("proxy__upgradeToAndCall() :: ossified", async () => {
+  .test("proxy__upgradeToAndCall() :: ossified", async (ctx) => {
     const {
       ossifiableProxy,
       implementations: { next },
@@ -212,9 +212,9 @@ testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
       ),
       "ErrorProxyIsOssified()"
     );
-  });
+  })
 
-  it("proxy__upgradeToAndCall() :: forceCall is false", async () => {
+  .test("proxy__upgradeToAndCall() :: forceCall is false", async (ctx) => {
     const {
       ossifiableProxy,
       proxiedImplementation,
@@ -241,9 +241,9 @@ testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
 
     // validate version was set
     assert.equal(await proxiedImplementation.version(), 1);
-  });
+  })
 
-  it("proxy__upgradeToAndCall() :: forceCall is true", async () => {
+  .test("proxy__upgradeToAndCall() :: forceCall is true", async (ctx) => {
     const {
       ossifiableProxy,
       implementations: { next },
@@ -270,10 +270,11 @@ testsuite("OssifiableProxy unit tests", ctxProvider, (ctx) => {
 
     // validate version wasn't set
     assert.equal(await proxiedImplementation.version(), 0);
-  });
-});
+  })
 
-async function ctxProvider() {
+  .run();
+
+async function ctxFactory() {
   const [deployer, admin, stranger] = await hre.ethers.getSigners();
 
   const currentImpl = await new InitializableImplementationStub__factory(
