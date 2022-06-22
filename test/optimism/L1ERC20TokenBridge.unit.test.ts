@@ -8,18 +8,18 @@ import {
   EmptyContractStub__factory,
 } from "../../typechain";
 import { CrossDomainMessengerStub__factory } from "../../typechain/factories/CrossDomainMessengerStub__factory";
-import testing from "../../utils/testing";
+import testing, { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 
-testing.testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctx, (ctx) => {
-  it("l2TokenBridge()", async () => {
+unit("Optimism :: L1ERC20TokenBridge", ctxFaxtory)
+  .test("l2TokenBridge()", async (ctx) => {
     assert.equal(
       await ctx.l1TokenBridge.l2TokenBridge(),
       ctx.accounts.l2TokenBridgeEOA.address
     );
-  });
+  })
 
-  it("depositERC20() :: deposits disabled", async () => {
+  .test("depositERC20() :: deposits disabled", async (ctx) => {
     await ctx.l1TokenBridge.disableDeposits();
 
     assert.isFalse(await ctx.l1TokenBridge.isDepositsEnabled());
@@ -34,9 +34,9 @@ testing.testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctx, (ctx) => {
       ),
       "ErrorDepositsDisabled()"
     );
-  });
+  })
 
-  it("depositsERC20() :: wrong l1Token address", async () => {
+  .test("depositsERC20() :: wrong l1Token address", async (ctx) => {
     await assert.revertsWith(
       ctx.l1TokenBridge.depositERC20(
         ctx.accounts.stranger.address,
@@ -47,9 +47,9 @@ testing.testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctx, (ctx) => {
       ),
       "ErrorUnsupportedL1Token()"
     );
-  });
+  })
 
-  it("depositsERC20() :: wrong l2Token address", async () => {
+  .test("depositsERC20() :: wrong l2Token address", async (ctx) => {
     await assert.revertsWith(
       ctx.l1TokenBridge.depositERC20(
         ctx.stubs.l1Token.address,
@@ -60,9 +60,9 @@ testing.testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctx, (ctx) => {
       ),
       "ErrorUnsupportedL2Token()"
     );
-  });
+  })
 
-  it("depositERC20() :: not from EOA", async () => {
+  .test("depositERC20() :: not from EOA", async (ctx) => {
     await assert.revertsWith(
       ctx.l1TokenBridge
         .connect(ctx.accounts.emptyContractAsEOA)
@@ -75,9 +75,9 @@ testing.testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctx, (ctx) => {
         ),
       "ErrorSenderNotEOA()"
     );
-  });
+  })
 
-  it("depositERC20()", async () => {
+  .test("depositERC20()", async (ctx) => {
     const {
       l1TokenBridge,
       accounts: { deployer, l2TokenBridgeEOA },
@@ -137,9 +137,9 @@ testing.testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctx, (ctx) => {
       await l1Token.balanceOf(l1TokenBridge.address),
       bridgeBalanceBefore.add(amount)
     );
-  });
+  })
 
-  it("depositERC20To() :: deposits disabled", async () => {
+  .test("depositERC20To() :: deposits disabled", async (ctx) => {
     const {
       l1TokenBridge,
       stubs: { l1Token, l2Token },
@@ -160,9 +160,9 @@ testing.testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctx, (ctx) => {
       ),
       "ErrorDepositsDisabled()"
     );
-  });
+  })
 
-  it("depositsERC20To() :: wrong l1Token address", async () => {
+  .test("depositsERC20To() :: wrong l1Token address", async (ctx) => {
     const {
       l1TokenBridge,
       stubs: { l2Token },
@@ -183,9 +183,9 @@ testing.testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctx, (ctx) => {
       ),
       "ErrorDepositsDisabled()"
     );
-  });
+  })
 
-  it("depositsERC20To() :: wrong l2Token address", async () => {
+  .test("depositsERC20To() :: wrong l2Token address", async (ctx) => {
     const {
       l1TokenBridge,
       stubs: { l1Token },
@@ -206,9 +206,9 @@ testing.testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctx, (ctx) => {
       ),
       "ErrorDepositsDisabled()"
     );
-  });
+  })
 
-  it("depositERC20To()", async () => {
+  .test("depositERC20To()", async (ctx) => {
     const {
       l1TokenBridge,
       accounts: { deployer, l2TokenBridgeEOA, recipient },
@@ -269,34 +269,37 @@ testing.testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctx, (ctx) => {
       await l1Token.balanceOf(l1TokenBridge.address),
       bridgeBalanceBefore.add(amount)
     );
-  });
+  })
 
-  it("finalizeERC20Withdrawal() :: withdrawals are disabled", async () => {
-    const {
-      l1TokenBridge,
-      stubs: { l1Token, l2Token },
-      accounts: { deployer, recipient, l2TokenBridgeEOA },
-    } = ctx;
-    await l1TokenBridge.disableWithdrawals();
+  .test(
+    "finalizeERC20Withdrawal() :: withdrawals are disabled",
+    async (ctx) => {
+      const {
+        l1TokenBridge,
+        stubs: { l1Token, l2Token },
+        accounts: { deployer, recipient, l2TokenBridgeEOA },
+      } = ctx;
+      await l1TokenBridge.disableWithdrawals();
 
-    assert.isFalse(await l1TokenBridge.isWithdrawalsEnabled());
+      assert.isFalse(await l1TokenBridge.isWithdrawalsEnabled());
 
-    await assert.revertsWith(
-      l1TokenBridge
-        .connect(l2TokenBridgeEOA)
-        .finalizeERC20Withdrawal(
-          l1Token.address,
-          l2Token.address,
-          deployer.address,
-          recipient.address,
-          wei`1 ether`,
-          "0x"
-        ),
-      "ErrorWithdrawalsDisabled()"
-    );
-  });
+      await assert.revertsWith(
+        l1TokenBridge
+          .connect(l2TokenBridgeEOA)
+          .finalizeERC20Withdrawal(
+            l1Token.address,
+            l2Token.address,
+            deployer.address,
+            recipient.address,
+            wei`1 ether`,
+            "0x"
+          ),
+        "ErrorWithdrawalsDisabled()"
+      );
+    }
+  )
 
-  it("finalizeERC20Withdrawal() :: wrong l1Token", async () => {
+  .test("finalizeERC20Withdrawal() :: wrong l1Token", async (ctx) => {
     const {
       l1TokenBridge,
       stubs: { l2Token },
@@ -316,9 +319,9 @@ testing.testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctx, (ctx) => {
         ),
       "ErrorUnsupportedL1Token()"
     );
-  });
+  })
 
-  it("finalizeERC20Withdrawal() :: wrong l2Token", async () => {
+  .test("finalizeERC20Withdrawal() :: wrong l2Token", async (ctx) => {
     const {
       l1TokenBridge,
       stubs: { l1Token },
@@ -338,9 +341,9 @@ testing.testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctx, (ctx) => {
         ),
       "ErrorUnsupportedL2Token()"
     );
-  });
+  })
 
-  it("finalizeERC20Withdrawal() :: unauthorized messenger", async () => {
+  .test("finalizeERC20Withdrawal() :: unauthorized messenger", async (ctx) => {
     const {
       l1TokenBridge,
       stubs: { l1Token, l2Token },
@@ -360,33 +363,36 @@ testing.testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctx, (ctx) => {
         ),
       "ErrorUnauthorizedMessenger()"
     );
-  });
+  })
 
-  it("finalizeERC20Withdrawal() :: wrong cross domain sender", async () => {
-    const {
-      l1TokenBridge,
-      stubs: { l1Token, l2Token, l1Messenger },
-      accounts: { deployer, recipient, stranger, l1MessengerStubAsEOA },
-    } = ctx;
+  .test(
+    "finalizeERC20Withdrawal() :: wrong cross domain sender",
+    async (ctx) => {
+      const {
+        l1TokenBridge,
+        stubs: { l1Token, l2Token, l1Messenger },
+        accounts: { deployer, recipient, stranger, l1MessengerStubAsEOA },
+      } = ctx;
 
-    await l1Messenger.setXDomainMessageSender(stranger.address);
+      await l1Messenger.setXDomainMessageSender(stranger.address);
 
-    await assert.revertsWith(
-      l1TokenBridge
-        .connect(l1MessengerStubAsEOA)
-        .finalizeERC20Withdrawal(
-          l1Token.address,
-          l2Token.address,
-          deployer.address,
-          recipient.address,
-          wei`1 ether`,
-          "0x"
-        ),
-      "ErrorWrongCrossDomainSender()"
-    );
-  });
+      await assert.revertsWith(
+        l1TokenBridge
+          .connect(l1MessengerStubAsEOA)
+          .finalizeERC20Withdrawal(
+            l1Token.address,
+            l2Token.address,
+            deployer.address,
+            recipient.address,
+            wei`1 ether`,
+            "0x"
+          ),
+        "ErrorWrongCrossDomainSender()"
+      );
+    }
+  )
 
-  it("finalizeERC20Withdrawal()", async () => {
+  .test("finalizeERC20Withdrawal()", async (ctx) => {
     const {
       l1TokenBridge,
       stubs: { l1Token, l2Token, l1Messenger },
@@ -425,10 +431,11 @@ testing.testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctx, (ctx) => {
       await l1Token.balanceOf(l1TokenBridge.address),
       bridgeBalanceBefore.sub(amount)
     );
-  });
-});
+  })
 
-async function ctx() {
+  .run();
+
+async function ctxFaxtory() {
   const [deployer, l2TokenBridgeEOA, stranger, recipient] =
     await hre.ethers.getSigners();
 
