@@ -331,7 +331,7 @@ All variables are declared as `immutable` to reduce transactions gas costs.
 
 Returns an address of token, which will be minted on the Arbitrum chain, on `l1Token_` bridging. The current implementation returns the `l2Token` address when passed `l1Token_` equals to `l1Token` declared in the contract and `address(0)` in other cases.
 
-#### `getOutboundCalldata(address,address,address,uint256)`
+#### `getOutboundCalldata(address,address,address,uint256,bytes memory)`
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `public`
 >
@@ -345,6 +345,7 @@ Returns an address of token, which will be minted on the Arbitrum chain, on `l1T
 > - **`from_`** - an address in the Ethereum chain of the account initiated bridging
 > - **`to_`** - an address in the Ethereum chain of the recipient of the token on the corresponding chain
 > - **`amount_`** - an amount of tokens to bridge
+> - **`data_`** - Custom data to pass into finalizeInboundTransfer method. Unused, required to be compatible with @arbitrum/sdk package.
 
 Returns encoded transaction data to send into the corresponding gateway to finalize the tokens bridging process. The result of this method might be used to estimate the amount of ether required to pass to the `outboundTransfer()` method call. In the current implementation returns the transaction data of `finalizeInboundTransfer(token_, from_, to_, amount_)`.
 
@@ -422,7 +423,7 @@ Initiates the tokens bridging from the Ethereum into the Arbitrum chain. Escrows
 ```solidity=
 sendCrossDomainMessage(
     counterpartGateway, // recipient
-    getOutboundCalldata(l1Token, from, to, amount), // data
+    getOutboundCalldata(l1Token, from, to, amount, ""), // data
     CrossDomainMessageOptions({
         maxGas: maxGas,
         callValue: 0,
@@ -534,7 +535,7 @@ Initiates the withdrawing process from the Arbitrum chain into the Ethereum chai
 ```solidity=
 sendCrossDomainMessage(
     counterpartGateway,
-    getOutboundCalldata(l1Token_, from_, to_, amount_)
+    getOutboundCalldata(l1Token_, from_, to_, amount_, "")
 );
 ```
 
