@@ -4,7 +4,6 @@
 pragma solidity ^0.8.0;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "./IERC20Metadata.sol";
 
 /// @author psirex
 /// @notice Extends the ERC20 functionality that allows the bridge to mint/burn tokens
