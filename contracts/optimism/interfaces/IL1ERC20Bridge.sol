@@ -1,4 +1,6 @@
-// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+// SPDX-License-Identifier: GPL-3.0
+
 pragma solidity ^0.8.0;
 
 /// @notice The L1 Standard bridge locks bridged tokens on the L1 side, sends deposit messages
