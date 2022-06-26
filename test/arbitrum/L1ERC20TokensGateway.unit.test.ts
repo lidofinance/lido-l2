@@ -209,6 +209,64 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     );
   });
 
+  it("outboundTransfer() :: ETH value too low", async () => {
+    const {
+      l1TokensGateway,
+      stubs: { l1Token, inbox },
+      accounts: { deployer },
+    } = ctx;
+
+    // initialize gateway
+    await l1TokensGateway.initialize(deployer.address);
+
+    // validate gateway was initialized
+    assert.isTrue(await l1TokensGateway.isInitialized());
+
+    // grant DEPOSITS_ENABLER_ROLE to the l1Deployer to enable deposits
+    await l1TokensGateway.grantRole(
+      await l1TokensGateway.DEPOSITS_ENABLER_ROLE(),
+      deployer.address
+    );
+
+    // enable deposits
+    await l1TokensGateway.enableDeposits();
+
+    // validate deposits was enabled
+    assert.isTrue(await l1TokensGateway.isDepositsEnabled());
+
+    const [sender, recipient] = await hre.ethers.getSigners();
+    const amount = wei`1.2 ether`;
+    const maxGas = wei`100_000`;
+    const gasPriceBid = wei`2 gwei`;
+    const maxSubmissionCost = wei`50_000 gwei`;
+    const value = wei`200_000 gwei`;
+    const data = encodeSenderOutboundTransferData(maxSubmissionCost);
+
+    // set allowance for l1TokensGateway before transfer
+    await l1Token.connect(sender).approve(l1TokensGateway.address, amount);
+
+    const retryableTicketId = 13;
+    await inbox.setRetryableTicketId(retryableTicketId);
+
+    assert.equalBN(await inbox.retryableTicketId(), retryableTicketId);
+
+    // initiate outbound transfer
+    await assert.revertsWith(
+      l1TokensGateway
+        .connect(sender)
+        .outboundTransfer(
+          l1Token.address,
+          recipient.address,
+          amount,
+          maxGas,
+          gasPriceBid,
+          data,
+          { value }
+        ),
+      "ErrorETHValueTooLow()"
+    );
+  });
+
   it("outboundTransfer() :: called by router", async () => {
     const {
       l1TokensGateway,
@@ -235,10 +293,10 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     assert.isTrue(await l1TokensGateway.isDepositsEnabled());
 
     const amount = wei`1.2 ether`;
-    const maxGas = wei`1000 gwei`;
-    const gasPriceBid = wei`2000 gwei`;
-    const maxSubmissionCost = wei`11_000 gwei`;
-    const value = wei`3000 gwei`;
+    const maxGas = wei`100_000`;
+    const gasPriceBid = wei`2 gwei`;
+    const maxSubmissionCost = wei`50_000 gwei`;
+    const value = wei`250_000 gwei`;
     const data = encodeRouterOutboundTransferData(
       sender.address,
       maxSubmissionCost
@@ -355,10 +413,10 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
 
     const [sender, recipient] = await hre.ethers.getSigners();
     const amount = wei`1.2 ether`;
-    const maxGas = wei`1000 gwei`;
-    const gasPriceBid = wei`2000 gwei`;
-    const maxSubmissionCost = wei`11_000 gwei`;
-    const value = wei`3000 gwei`;
+    const maxGas = wei`100_000`;
+    const gasPriceBid = wei`2 gwei`;
+    const maxSubmissionCost = wei`50_000 gwei`;
+    const value = wei`250_000 gwei`;
     const data = encodeSenderOutboundTransferData(maxSubmissionCost);
 
     const senderBalanceBefore = await l1Token.balanceOf(sender.address);

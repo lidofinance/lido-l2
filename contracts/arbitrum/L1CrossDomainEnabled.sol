@@ -44,6 +44,14 @@ contract L1CrossDomainEnabled {
         bytes memory data_,
         CrossDomainMessageOptions memory msgOptions_
     ) internal returns (uint256 seqNum) {
+        uint256 minEthValue = msgOptions_.callValue +
+            msgOptions_.maxSubmissionCost +
+            (msgOptions_.maxGas * msgOptions_.gasPriceBid);
+
+        if (msg.value < minEthValue) {
+            revert ErrorETHValueTooLow();
+        }
+
         seqNum = inbox.createRetryableTicket{value: msg.value}(
             recipient_,
             msgOptions_.callValue,
@@ -84,6 +92,7 @@ contract L1CrossDomainEnabled {
         bytes data
     );
 
+    error ErrorETHValueTooLow();
     error ErrorUnauthorizedBridge();
     error ErrorWrongCrossDomainSender();
 }
