@@ -44,6 +44,9 @@ contract L1CrossDomainEnabled {
         bytes memory data_,
         CrossDomainMessageOptions memory msgOptions_
     ) internal returns (uint256 seqNum) {
+        if (msgOptions_.maxSubmissionCost == 0) {
+            revert ErrorNoMaxSubmissionCost();
+        }
         seqNum = inbox.createRetryableTicket{value: msg.value}(
             recipient_,
             msgOptions_.callValue,
@@ -85,5 +88,6 @@ contract L1CrossDomainEnabled {
     );
 
     error ErrorUnauthorizedBridge();
+    error ErrorNoMaxSubmissionCost();
     error ErrorWrongCrossDomainSender();
 }
