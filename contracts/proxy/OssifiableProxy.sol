@@ -40,7 +40,7 @@ contract OssifiableProxy is ERC1967Proxy {
 
     /// @notice Allows to transfer admin rights to zero address and prevent future
     ///     upgrades of the proxy
-    function proxy__ossify() external onlyAdmin whenNotOssified {
+    function proxy__ossify() external onlyAdmin {
         address prevAdmin = _getAdmin();
         StorageSlot.getAddressSlot(_ADMIN_SLOT).value = address(0);
         emit AdminChanged(prevAdmin, address(0));
@@ -49,21 +49,13 @@ contract OssifiableProxy is ERC1967Proxy {
 
     /// @notice Changes the admin of the proxy
     /// @param newAdmin_ Address of the new admin
-    function proxy__changeAdmin(address newAdmin_)
-        external
-        onlyAdmin
-        whenNotOssified
-    {
+    function proxy__changeAdmin(address newAdmin_) external onlyAdmin {
         _changeAdmin(newAdmin_);
     }
 
     /// @notice Upgrades the implementation of the proxy
     /// @param newImplementation_ Address of the new implementation
-    function proxy__upgradeTo(address newImplementation_)
-        external
-        onlyAdmin
-        whenNotOssified
-    {
+    function proxy__upgradeTo(address newImplementation_) external onlyAdmin {
         _upgradeTo(newImplementation_);
     }
 
@@ -77,28 +69,25 @@ contract OssifiableProxy is ERC1967Proxy {
         address newImplementation_,
         bytes memory setupCalldata_,
         bool forceCall_
-    ) external onlyAdmin whenNotOssified {
+    ) external onlyAdmin {
         _upgradeToAndCall(newImplementation_, setupCalldata_, forceCall_);
     }
 
-    /// @dev Validates that proxy is not ossified
-    modifier whenNotOssified() {
-        if (_getAdmin() == address(0)) {
-            revert ErrorProxyIsOssified();
-        }
-        _;
-    }
-
-    /// @dev Validates that method is called by the admin of the proxy
+    /// @dev Validates that proxy is not ossified and that method is called by the admin
+    ///     of the proxy
     modifier onlyAdmin() {
         address admin = _getAdmin();
-        if (admin != address(0) && msg.sender != admin) {
+        if (admin == address(0)) {
+            revert ErrorProxyIsOssified();
+        }
+        if (admin != msg.sender) {
             revert ErrorNotAdmin();
         }
         _;
     }
 
+    event ProxyOssified();
+
     error ErrorNotAdmin();
     error ErrorProxyIsOssified();
-    event ProxyOssified();
 }
