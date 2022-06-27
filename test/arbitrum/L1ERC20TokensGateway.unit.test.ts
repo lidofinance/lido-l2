@@ -94,7 +94,7 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     const data = encodeSenderOutboundTransferData(maxSubmissionCost);
 
     // validate deposit reverts with error ErrorDepositsDisabled()
-    assert.revertsWith(
+    await assert.revertsWith(
       ctx.l1TokensGateway
         .connect(sender)
         .outboundTransfer(

@@ -84,7 +84,7 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
     const tx = await bridgingManager.connect(depositsEnabler).enableDeposits();
 
     // validate that DepositsEnabled(enabler) event was emitted
-    assert.emits(bridgingManager, tx, "DepositsEnabled", [
+    await assert.emits(bridgingManager, tx, "DepositsEnabled", [
       depositsEnabler.address,
     ]);
 
@@ -156,7 +156,7 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
       .disableDeposits();
 
     // validate that DepositsDisabled(disabler) event was emitted
-    assert.emits(bridgingManager, tx, "DepositsDisabled", [
+    await assert.emits(bridgingManager, tx, "DepositsDisabled", [
       depositsDisabler.address,
     ]);
 
@@ -206,7 +206,7 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
       .enableWithdrawals();
 
     // validate that WithdrawalsEnabled(enabler) event was emitted
-    assert.emits(bridgingManager, tx, "WithdrawalsEnabled", [
+    await assert.emits(bridgingManager, tx, "WithdrawalsEnabled", [
       withdrawalsEnabler.address,
     ]);
 
@@ -278,7 +278,7 @@ testsuite("BridgingManager unit tests", ctxBuilder, (ctx) => {
       .disableWithdrawals();
 
     // validate that WithdrawalsDisabled(disabler) event was emitted
-    assert.emits(bridgingManager, tx, "WithdrawalsDisabled", [
+    await assert.emits(bridgingManager, tx, "WithdrawalsDisabled", [
       withdrawalsDisabler.address,
     ]);
 
