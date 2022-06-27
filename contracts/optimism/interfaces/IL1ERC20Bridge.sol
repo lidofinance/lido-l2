@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.10;
 
 /// @notice The L1 Standard bridge locks bridged tokens on the L1 side, sends deposit messages
 ///     on the L2 side, and finalizes token withdrawals from L2.

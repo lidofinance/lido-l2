@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.10;
 
 /// @author psirex
 /// @notice Contains the logic for validation of tokens used in the bridging process
@@ -35,6 +35,15 @@ contract BridgeableTokens {
         _;
     }
 
+    /// @dev validates that account_ is not zero address
+    modifier onlyNonZeroAccount(address account_) {
+        if (account_ == address(0)) {
+            revert ErrorAccountIsZeroAddress();
+        }
+        _;
+    }
+
     error ErrorUnsupportedL1Token();
     error ErrorUnsupportedL2Token();
+    error ErrorAccountIsZeroAddress();
 }

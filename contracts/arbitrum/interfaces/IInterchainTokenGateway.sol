@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity >=0.4.21;
+pragma solidity 0.8.10;
 
 /// @author psirex
 /// @notice Keeps logic shared among both L1 and L2 gateways.

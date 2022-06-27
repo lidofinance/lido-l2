@@ -631,7 +631,7 @@ Returns whether the proxy is ossified or not.
 
 > **Visibility:** &nbsp; &nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
 >
 > **Emits:** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; `AdminChanged(address previousAdmin, address newAdmin)`
 
@@ -641,7 +641,7 @@ Allows to transfer admin rights to zero address and prevent future upgrades of t
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
 >
 > **Arguments:**
 >
@@ -655,7 +655,7 @@ Changes the admin of the proxy. Reverts with message "ERC1967: new admin is the 
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
 >
 > **Arguments:**
 >
@@ -669,7 +669,7 @@ Upgrades the implementation of the proxy. Reverts with the error "ERC1967: new i
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
 >
 > **Arguments:**
 >
@@ -683,13 +683,9 @@ Upgrades the implementation of the proxy with an additional setup call. Reverts 
 
 ### Modifiers
 
-#### `whenNotOssified()`
-
-Validates that proxy is not ossified. Reverts with error `ErrorProxyIsOssified()` when called on ossified contract.
-
 #### `onlyAdmin()`
 
-Validates that method is called by the admin of the proxy. Reverts with error `ErrorNotAdmin()` when called not by admin.
+Validates that that proxy is not ossified and that method is called by the admin of the proxy. Reverts with error `ErrorProxyIsOssified()` when called on ossified contract and with error `ErrorNotAdmin()` when called not by admin.
 
 ## Deployment Process
 
