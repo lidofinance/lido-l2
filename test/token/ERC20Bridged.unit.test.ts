@@ -86,17 +86,17 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
     const {
       accounts: { zero, recipient },
     } = ctx;
-    assert.revertsWith(
+    await assert.revertsWith(
       ctx.erc20Bridged.connect(zero).transfer(recipient.address, wei`1 ether`),
-      "ErrorZeroAddress()"
+      "ErrorAccountIsZeroAddress()"
     );
   });
 
   it("transfer() :: recipient is zero address", async () => {
     const { zero, holder } = ctx.accounts;
-    assert.revertsWith(
+    await assert.revertsWith(
       ctx.erc20Bridged.connect(holder).transfer(zero.address, wei`1 ether`),
-      "ErrorZeroAddress()"
+      "ErrorAccountIsZeroAddress()"
     );
   });
 
@@ -126,7 +126,7 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
     const amount = wei.toBigNumber(premint).add(wei`1 ether`);
 
     // transfer tokens
-    assert.revertsWith(
+    await assert.revertsWith(
       erc20Bridged.connect(holder).transfer(recipient.address, amount),
       "ErrorNotEnoughBalance()"
     );

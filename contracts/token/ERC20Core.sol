@@ -163,13 +163,13 @@ contract ERC20Core is IERC20 {
     /// @dev validates that account_ is not zero address
     modifier onlyNonZeroAccount(address account_) {
         if (account_ == address(0)) {
-            revert ErrorZeroAddress();
+            revert ErrorAccountIsZeroAddress();
         }
         _;
     }
 
-    error ErrorZeroAddress();
     error ErrorNotEnoughBalance();
     error ErrorNotEnoughAllowance();
+    error ErrorAccountIsZeroAddress();
     error ErrorDecreasedAllowanceBelowZero();
 }
