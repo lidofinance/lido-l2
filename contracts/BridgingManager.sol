@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.10;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
@@ -123,8 +123,8 @@ contract BridgingManager is AccessControl {
 
     event DepositsEnabled(address indexed enabler);
     event DepositsDisabled(address indexed disabler);
-    event WithdrawalsDisabled(address indexed enabler);
-    event WithdrawalsEnabled(address indexed disabler);
+    event WithdrawalsEnabled(address indexed enabler);
+    event WithdrawalsDisabled(address indexed disabler);
     event Initialized(address indexed admin);
 
     error ErrorDepositsEnabled();

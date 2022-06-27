@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import hre from "hardhat";
+import hre, { ethers } from "hardhat";
 import {
   ERC20BridgedStub__factory,
   L1ERC20TokenBridge__factory,
@@ -11,7 +11,7 @@ import { CrossDomainMessengerStub__factory } from "../../typechain/factories/Cro
 import testing, { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 
-unit("Optimism :: L1ERC20TokenBridge", ctxFaxtory)
+unit("Optimism :: L1ERC20TokenBridge", ctxFactory)
   .test("l2TokenBridge()", async (ctx) => {
     assert.equal(
       await ctx.l1TokenBridge.l2TokenBridge(),
@@ -205,6 +205,26 @@ unit("Optimism :: L1ERC20TokenBridge", ctxFaxtory)
         "0x"
       ),
       "ErrorDepositsDisabled()"
+    );
+  })
+
+  .test("depositsERC20To() :: recipient is zero address", async (ctx) => {
+    const {
+      l1TokenBridge,
+      stubs: { l1Token },
+      accounts: { stranger },
+    } = ctx;
+
+    await assert.revertsWith(
+      l1TokenBridge.depositERC20To(
+        l1Token.address,
+        stranger.address,
+        ethers.constants.AddressZero,
+        wei`1 ether`,
+        wei`1 gwei`,
+        "0x"
+      ),
+      "ErrorAccountIsZeroAddress()"
     );
   })
 
@@ -435,7 +455,7 @@ unit("Optimism :: L1ERC20TokenBridge", ctxFaxtory)
 
   .run();
 
-async function ctxFaxtory() {
+async function ctxFactory() {
   const [deployer, l2TokenBridgeEOA, stranger, recipient] =
     await hre.ethers.getSigners();
 

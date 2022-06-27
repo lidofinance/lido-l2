@@ -69,7 +69,8 @@ unit("Arbitrum :: L2ERC20TokensGateway", ctxFactory)
       l1Token.address,
       sender.address,
       recipient.address,
-      amount
+      amount,
+      "0x"
     );
 
     const expectedCalldata = l1TokensGateway.interface.encodeFunctionData(
@@ -94,8 +95,8 @@ unit("Arbitrum :: L2ERC20TokensGateway", ctxFactory)
     const maxSubmissionCost = wei`11_000 gwei`;
     const data = encodeOutboundTransferData(maxSubmissionCost);
 
-    // validate deposit reverts with error ErrorDepositsDisabled()
-    assert.revertsWith(
+    // validate deposit reverts with error ErrorWithdrawalsDisabled()
+    await assert.revertsWith(
       l2TokensGateway
         .connect(sender)
         .outboundTransfer(
@@ -106,7 +107,7 @@ unit("Arbitrum :: L2ERC20TokensGateway", ctxFactory)
           gasPriceBid,
           data
         ),
-      "ErrorDepositsDisabled()"
+      "ErrorWithdrawalsDisabled()"
     );
   })
 

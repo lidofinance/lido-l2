@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.10;
 
 import {IERC20Bridged} from "./interfaces/IERC20Bridged.sol";
 
@@ -36,7 +36,7 @@ contract ERC20Bridged is IERC20Bridged, ERC20Core, ERC20Metadata {
     }
 
     /// @inheritdoc IERC20Bridged
-    function bridgeMint(address account_, uint256 amount_) public onlyBridge {
+    function bridgeMint(address account_, uint256 amount_) external onlyBridge {
         _mint(account_, amount_);
     }
 

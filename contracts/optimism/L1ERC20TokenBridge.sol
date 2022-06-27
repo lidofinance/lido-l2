@@ -1,5 +1,7 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity 0.8.10;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
@@ -70,6 +72,7 @@ contract L1ERC20TokenBridge is
     )
         external
         whenDepositsEnabled
+        onlyNonZeroAccount(to_)
         onlySupportedL1Token(l1Token_)
         onlySupportedL2Token(l2Token_)
     {
