@@ -47,6 +47,15 @@ contract L1CrossDomainEnabled {
         if (msgOptions_.maxSubmissionCost == 0) {
             revert ErrorNoMaxSubmissionCost();
         }
+
+        uint256 minEthValue = msgOptions_.callValue +
+            msgOptions_.maxSubmissionCost +
+            (msgOptions_.maxGas * msgOptions_.gasPriceBid);
+
+        if (msg.value < minEthValue) {
+            revert ErrorETHValueTooLow();
+        }
+
         seqNum = inbox.createRetryableTicket{value: msg.value}(
             recipient_,
             msgOptions_.callValue,
@@ -57,6 +66,7 @@ contract L1CrossDomainEnabled {
             msgOptions_.gasPriceBid,
             data_
         );
+
         emit TxToL2(sender_, recipient_, seqNum, data_);
     }
 
@@ -87,6 +97,7 @@ contract L1CrossDomainEnabled {
         bytes data
     );
 
+    error ErrorETHValueTooLow();
     error ErrorUnauthorizedBridge();
     error ErrorNoMaxSubmissionCost();
     error ErrorWrongCrossDomainSender();

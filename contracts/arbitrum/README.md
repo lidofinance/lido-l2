@@ -378,7 +378,7 @@ The contract declares one immutable variable **`inbox_`** - an address of the Ar
 >
 > **Emits:** `TxToL2(address indexed from, address indexed to, uint256 indexed seqNum, bytes data)`
 
-Creates a Retryable Ticket via [`Inbox.createRetryableTicket`](https://github.com/OffchainLabs/arbitrum/blob/52356eeebc573de8c4dd571c8f1c2a6f5585f359/packages/arb-bridge-eth/contracts/bridge/Inbox.sol#L325) function using the provided arguments. Reverts with error `ErrorNoMaxSubmissionCost()` when `msgOptions_.maxSubmissionCost` is equal to 0. Sends all passed ether with Retryable Ticket into Arbitrum chain. Returns a unique id of created Retryable Ticket.
+Creates a Retryable Ticket via [`Inbox.createRetryableTicket`](https://github.com/OffchainLabs/arbitrum/blob/52356eeebc573de8c4dd571c8f1c2a6f5585f359/packages/arb-bridge-eth/contracts/bridge/Inbox.sol#L325) function using the provided arguments. Sends all passed ether with Retryable Ticket into Arbitrum chain. Reverts with error `ErrorETHValueTooLow()` if passed `msg.value` is less than `msgOptions_.callVaue + msgOptions_.maxSubmissionCost + (msgOptions_.maxGas * msgOptions_.gasPriceBid)` and with error `ErrorNoMaxSubmissionCost()` when `msgOptions_.maxSubmissionCost` is equal to 0. Returns a unique id of created Retryable Ticket.
 
 ### Modifiers
 

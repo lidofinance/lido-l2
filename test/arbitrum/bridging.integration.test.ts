@@ -379,8 +379,8 @@ async function ctxProvider() {
     },
     common: {
       amount,
-      maxGas: wei`300_000 gwei`,
-      gasPriceBid: wei`1 wei`,
+      maxGas: wei`300_000`,
+      gasPriceBid: wei`1 gwei`,
       callValue: wei`500_000 gwei`,
       maxSubmissionCost,
       // data for outboundTransfer must contain encoded tuple with (maxSubmissionCost, emptyData)
