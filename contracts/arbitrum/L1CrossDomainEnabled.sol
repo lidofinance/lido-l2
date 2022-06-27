@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.10;
 
 import {IInbox} from "./interfaces/IInbox.sol";
 import {IBridge} from "./interfaces/IBridge.sol";
@@ -44,6 +44,9 @@ contract L1CrossDomainEnabled {
         bytes memory data_,
         CrossDomainMessageOptions memory msgOptions_
     ) internal returns (uint256 seqNum) {
+        if (msgOptions_.maxSubmissionCost == 0) {
+            revert ErrorNoMaxSubmissionCost();
+        }
         seqNum = inbox.createRetryableTicket{value: msg.value}(
             recipient_,
             msgOptions_.callValue,
@@ -85,5 +88,6 @@ contract L1CrossDomainEnabled {
     );
 
     error ErrorUnauthorizedBridge();
+    error ErrorNoMaxSubmissionCost();
     error ErrorWrongCrossDomainSender();
 }

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.10;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -55,6 +55,7 @@ contract L1ERC20TokenGateway is
         external
         payable
         whenDepositsEnabled
+        onlyNonZeroAccount(to_)
         onlySupportedL1Token(l1Token_)
         returns (bytes memory)
     {
@@ -65,17 +66,10 @@ contract L1ERC20TokenGateway is
 
         IERC20(l1Token_).safeTransferFrom(from, address(this), amount_);
 
-        bytes memory messageData = getOutboundCalldata(
-            l1Token,
+        uint256 retryableTicketId = _sendOutboundTransferMessage(
             from,
             to_,
-            amount_
-        );
-
-        uint256 retryableTicketId = sendCrossDomainMessage(
-            from,
-            counterpartGateway,
-            messageData,
+            amount_,
             CrossDomainMessageOptions({
                 maxGas: maxGas_,
                 callValue: 0,
@@ -107,5 +101,20 @@ contract L1ERC20TokenGateway is
         // The current implementation doesn't support fast withdrawals, so we
         // always use 0 for the exitNum argument in the event
         emit WithdrawalFinalized(l1Token_, from_, to_, 0, amount_);
+    }
+
+    function _sendOutboundTransferMessage(
+        address from_,
+        address to_,
+        uint256 amount_,
+        CrossDomainMessageOptions memory messageOptions
+    ) private returns (uint256) {
+        return
+            sendCrossDomainMessage(
+                from_,
+                counterpartGateway,
+                getOutboundCalldata(l1Token, from_, to_, amount_, ""),
+                messageOptions
+            );
     }
 }

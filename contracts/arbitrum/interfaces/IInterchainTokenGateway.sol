@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity >=0.4.21;
+pragma solidity 0.8.10;
 
 /// @author psirex
 /// @notice Keeps logic shared among both L1 and L2 gateways.
@@ -38,11 +38,13 @@ interface IInterchainTokenGateway {
     /// @param from_ Address of the account initiated bridging in the current chain
     /// @param to_ Address of the recipient of the token in the counterpart chain
     /// @param amount_  Amount of tokens to bridge
+    /// @param data_  Custom data to pass into finalizeInboundTransfer method
     /// @return Encoded transaction data of finalizeInboundTransfer call
     function getOutboundCalldata(
         address l1Token_,
         address from_,
         address to_,
-        uint256 amount_
+        uint256 amount_,
+        bytes memory data_
     ) external view returns (bytes memory);
 }

@@ -13,7 +13,7 @@ import {
 import { assert } from "chai";
 import { testsuite } from "../../utils/testing";
 
-testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
+testsuite("Arbitrum :: L1ERC20TokenGateway unit tests", ctxProvider, (ctx) => {
   it("l1Token() returns correct value after deployment", async () => {
     assert.equal(
       await ctx.l1TokensGateway.l1Token(),
@@ -64,7 +64,8 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
       ctx.stubs.l1Token.address,
       sender.address,
       recipient.address,
-      amount
+      amount,
+      "0x"
     );
 
     const expectedCalldata =
@@ -94,7 +95,7 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     const data = encodeSenderOutboundTransferData(maxSubmissionCost);
 
     // validate deposit reverts with error ErrorDepositsDisabled()
-    assert.revertsWith(
+    await assert.revertsWith(
       ctx.l1TokensGateway
         .connect(sender)
         .outboundTransfer(
@@ -155,6 +156,64 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     );
   });
 
+  it("outboundTransfer() :: max submission cost is zero", async () => {
+    const {
+      l1TokensGateway,
+      stubs: { l1Token, inbox },
+      accounts: { deployer },
+    } = ctx;
+
+    // initialize gateway
+    await l1TokensGateway.initialize(deployer.address);
+
+    // validate gateway was initialized
+    assert.isTrue(await l1TokensGateway.isInitialized());
+
+    // grant DEPOSITS_ENABLER_ROLE to the l1Deployer to enable deposits
+    await l1TokensGateway.grantRole(
+      await l1TokensGateway.DEPOSITS_ENABLER_ROLE(),
+      deployer.address
+    );
+
+    // enable deposits
+    await l1TokensGateway.enableDeposits();
+
+    // validate deposits was enabled
+    assert.isTrue(await l1TokensGateway.isDepositsEnabled());
+
+    const [sender, recipient] = await hre.ethers.getSigners();
+    const amount = wei`1.2 ether`;
+    const maxGas = wei`1000 gwei`;
+    const gasPriceBid = wei`2000 gwei`;
+    const maxSubmissionCost = wei`0 wei`;
+    const value = wei`3000 gwei`;
+    const data = encodeSenderOutboundTransferData(maxSubmissionCost);
+
+    // set allowance for l1TokensGateway before transfer
+    await l1Token.connect(sender).approve(l1TokensGateway.address, amount);
+
+    const retryableTicketId = 13;
+    await inbox.setRetryableTicketId(retryableTicketId);
+
+    assert.equalBN(await inbox.retryableTicketId(), retryableTicketId);
+
+    // initiate outbound transfer
+    await assert.revertsWith(
+      l1TokensGateway
+        .connect(sender)
+        .outboundTransfer(
+          l1Token.address,
+          recipient.address,
+          amount,
+          maxGas,
+          gasPriceBid,
+          data,
+          { value }
+        ),
+      "ErrorNoMaxSubmissionCost()"
+    );
+  });
+
   it("outboundTransfer() :: extra data not empty", async () => {
     const {
       l1TokensGateway,
@@ -206,6 +265,59 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
           { value }
         ),
       "ExtraDataNotEmpty()"
+    );
+  });
+
+  it("outboundTransfer() :: recipient is zero address", async () => {
+    const {
+      l1TokensGateway,
+      stubs: { l1Token },
+      accounts: { deployer, l1RouterAsEOA, sender },
+    } = ctx;
+
+    // initialize gateway
+    await l1TokensGateway.initialize(deployer.address);
+
+    // validate gateway was initialized
+    assert.isTrue(await l1TokensGateway.isInitialized());
+
+    // grant DEPOSITS_ENABLER_ROLE to the l1Deployer to enable deposits
+    await l1TokensGateway.grantRole(
+      await l1TokensGateway.DEPOSITS_ENABLER_ROLE(),
+      deployer.address
+    );
+
+    // enable deposits
+    await l1TokensGateway.enableDeposits();
+
+    // validate deposits was enabled
+    assert.isTrue(await l1TokensGateway.isDepositsEnabled());
+
+    const amount = wei`1.2 ether`;
+    const maxGas = wei`1000 gwei`;
+    const gasPriceBid = wei`2000 gwei`;
+    const maxSubmissionCost = wei`11_000 gwei`;
+    const value = wei`3000 gwei`;
+    const data = encodeRouterOutboundTransferData(
+      sender.address,
+      maxSubmissionCost,
+      "0xdeadbeef"
+    );
+
+    // initiate outbound transfer
+    await assert.revertsWith(
+      l1TokensGateway
+        .connect(l1RouterAsEOA)
+        .outboundTransfer(
+          l1Token.address,
+          ethers.constants.AddressZero,
+          amount,
+          maxGas,
+          gasPriceBid,
+          data,
+          { value }
+        ),
+      "ErrorAccountIsZeroAddress()"
     );
   });
 
