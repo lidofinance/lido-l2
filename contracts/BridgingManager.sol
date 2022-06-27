@@ -123,8 +123,8 @@ contract BridgingManager is AccessControl {
 
     event DepositsEnabled(address indexed enabler);
     event DepositsDisabled(address indexed disabler);
-    event WithdrawalsDisabled(address indexed enabler);
-    event WithdrawalsEnabled(address indexed disabler);
+    event WithdrawalsEnabled(address indexed enabler);
+    event WithdrawalsDisabled(address indexed disabler);
     event Initialized(address indexed admin);
 
     error ErrorDepositsEnabled();
