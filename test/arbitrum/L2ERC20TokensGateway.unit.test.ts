@@ -66,7 +66,8 @@ testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
       l1Token.address,
       sender.address,
       recipient.address,
-      amount
+      amount,
+      "0x"
     );
 
     const expectedCalldata = l1TokensGateway.interface.encodeFunctionData(

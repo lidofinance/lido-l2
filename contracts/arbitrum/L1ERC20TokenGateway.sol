@@ -113,7 +113,7 @@ contract L1ERC20TokenGateway is
             sendCrossDomainMessage(
                 from_,
                 counterpartGateway,
-                getOutboundCalldata(l1Token, from_, to_, amount_),
+                getOutboundCalldata(l1Token, from_, to_, amount_, ""),
                 messageOptions
             );
     }

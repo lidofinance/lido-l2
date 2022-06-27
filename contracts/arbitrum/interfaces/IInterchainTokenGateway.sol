@@ -38,11 +38,13 @@ interface IInterchainTokenGateway {
     /// @param from_ Address of the account initiated bridging in the current chain
     /// @param to_ Address of the recipient of the token in the counterpart chain
     /// @param amount_  Amount of tokens to bridge
+    /// @param data_  Custom data to pass into finalizeInboundTransfer method
     /// @return Encoded transaction data of finalizeInboundTransfer call
     function getOutboundCalldata(
         address l1Token_,
         address from_,
         address to_,
-        uint256 amount_
+        uint256 amount_,
+        bytes memory data_
     ) external view returns (bytes memory);
 }
