@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+// SPDX-License-Identifier: GPL-3.0
 
-pragma solidity >=0.6.11;
+pragma solidity >=0.4.21;
 
 interface IInbox {
     /// @notice Put an message in the L2 inbox that can be reexecuted for some fixed amount of time

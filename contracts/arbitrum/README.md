@@ -331,7 +331,7 @@ All variables are declared as `immutable` to reduce transactions gas costs.
 
 Returns an address of token, which will be minted on the Arbitrum chain, on `l1Token_` bridging. The current implementation returns the `l2Token` address when passed `l1Token_` equals to `l1Token` declared in the contract and `address(0)` in other cases.
 
-#### `getOutboundCalldata(address,address,address,uint256)`
+#### `getOutboundCalldata(address,address,address,uint256,bytes memory)`
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `public`
 >
@@ -345,6 +345,7 @@ Returns an address of token, which will be minted on the Arbitrum chain, on `l1T
 > - **`from_`** - an address in the Ethereum chain of the account initiated bridging
 > - **`to_`** - an address in the Ethereum chain of the recipient of the token on the corresponding chain
 > - **`amount_`** - an amount of tokens to bridge
+> - **`data_`** - Custom data to pass into finalizeInboundTransfer method. Unused, required to be compatible with @arbitrum/sdk package.
 
 Returns encoded transaction data to send into the corresponding gateway to finalize the tokens bridging process. The result of this method might be used to estimate the amount of ether required to pass to the `outboundTransfer()` method call. In the current implementation returns the transaction data of `finalizeInboundTransfer(token_, from_, to_, amount_)`.
 
@@ -377,7 +378,7 @@ The contract declares one immutable variable **`inbox_`** - an address of the Ar
 >
 > **Emits:** `TxToL2(address indexed from, address indexed to, uint256 indexed seqNum, bytes data)`
 
-Creates a Retryable Ticket via [`Inbox.createRetryableTicket`](https://github.com/OffchainLabs/arbitrum/blob/52356eeebc573de8c4dd571c8f1c2a6f5585f359/packages/arb-bridge-eth/contracts/bridge/Inbox.sol#L325) function using the provided arguments. Sends all passed ether with Retryable Ticket into Arbitrum chain. Reverts with error `ErrorETHValueTooLow()` if passed `msg.value` is less than `msgOptions_.callVaue + msgOptions_.maxSubmissionCost + (msgOptions_.maxGas * msgOptions_.gasPriceBid)`. Returns a unique id of created Retryable Ticket.
+Creates a Retryable Ticket via [`Inbox.createRetryableTicket`](https://github.com/OffchainLabs/arbitrum/blob/52356eeebc573de8c4dd571c8f1c2a6f5585f359/packages/arb-bridge-eth/contracts/bridge/Inbox.sol#L325) function using the provided arguments. Sends all passed ether with Retryable Ticket into Arbitrum chain. Reverts with error `ErrorETHValueTooLow()` if passed `msg.value` is less than `msgOptions_.callVaue + msgOptions_.maxSubmissionCost + (msgOptions_.maxGas * msgOptions_.gasPriceBid)` and with error `ErrorNoMaxSubmissionCost()` when `msgOptions_.maxSubmissionCost` is equal to 0. Returns a unique id of created Retryable Ticket.
 
 ### Modifiers
 
@@ -422,7 +423,7 @@ Initiates the tokens bridging from the Ethereum into the Arbitrum chain. Escrows
 ```solidity=
 sendCrossDomainMessage(
     counterpartGateway, // recipient
-    getOutboundCalldata(l1Token, from, to, amount), // data
+    getOutboundCalldata(l1Token, from, to, amount, ""), // data
     CrossDomainMessageOptions({
         maxGas: maxGas,
         callValue: 0,
@@ -534,7 +535,7 @@ Initiates the withdrawing process from the Arbitrum chain into the Ethereum chai
 ```solidity=
 sendCrossDomainMessage(
     counterpartGateway,
-    getOutboundCalldata(l1Token_, from_, to_, amount_)
+    getOutboundCalldata(l1Token_, from_, to_, amount_, "")
 );
 ```
 
@@ -813,7 +814,7 @@ Returns whether the proxy is ossified or not.
 
 > **Visibility:** &nbsp; &nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
 >
 > **Emits:** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; `AdminChanged(address previousAdmin, address newAdmin)`
 
@@ -823,7 +824,7 @@ Allows to transfer admin rights to zero address and prevent future upgrades of t
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
 >
 > **Arguments:**
 >
@@ -837,7 +838,7 @@ Changes the admin of the proxy. Reverts with message "ERC1967: new admin is the 
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
 >
 > **Arguments:**
 >
@@ -851,7 +852,7 @@ Upgrades the implementation of the proxy. Reverts with the error "ERC1967: new i
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin) [`whenNotOssified`](#whenNotOssified)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
 >
 > **Arguments:**
 >
@@ -865,13 +866,9 @@ Upgrades the implementation of the proxy with an additional setup call. Reverts 
 
 ### Modifiers
 
-#### `whenNotOssified()`
-
-Validates that proxy is not ossified. Reverts with error `ErrorProxyIsOssified()` when called on ossified contract.
-
 #### `onlyAdmin()`
 
-Validates that method is called by the admin of the proxy. Reverts with error `ErrorNotAdmin()` when called not by admin.
+Validates that that proxy is not ossified and that method is called by the admin of the proxy. Reverts with error `ErrorProxyIsOssified()` when called on ossified contract and with error `ErrorNotAdmin()` when called not by admin.
 
 ## Deployment Process
 

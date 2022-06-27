@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import hre from "hardhat";
+import hre, { ethers } from "hardhat";
 import {
   ERC20BridgedStub__factory,
   L1ERC20TokenBridge__factory,
@@ -206,6 +206,26 @@ testsuite("Optimism :: L1ERC20TokenBridge unit tests", ctxProvider, (ctx) => {
         "0x"
       ),
       "ErrorDepositsDisabled()"
+    );
+  });
+
+  it("depositsERC20To() :: recipient is zero address", async () => {
+    const {
+      l1TokenBridge,
+      stubs: { l1Token },
+      accounts: { stranger },
+    } = ctx;
+
+    await assert.revertsWith(
+      l1TokenBridge.depositERC20To(
+        l1Token.address,
+        stranger.address,
+        ethers.constants.AddressZero,
+        wei`1 ether`,
+        wei`1 gwei`,
+        "0x"
+      ),
+      "ErrorAccountIsZeroAddress()"
     );
   });
 
