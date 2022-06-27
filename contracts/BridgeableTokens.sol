@@ -35,6 +35,15 @@ contract BridgeableTokens {
         _;
     }
 
+    /// @dev validates that account_ is not zero address
+    modifier onlyNonZeroAccount(address account_) {
+        if (account_ == address(0)) {
+            revert ErrorAccountIsZeroAddress();
+        }
+        _;
+    }
+
     error ErrorUnsupportedL1Token();
     error ErrorUnsupportedL2Token();
+    error ErrorAccountIsZeroAddress();
 }

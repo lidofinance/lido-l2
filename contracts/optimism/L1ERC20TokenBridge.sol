@@ -70,6 +70,7 @@ contract L1ERC20TokenBridge is
     )
         external
         whenDepositsEnabled
+        onlyNonZeroAccount(to_)
         onlySupportedL1Token(l1Token_)
         onlySupportedL2Token(l2Token_)
     {
