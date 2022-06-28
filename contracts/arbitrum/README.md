@@ -1,6 +1,6 @@
 # Lido's Arbitrum Gateway
 
-The document details implementation of the bridging of the ERC20 compatible tokens [^*] between Ethereum and Arbitrum chains via Arbitrum's “Canonical Bridge”.
+The document details implementation of the bridging of the ERC20 compatible tokens[^*] between Ethereum and Arbitrum chains via Arbitrum's “Canonical Bridge”.
 
 It's the first step of the Lido's integration into the Arbitrum protocol. The main goal of the current implementation is to be the strong foundation for the long-term goals of the Lido expansion in the Arbitrum chain. The long-run picture of the Lido's integration into L2s includes:
 

@@ -1,6 +1,6 @@
 # Lido's Optimism Bridge
 
-The document details the implementation of the bridging of the ERC20 compatible tokens between Ethereum and Optimism chains.
+The document details the implementation of the bridging of the ERC20 compatible tokens[^*] between Ethereum and Optimism chains.
 
 It's the first step of Lido's integration into the Optimism protocol. The main goal of the current implementation is to be the strong foundation for the long-term goals of the Lido expansion in the Optimism chain. The long-run picture of the Lido's integration into L2s includes:
 
@@ -9,6 +9,8 @@ It's the first step of Lido's integration into the Optimism protocol. The main g
 - Keeping UX on L2 as close as possible to the UX on Ethereum mainnet
 
 At this point, the implementation must provide a scalable and reliable solution for Lido to bridge ERC20 compatible tokens between Optimism and the Ethereum chain.
+
+[^*]: The current implementation might not support the non-standard functionality of the ERC20 tokens. For example, rebasable tokens or tokens with transfers fee will work incorrectly. In case your token implements some non-typical ERC20 logic, make sure it is compatible with the bridge before usage.
 
 ## Optimism's Bridging Flow
 
