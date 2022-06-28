@@ -15,12 +15,12 @@ function getAddress(variableName: string, defaultValue?: string) {
   return toAddress(getString(variableName, defaultValue));
 }
 
-function getEnum(
+function getEnum<T extends string>(
   variableName: string,
-  allowedValues: string[],
-  defaultValue?: string
+  allowedValues: [T, ...T[]],
+  defaultValue?: T
 ) {
-  const value = getString(variableName, defaultValue);
+  const value = getString(variableName, defaultValue) as T;
   if (!allowedValues.includes(value)) {
     throw new Error(
       `Variable ${variableName} not in allowed values: ${allowedValues}`

@@ -14,7 +14,7 @@ type BridgingManagerRoleName =
   | "WITHDRAWALS_ENABLER_ROLE"
   | "WITHDRAWALS_DISABLER_ROLE";
 
-class BridgingManagerRole {
+export class BridgingManagerRole {
   public static get DEFAULT_ADMIN_ROLE() {
     return new BridgingManagerRole("DEFAULT_ADMIN_ROLE");
   }

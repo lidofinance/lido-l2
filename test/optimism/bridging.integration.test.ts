@@ -15,7 +15,7 @@ import { BridgingManagement } from "../../utils/bridging-management";
 import network from "../../utils/network";
 
 scenario("Optimism :: Bridging integration test", ctxFactory)
-  .step("Activate Bridging", async (ctx) => {
+  .step("Activate bridging", async (ctx) => {
     const { admin: l1Admin } = ctx.l1.accounts;
     const { admin: l2Admin } = ctx.l2.accounts;
     const { l1ERC20TokenBridge } = ctx.l1;

@@ -12,6 +12,7 @@
     "coverage": "hardhat coverage --testfiles './test/{*.unit.test.ts,helpers/**.ts,**/*.unit.test.ts}'",
     "manager:grant-role": "ts-node --files ./scripts/bridging-manager/grant-role.ts",
     "optimism:deploy-bridge": "ts-node --files ./scripts/optimism/deploy-bridge.ts",
+    "optimism:acceptance-test": "hardhat test ./test/helpers/**.ts ./test/optimism/*.acceptance.test.ts",
     "arbitrum:deploy-gateway": "ts-node --files ./scripts/arbitrum/deploy-gateway.ts",
     "fork:ethereum": "hardhat node:fork mainnet 8545",
     "fork:arbitrum": "hardhat node:fork mainnet_arbitrum 8546",
