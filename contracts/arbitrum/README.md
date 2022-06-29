@@ -81,7 +81,7 @@ The general process of tokens bridging via Arbitrum's `GatewayRouter` consists o
 
 ![](https://i.imgur.com/KOPguoa.png)
 
-The `L1GatewayRouter` allows to register custom gateways for certain tokens via `setGateways()` method.
+The `L1GatewayRouter` allows registering custom gateways for certain tokens via `setGateways()` method, which might be called by the OffchainLabs team manually.
 
 The rest of the document provides a technical specification of the gateways Lido will use to transfer tokens between Arbitrum and Ethereum chains.
 
