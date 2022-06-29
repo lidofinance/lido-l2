@@ -19,13 +19,16 @@ contract ERC20Core is IERC20 {
     mapping(address => mapping(address => uint256)) public allowance;
 
     /// @inheritdoc IERC20
-    function approve(address spender_, uint256 amount_) public returns (bool) {
+    function approve(address spender_, uint256 amount_)
+        external
+        returns (bool)
+    {
         _approve(msg.sender, spender_, amount_);
         return true;
     }
 
     /// @inheritdoc IERC20
-    function transfer(address to_, uint256 amount_) public returns (bool) {
+    function transfer(address to_, uint256 amount_) external returns (bool) {
         _transfer(msg.sender, to_, amount_);
         return true;
     }
@@ -35,7 +38,7 @@ contract ERC20Core is IERC20 {
         address from_,
         address to_,
         uint256 amount_
-    ) public returns (bool) {
+    ) external returns (bool) {
         _spendAllowance(from_, msg.sender, amount_);
         _transfer(from_, to_, amount_);
         return true;
