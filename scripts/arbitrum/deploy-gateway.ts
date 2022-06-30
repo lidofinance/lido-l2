@@ -43,14 +43,16 @@ async function main() {
   await l1DeployScript.run();
   await l2DeployScript.run();
 
+  const l1ERC20TokenGatewayProxyDeployStepIndex = 1;
   const l1BridgingManagement = new BridgingManagement(
-    l1DeployScript.getContractAddress(1),
+    l1DeployScript.getContractAddress(l1ERC20TokenGatewayProxyDeployStepIndex),
     networkConfig.l1.signer,
     { logger: console }
   );
 
+  const l2ERC20TokenGatewayProxyDeployStepIndex = 3;
   const l2BridgingManagement = new BridgingManagement(
-    l2DeployScript.getContractAddress(3),
+    l2DeployScript.getContractAddress(l2ERC20TokenGatewayProxyDeployStepIndex),
     networkConfig.l2.signer,
     { logger: console }
   );
