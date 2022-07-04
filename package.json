@@ -6,7 +6,7 @@
   "scripts": {
     "compile": "hardhat compile",
     "compile:force": "hardhat compile --force",
-    "coverage": "hardhat coverage ./test/**/*.unit.test.ts",
+    "coverage": "hardhat coverage --testfiles './test/**/*.unit.test.ts'",
     "test:e2e": "hardhat test ./test/**/*.e2e.test.ts",
     "test:unit": "hardhat test ./test/**/*.unit.test.ts",
     "test:integration": "hardhat test ./test/**/*.integration.test.ts",
