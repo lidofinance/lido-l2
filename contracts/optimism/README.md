@@ -1,6 +1,6 @@
 # Lido's Optimism Bridge
 
-The document details the implementation of the bridging of the ERC20 compatible tokens between Ethereum and Optimism chains.
+The document details the implementation of the bridging of the ERC20 compatible tokens[^*] between Ethereum and Optimism chains.
 
 It's the first step of Lido's integration into the Optimism protocol. The main goal of the current implementation is to be the strong foundation for the long-term goals of the Lido expansion in the Optimism chain. The long-run picture of the Lido's integration into L2s includes:
 
@@ -9,6 +9,8 @@ It's the first step of Lido's integration into the Optimism protocol. The main g
 - Keeping UX on L2 as close as possible to the UX on Ethereum mainnet
 
 At this point, the implementation must provide a scalable and reliable solution for Lido to bridge ERC20 compatible tokens between Optimism and the Ethereum chain.
+
+[^*]: The current implementation might not support the non-standard functionality of the ERC20 tokens. For example, rebasable tokens or tokens with transfers fee will work incorrectly. In case your token implements some non-typical ERC20 logic, make sure it is compatible with the bridge before usage.
 
 ## Optimism's Bridging Flow
 
@@ -111,7 +113,7 @@ Returns whether the withdrawals enabled or not.
 >
 > **Emits:** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `DepositsEnabled(address account)`
 
-Enables the deposits if they are disabled. Reverts with the error `ErrorDepositsEnabled()` if deposits aren enabled. Only accounts with the granted `DEPOSITS_ENABLER_ROLE` can call this method.
+Enables the deposits if they are disabled. Reverts with the error `ErrorDepositsEnabled()` if deposits are enabled. Only accounts with the granted `DEPOSITS_ENABLER_ROLE` can call this method.
 
 #### `disableDeposits()`
 
@@ -161,7 +163,7 @@ Validates that deposits are enabled. Reverts with the error `ErrorDepositsDisabl
 
 #### `whenWithdrawalsEnabled()`
 
-Validates that withdrawals aren enabled. Reverts with the error `ErrorWithdrawalsDisabled()` when called on contract with disabled withdrawals.
+Validates that withdrawals are enabled. Reverts with the error `ErrorWithdrawalsDisabled()` when called on contract with disabled withdrawals.
 
 ## BridgeableTokens
 
@@ -192,7 +194,7 @@ Helper contract for contracts performing cross-domain communications.
 
 ### Variables
 
-- **`messenger`** - an immutable address of the contract used to send and recieve messages from the other domain.
+- **`messenger`** - an immutable address of the contract used to send and receive messages from the other domain.
 
 ### Functions
 
@@ -219,7 +221,7 @@ Enforces that the modified function is only callable by a specific cross-domain 
 **Implements:** [`IL1ERC20Bridge`](https://github.com/ethereum-optimism/optimism/blob/develop/packages/contracts/contracts/L1/messaging/IL1ERC20Bridge.sol)
 **Inherits:** [`BridgingManager`](#BridgingManager) [`BridgeableTokens`](#BridgeableTokens) [`CrossDomainEnabled`](#CrossDomainEnabled)
 
-The L1 Standard bridge is a contract that locks briged token on L1 side, send deposit messages on L2 side and finalize token withdrawals from L2.
+The L1 Standard bridge is a contract that locks bridged token on L1 side, send deposit messages on L2 side and finalize token withdrawals from L2.
 
 ### Variables
 
@@ -335,7 +337,7 @@ Initiate a withdraw of some tokens to the caller's account on L1.
 > **Arguments:**
 >
 > - **l2Token\_** - address of L2 token where withdrawal was initiated.
-> - **to\_** - L1 adress to credit the withdrawal to.
+> - **to\_** - L1 address to credit the withdrawal to.
 > - **amount\_** - amount of the token to withdraw
 > - **l1Gas\_** - unused, but included for potential forward compatibility considerations
 > - **data\_** - optional data to forward to L1. This data is provided solely as a convenience for external contracts. Aside from enforcing a maximum length, these contracts provide no guarantees about its content.
@@ -395,7 +397,7 @@ struct DynamicMetadata {
 }
 ```
 
-### Funcations
+### Functions
 
 #### `name()`
 
@@ -445,7 +447,7 @@ Sets the `symbol` of the token. Might be called only when the `symbol` is empty.
 >
 > **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(DynamicMetadata storage r)`
 
-Returns the reference to the slot with `DynamicMetadta` struct
+Returns the reference to the slot with `DynamicMetadata` struct
 
 ## `ERC20Core`
 
@@ -593,7 +595,7 @@ Validates that the `msg.sender` of the method is the `bridge`. Reverts with erro
 
 - **Inherits:** [`@openzeppelin/ERC1967Proxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/proxy/ERC1967/ERC1967Proxy.sol)
 
-Extends the [`ERC1967Proxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/proxy/ERC1967/ERC1967Proxy.sol) contract from the OpenZeppelin package and adds some admin methods. In contrast to [`UUPSUpgradableProxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/proxy/utils/UUPSUpgradeable.sol), it doesn't increase the inheritance chain of the implementation contracts. And allows saving one extra `SLOAD` operation on every user request in contrast to [`TransparentUpgradeableProxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/proxy/transparent/TransparentUpgradeableProxy.sol). But adding any external methods to the `ERC1967Proxy` creates the risk of selectors clashing, as described in the OpenZepplin [proxies docs](https://docs.openzeppelin.com/upgrades-plugins/1.x/proxies#transparent-proxies-and-function-clashes). To avoid the risk of clashing, the implementation upgrade process must contain a step with a search of the collisions between proxy and implementation.
+Extends the [`ERC1967Proxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/proxy/ERC1967/ERC1967Proxy.sol) contract from the OpenZeppelin package and adds some admin methods. In contrast to [`UUPSUpgradableProxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/proxy/utils/UUPSUpgradeable.sol), it doesn't increase the inheritance chain of the implementation contracts. And allows saving one extra `SLOAD` operation on every user request in contrast to [`TransparentUpgradeableProxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/proxy/transparent/TransparentUpgradeableProxy.sol). But adding any external methods to the `ERC1967Proxy` creates the risk of selectors clashing, as described in the OpenZeppelin [proxies docs](https://docs.openzeppelin.com/upgrades-plugins/1.x/proxies#transparent-proxies-and-function-clashes). To avoid the risk of clashing, the implementation upgrade process must contain a step with a search of the collisions between proxy and implementation.
 
 ### Functions
 
@@ -696,7 +698,7 @@ pragma solidity ^0.8.0;
 contract EmptyContract {}
 ```
 
-Another option - pre-calculate the future address of the deployed contract offchain and deploye the implementation using pre-calculated addresses. But it is less fault-tolerant than the solution with an implementation stub.
+Another option - pre-calculate the future address of the deployed contract offchain and deployed the implementation using pre-calculated addresses. But it is less fault-tolerant than the solution with an implementation stub.
 
 # Integration Risks
 
@@ -708,11 +710,11 @@ Such an attack might happen if an attacker obtains the right to call `L2ERC20Tok
 
 The best way to detect such an attack is an offchain monitoring of the minting and depositing/withdrawal events. Based on such events might be tracked following stats:
 
-- `l1ERC20TotkenBridgeBalance` - a total number of locked tokens on the L1 bridge contract
+- `l1ERC20TokenBridgeBalance` - a total number of locked tokens on the L1 bridge contract
 - `l2TokenTotalSupply` - total number of minted L2 tokens
 - `l2TokenNotWithdrawn` - total number of burned L2 tokens which aren’t withdrawn from the L1 bridge
 
-At any time following invariant must be sutisfied: `l1ERC20TotkenBridgeBalance == l2TokenTotalSupply + l2TokenNotWithdrawn`.
+At any time following invariant must be satisfied: `l1ERC20TokenBridgeBalance == l2TokenTotalSupply + l2TokenNotWithdrawn`.
 
 In the case of invariant violation, Lido will have a dispute period to suspend the L1 and L2 bridges. Disabled bridges forbid the minting of L2Token and withdrawal of minted tokens till the resolution of the issue.
 
