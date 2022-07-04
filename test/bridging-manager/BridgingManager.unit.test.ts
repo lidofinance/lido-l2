@@ -2,9 +2,9 @@ import hre from "hardhat";
 import {
   BridgingManager__factory,
   OssifiableProxy__factory,
-} from "../typechain";
+} from "../../typechain";
 import { assert } from "chai";
-import testing, { unit } from "../utils/testing";
+import { unit } from "../../utils/testing";
 
 unit("BridgingManager", ctxFactory)
   .test("isInitialized() :: on uninitialized contract", async (ctx) => {
@@ -67,10 +67,7 @@ unit("BridgingManager", ctxFactory)
 
     await assert.revertsWith(
       bridgingManager.connect(stranger).enableDeposits(),
-      testing.accessControlRevertMessage(
-        DEPOSITS_ENABLER_ROLE,
-        stranger.address
-      )
+      accessControlRevertMessage(DEPOSITS_ENABLER_ROLE, stranger.address)
     );
   })
 
@@ -137,10 +134,7 @@ unit("BridgingManager", ctxFactory)
 
     await assert.revertsWith(
       bridgingManager.connect(stranger).disableDeposits(),
-      testing.accessControlRevertMessage(
-        DEPOSITS_DISABLER_ROLE,
-        stranger.address
-      )
+      accessControlRevertMessage(DEPOSITS_DISABLER_ROLE, stranger.address)
     );
   })
 
@@ -193,10 +187,7 @@ unit("BridgingManager", ctxFactory)
 
     await assert.revertsWith(
       bridgingManager.connect(stranger).enableWithdrawals(),
-      testing.accessControlRevertMessage(
-        WITHDRAWALS_ENABLER_ROLE,
-        stranger.address
-      )
+      accessControlRevertMessage(WITHDRAWALS_ENABLER_ROLE, stranger.address)
     );
   })
 
@@ -265,10 +256,7 @@ unit("BridgingManager", ctxFactory)
 
     await assert.revertsWith(
       bridgingManager.connect(stranger).disableWithdrawals(),
-      testing.accessControlRevertMessage(
-        WITHDRAWALS_DISABLER_ROLE,
-        stranger.address
-      )
+      accessControlRevertMessage(WITHDRAWALS_DISABLER_ROLE, stranger.address)
     );
   })
 
@@ -384,4 +372,8 @@ async function ctxFactory() {
       deployer
     ),
   };
+}
+
+function accessControlRevertMessage(role: string, address: string) {
+  return `AccessControl: account ${address.toLowerCase()} is missing role ${role}`;
 }
