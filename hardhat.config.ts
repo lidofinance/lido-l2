@@ -45,31 +45,25 @@ const config: HardhatUserConfig = {
       url: "http://localhost:9545",
     },
     kovan: {
-      url: env.string("KOVAN_URL", ""),
+      url: env.string("RPC_ETH_KOVAN", ""),
     },
     kovan_optimism: {
-      url: env.string("KOVAN_OPTIMISM_URL", ""),
+      url: env.string("RPC_OPT_KOVAN", ""),
     },
     rinkeby: {
-      url: env.string("RINKEBY_URL", ""),
+      url: env.string("RPC_ETH_RINKEBY", ""),
     },
     rinkeby_arbitrum: {
-      url: env.string("RINKEBY_ARBITRUM_URL", ""),
+      url: env.string("RPC_ARB_RINKEBY", ""),
     },
     mainnet: {
-      url: env.string("MAINNET_URL", ""),
-    },
-    mainnet_fork: {
-      url: env.string("MAINNET_URL", ""),
-      forking: {
-        url: env.string("MAINNET_URL", ""),
-      },
+      url: env.string("RPC_ETH_MAINNET", ""),
     },
     mainnet_arbitrum: {
-      url: env.string("MAINNET_ARBITRUM_URL", ""),
+      url: env.string("RPC_ARB_MAINNET", ""),
     },
     mainnet_optimism: {
-      url: env.string("MAINNET_OPTIMISM_URL", ""),
+      url: env.string("RPC_OPT_MAINNET", ""),
     },
   },
   gasReporter: {
@@ -78,10 +72,13 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      rinkeby: env.string("RINKEBY_ETHERSCAN_API_KEY", ""),
-      kovan: env.string("KOVAN_ETHERSCAN_API_KEY", ""),
-      arbitrumTestnet: env.string("RINKEBY_ARBITRUM_ETHERSCAN_API_KEY", ""),
-      optimisticKovan: env.string("KOVAN_OPTIMISM_ETHERSCAN_API_KEY", ""),
+      kovan: env.string("ETHERSCAN_API_KEY_ETH", ""),
+      rinkeby: env.string("ETHERSCAN_API_KEY_ETH", ""),
+      mainnet: env.string("ETHERSCAN_API_KEY_ETH", ""),
+      arbitrumTestnet: env.string("ETHERSCAN_API_KEY_ARB", ""),
+      arbitrumOne: env.string("ETHERSCAN_API_KEY_ARB", ""),
+      optimisticKovan: env.string("ETHERSCAN_API_KEY_OPT", ""),
+      optimisticEthereum: env.string("ETHERSCAN_API_KEY_OPT", ""),
     },
   },
   typechain: {

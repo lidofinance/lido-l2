@@ -52,7 +52,7 @@ function getNetwork() {
 }
 
 function getPrivateKey() {
-  return getString("PRIVATE_KEY");
+  return getString("DEPLOYER_PRIVATE_KEY");
 }
 
 export default {

@@ -16,7 +16,7 @@ interface MultiChainDeploymentConfig {
 
 export function loadMultiChainDeploymentConfig(): MultiChainDeploymentConfig {
   return {
-    token: env.address("L1_TOKEN"),
+    token: env.address("TOKEN"),
     l1: {
       proxyAdmin: env.address("L1_PROXY_ADMIN"),
       bridgeAdmin: env.address("L1_BRIDGE_ADMIN"),
