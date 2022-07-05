@@ -205,6 +205,7 @@ Address of the RPC node for **Rinkeby** Arbitrum network.
 #### `RPC_ARB_MAINNET`
 
 > **Warning**
+>
 > Please, don't use the default value for production deployments! The default RPC node might not be available or fail suddenly during the request.
 
 Address of the RPC node for **Mainnet** Arbitrum network.
@@ -220,6 +221,7 @@ Address of the RPC node for **Kovan** Optimism network.
 #### `RPC_OPT_MAINNET`
 
 > **Warning**
+>
 > Please, don't use the default value for production deployments! The default RPC node might not be available or fail suddenly during the request.
 
 Address of the RPC node for **Mainnet** Optimism network.
