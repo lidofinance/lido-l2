@@ -4,19 +4,19 @@ import {
   ERC20Bridged__factory,
   OssifiableProxy__factory,
 } from "../../typechain";
-import { testsuite } from "../../utils/testing";
+import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 
-testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
-  it("bridge()", async () => {
+unit("ERC20Bridged", ctxFactory)
+  .test("bridge()", async (ctx) => {
     assert.equal(await ctx.erc20Bridged.bridge(), ctx.accounts.owner.address);
-  });
+  })
 
-  it("totalSupply()", async () => {
+  .test("totalSupply()", async (ctx) => {
     assert.equalBN(await ctx.erc20Bridged.totalSupply(), ctx.constants.premint);
-  });
+  })
 
-  it("initialize() :: name already set", async () => {
+  .test("initialize() :: name already set", async (ctx) => {
     const { deployer, owner } = ctx.accounts;
 
     // deploy new implementation
@@ -30,9 +30,9 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
       erc20BridgedImpl.initialize("New Name", ""),
       "ErrorNameAlreadySet()"
     );
-  });
+  })
 
-  it("initialize() :: symbol already set", async () => {
+  .test("initialize() :: symbol already set", async (ctx) => {
     const { deployer, owner } = ctx.accounts;
 
     // deploy new implementation
@@ -46,9 +46,9 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
       erc20BridgedImpl.initialize("", "New Symbol"),
       "ErrorSymbolAlreadySet()"
     );
-  });
+  })
 
-  it("approve()", async () => {
+  .test("approve()", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { holder, spender } = ctx.accounts;
 
@@ -80,9 +80,9 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
       await ctx.erc20Bridged.allowance(holder.address, spender.address),
       amount
     );
-  });
+  })
 
-  it("transfer() :: sender is zero address", async () => {
+  .test("transfer() :: sender is zero address", async (ctx) => {
     const {
       accounts: { zero, recipient },
     } = ctx;
@@ -90,17 +90,17 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
       ctx.erc20Bridged.connect(zero).transfer(recipient.address, wei`1 ether`),
       "ErrorAccountIsZeroAddress()"
     );
-  });
+  })
 
-  it("transfer() :: recipient is zero address", async () => {
+  .test("transfer() :: recipient is zero address", async (ctx) => {
     const { zero, holder } = ctx.accounts;
     await assert.revertsWith(
       ctx.erc20Bridged.connect(holder).transfer(zero.address, wei`1 ether`),
       "ErrorAccountIsZeroAddress()"
     );
-  });
+  })
 
-  it("transfer() :: zero balance", async () => {
+  .test("transfer() :: zero balance", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { premint } = ctx.constants;
     const { recipient, holder } = ctx.accounts;
@@ -113,9 +113,9 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
 
     // validate balance stays same
     assert.equalBN(await erc20Bridged.balanceOf(holder.address), premint);
-  });
+  })
 
-  it("transfer() :: not enough balance", async () => {
+  .test("transfer() :: not enough balance", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { premint } = ctx.constants;
     const { recipient, holder } = ctx.accounts;
@@ -130,9 +130,9 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
       erc20Bridged.connect(holder).transfer(recipient.address, amount),
       "ErrorNotEnoughBalance()"
     );
-  });
+  })
 
-  it("transfer()", async () => {
+  .test("transfer()", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { premint } = ctx.constants;
     const { recipient, holder } = ctx.accounts;
@@ -162,9 +162,9 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
 
     // validate total supply stays same
     assert.equalBN(await erc20Bridged.totalSupply(), premint);
-  });
+  })
 
-  it("transferFrom()", async () => {
+  .test("transferFrom()", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { premint } = ctx.constants;
     const { recipient, holder, spender } = ctx.accounts;
@@ -220,9 +220,9 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
 
     // validate recipient balance updated
     assert.equalBN(await erc20Bridged.balanceOf(recipient.address), amount);
-  });
+  })
 
-  it("transferFrom() :: max allowance", async () => {
+  .test("transferFrom() :: max allowance", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { premint } = ctx.constants;
     const { recipient, holder, spender } = ctx.accounts;
@@ -274,9 +274,9 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
 
     // validate recipient balance updated
     assert.equalBN(await erc20Bridged.balanceOf(recipient.address), amount);
-  });
+  })
 
-  it("transferFrom() :: not enough allowance", async () => {
+  .test("transferFrom() :: not enough allowance", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { premint } = ctx.constants;
     const { recipient, holder, spender } = ctx.accounts;
@@ -304,9 +304,9 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
         .transferFrom(holder.address, recipient.address, amount),
       "ErrorNotEnoughAllowance()"
     );
-  });
+  })
 
-  it("increaseAllowance() :: initial allowance is zero", async () => {
+  .test("increaseAllowance() :: initial allowance is zero", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { holder, spender } = ctx.accounts;
 
@@ -336,9 +336,9 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
       await erc20Bridged.allowance(holder.address, spender.address),
       allowanceIncrease
     );
-  });
+  })
 
-  it("increaseAllowance() :: initial allowance is not zero", async () => {
+  .test("increaseAllowance() :: initial allowance is not zero", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { holder, spender } = ctx.accounts;
 
@@ -377,9 +377,9 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
       await erc20Bridged.allowance(holder.address, spender.address),
       expectedAllowance
     );
-  });
+  })
 
-  it("increaseAllowance() :: the increase is not zero", async () => {
+  .test("increaseAllowance() :: the increase is not zero", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { holder, spender } = ctx.accounts;
 
@@ -409,29 +409,33 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
       await erc20Bridged.allowance(holder.address, spender.address),
       initialAllowance
     );
-  });
+  })
 
-  it("decreaseAllowance() :: decrease is greater than current allowance", async () => {
-    const { erc20Bridged } = ctx;
-    const { holder, spender } = ctx.accounts;
+  .test(
+    "decreaseAllowance() :: decrease is greater than current allowance",
+    async (ctx) => {
+      const { erc20Bridged } = ctx;
+      const { holder, spender } = ctx.accounts;
 
-    // validate allowance before increasing
-    assert.equalBN(
-      await erc20Bridged.allowance(holder.address, spender.address),
-      "0"
-    );
+      // validate allowance before increasing
+      assert.equalBN(
+        await erc20Bridged.allowance(holder.address, spender.address),
+        "0"
+      );
 
-    const allowanceDecrease = wei`1 ether`;
+      const allowanceDecrease = wei`1 ether`;
 
-    // decrease allowance
-    await assert.revertsWith(
-      erc20Bridged.decreaseAllowance(spender.address, allowanceDecrease),
-      "ErrorDecreasedAllowanceBelowZero()"
-    );
-  });
+      // decrease allowance
+      await assert.revertsWith(
+        erc20Bridged.decreaseAllowance(spender.address, allowanceDecrease),
+        "ErrorDecreasedAllowanceBelowZero()"
+      );
+    }
+  )
 
-  for (const allowanceDecrease of [wei`1 ether`, "0"]) {
-    it(`decreaseAllowance() :: the decrease is ${allowanceDecrease} wei`, async () => {
+  .group([wei`1 ether`, "0"], (allowanceDecrease) => [
+    `decreaseAllowance() :: the decrease is ${allowanceDecrease} wei`,
+    async (ctx) => {
       const { erc20Bridged } = ctx;
       const { holder, spender } = ctx.accounts;
 
@@ -468,10 +472,10 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
         await erc20Bridged.allowance(holder.address, spender.address),
         expectedAllowance
       );
-    });
-  }
+    },
+  ])
 
-  it("bridgeMint() :: not owner", async () => {
+  .test("bridgeMint() :: not owner", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { stranger } = ctx.accounts;
 
@@ -481,10 +485,11 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
         .bridgeMint(stranger.address, wei`1000 ether`),
       "ErrorNotBridge()"
     );
-  });
+  })
 
-  for (const mintAmount of [wei`1000 ether`, "0"]) {
-    it(`bridgeMint() :: amount is ${mintAmount} wei`, async () => {
+  .group([wei`1000 ether`, "0"], (mintAmount) => [
+    `bridgeMint() :: amount is ${mintAmount} wei`,
+    async (ctx) => {
       const { erc20Bridged } = ctx;
       const { premint } = ctx.constants;
       const { recipient, owner } = ctx.accounts;
@@ -518,10 +523,10 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
         await erc20Bridged.totalSupply(),
         wei.toBigNumber(premint).add(mintAmount)
       );
-    });
-  }
+    },
+  ])
 
-  it("bridgeBurn() :: not owner", async () => {
+  .test("bridgeBurn() :: not owner", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { holder, stranger } = ctx.accounts;
 
@@ -529,9 +534,9 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
       erc20Bridged.connect(stranger).bridgeBurn(holder.address, wei`100 ether`),
       "ErrorNotBridge()"
     );
-  });
+  })
 
-  it("bridgeBurn() :: amount exceeds balance", async () => {
+  .test("bridgeBurn() :: amount exceeds balance", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { owner, stranger } = ctx.accounts;
 
@@ -542,10 +547,11 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
       erc20Bridged.connect(owner).bridgeBurn(stranger.address, wei`100 ether`),
       "ErrorNotEnoughBalance()"
     );
-  });
+  })
 
-  for (const burnAmount of [wei`10 ether`, "0"]) {
-    it(`bridgeBurn() :: amount is ${burnAmount} wei`, async () => {
+  .group([wei`10 ether`, "0"], (burnAmount) => [
+    `bridgeBurn() :: amount is ${burnAmount} wei`,
+    async (ctx) => {
       const { erc20Bridged } = ctx;
       const { premint } = ctx.constants;
       const { owner, holder } = ctx.accounts;
@@ -583,11 +589,12 @@ testsuite("ERC20Bridged unit tests", ctxProvider, (ctx) => {
         await erc20Bridged.totalSupply(),
         expectedBalanceAndTotalSupply
       );
-    });
-  }
-});
+    },
+  ])
 
-async function ctxProvider() {
+  .run();
+
+async function ctxFactory() {
   const name = "ERC20 Test Token";
   const symbol = "ERC20";
   const decimals = 18;

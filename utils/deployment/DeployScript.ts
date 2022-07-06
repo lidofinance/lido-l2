@@ -37,6 +37,12 @@ export interface Logger {
   log(...args: any[]): void;
 }
 
+const DEFAULT_CONSTRUCTOR_ABI = {
+  type: "constructor",
+  stateMutability: "nonpayable",
+  inputs: [],
+};
+
 export class DeployScript {
   private readonly logger?: Logger;
   private readonly steps: DeployStep<ContractFactory>[] = [];
@@ -65,9 +71,13 @@ export class DeployScript {
     return res;
   }
 
-  print() {
+  print(printOptions?: PrintOptions) {
     for (let i = 0; i < this.steps.length; ++i) {
-      this._printStepInfo(this._getStepInfo(i), { padding: 2 });
+      this._printStepInfo(this._getStepInfo(i), {
+        padding: 2,
+        prefix: "Deploy ",
+        ...printOptions,
+      });
       this._log();
     }
   }
@@ -104,18 +114,18 @@ export class DeployScript {
     const contractName = step.factory.name.split("_")[0];
     const res: DeployStepInfo = { index, contractName, args: [] };
     const { abi } = step.factory;
-    const constructorABI = abi.find((i) => i.type === "constructor") as
-      | ABIItem
-      | undefined;
-    if (constructorABI === undefined) {
-      console.warn(`ABI for factory ${step.factory.name} not found`);
-    }
+    const constructorABI = this._findConstructABI(abi);
 
     for (let i = 0; i < step.args.length; ++i) {
       const name = constructorABI?.inputs[i]?.name || "<UNKNOWN>";
       res.args.push({ index: i, name, value: step.args[i] });
     }
     return res;
+  }
+
+  _findConstructABI(abi: Record<string, any>[]) {
+    return (abi.find((i) => i.type === "constructor") ||
+      DEFAULT_CONSTRUCTOR_ABI) as ABIItem;
   }
 
   private _printStepInfo(
@@ -161,7 +171,7 @@ export class DeployScript {
     );
   }
 
-  private _log(message: string = "\n") {
+  private _log(message: string = "") {
     this.logger?.log(message);
   }
 }

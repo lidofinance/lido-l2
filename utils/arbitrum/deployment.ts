@@ -4,11 +4,18 @@ import {
   ERC20Bridged__factory,
   IERC20Metadata__factory,
   L1ERC20TokenGateway__factory,
+  L1GatewayRouter__factory,
   L2ERC20TokenGateway__factory,
+  L2GatewayRouter__factory,
   OssifiableProxy__factory,
 } from "../../typechain";
-import { DeployScript, Logger } from "../../utils/deployment/DeployScript";
-import { predictAddresses } from "../../utils/deployment/network";
+import addresses, {
+  ArbitrumL1Addresses,
+  ArbitrumL2Addresses,
+} from "./addresses";
+import network from "../network";
+import { DeployScript, Logger } from "../deployment/DeployScript";
+import { ethers } from "hardhat";
 
 interface ArbitrumL1DeployScriptParams {
   deployer: Wallet;
@@ -19,85 +26,45 @@ interface ArbitrumL2DeployScriptParams extends ArbitrumL1DeployScriptParams {
   l2Token?: { name?: string; symbol?: string };
 }
 
-interface L1ArbitrumDependencies {
-  inbox: string;
-  router: string;
-}
-
-interface L2ArbitrumDependencies {
-  arbSys: string;
-  router: string;
-}
-
-const L1_DEPENDENCIES: Record<number, L1ArbitrumDependencies> = {
-  1: {
-    inbox: "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f",
-    router: "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef",
-  },
-  4: {
-    inbox: "0x578BAde599406A8fE3d24Fd7f7211c0911F5B29e",
-    router: "0x70C143928eCfFaf9F5b406f7f4fC28Dc43d68380",
-  },
-  31337: {
-    inbox: "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f",
-    router: "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef",
-  },
-};
-
-const L2_DEPENDENCIES: Record<number, L2ArbitrumDependencies> = {
-  42161: {
-    arbSys: "0x0000000000000000000000000000000000000064",
-    router: "0x5288c571Fd7aD117beA99bF60FE0846C4E84F933",
-  },
-  421611: {
-    arbSys: "0x0000000000000000000000000000000000000064",
-    router: "0x9413AD42910c1eA60c737dB5f58d1C504498a3cD",
-  },
-  31337: {
-    arbSys: "0x0000000000000000000000000000000000000064",
-    router: "0x5288c571Fd7aD117beA99bF60FE0846C4E84F933",
-  },
-};
-
-export async function createArbitrumGatewayDeployScripts(
+export async function createGatewayDeployScripts(
   l1Token: string,
   l1Params: ArbitrumL1DeployScriptParams,
   l2Params: ArbitrumL2DeployScriptParams,
   options?: {
     dependencies?: {
-      l1?: Partial<L1ArbitrumDependencies>;
-      l2?: Partial<L2ArbitrumDependencies>;
+      l1?: Partial<ArbitrumL1Addresses>;
+      l2?: Partial<ArbitrumL2Addresses>;
     };
     logger?: Logger;
   }
 ) {
   const l1Dependencies = {
-    ...loadArbitrumL1Dependencies(await l1Params.deployer.getChainId()),
+    ...addresses.getL1(await l1Params.deployer.getChainId()),
     ...options?.dependencies?.l1,
   };
   const l2Dependencies = {
-    ...loadArbitrumL2Dependencies(await l2Params.deployer.getChainId()),
+    ...addresses.getL2(await l2Params.deployer.getChainId()),
     ...options?.dependencies?.l2,
   };
 
   const [
     expectedL1TokensGatewayImplAddress,
     expectedL1TokensGatewayProxyAddress,
-  ] = await predictAddresses(l1Params.deployer, 2);
+  ] = await network.predictAddresses(l1Params.deployer, 2);
 
   const [
     expectedL2TokenImplAddress,
     expectedL2TokenProxyAddress,
     expectedL2TokensGatewayImplAddress,
     expectedL2TokensGatewayProxyAddress,
-  ] = await predictAddresses(l2Params.deployer, 4);
+  ] = await network.predictAddresses(l2Params.deployer, 4);
 
   const l1DeployScript = new DeployScript(l1Params.deployer, options?.logger)
     .addStep({
       factory: L1ERC20TokenGateway__factory,
       args: [
         l1Dependencies.inbox,
-        l1Dependencies.router,
+        l1Dependencies.l1GatewayRouter,
         expectedL2TokensGatewayProxyAddress,
         l1Token,
         expectedL2TokenProxyAddress,
@@ -157,7 +124,7 @@ export async function createArbitrumGatewayDeployScripts(
       factory: L2ERC20TokenGateway__factory,
       args: [
         l2Dependencies.arbSys,
-        l2Dependencies.router,
+        l2Dependencies.l2GatewayRouter,
         expectedL1TokensGatewayProxyAddress,
         l1Token,
         expectedL2TokenProxyAddress,
@@ -180,20 +147,48 @@ export async function createArbitrumGatewayDeployScripts(
   return [l1DeployScript, l2DeployScript];
 }
 
-function loadArbitrumL1Dependencies(chainId: number) {
-  const dependencies = L1_DEPENDENCIES[chainId];
-  if (!dependencies) {
-    throw new Error(`Dependencies for chain id ${chainId} are not declared`);
-  }
+async function createRoutersDeployScript(
+  l1Deployer: Wallet,
+  l2Deployer: Wallet,
+  options: { logger?: Logger } = {}
+) {
+  const l1ChainId = await l1Deployer.getChainId();
+  const [expectedL1GatewayRouter] = await network.predictAddresses(
+    l1Deployer,
+    1
+  );
+  const [expectedL2GatewayRouter] = await network.predictAddresses(
+    l2Deployer,
+    1
+  );
 
-  return dependencies;
+  const l1DeployScript = new DeployScript(l1Deployer, options?.logger).addStep({
+    factory: L1GatewayRouter__factory,
+    args: [],
+    afterDeploy: async (l1GatewayRouter) => {
+      assert.equal(l1GatewayRouter.address, expectedL1GatewayRouter);
+      await l1GatewayRouter.initialize(
+        l1Deployer.address,
+        ethers.constants.AddressZero,
+        ethers.constants.AddressZero,
+        expectedL2GatewayRouter,
+        addresses.getL1(l1ChainId).inbox
+      );
+    },
+  });
+
+  const l2DeployScript = new DeployScript(l2Deployer, options?.logger).addStep({
+    factory: L2GatewayRouter__factory,
+    args: [],
+    afterDeploy: async (l2GatewayRouter) => {
+      assert.equal(l2GatewayRouter.address, expectedL2GatewayRouter);
+      await l2GatewayRouter.initialize(
+        expectedL1GatewayRouter,
+        ethers.constants.AddressZero
+      );
+    },
+  });
+  return [l1DeployScript, l2DeployScript];
 }
 
-function loadArbitrumL2Dependencies(chainId: number) {
-  const dependencies = L2_DEPENDENCIES[chainId];
-  if (!dependencies) {
-    throw new Error(`Dependencies for chain id ${chainId} are not declared`);
-  }
-
-  return dependencies;
-}
+export default { createGatewayDeployScripts, createRoutersDeployScript };

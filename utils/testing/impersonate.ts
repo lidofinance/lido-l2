@@ -1,6 +1,5 @@
-import { providers } from "ethers";
 import hre from "hardhat";
-// import { EthereumProvider } from "hardhat/types";
+import { providers } from "ethers";
 
 export async function impersonate(
   address: string,

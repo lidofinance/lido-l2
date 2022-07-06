@@ -1,24 +1,26 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { toAddress } from "@eth-optimism/sdk";
+import { Network } from "./network";
 
-export function getEnvVariable(variableName: string, defaultValue?: string) {
+function getString(variableName: string, defaultValue?: string) {
   const value = process.env[variableName];
   if (value === undefined && defaultValue === undefined) {
     throw new Error(
-      `Error: ENV variable ${variableName} is not set and default value wasn't provided`
+      `ENV variable ${variableName} is not set and default value wasn't provided`
     );
   }
   return (value || defaultValue) as string;
 }
 
-export function getAddress(
-  addressName: string,
-  hre: HardhatRuntimeEnvironment
-) {
-  return hre.ethers.utils.getAddress(getEnvVariable(addressName));
+function getAddress(variableName: string, defaultValue?: string) {
+  return toAddress(getString(variableName, defaultValue));
 }
 
-export function getEnum(variableName: string, allowedValues: string[]) {
-  const value = getEnvVariable(variableName);
+function getEnum<T extends string>(
+  variableName: string,
+  allowedValues: [T, ...T[]],
+  defaultValue?: T
+) {
+  const value = getString(variableName, defaultValue) as T;
   if (!allowedValues.includes(value)) {
     throw new Error(
       `Variable ${variableName} not in allowed values: ${allowedValues}`
@@ -26,3 +28,40 @@ export function getEnum(variableName: string, allowedValues: string[]) {
   }
   return value;
 }
+
+function getBool(variableName: string, defaultValue?: boolean) {
+  return getString(variableName, defaultValue?.toString()) === "true";
+}
+
+function getList(variableName: string, defaultValue?: string[]) {
+  const value = JSON.parse(
+    getString(variableName, JSON.stringify(defaultValue))
+  );
+  if (!Array.isArray(value)) {
+    throw new Error(`ENV variable ${variableName} is not valid array`);
+  }
+  return value;
+}
+
+function getAddressList(variableName: string, defaultValue?: string[]) {
+  return getList(variableName, defaultValue).map(toAddress);
+}
+
+function getNetwork() {
+  return getEnum("NETWORK", ["local", "testnet", "mainnet"]) as Network;
+}
+
+function getPrivateKey() {
+  return getString("DEPLOYER_PRIVATE_KEY");
+}
+
+export default {
+  string: getString,
+  list: getList,
+  enum: getEnum,
+  bool: getBool,
+  address: getAddress,
+  addresses: getAddressList,
+  network: getNetwork,
+  privateKey: getPrivateKey,
+};
