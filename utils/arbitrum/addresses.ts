@@ -8,7 +8,6 @@ export interface ArbitrumL1Addresses {
 
 export interface ArbitrumL2Addresses {
   arbSys: string;
-  router: string;
   l2GatewayRouter: string;
 }
 
@@ -44,17 +43,14 @@ const ADDRESSES: ArbitrumAddresses = {
   l2: {
     42161: {
       arbSys: "0x0000000000000000000000000000000000000064",
-      router: "0x5288c571Fd7aD117beA99bF60FE0846C4E84F933",
       l2GatewayRouter: "0x5288c571Fd7aD117beA99bF60FE0846C4E84F933",
     },
     421611: {
       arbSys: "0x0000000000000000000000000000000000000064",
-      router: "0x9413AD42910c1eA60c737dB5f58d1C504498a3cD",
       l2GatewayRouter: "0x9413AD42910c1eA60c737dB5f58d1C504498a3cD",
     },
     31337: {
       arbSys: "0x0000000000000000000000000000000000000064",
-      router: "0x5288c571Fd7aD117beA99bF60FE0846C4E84F933",
       l2GatewayRouter: "0x5288c571Fd7aD117beA99bF60FE0846C4E84F933",
     },
   },

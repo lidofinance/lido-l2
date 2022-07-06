@@ -7,8 +7,9 @@ import {
   L2ERC20TokenBridge__factory,
   OssifiableProxy__factory,
 } from "../../typechain";
-import { DeployScript, Logger } from "./DeployScript";
-import { predictAddresses } from "./network";
+import addresses from "./addresses";
+import network from "../network";
+import { DeployScript, Logger } from "../deployment/DeployScript";
 
 interface OptimismCommonDependencies {
   messenger: string;
@@ -23,21 +24,6 @@ interface OptimismL2DeployScriptParams extends OptimismL1DeployScriptParams {
   l2Token?: { name?: string; symbol?: string };
 }
 
-export const OPT_L1_DEPENDENCIES: Record<number, OptimismCommonDependencies> = {
-  1: { messenger: "0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1" },
-  17: { messenger: "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318" },
-  42: { messenger: "0x4361d0F75A0186C05f971c566dC6bEa5957483fD" },
-  31337: { messenger: "0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1" },
-};
-
-export const OPT_L2_DEPENDENCIES: Record<number, OptimismCommonDependencies> = {
-  1: { messenger: "0x4200000000000000000000000000000000000007" },
-  10: { messenger: "0x4200000000000000000000000000000000000007" },
-  42: { messenger: "0x4200000000000000000000000000000000000007" },
-  69: { messenger: "0x4200000000000000000000000000000000000007" },
-  31337: { messenger: "0x4200000000000000000000000000000000000007" },
-};
-
 export async function createOptimismBridgeDeployScripts(
   l1Token: string,
   l1Params: OptimismL1DeployScriptParams,
@@ -51,23 +37,23 @@ export async function createOptimismBridgeDeployScripts(
   }
 ) {
   const l1Dependencies = {
-    ...loadOptimismL1Dependencies(await l1Params.deployer.getChainId()),
+    ...addresses.getL1(await l1Params.deployer.getChainId()),
     ...options?.dependencies?.l1,
   };
   const l2Dependencies = {
-    ...loadOptimismL2Dependencies(await l2Params.deployer.getChainId()),
+    ...addresses.getL2(await l2Params.deployer.getChainId()),
     ...options?.dependencies?.l2,
   };
 
   const [expectedL1TokenBridgeImplAddress, expectedL1TokenBridgeProxyAddress] =
-    await predictAddresses(l1Params.deployer, 2);
+    await network.predictAddresses(l1Params.deployer, 2);
 
   const [
     expectedL2TokenImplAddress,
     expectedL2TokenProxyAddress,
     expectedL2TokenBridgeImplAddress,
     expectedL2TokenBridgeProxyAddress,
-  ] = await predictAddresses(l2Params.deployer, 4);
+  ] = await network.predictAddresses(l2Params.deployer, 4);
 
   const l1DeployScript = new DeployScript(l1Params.deployer, options?.logger)
     .addStep({
@@ -155,18 +141,4 @@ export async function createOptimismBridgeDeployScripts(
   return [l1DeployScript, l2DeployScript];
 }
 
-function loadOptimismL1Dependencies(chainId: number) {
-  const dependencies = OPT_L1_DEPENDENCIES[chainId];
-  if (!dependencies) {
-    throw new Error(`Dependencies for chain id ${chainId} are not declared`);
-  }
-  return dependencies;
-}
-
-function loadOptimismL2Dependencies(chainId: number) {
-  const dependencies = OPT_L2_DEPENDENCIES[chainId];
-  if (!dependencies) {
-    throw new Error(`Dependencies for chain id ${chainId} are not declared`);
-  }
-  return dependencies;
-}
+export default { createOptimismBridgeDeployScripts };

@@ -6,15 +6,23 @@
   "scripts": {
     "compile": "hardhat compile",
     "compile:force": "hardhat compile --force",
-    "test:unit": "hardhat test ./test/helpers/**.ts ./test/*.unit.test.ts ./test/**/*.unit.test.ts",
-    "test:integration": "hardhat test ./test/helpers/**.ts ./test/**/*.integration.test.ts",
-    "coverage": "hardhat coverage --testfiles './test/{*.unit.test.ts,helpers/**.ts,**/*.unit.test.ts}'",
-    "manager:grant-role": "ts-node --files ./scripts/bridging-manager/grant-role.ts",
-    "optimism:deploy-bridge": "ts-node --files ./scripts/optimism/deploy-bridge.ts",
-    "arbitrum:deploy-gateway": "ts-node --files ./scripts/arbitrum/deploy-gateway.ts",
+    "coverage": "hardhat coverage --testfiles './test/**/*.unit.test.ts'",
+    "test:e2e": "hardhat test ./test/**/*.e2e.test.ts",
+    "test:unit": "hardhat test ./test/**/*.unit.test.ts",
+    "test:integration": "hardhat test ./test/**/*.integration.test.ts",
     "fork:ethereum": "hardhat node:fork mainnet 8545",
     "fork:arbitrum": "hardhat node:fork mainnet_arbitrum 8546",
-    "fork:optimism": "hardhat node:fork mainnet_optimism 9545"
+    "fork:optimism": "hardhat node:fork mainnet_optimism 9545",
+    "arbitrum:deploy": "ts-node --files ./scripts/arbitrum/deploy-gateway.ts",
+    "arbitrum:test:e2e": "hardhat test ./test/arbitrum/*.e2e.test.ts",
+    "arbitrum:test:unit": "hardhat test ./test/arbitrum/*.unit.test.ts",
+    "arbitrum:test:integration": "hardhat test ./test/arbitrum/*.integration.test.ts",
+    "arbitrum:test:acceptance": "hardhat test ./test/arbitrum/*.acceptance.test.ts",
+    "optimism:deploy": "ts-node --files ./scripts/optimism/deploy-bridge.ts",
+    "optimism:test:e2e": "hardhat test ./test/optimism/*.e2e.test.ts",
+    "optimism:test:unit": "hardhat test ./test/optimism/*.unit.test.ts",
+    "optimism:test:integration": "hardhat test ./test/optimism/*.integration.test.ts",
+    "optimism:test:acceptance": "hardhat test ./test/optimism/*.acceptance.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -26,7 +34,7 @@
     "@typechain/ethers-v5": "^7.2.0",
     "@typechain/hardhat": "^2.3.1",
     "@types/chai": "^4.3.0",
-    "@types/mocha": "^9.1.0",
+    "@types/mocha": "^9.1.1",
     "@types/node": "^12.20.47",
     "@typescript-eslint/eslint-plugin": "^4.33.0",
     "@typescript-eslint/parser": "^4.33.0",
@@ -52,9 +60,11 @@
     "typescript": "^4.6.3"
   },
   "dependencies": {
+    "@arbitrum/sdk": "^2.0.1",
     "@eth-optimism/sdk": "^1.1.7",
     "@ethersproject/providers": "^5.6.8",
     "@openzeppelin/contracts": "^4.6.0",
+    "arb-ts": "^1.0.2",
     "chalk": "4.1.2"
   }
 }

@@ -1,11 +1,13 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity 0.8.10;
 
 import {ICrossDomainMessenger} from "./interfaces/ICrossDomainMessenger.sol";
 
 /// @dev Helper contract for contracts performing cross-domain communications
 contract CrossDomainEnabled {
-    /// @notice Messenger contract used to send and recieve messages from the other domain
+    /// @notice Messenger contract used to send and receive messages from the other domain
     ICrossDomainMessenger public immutable messenger;
 
     /// @param messenger_ Address of the CrossDomainMessenger on the current layer

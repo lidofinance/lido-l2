@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.10;
 
 import {BridgingManager} from "../BridgingManager.sol";
 import {BridgeableTokens} from "../BridgeableTokens.sol";
@@ -55,7 +55,8 @@ abstract contract InterchainERC20TokenGateway is
         address l1Token_,
         address from_,
         address to_,
-        uint256 amount_
+        uint256 amount_,
+        bytes memory // data_
     ) public pure returns (bytes memory) {
         return
             abi.encodeWithSelector(

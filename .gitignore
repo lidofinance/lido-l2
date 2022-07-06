@@ -6,6 +6,7 @@ typechain
 
 #Hardhat files
 cache
-artifacts
+/artifacts
 
 .DS_Store
+.vscode

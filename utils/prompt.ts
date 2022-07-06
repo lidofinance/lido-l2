@@ -1,6 +1,6 @@
 import readline from "readline";
 
-export function prompt(question: string, availableAnswers?: string[]) {
+function prompt(question: string, availableAnswers?: string[]) {
   const rdl = readline.createInterface(process.stdin, process.stdout);
   return new Promise<string>((resolve, reject) => {
     rdl.question(`${question}\n`, (answer) => {
@@ -16,7 +16,7 @@ export function prompt(question: string, availableAnswers?: string[]) {
   });
 }
 
-export async function promptProceed() {
+async function promptProceed() {
   const positiveAnswers = ["y", "yes"];
   const negativeAnswers = ["n", "no"];
   const answer = await prompt("Do you want to proceed? [yes/no]", [
@@ -27,3 +27,5 @@ export async function promptProceed() {
     throw new Error("User discarded prompt to proceed");
   }
 }
+
+export default { proceed: promptProceed, message: prompt };

@@ -11,60 +11,61 @@ import {
   EmptyContractStub__factory,
 } from "../../typechain";
 import { assert } from "chai";
-import { testsuite } from "../../utils/testing";
+import { unit } from "../../utils/testing";
 
-testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
-  it("l1Token() returns correct value after deployment", async () => {
+unit("Arbitrum :: L1ERC20TokensGateway", ctxFactory)
+  .test("l1Token() ", async (ctx) => {
     assert.equal(
       await ctx.l1TokensGateway.l1Token(),
       ctx.stubs.l1Token.address
     );
-  });
+  })
 
-  it("l2Token() returns correct value after deployment", async () => {
+  .test("l2Token()", async (ctx) => {
     assert.equal(
       await ctx.l1TokensGateway.l2Token(),
       ctx.stubs.l2Token.address
     );
-  });
+  })
 
-  it("counterpartGateway() returns correct value after deployment", async () => {
+  .test("counterpartGateway()", async (ctx) => {
     assert.equal(
       await ctx.l1TokensGateway.counterpartGateway(),
       ctx.stubs.l2TokensGateway.address
     );
-  });
+  })
 
-  it("router() returns correct value after deployment", async () => {
+  .test("router()", async (ctx) => {
     assert.equal(
       await ctx.l1TokensGateway.router(),
       ctx.stubs.l1Router.address
     );
-  });
+  })
 
-  it("calculateL2TokenAddress() returns l2Token when called with l1Token", async () => {
+  .test("calculateL2TokenAddress() :: correct l1Token", async (ctx) => {
     const actualL2TokenAddress =
       await ctx.l1TokensGateway.calculateL2TokenAddress(
         ctx.stubs.l1Token.address
       );
     assert.equal(actualL2TokenAddress, ctx.stubs.l2Token.address);
-  });
+  })
 
-  it("calculateL2TokenAddress() returns zero address when called with not l1Token", async () => {
+  .test("calculateL2TokenAddress() :: incorrect l1Token", async (ctx) => {
     const wrongAddress = ctx.accounts.stranger.address;
     const actualL2TokenAddress =
       await ctx.l1TokensGateway.calculateL2TokenAddress(wrongAddress);
     assert.equal(actualL2TokenAddress, hre.ethers.constants.AddressZero);
-  });
+  })
 
-  it("getOutboundCalldata() returns encoded call or l2TokensGateway.finalizeInboundTransfer()", async () => {
+  .test("getOutboundCalldata()", async (ctx) => {
     const [sender, recipient] = await hre.ethers.getSigners();
     const amount = wei`1.5 ether`;
     const actualCalldata = await ctx.l1TokensGateway.getOutboundCalldata(
       ctx.stubs.l1Token.address,
       sender.address,
       recipient.address,
-      amount
+      amount,
+      "0x"
     );
 
     const expectedCalldata =
@@ -80,9 +81,9 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
       );
 
     assert.equal(actualCalldata, expectedCalldata);
-  });
+  })
 
-  it("outboundTransfer() :: deposits are disabled", async () => {
+  .test("outboundTransfer() :: deposits are disabled", async (ctx) => {
     // validate deposits are disabled
     assert.isFalse(await ctx.l1TokensGateway.isDepositsEnabled());
 
@@ -94,7 +95,7 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     const data = encodeSenderOutboundTransferData(maxSubmissionCost);
 
     // validate deposit reverts with error ErrorDepositsDisabled()
-    assert.revertsWith(
+    await assert.revertsWith(
       ctx.l1TokensGateway
         .connect(sender)
         .outboundTransfer(
@@ -107,9 +108,9 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         ),
       "ErrorDepositsDisabled()"
     );
-  });
+  })
 
-  it("outboundTransfer() :: wrong l1Token address", async () => {
+  .test("outboundTransfer() :: wrong l1Token address", async (ctx) => {
     const [sender, recipient, wrongAddress] = await hre.ethers.getSigners();
     const amount = wei`1.2 ether`;
     const maxGas = wei`1000 gwei`;
@@ -153,9 +154,125 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         ),
       "ErrorUnsupportedL1Token()"
     );
-  });
+  })
 
-  it("outboundTransfer() :: extra data not empty", async () => {
+  .test("outboundTransfer() :: max submission cost is zero", async (ctx) => {
+    const {
+      l1TokensGateway,
+      stubs: { l1Token, inbox },
+      accounts: { deployer },
+    } = ctx;
+
+    // initialize gateway
+    await l1TokensGateway.initialize(deployer.address);
+
+    // validate gateway was initialized
+    assert.isTrue(await l1TokensGateway.isInitialized());
+
+    // grant DEPOSITS_ENABLER_ROLE to the l1Deployer to enable deposits
+    await l1TokensGateway.grantRole(
+      await l1TokensGateway.DEPOSITS_ENABLER_ROLE(),
+      deployer.address
+    );
+
+    // enable deposits
+    await l1TokensGateway.enableDeposits();
+
+    // validate deposits was enabled
+    assert.isTrue(await l1TokensGateway.isDepositsEnabled());
+
+    const [sender, recipient] = await hre.ethers.getSigners();
+    const amount = wei`1.2 ether`;
+    const maxGas = wei`1000 gwei`;
+    const gasPriceBid = wei`2000 gwei`;
+    const maxSubmissionCost = wei`0 wei`;
+    const value = wei`3000 gwei`;
+    const data = encodeSenderOutboundTransferData(maxSubmissionCost);
+
+    // set allowance for l1TokensGateway before transfer
+    await l1Token.connect(sender).approve(l1TokensGateway.address, amount);
+
+    const retryableTicketId = 13;
+    await inbox.setRetryableTicketId(retryableTicketId);
+
+    assert.equalBN(await inbox.retryableTicketId(), retryableTicketId);
+
+    // initiate outbound transfer
+    await assert.revertsWith(
+      l1TokensGateway
+        .connect(sender)
+        .outboundTransfer(
+          l1Token.address,
+          recipient.address,
+          amount,
+          maxGas,
+          gasPriceBid,
+          data,
+          { value }
+        ),
+      "ErrorNoMaxSubmissionCost()"
+    );
+  })
+
+  .test("outboundTransfer() :: ETH value too low", async (ctx) => {
+    const {
+      l1TokensGateway,
+      stubs: { l1Token, inbox },
+      accounts: { deployer },
+    } = ctx;
+
+    // initialize gateway
+    await l1TokensGateway.initialize(deployer.address);
+
+    // validate gateway was initialized
+    assert.isTrue(await l1TokensGateway.isInitialized());
+
+    // grant DEPOSITS_ENABLER_ROLE to the l1Deployer to enable deposits
+    await l1TokensGateway.grantRole(
+      await l1TokensGateway.DEPOSITS_ENABLER_ROLE(),
+      deployer.address
+    );
+
+    // enable deposits
+    await l1TokensGateway.enableDeposits();
+
+    // validate deposits was enabled
+    assert.isTrue(await l1TokensGateway.isDepositsEnabled());
+
+    const [sender, recipient] = await hre.ethers.getSigners();
+    const amount = wei`1.2 ether`;
+    const maxGas = wei`100_000`;
+    const gasPriceBid = wei`2 gwei`;
+    const maxSubmissionCost = wei`50_000 gwei`;
+    const value = wei`200_000 gwei`;
+    const data = encodeSenderOutboundTransferData(maxSubmissionCost);
+
+    // set allowance for l1TokensGateway before transfer
+    await l1Token.connect(sender).approve(l1TokensGateway.address, amount);
+
+    const retryableTicketId = 13;
+    await inbox.setRetryableTicketId(retryableTicketId);
+
+    assert.equalBN(await inbox.retryableTicketId(), retryableTicketId);
+
+    // initiate outbound transfer
+    await assert.revertsWith(
+      l1TokensGateway
+        .connect(sender)
+        .outboundTransfer(
+          l1Token.address,
+          recipient.address,
+          amount,
+          maxGas,
+          gasPriceBid,
+          data,
+          { value }
+        ),
+      "ErrorETHValueTooLow()"
+    );
+  })
+
+  .test("outboundTransfer() :: extra data not empty", async (ctx) => {
     const {
       l1TokensGateway,
       stubs: { l1Token },
@@ -207,9 +324,67 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         ),
       "ExtraDataNotEmpty()"
     );
-  });
+  })
 
-  it("outboundTransfer() :: called by router", async () => {
+  .test("outboundTransfer() :: ETH value too low", async (ctx) => {
+    const {
+      l1TokensGateway,
+      stubs: { l1Token, inbox },
+      accounts: { deployer },
+    } = ctx;
+
+    // initialize gateway
+    await l1TokensGateway.initialize(deployer.address);
+
+    // validate gateway was initialized
+    assert.isTrue(await l1TokensGateway.isInitialized());
+
+    // grant DEPOSITS_ENABLER_ROLE to the l1Deployer to enable deposits
+    await l1TokensGateway.grantRole(
+      await l1TokensGateway.DEPOSITS_ENABLER_ROLE(),
+      deployer.address
+    );
+
+    // enable deposits
+    await l1TokensGateway.enableDeposits();
+
+    // validate deposits was enabled
+    assert.isTrue(await l1TokensGateway.isDepositsEnabled());
+
+    const [sender, recipient] = await hre.ethers.getSigners();
+    const amount = wei`1.2 ether`;
+    const maxGas = wei`100_000`;
+    const gasPriceBid = wei`2 gwei`;
+    const maxSubmissionCost = wei`50_000 gwei`;
+    const value = wei`200_000 gwei`;
+    const data = encodeSenderOutboundTransferData(maxSubmissionCost);
+
+    // set allowance for l1TokensGateway before transfer
+    await l1Token.connect(sender).approve(l1TokensGateway.address, amount);
+
+    const retryableTicketId = 13;
+    await inbox.setRetryableTicketId(retryableTicketId);
+
+    assert.equalBN(await inbox.retryableTicketId(), retryableTicketId);
+
+    // initiate outbound transfer
+    await assert.revertsWith(
+      l1TokensGateway
+        .connect(sender)
+        .outboundTransfer(
+          l1Token.address,
+          recipient.address,
+          amount,
+          maxGas,
+          gasPriceBid,
+          data,
+          { value }
+        ),
+      "ErrorETHValueTooLow()"
+    );
+  })
+
+  .test("outboundTransfer() :: called by router", async (ctx) => {
     const {
       l1TokensGateway,
       stubs: { l1Token, inbox, l2TokensGateway },
@@ -235,10 +410,10 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     assert.isTrue(await l1TokensGateway.isDepositsEnabled());
 
     const amount = wei`1.2 ether`;
-    const maxGas = wei`1000 gwei`;
-    const gasPriceBid = wei`2000 gwei`;
-    const maxSubmissionCost = wei`11_000 gwei`;
-    const value = wei`3000 gwei`;
+    const maxGas = wei`100_000`;
+    const gasPriceBid = wei`2 gwei`;
+    const maxSubmissionCost = wei`50_000 gwei`;
+    const value = wei`250_000 gwei`;
     const data = encodeRouterOutboundTransferData(
       sender.address,
       maxSubmissionCost
@@ -326,9 +501,9 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
 
     // validate balance of the gateway increased
     assert.equalBN(await l1Token.balanceOf(l1TokensGateway.address), amount);
-  });
+  })
 
-  it("outboundTransfer() :: called by sender", async () => {
+  .test("outboundTransfer() :: called by sender", async (ctx) => {
     const {
       l1TokensGateway,
       stubs: { l1Token, inbox, l2TokensGateway },
@@ -355,10 +530,10 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
 
     const [sender, recipient] = await hre.ethers.getSigners();
     const amount = wei`1.2 ether`;
-    const maxGas = wei`1000 gwei`;
-    const gasPriceBid = wei`2000 gwei`;
-    const maxSubmissionCost = wei`11_000 gwei`;
-    const value = wei`3000 gwei`;
+    const maxGas = wei`100_000`;
+    const gasPriceBid = wei`2 gwei`;
+    const maxSubmissionCost = wei`50_000 gwei`;
+    const value = wei`250_000 gwei`;
     const data = encodeSenderOutboundTransferData(maxSubmissionCost);
 
     const senderBalanceBefore = await l1Token.balanceOf(sender.address);
@@ -427,9 +602,9 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
 
     // validate balance of the gateway increased
     assert.equalBN(await l1Token.balanceOf(l1TokensGateway.address), amount);
-  });
+  })
 
-  it("finalizeInboundTransfer() :: withdrawals disabled", async () => {
+  .test("finalizeInboundTransfer() :: withdrawals disabled", async (ctx) => {
     const {
       l1TokensGateway,
       accounts: { deployer, bridgeAsEOA, sender, recipient },
@@ -457,9 +632,8 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         ),
       "ErrorWithdrawalsDisabled()"
     );
-  });
-
-  it("finalizeInboundTransfer() :: unauthorized bridge", async () => {
+  })
+  .test("finalizeInboundTransfer() :: unauthorized bridge", async (ctx) => {
     const {
       l1TokensGateway,
       accounts: { deployer, stranger, sender, recipient },
@@ -503,58 +677,61 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         ),
       "ErrorUnauthorizedBridge()"
     );
-  });
+  })
 
-  it("finalizeInboundTransfer() :: wrong cross domain sender", async () => {
-    const {
-      l1TokensGateway,
-      accounts: { deployer, stranger, sender, recipient, bridgeAsEOA },
-      stubs: { l1Token, outbox },
-    } = ctx;
+  .test(
+    "finalizeInboundTransfer() :: wrong cross domain sender",
+    async (ctx) => {
+      const {
+        l1TokensGateway,
+        accounts: { deployer, stranger, sender, recipient, bridgeAsEOA },
+        stubs: { l1Token, outbox },
+      } = ctx;
 
-    // initialize gateway
-    await l1TokensGateway.initialize(deployer.address);
+      // initialize gateway
+      await l1TokensGateway.initialize(deployer.address);
 
-    // validate gateway was initialized
-    assert.isTrue(await l1TokensGateway.isInitialized());
+      // validate gateway was initialized
+      assert.isTrue(await l1TokensGateway.isInitialized());
 
-    // grant WITHDRAWALS_ENABLER_ROLE to the l1Deployer to enable withdrawals
-    await l1TokensGateway.grantRole(
-      await l1TokensGateway.WITHDRAWALS_ENABLER_ROLE(),
-      deployer.address
-    );
+      // grant WITHDRAWALS_ENABLER_ROLE to the l1Deployer to enable withdrawals
+      await l1TokensGateway.grantRole(
+        await l1TokensGateway.WITHDRAWALS_ENABLER_ROLE(),
+        deployer.address
+      );
 
-    // enable withdrawals
-    await l1TokensGateway.enableWithdrawals();
+      // enable withdrawals
+      await l1TokensGateway.enableWithdrawals();
 
-    // validate withdrawals were enabled
-    assert.isTrue(await l1TokensGateway.isWithdrawalsEnabled());
+      // validate withdrawals were enabled
+      assert.isTrue(await l1TokensGateway.isWithdrawalsEnabled());
 
-    // validate that stranger address is not counterpartGateway
-    assert.notEqual(
-      await l1TokensGateway.counterpartGateway(),
-      stranger.address
-    );
+      // validate that stranger address is not counterpartGateway
+      assert.notEqual(
+        await l1TokensGateway.counterpartGateway(),
+        stranger.address
+      );
 
-    // prepare OutboxStub to return wrong gateway address
-    await outbox.setL2ToL1Sender(stranger.address);
+      // prepare OutboxStub to return wrong gateway address
+      await outbox.setL2ToL1Sender(stranger.address);
 
-    // validate gateway reverts with ErrorWrongCrossDomainSender()
-    await assert.revertsWith(
-      l1TokensGateway
-        .connect(bridgeAsEOA)
-        .finalizeInboundTransfer(
-          l1Token.address,
-          sender.address,
-          recipient.address,
-          wei`10 ether`,
-          "0x"
-        ),
-      "ErrorWrongCrossDomainSender()"
-    );
-  });
+      // validate gateway reverts with ErrorWrongCrossDomainSender()
+      await assert.revertsWith(
+        l1TokensGateway
+          .connect(bridgeAsEOA)
+          .finalizeInboundTransfer(
+            l1Token.address,
+            sender.address,
+            recipient.address,
+            wei`10 ether`,
+            "0x"
+          ),
+        "ErrorWrongCrossDomainSender()"
+      );
+    }
+  )
 
-  it("finalizeInboundTransfer() :: wrong token", async () => {
+  .test("finalizeInboundTransfer() :: wrong token", async (ctx) => {
     const {
       l1TokensGateway,
       accounts: { stranger, sender, recipient, deployer, bridgeAsEOA },
@@ -592,9 +769,9 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         ),
       "ErrorUnsupportedL1Token()"
     );
-  });
+  })
 
-  it("finalizeInboundTransfer() :: works as expected", async () => {
+  .test("finalizeInboundTransfer() :: works as expected", async (ctx) => {
     const {
       l1TokensGateway,
       accounts: { sender, recipient, deployer, bridgeAsEOA },
@@ -658,10 +835,11 @@ testsuite("Arbitrum :: L1ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
       await l1Token.balanceOf(l1TokensGateway.address),
       wei.toBigNumber(initialL1GatewayBalance).sub(amount)
     );
-  });
-});
+  })
 
-async function ctxProvider() {
+  .run();
+
+async function ctxFactory() {
   const [deployer, stranger, sender, recipient] = await hre.ethers.getSigners();
   const outboxStub = await new OutboxStub__factory(deployer).deploy();
   const bridgeStub = await new BridgeStub__factory(deployer).deploy(

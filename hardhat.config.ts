@@ -7,19 +7,32 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "./tasks/fork-node";
-import { getEnvVariable } from "./utils/env";
+import env from "./utils/env";
 
 dotenv.config();
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.14",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 2000,
+    compilers: [
+      {
+        version: "0.6.11",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 100,
+          },
+        },
       },
-    },
+      {
+        version: "0.8.10",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 100_000,
+          },
+        },
+      },
+    ],
   },
   networks: {
     local: {
@@ -32,47 +45,50 @@ const config: HardhatUserConfig = {
       url: "http://localhost:9545",
     },
     kovan: {
-      url: getEnvVariable("KOVAN_URL", ""),
+      url: env.string("RPC_ETH_KOVAN", ""),
     },
     kovan_optimism: {
-      url: getEnvVariable("KOVAN_OPTIMISM_URL", ""),
+      url: env.string("RPC_OPT_KOVAN", ""),
     },
     rinkeby: {
-      url: getEnvVariable("RINKEBY_URL", ""),
+      url: env.string("RPC_ETH_RINKEBY", ""),
     },
     rinkeby_arbitrum: {
-      url: getEnvVariable("RINKEBY_ARBITRUM_URL", ""),
+      url: env.string("RPC_ARB_RINKEBY", ""),
     },
     mainnet: {
-      url: getEnvVariable("MAINNET_URL", ""),
-    },
-    mainnet_fork: {
-      url: getEnvVariable("MAINNET_URL", ""),
-      forking: {
-        url: getEnvVariable("MAINNET_URL", ""),
-      },
+      url: env.string("RPC_ETH_MAINNET", ""),
     },
     mainnet_arbitrum: {
-      url: getEnvVariable("MAINNET_ARBITRUM_URL", ""),
+      url: env.string("RPC_ARB_MAINNET", ""),
     },
     mainnet_optimism: {
-      url: getEnvVariable("MAINNET_OPTIMISM_URL", ""),
+      url: env.string("RPC_OPT_MAINNET", ""),
     },
   },
   gasReporter: {
-    enabled: getEnvVariable("REPORT_GAS", "false") !== "false",
+    enabled: env.string("REPORT_GAS", "false") !== "false",
     currency: "USD",
   },
   etherscan: {
     apiKey: {
-      rinkeby: getEnvVariable("RINKEBY_ETHERSCAN_API_KEY", ""),
-      kovan: getEnvVariable("KOVAN_ETHERSCAN_API_KEY", ""),
-      arbitrumTestnet: getEnvVariable("RINKEBY_ARBITRUM_ETHERSCAN_API_KEY", ""),
-      optimisticKovan: getEnvVariable("KOVAN_OPTIMISM_ETHERSCAN_API_KEY", ""),
+      kovan: env.string("ETHERSCAN_API_KEY_ETH", ""),
+      rinkeby: env.string("ETHERSCAN_API_KEY_ETH", ""),
+      mainnet: env.string("ETHERSCAN_API_KEY_ETH", ""),
+      arbitrumTestnet: env.string("ETHERSCAN_API_KEY_ARB", ""),
+      arbitrumOne: env.string("ETHERSCAN_API_KEY_ARB", ""),
+      optimisticKovan: env.string("ETHERSCAN_API_KEY_OPT", ""),
+      optimisticEthereum: env.string("ETHERSCAN_API_KEY_OPT", ""),
     },
   },
   typechain: {
-    externalArtifacts: ["./interfaces/**/*.json"],
+    externalArtifacts: [
+      "./interfaces/**/*.json",
+      "./utils/arbitrum/artifacts/*.json",
+    ],
+  },
+  mocha: {
+    timeout: 20 * 60 * 60 * 1000, // 20 minutes for e2e tests
   },
 };
 

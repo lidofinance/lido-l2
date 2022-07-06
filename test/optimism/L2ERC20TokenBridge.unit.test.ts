@@ -7,390 +7,374 @@ import {
   EmptyContractStub__factory,
   CrossDomainMessengerStub__factory,
 } from "../../typechain";
-import { testsuite } from "../../utils/testing";
+import testing, { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
-import * as account from "../../utils/account";
 import { assert } from "chai";
 
-testsuite(
-  "Optimism:: L2ERC20TokenBridge unit tests",
-  ctxProvider,
-  async (ctx) => {
-    it("l1TokenBridge()", async () => {
-      assert.equal(
-        await ctx.l2TokenBridge.l1TokenBridge(),
-        ctx.accounts.l1TokenBridgeEOA.address
-      );
-    });
+unit("Optimism:: L2ERC20TokenBridge", ctxFactory)
+  .test("l1TokenBridge()", async (ctx) => {
+    assert.equal(
+      await ctx.l2TokenBridge.l1TokenBridge(),
+      ctx.accounts.l1TokenBridgeEOA.address
+    );
+  })
 
-    it("withdraw() :: withdrawals disabled", async () => {
-      const {
-        l2TokenBridge,
-        stubs: { l2Token: l2TokenStub },
-      } = ctx;
+  .test("withdraw() :: withdrawals disabled", async (ctx) => {
+    const {
+      l2TokenBridge,
+      stubs: { l2Token: l2TokenStub },
+    } = ctx;
 
-      await ctx.l2TokenBridge.disableWithdrawals();
+    await ctx.l2TokenBridge.disableWithdrawals();
 
-      assert.isFalse(await ctx.l2TokenBridge.isWithdrawalsEnabled());
+    assert.isFalse(await ctx.l2TokenBridge.isWithdrawalsEnabled());
 
-      await assert.revertsWith(
-        l2TokenBridge.withdraw(
-          l2TokenStub.address,
-          wei`1 ether`,
-          wei`1 gwei`,
-          "0x"
-        ),
-        "ErrorWithdrawalsDisabled()"
-      );
-    });
-
-    it("withdraw() :: unsupported l2Token", async () => {
-      const {
-        l2TokenBridge,
-        accounts: { stranger },
-      } = ctx;
-      await assert.revertsWith(
-        l2TokenBridge.withdraw(
-          stranger.address,
-          wei`1 ether`,
-          wei`1 gwei`,
-          "0x"
-        ),
-        "ErrorUnsupportedL2Token()"
-      );
-    });
-
-    it("withdraw()", async () => {
-      const {
-        l2TokenBridge,
-        accounts: { deployer, l1TokenBridgeEOA },
-        stubs: {
-          l2Messenger: l2MessengerStub,
-          l1Token: l1TokenStub,
-          l2Token: l2TokenStub,
-        },
-      } = ctx;
-
-      const deployerBalanceBefore = await l2TokenStub.balanceOf(
-        deployer.address
-      );
-      const totalSupplyBefore = await l2TokenStub.totalSupply();
-
-      const amount = wei`1 ether`;
-      const l1Gas = wei`1 wei`;
-      const data = "0xdeadbeaf";
-
-      const tx = await l2TokenBridge.withdraw(
+    await assert.revertsWith(
+      l2TokenBridge.withdraw(
         l2TokenStub.address,
-        amount,
-        l1Gas,
-        data
-      );
+        wei`1 ether`,
+        wei`1 gwei`,
+        "0x"
+      ),
+      "ErrorWithdrawalsDisabled()"
+    );
+  })
 
-      await assert.emits(l2TokenBridge, tx, "WithdrawalInitiated", [
-        l1TokenStub.address,
-        l2TokenStub.address,
-        deployer.address,
-        deployer.address,
-        amount,
-        data,
-      ]);
+  .test("withdraw() :: unsupported l2Token", async (ctx) => {
+    const {
+      l2TokenBridge,
+      accounts: { stranger },
+    } = ctx;
+    await assert.revertsWith(
+      l2TokenBridge.withdraw(stranger.address, wei`1 ether`, wei`1 gwei`, "0x"),
+      "ErrorUnsupportedL2Token()"
+    );
+  })
 
-      await assert.emits(l2MessengerStub, tx, "SentMessage", [
-        l1TokenBridgeEOA.address,
-        l2TokenBridge.address,
-        L1ERC20TokenBridge__factory.createInterface().encodeFunctionData(
-          "finalizeERC20Withdrawal",
-          [
-            l1TokenStub.address,
-            l2TokenStub.address,
-            deployer.address,
-            deployer.address,
-            amount,
-            data,
-          ]
-        ),
-        1, // message nonce
-        l1Gas,
-      ]);
+  .test("withdraw()", async (ctx) => {
+    const {
+      l2TokenBridge,
+      accounts: { deployer, l1TokenBridgeEOA },
+      stubs: {
+        l2Messenger: l2MessengerStub,
+        l1Token: l1TokenStub,
+        l2Token: l2TokenStub,
+      },
+    } = ctx;
 
-      assert.equalBN(
-        await l2TokenStub.balanceOf(deployer.address),
-        deployerBalanceBefore.sub(amount)
-      );
+    const deployerBalanceBefore = await l2TokenStub.balanceOf(deployer.address);
+    const totalSupplyBefore = await l2TokenStub.totalSupply();
 
-      assert.equalBN(
-        await l2TokenStub.totalSupply(),
-        totalSupplyBefore.sub(amount)
-      );
-    });
+    const amount = wei`1 ether`;
+    const l1Gas = wei`1 wei`;
+    const data = "0xdeadbeaf";
 
-    it("withdrawTo() :: withdrawals disabled", async () => {
-      const {
-        l2TokenBridge,
-        stubs: { l2Token: l2TokenStub },
-        accounts: { recipient },
-      } = ctx;
+    const tx = await l2TokenBridge.withdraw(
+      l2TokenStub.address,
+      amount,
+      l1Gas,
+      data
+    );
 
-      await ctx.l2TokenBridge.disableWithdrawals();
+    await assert.emits(l2TokenBridge, tx, "WithdrawalInitiated", [
+      l1TokenStub.address,
+      l2TokenStub.address,
+      deployer.address,
+      deployer.address,
+      amount,
+      data,
+    ]);
 
-      assert.isFalse(await ctx.l2TokenBridge.isWithdrawalsEnabled());
-
-      await assert.revertsWith(
-        l2TokenBridge.withdrawTo(
+    await assert.emits(l2MessengerStub, tx, "SentMessage", [
+      l1TokenBridgeEOA.address,
+      l2TokenBridge.address,
+      L1ERC20TokenBridge__factory.createInterface().encodeFunctionData(
+        "finalizeERC20Withdrawal",
+        [
+          l1TokenStub.address,
           l2TokenStub.address,
-          recipient.address,
-          wei`1 ether`,
-          wei`1 gwei`,
-          "0x"
-        ),
-        "ErrorWithdrawalsDisabled()"
-      );
-    });
+          deployer.address,
+          deployer.address,
+          amount,
+          data,
+        ]
+      ),
+      1, // message nonce
+      l1Gas,
+    ]);
 
-    it("withdrawTo() :: unsupported l2Token", async () => {
-      const {
-        l2TokenBridge,
-        accounts: { stranger, recipient },
-      } = ctx;
-      await assert.revertsWith(
-        l2TokenBridge.withdrawTo(
-          stranger.address,
-          recipient.address,
-          wei`1 ether`,
-          wei`1 gwei`,
-          "0x"
-        ),
-        "ErrorUnsupportedL2Token()"
-      );
-    });
+    assert.equalBN(
+      await l2TokenStub.balanceOf(deployer.address),
+      deployerBalanceBefore.sub(amount)
+    );
 
-    it("withdrawTo()", async () => {
-      const {
-        l2TokenBridge,
-        accounts: { deployer, recipient, l1TokenBridgeEOA },
-        stubs: {
-          l2Messenger: l2MessengerStub,
-          l1Token: l1TokenStub,
-          l2Token: l2TokenStub,
-        },
-      } = ctx;
+    assert.equalBN(
+      await l2TokenStub.totalSupply(),
+      totalSupplyBefore.sub(amount)
+    );
+  })
 
-      const deployerBalanceBefore = await l2TokenStub.balanceOf(
-        deployer.address
-      );
-      const totalSupplyBefore = await l2TokenStub.totalSupply();
+  .test("withdrawTo() :: withdrawals disabled", async (ctx) => {
+    const {
+      l2TokenBridge,
+      stubs: { l2Token: l2TokenStub },
+      accounts: { recipient },
+    } = ctx;
 
-      const amount = wei`1 ether`;
-      const l1Gas = wei`1 wei`;
-      const data = "0xdeadbeaf";
+    await ctx.l2TokenBridge.disableWithdrawals();
 
-      const tx = await l2TokenBridge.withdrawTo(
+    assert.isFalse(await ctx.l2TokenBridge.isWithdrawalsEnabled());
+
+    await assert.revertsWith(
+      l2TokenBridge.withdrawTo(
         l2TokenStub.address,
         recipient.address,
-        amount,
-        l1Gas,
-        data
-      );
+        wei`1 ether`,
+        wei`1 gwei`,
+        "0x"
+      ),
+      "ErrorWithdrawalsDisabled()"
+    );
+  })
 
-      await assert.emits(l2TokenBridge, tx, "WithdrawalInitiated", [
-        l1TokenStub.address,
-        l2TokenStub.address,
-        deployer.address,
+  .test("withdrawTo() :: unsupported l2Token", async (ctx) => {
+    const {
+      l2TokenBridge,
+      accounts: { stranger, recipient },
+    } = ctx;
+    await assert.revertsWith(
+      l2TokenBridge.withdrawTo(
+        stranger.address,
         recipient.address,
-        amount,
-        data,
-      ]);
+        wei`1 ether`,
+        wei`1 gwei`,
+        "0x"
+      ),
+      "ErrorUnsupportedL2Token()"
+    );
+  })
 
-      await assert.emits(l2MessengerStub, tx, "SentMessage", [
-        l1TokenBridgeEOA.address,
-        l2TokenBridge.address,
-        L1ERC20TokenBridge__factory.createInterface().encodeFunctionData(
-          "finalizeERC20Withdrawal",
-          [
-            l1TokenStub.address,
-            l2TokenStub.address,
-            deployer.address,
-            recipient.address,
-            amount,
-            data,
-          ]
+  .test("withdrawTo()", async (ctx) => {
+    const {
+      l2TokenBridge,
+      accounts: { deployer, recipient, l1TokenBridgeEOA },
+      stubs: {
+        l2Messenger: l2MessengerStub,
+        l1Token: l1TokenStub,
+        l2Token: l2TokenStub,
+      },
+    } = ctx;
+
+    const deployerBalanceBefore = await l2TokenStub.balanceOf(deployer.address);
+    const totalSupplyBefore = await l2TokenStub.totalSupply();
+
+    const amount = wei`1 ether`;
+    const l1Gas = wei`1 wei`;
+    const data = "0xdeadbeaf";
+
+    const tx = await l2TokenBridge.withdrawTo(
+      l2TokenStub.address,
+      recipient.address,
+      amount,
+      l1Gas,
+      data
+    );
+
+    await assert.emits(l2TokenBridge, tx, "WithdrawalInitiated", [
+      l1TokenStub.address,
+      l2TokenStub.address,
+      deployer.address,
+      recipient.address,
+      amount,
+      data,
+    ]);
+
+    await assert.emits(l2MessengerStub, tx, "SentMessage", [
+      l1TokenBridgeEOA.address,
+      l2TokenBridge.address,
+      L1ERC20TokenBridge__factory.createInterface().encodeFunctionData(
+        "finalizeERC20Withdrawal",
+        [
+          l1TokenStub.address,
+          l2TokenStub.address,
+          deployer.address,
+          recipient.address,
+          amount,
+          data,
+        ]
+      ),
+      1, // message nonce
+      l1Gas,
+    ]);
+
+    assert.equalBN(
+      await l2TokenStub.balanceOf(deployer.address),
+      deployerBalanceBefore.sub(amount)
+    );
+
+    assert.equalBN(
+      await l2TokenStub.totalSupply(),
+      totalSupplyBefore.sub(amount)
+    );
+  })
+
+  .test("finalizeDeposit() :: deposits disabled", async (ctx) => {
+    const {
+      l2TokenBridge,
+      accounts: { l2MessengerStubEOA, deployer, recipient },
+      stubs: { l1Token: l1TokenStub, l2Token: l2TokenStub },
+    } = ctx;
+
+    await l2TokenBridge.disableDeposits();
+
+    assert.isFalse(await l2TokenBridge.isDepositsEnabled());
+
+    await assert.revertsWith(
+      l2TokenBridge
+        .connect(l2MessengerStubEOA)
+        .finalizeDeposit(
+          l1TokenStub.address,
+          l2TokenStub.address,
+          deployer.address,
+          recipient.address,
+          wei`1 ether`,
+          "0x"
         ),
-        1, // message nonce
-        l1Gas,
-      ]);
+      "ErrorDepositsDisabled()"
+    );
+  })
 
-      assert.equalBN(
-        await l2TokenStub.balanceOf(deployer.address),
-        deployerBalanceBefore.sub(amount)
-      );
+  .test("finalizeDeposit() :: unsupported l1Token", async (ctx) => {
+    const {
+      l2TokenBridge,
+      accounts: { l2MessengerStubEOA, deployer, recipient, stranger },
+      stubs: { l2Token: l2TokenStub },
+    } = ctx;
 
-      assert.equalBN(
-        await l2TokenStub.totalSupply(),
-        totalSupplyBefore.sub(amount)
-      );
-    });
+    await assert.revertsWith(
+      l2TokenBridge
+        .connect(l2MessengerStubEOA)
+        .finalizeDeposit(
+          stranger.address,
+          l2TokenStub.address,
+          deployer.address,
+          recipient.address,
+          wei`1 ether`,
+          "0x"
+        ),
+      "ErrorUnsupportedL1Token()"
+    );
+  })
 
-    it("finalizeDeposit() :: deposits disabled", async () => {
-      const {
-        l2TokenBridge,
-        accounts: { l2MessengerStubEOA, deployer, recipient },
-        stubs: { l1Token: l1TokenStub, l2Token: l2TokenStub },
-      } = ctx;
+  .test("finalizeDeposit() :: unsupported l2Token", async (ctx) => {
+    const {
+      l2TokenBridge,
+      accounts: { l2MessengerStubEOA, deployer, recipient, stranger },
+      stubs: { l1Token: l1TokenStub },
+    } = ctx;
 
-      await l2TokenBridge.disableDeposits();
+    await assert.revertsWith(
+      l2TokenBridge
+        .connect(l2MessengerStubEOA)
+        .finalizeDeposit(
+          l1TokenStub.address,
+          stranger.address,
+          deployer.address,
+          recipient.address,
+          wei`1 ether`,
+          "0x"
+        ),
+      "ErrorUnsupportedL2Token()"
+    );
+  })
 
-      assert.isFalse(await l2TokenBridge.isDepositsEnabled());
+  .test("finalizeDeposit() :: unauthorized messenger", async (ctx) => {
+    const {
+      l2TokenBridge,
+      stubs: { l1Token, l2Token },
+      accounts: { deployer, recipient, stranger },
+    } = ctx;
 
-      await assert.revertsWith(
-        l2TokenBridge
-          .connect(l2MessengerStubEOA)
-          .finalizeDeposit(
-            l1TokenStub.address,
-            l2TokenStub.address,
-            deployer.address,
-            recipient.address,
-            wei`1 ether`,
-            "0x"
-          ),
-        "ErrorDepositsDisabled()"
-      );
-    });
+    await assert.revertsWith(
+      l2TokenBridge
+        .connect(stranger)
+        .finalizeDeposit(
+          l1Token.address,
+          l2Token.address,
+          deployer.address,
+          recipient.address,
+          wei`1 ether`,
+          "0x"
+        ),
+      "ErrorUnauthorizedMessenger()"
+    );
+  })
 
-    it("finalizeDeposit() :: unsupported l1Token", async () => {
-      const {
-        l2TokenBridge,
-        accounts: { l2MessengerStubEOA, deployer, recipient, stranger },
-        stubs: { l2Token: l2TokenStub },
-      } = ctx;
+  .test("finalizeDeposit() :: wrong cross domain sender", async (ctx) => {
+    const {
+      l2TokenBridge,
+      stubs: { l1Token, l2Token, l2Messenger },
+      accounts: { deployer, recipient, stranger, l2MessengerStubEOA },
+    } = ctx;
 
-      await assert.revertsWith(
-        l2TokenBridge
-          .connect(l2MessengerStubEOA)
-          .finalizeDeposit(
-            stranger.address,
-            l2TokenStub.address,
-            deployer.address,
-            recipient.address,
-            wei`1 ether`,
-            "0x"
-          ),
-        "ErrorUnsupportedL1Token()"
-      );
-    });
+    await l2Messenger.setXDomainMessageSender(stranger.address);
 
-    it("finalizeDeposit() :: unsupported l2Token", async () => {
-      const {
-        l2TokenBridge,
-        accounts: { l2MessengerStubEOA, deployer, recipient, stranger },
-        stubs: { l1Token: l1TokenStub },
-      } = ctx;
-
-      await assert.revertsWith(
-        l2TokenBridge
-          .connect(l2MessengerStubEOA)
-          .finalizeDeposit(
-            l1TokenStub.address,
-            stranger.address,
-            deployer.address,
-            recipient.address,
-            wei`1 ether`,
-            "0x"
-          ),
-        "ErrorUnsupportedL2Token()"
-      );
-    });
-
-    it("finalizeDeposit() :: unauthorized messenger", async () => {
-      const {
-        l2TokenBridge,
-        stubs: { l1Token, l2Token },
-        accounts: { deployer, recipient, stranger },
-      } = ctx;
-
-      await assert.revertsWith(
-        l2TokenBridge
-          .connect(stranger)
-          .finalizeDeposit(
-            l1Token.address,
-            l2Token.address,
-            deployer.address,
-            recipient.address,
-            wei`1 ether`,
-            "0x"
-          ),
-        "ErrorUnauthorizedMessenger()"
-      );
-    });
-
-    it("finalizeDeposit() :: wrong cross domain sender", async () => {
-      const {
-        l2TokenBridge,
-        stubs: { l1Token, l2Token, l2Messenger },
-        accounts: { deployer, recipient, stranger, l2MessengerStubEOA },
-      } = ctx;
-
-      await l2Messenger.setXDomainMessageSender(stranger.address);
-
-      await assert.revertsWith(
-        l2TokenBridge
-          .connect(l2MessengerStubEOA)
-          .finalizeDeposit(
-            l1Token.address,
-            l2Token.address,
-            deployer.address,
-            recipient.address,
-            wei`1 ether`,
-            "0x"
-          ),
-        "ErrorWrongCrossDomainSender()"
-      );
-    });
-
-    it("finalizeDeposit()", async () => {
-      const {
-        l2TokenBridge,
-        stubs: { l1Token, l2Token, l2Messenger },
-        accounts: { deployer, recipient, l2MessengerStubEOA, l1TokenBridgeEOA },
-      } = ctx;
-
-      await l2Messenger.setXDomainMessageSender(l1TokenBridgeEOA.address);
-
-      const totalSupplyBefore = await l2Token.totalSupply();
-
-      const amount = wei`1 ether`;
-      const data = "0xdeadbeaf";
-
-      const tx = await l2TokenBridge
+    await assert.revertsWith(
+      l2TokenBridge
         .connect(l2MessengerStubEOA)
         .finalizeDeposit(
           l1Token.address,
           l2Token.address,
           deployer.address,
           recipient.address,
-          amount,
-          data
-        );
+          wei`1 ether`,
+          "0x"
+        ),
+      "ErrorWrongCrossDomainSender()"
+    );
+  })
 
-      await assert.emits(l2TokenBridge, tx, "DepositFinalized", [
+  .test("finalizeDeposit()", async (ctx) => {
+    const {
+      l2TokenBridge,
+      stubs: { l1Token, l2Token, l2Messenger },
+      accounts: { deployer, recipient, l2MessengerStubEOA, l1TokenBridgeEOA },
+    } = ctx;
+
+    await l2Messenger.setXDomainMessageSender(l1TokenBridgeEOA.address);
+
+    const totalSupplyBefore = await l2Token.totalSupply();
+
+    const amount = wei`1 ether`;
+    const data = "0xdeadbeaf";
+
+    const tx = await l2TokenBridge
+      .connect(l2MessengerStubEOA)
+      .finalizeDeposit(
         l1Token.address,
         l2Token.address,
         deployer.address,
         recipient.address,
         amount,
-        data,
-      ]);
-
-      assert.equalBN(await l2Token.balanceOf(recipient.address), amount);
-      assert.equalBN(
-        await l2Token.totalSupply(),
-        totalSupplyBefore.add(amount)
+        data
       );
-    });
-  }
-);
 
-async function ctxProvider() {
+    await assert.emits(l2TokenBridge, tx, "DepositFinalized", [
+      l1Token.address,
+      l2Token.address,
+      deployer.address,
+      recipient.address,
+      amount,
+      data,
+    ]);
+
+    assert.equalBN(await l2Token.balanceOf(recipient.address), amount);
+    assert.equalBN(await l2Token.totalSupply(), totalSupplyBefore.add(amount));
+  })
+
+  .run();
+
+async function ctxFactory() {
   const [deployer, stranger, recipient, l1TokenBridgeEOA] =
     await hre.ethers.getSigners();
 
@@ -398,7 +382,7 @@ async function ctxProvider() {
     deployer
   ).deploy({ value: wei.toBigNumber(wei`1 ether`) });
 
-  const l2MessengerStubEOA = await account.impersonate(l2Messenger.address);
+  const l2MessengerStubEOA = await testing.impersonate(l2Messenger.address);
 
   const l1Token = await new ERC20BridgedStub__factory(deployer).deploy(
     "L1 Token",
@@ -413,7 +397,7 @@ async function ctxProvider() {
   const emptyContract = await new EmptyContractStub__factory(deployer).deploy({
     value: wei.toBigNumber(wei`1 ether`),
   });
-  const emptyContractEOA = await account.impersonate(emptyContract.address);
+  const emptyContractEOA = await testing.impersonate(emptyContract.address);
 
   const l2TokenBridgeImpl = await new L2ERC20TokenBridge__factory(
     deployer

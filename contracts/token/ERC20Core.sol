@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.10;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -19,13 +19,16 @@ contract ERC20Core is IERC20 {
     mapping(address => mapping(address => uint256)) public allowance;
 
     /// @inheritdoc IERC20
-    function approve(address spender_, uint256 amount_) public returns (bool) {
+    function approve(address spender_, uint256 amount_)
+        external
+        returns (bool)
+    {
         _approve(msg.sender, spender_, amount_);
         return true;
     }
 
     /// @inheritdoc IERC20
-    function transfer(address to_, uint256 amount_) public returns (bool) {
+    function transfer(address to_, uint256 amount_) external returns (bool) {
         _transfer(msg.sender, to_, amount_);
         return true;
     }
@@ -35,7 +38,7 @@ contract ERC20Core is IERC20 {
         address from_,
         address to_,
         uint256 amount_
-    ) public returns (bool) {
+    ) external returns (bool) {
         _spendAllowance(from_, msg.sender, amount_);
         _transfer(from_, to_, amount_);
         return true;
@@ -163,13 +166,13 @@ contract ERC20Core is IERC20 {
     /// @dev validates that account_ is not zero address
     modifier onlyNonZeroAccount(address account_) {
         if (account_ == address(0)) {
-            revert ErrorZeroAddress();
+            revert ErrorAccountIsZeroAddress();
         }
         _;
     }
 
-    error ErrorZeroAddress();
     error ErrorNotEnoughBalance();
     error ErrorNotEnoughAllowance();
+    error ErrorAccountIsZeroAddress();
     error ErrorDecreasedAllowanceBelowZero();
 }

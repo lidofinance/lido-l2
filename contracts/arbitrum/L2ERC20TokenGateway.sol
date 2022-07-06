@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.10;
 
 import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
 import {IL2TokenGateway, IInterchainTokenGateway} from "./interfaces/IL2TokenGateway.sol";
@@ -60,7 +60,7 @@ contract L2ERC20TokenGateway is
         uint256 id = sendCrossDomainMessage(
             from,
             counterpartGateway,
-            getOutboundCalldata(l1Token_, from, to_, amount_)
+            getOutboundCalldata(l1Token_, from, to_, amount_, "")
         );
 
         // The current implementation doesn't support fast withdrawals, so we

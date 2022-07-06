@@ -8,54 +8,57 @@ import {
   EmptyContractStub__factory,
 } from "../../typechain";
 import { assert } from "chai";
-import { testsuite } from "../../utils/testing";
+import { unit } from "../../utils/testing";
 import { ArbSysStub__factory } from "../../typechain/factories/ArbSysStub__factory";
 
-testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
-  it("l1Token()", async () => {
+unit("Arbitrum :: L2ERC20TokensGateway", ctxFactory)
+  .test("l1Token()", async (ctx) => {
     assert.equal(
       await ctx.l2TokensGateway.l1Token(),
       ctx.stubs.l1Token.address
     );
-  });
+  })
 
-  it("l2Token()", async () => {
+  .test("l2Token()", async (ctx) => {
     assert.equal(
       await ctx.l2TokensGateway.l2Token(),
       ctx.stubs.l2Token.address
     );
-  });
+  })
 
-  it("counterpartGateway()", async () => {
+  .test("counterpartGateway()", async (ctx) => {
     assert.equal(
       await ctx.l2TokensGateway.counterpartGateway(),
       ctx.stubs.l1TokensGateway.address
     );
-  });
+  })
 
-  it("router() ", async () => {
+  .test("router() ", async (ctx) => {
     assert.equal(
       await ctx.l2TokensGateway.router(),
       ctx.stubs.l2Router.address
     );
-  });
+  })
 
-  it("calculateL2TokenAddress() :: correct l1Token address", async () => {
+  .test("calculateL2TokenAddress() :: correct l1Token address", async (ctx) => {
     const actualL2TokenAddress =
       await ctx.l2TokensGateway.calculateL2TokenAddress(
         ctx.stubs.l1Token.address
       );
     assert.equal(actualL2TokenAddress, ctx.stubs.l2Token.address);
-  });
+  })
 
-  it("calculateL2TokenAddress() :: incorrect l1Token address", async () => {
-    const wrongAddress = ctx.accounts.stranger.address;
-    const actualL2TokenAddress =
-      await ctx.l2TokensGateway.calculateL2TokenAddress(wrongAddress);
-    assert.equal(actualL2TokenAddress, hre.ethers.constants.AddressZero);
-  });
+  .test(
+    "calculateL2TokenAddress() :: incorrect l1Token address",
+    async (ctx) => {
+      const wrongAddress = ctx.accounts.stranger.address;
+      const actualL2TokenAddress =
+        await ctx.l2TokensGateway.calculateL2TokenAddress(wrongAddress);
+      assert.equal(actualL2TokenAddress, hre.ethers.constants.AddressZero);
+    }
+  )
 
-  it("getOutboundCalldata()", async () => {
+  .test("getOutboundCalldata()", async (ctx) => {
     const {
       l2TokensGateway,
       stubs: { l1Token, l1TokensGateway },
@@ -66,7 +69,8 @@ testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
       l1Token.address,
       sender.address,
       recipient.address,
-      amount
+      amount,
+      "0x"
     );
 
     const expectedCalldata = l1TokensGateway.interface.encodeFunctionData(
@@ -75,9 +79,9 @@ testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     );
 
     assert.equal(actualCalldata, expectedCalldata);
-  });
+  })
 
-  it("outboundTransfer() :: withdrawals are disabled", async () => {
+  .test("outboundTransfer() :: withdrawals are disabled", async (ctx) => {
     const {
       l2TokensGateway,
       accounts: { sender, recipient },
@@ -91,8 +95,8 @@ testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
     const maxSubmissionCost = wei`11_000 gwei`;
     const data = encodeOutboundTransferData(maxSubmissionCost);
 
-    // validate deposit reverts with error ErrorDepositsDisabled()
-    assert.revertsWith(
+    // validate deposit reverts with error ErrorWithdrawalsDisabled()
+    await assert.revertsWith(
       l2TokensGateway
         .connect(sender)
         .outboundTransfer(
@@ -103,11 +107,11 @@ testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
           gasPriceBid,
           data
         ),
-      "ErrorDepositsDisabled()"
+      "ErrorWithdrawalsDisabled()"
     );
-  });
+  })
 
-  it("outboundTransfer() :: wrong l1Token address", async () => {
+  .test("outboundTransfer() :: wrong l1Token address", async (ctx) => {
     const amount = wei`1.2 ether`;
     const maxGas = wei`1000 gwei`;
     const gasPriceBid = wei`2000 gwei`;
@@ -151,9 +155,9 @@ testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         ),
       "ErrorUnsupportedL1Token()"
     );
-  });
+  })
 
-  it("outboundTransfer() :: extra data not empty", async () => {
+  .test("outboundTransfer() :: extra data not empty", async (ctx) => {
     const {
       l2TokensGateway,
       stubs: { l1Token },
@@ -198,9 +202,9 @@ testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         ),
       "ExtraDataNotEmpty()"
     );
-  });
+  })
 
-  it("outboundTransfer() :: called by router", async () => {
+  .test("outboundTransfer() :: called by router", async (ctx) => {
     const {
       l2TokensGateway,
       stubs: { l1Token, arbSys, l1TokensGateway },
@@ -283,9 +287,9 @@ testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
       l1TokensGateway.address,
       expectedCalldata,
     ]);
-  });
+  })
 
-  it("outboundTransfer() :: called by sender", async () => {
+  .test("outboundTransfer() :: called by sender", async (ctx) => {
     const {
       l2TokensGateway,
       stubs: { l1Token, arbSys, l1TokensGateway },
@@ -380,9 +384,9 @@ testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
       l1TokensGateway.address,
       expectedCalldata,
     ]);
-  });
+  })
 
-  it("finalizeInboundTransfer() :: deposits disabled", async () => {
+  .test("finalizeInboundTransfer() :: deposits disabled", async (ctx) => {
     const {
       l2TokensGateway,
       accounts: { deployer, l1TokensGatewayAliasedEOA, sender, recipient },
@@ -410,9 +414,9 @@ testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         ),
       "ErrorDepositsDisabled()"
     );
-  });
+  })
 
-  it("finalizeInboundTransfer() :: wrong token", async () => {
+  .test("finalizeInboundTransfer() :: wrong token", async (ctx) => {
     const {
       l2TokensGateway,
       accounts: {
@@ -456,9 +460,9 @@ testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         ),
       "ErrorUnsupportedL1Token()"
     );
-  });
+  })
 
-  it("finalizeInboundTransfer() :: not counterpart gateway", async () => {
+  .test("finalizeInboundTransfer() :: not counterpart gateway", async (ctx) => {
     const {
       l2TokensGateway,
       accounts: { deployer, stranger, sender, recipient },
@@ -502,9 +506,9 @@ testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
         ),
       "ErrorWrongCrossDomainSender()"
     );
-  });
+  })
 
-  it("finalizeInboundTransfer() :: works as expected", async () => {
+  .test("finalizeInboundTransfer() :: works as expected", async (ctx) => {
     const {
       l2TokensGateway,
       accounts: { sender, recipient, deployer, l1TokensGatewayAliasedEOA },
@@ -561,10 +565,11 @@ testsuite("Arbitrum :: L2ERC20TokensGateway unit tests", ctxProvider, (ctx) => {
 
     // validate tokens were minted to recipient
     assert.equalBN(await l2Token.balanceOf(recipient.address), amount);
-  });
-});
+  })
 
-async function ctxProvider() {
+  .run();
+
+async function ctxFactory() {
   const [deployer, stranger, sender, recipient] = await hre.ethers.getSigners();
   const l2RouterStub = await new EmptyContractStub__factory(deployer).deploy({
     value: wei.toBigNumber(wei`1 ether`),
