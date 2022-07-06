@@ -113,7 +113,7 @@ contract BridgingManager is AccessControl {
         _;
     }
 
-    /// @dev Validates that withdrawals aren enabled
+    /// @dev Validates that withdrawals are enabled
     modifier whenWithdrawalsEnabled() {
         if (!isWithdrawalsEnabled()) {
             revert ErrorWithdrawalsDisabled();
