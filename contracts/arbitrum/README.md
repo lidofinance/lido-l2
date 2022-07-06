@@ -228,7 +228,7 @@ Returns whether the withdrawals enabled or not.
 >
 > **Emits:** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `DepositsEnabled(address account)`
 
-Enables the deposits if they are disabled. Reverts with the error `ErrorDepositsEnabled()` if deposits aren enabled. Only accounts with the granted `DEPOSITS_ENABLER_ROLE` can call this method.
+Enables the deposits if they are disabled. Reverts with the error `ErrorDepositsEnabled()` if deposits aren't enabled. Only accounts with the granted `DEPOSITS_ENABLER_ROLE` can call this method.
 
 #### `disableDeposits()`
 
@@ -278,7 +278,7 @@ Validates that deposits are enabled. Reverts with the error `ErrorDepositsDisabl
 
 #### `whenWithdrawalsEnabled()`
 
-Validates that withdrawals aren enabled. Reverts with the error `ErrorWithdrawalsDisabled()` when called on contract with disabled withdrawals.
+Validates that withdrawals are enabled. Reverts with the error `ErrorWithdrawalsDisabled()` when called on contract with disabled withdrawals.
 
 ## BridgeableTokens
 
