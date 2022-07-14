@@ -22,7 +22,8 @@
     "optimism:test:e2e": "hardhat test ./test/optimism/*.e2e.test.ts",
     "optimism:test:unit": "hardhat test ./test/optimism/*.unit.test.ts",
     "optimism:test:integration": "hardhat test ./test/optimism/*.integration.test.ts",
-    "optimism:test:acceptance": "hardhat test ./test/optimism/*.acceptance.test.ts"
+    "optimism:test:acceptance": "hardhat test ./test/optimism/*.acceptance.test.ts",
+    "optimism:test:executor": "hardhat test ./test/bridge-executor/optimism.integration.test.ts"
   },
   "keywords": [],
   "author": "",
