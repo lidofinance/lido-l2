@@ -1,7 +1,8 @@
 import hre from "hardhat";
 import chalk from "chalk";
-import { Wallet } from "ethers";
+import { Signer, Wallet } from "ethers";
 import { BridgingManager, BridgingManager__factory } from "../typechain";
+import { getRoleHolders } from "./testing";
 
 interface Logger {
   log(message: string): void;
@@ -40,7 +41,10 @@ export class BridgingManagerRole {
 
   private constructor(name: BridgingManagerRoleName) {
     this.name = name;
-    this.hash = hre.ethers.utils.id(`BridgingManager.${name}`);
+    this.hash =
+      name === "DEFAULT_ADMIN_ROLE"
+        ? "0x0000000000000000000000000000000000000000000000000000000000000000"
+        : hre.ethers.utils.id(`BridgingManager.${name}`);
   }
 }
 
@@ -59,13 +63,21 @@ export interface BridgingManagerSetupConfig
 }
 
 export class BridgingManagement {
-  private readonly admin: Wallet;
+  private readonly admin: Wallet | Signer;
   public readonly bridgingManager: BridgingManager;
   private readonly logger: BridgingManagementLogger;
 
+  static async getAdmins(bridgingManager: BridgingManager) {
+    const l1GatewayAdminAddresses = await getRoleHolders(
+      bridgingManager,
+      BridgingManagerRole.DEFAULT_ADMIN_ROLE.hash
+    );
+    return Array.from(l1GatewayAdminAddresses);
+  }
+
   constructor(
     address: string,
-    admin: Wallet,
+    admin: Wallet | Signer,
     options: { logger?: Logger } = {}
   ) {
     this.bridgingManager = BridgingManager__factory.connect(address, admin);
@@ -76,7 +88,9 @@ export class BridgingManagement {
   async setup(config: BridgingManagerSetupConfig) {
     this.logger.logSetupTitle(this.bridgingManager.address);
 
-    if (config.bridgeAdmin !== this.admin.address) {
+    const adminAddress = await this.admin.getAddress();
+
+    if (config.bridgeAdmin !== adminAddress) {
       await this.grantRole(BridgingManagerRole.DEFAULT_ADMIN_ROLE, [
         config.bridgeAdmin,
       ]);
@@ -85,24 +99,31 @@ export class BridgingManagement {
     await this.grantManagerRoles({
       ...config,
       depositsEnablers: config.depositsEnabled
-        ? [this.admin.address, ...(config.depositsEnablers || [])]
+        ? [adminAddress, ...(config.depositsEnablers || [])]
         : config.depositsEnablers,
       withdrawalsEnablers: config.withdrawalsEnabled
-        ? [this.admin.address, ...(config.withdrawalsEnablers || [])]
+        ? [adminAddress, ...(config.withdrawalsEnablers || [])]
         : config.withdrawalsEnablers,
     });
 
     if (config.depositsEnabled) {
-      await this.enableDeposits();
+      const isDepositsEnabled = await this.bridgingManager.isDepositsEnabled();
+      if (!isDepositsEnabled) {
+        await this.enableDeposits();
+      }
       await this.renounceRole(BridgingManagerRole.DEPOSITS_ENABLER_ROLE);
     }
 
     if (config.withdrawalsEnabled) {
-      await this.enableWithdrawals();
+      const isWithdrawalsEnabled =
+        await this.bridgingManager.isWithdrawalsEnabled();
+      if (!isWithdrawalsEnabled) {
+        await this.enableWithdrawals();
+      }
       await this.renounceRole(BridgingManagerRole.WITHDRAWALS_ENABLER_ROLE);
     }
 
-    if (config.bridgeAdmin !== this.admin.address) {
+    if (config.bridgeAdmin !== adminAddress) {
       await this.grantRole(BridgingManagerRole.DEFAULT_ADMIN_ROLE, [
         config.bridgeAdmin,
       ]);
@@ -143,11 +164,9 @@ export class BridgingManagement {
   }
 
   async renounceRole(role: BridgingManagerRole) {
-    this.logger.logRenounceRole(role, this.admin.address);
-    const tx = await this.bridgingManager.renounceRole(
-      role.hash,
-      this.admin.address
-    );
+    const adminAddress = await this.admin.getAddress();
+    this.logger.logRenounceRole(role, adminAddress);
+    const tx = await this.bridgingManager.renounceRole(role.hash, adminAddress);
     this.logger.logTxWaiting(tx.hash);
     await tx.wait();
     this.logger.logStepDone();

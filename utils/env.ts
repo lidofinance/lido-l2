@@ -1,5 +1,5 @@
 import { toAddress } from "@eth-optimism/sdk";
-import { Network } from "./network";
+import { NetworkName } from "./network";
 
 function getString(variableName: string, defaultValue?: string) {
   const value = process.env[variableName];
@@ -23,7 +23,7 @@ function getEnum<T extends string>(
   const value = getString(variableName, defaultValue) as T;
   if (!allowedValues.includes(value)) {
     throw new Error(
-      `Variable ${variableName} not in allowed values: ${allowedValues}`
+      `Variable ${variableName}=${value} not in allowed values: ${allowedValues}`
     );
   }
   return value;
@@ -47,8 +47,12 @@ function getAddressList(variableName: string, defaultValue?: string[]) {
   return getList(variableName, defaultValue).map(toAddress);
 }
 
-function getNetwork() {
-  return getEnum("NETWORK", ["local", "testnet", "mainnet"]) as Network;
+function getNetwork(name: string = "NETWORK", defaultNetwork?: NetworkName) {
+  return getEnum(
+    name,
+    ["testnet", "mainnet", "local_testnet", "local_mainnet"],
+    defaultNetwork
+  );
 }
 
 function getPrivateKey() {

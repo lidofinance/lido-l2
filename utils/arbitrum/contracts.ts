@@ -1,32 +1,57 @@
 import { Signer } from "ethers";
-import addresses from "./addresses";
+import { ArbitrumContractAddresses } from "./addresses";
 import {
-  Bridge__factory,
   L1GatewayRouter__factory,
+  L2GatewayRouter,
   L2GatewayRouter__factory,
+  L1GatewayRouter,
+  ArbSysStub,
+  ArbSysStub__factory,
 } from "../../typechain/";
+import { Provider } from "@ethersproject/providers";
+
+type SignerOrProvider = Signer | Provider;
+
+export class ArbitrumContracts {
+  private readonly addresses: ArbitrumContractAddresses;
+  public readonly L1GatewayRouter: L1GatewayRouter;
+  public readonly L2GatewayRouter: L2GatewayRouter;
+  public readonly ArbSys: ArbSysStub;
+
+  constructor(
+    l1SignerOrProvider: SignerOrProvider,
+    l2SignerOrProvider: SignerOrProvider,
+    addresses: ArbitrumContractAddresses
+  ) {
+    this.addresses = addresses;
+
+    this.L1GatewayRouter = L1GatewayRouter__factory.connect(
+      this.addresses.L1GatewayRouter,
+      l1SignerOrProvider
+    );
+
+    this.ArbSys = ArbSysStub__factory.connect(
+      this.addresses.ArbSys,
+      l2SignerOrProvider
+    );
+
+    this.L2GatewayRouter = L2GatewayRouter__factory.connect(
+      this.addresses.L2GatewayRouter,
+      l2SignerOrProvider
+    );
+  }
+}
 
 export default {
-  l1: {
-    async L1GatewayRouter(signer: Signer) {
-      const chainId = await signer.getChainId();
-      return L1GatewayRouter__factory.connect(
-        addresses.getL1(chainId).l1GatewayRouter,
-        signer
-      );
-    },
-    async Bridge(signer: Signer) {
-      const chainId = await signer.getChainId();
-      return Bridge__factory.connect(addresses.getL1(chainId).bridge, signer);
-    },
-  },
-  l2: {
-    async L2GatewayRouter(signer: Signer) {
-      const chainId = await signer.getChainId();
-      return L2GatewayRouter__factory.connect(
-        addresses.getL2(chainId).l2GatewayRouter,
-        signer
-      );
-    },
+  get(
+    addresses: ArbitrumContractAddresses,
+    l1SignerOrProvider: SignerOrProvider,
+    l2SignerOrProvider: SignerOrProvider
+  ) {
+    return new ArbitrumContracts(
+      l1SignerOrProvider,
+      l2SignerOrProvider,
+      addresses
+    );
   },
 };

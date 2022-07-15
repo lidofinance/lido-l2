@@ -42,10 +42,14 @@ wei.fromBigNumber = (value: BigNumber) => {
 };
 
 function shiftDecimalPointsRight(number: string, shift: number) {
-  let [integer, fraction = ""] = number.split(".");
+  const [integer, fraction = ""] = number.split(".");
+  const leadingZeros = fraction.length === 0 ? 0 : fraction.length - 1;
+
+  let result = integer === "0" ? "" : integer;
 
   for (let i = 0; i < shift; ++i) {
-    integer += fraction[i] || "0";
+    result += fraction[i] || "0";
   }
-  return integer;
+
+  return result.slice(leadingZeros) || "0";
 }

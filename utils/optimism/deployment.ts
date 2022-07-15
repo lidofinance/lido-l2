@@ -7,13 +7,9 @@ import {
   L2ERC20TokenBridge__factory,
   OssifiableProxy__factory,
 } from "../../typechain";
-import addresses from "./addresses";
+import { OptimismContractAddresses } from "./addresses";
 import network from "../network";
 import { DeployScript, Logger } from "../deployment/DeployScript";
-
-interface OptimismCommonDependencies {
-  messenger: string;
-}
 
 interface OptimismL1DeployScriptParams {
   deployer: Wallet;
@@ -28,22 +24,17 @@ export async function createOptimismBridgeDeployScripts(
   l1Token: string,
   l1Params: OptimismL1DeployScriptParams,
   l2Params: OptimismL2DeployScriptParams,
-  options?: {
-    dependencies?: {
-      l1?: Partial<OptimismCommonDependencies>;
-      l2?: Partial<OptimismCommonDependencies>;
-    };
-    logger?: Logger;
-  }
+  addresses: OptimismContractAddresses,
+  options?: { logger?: Logger }
 ) {
-  const l1Dependencies = {
-    ...addresses.getL1(await l1Params.deployer.getChainId()),
-    ...options?.dependencies?.l1,
-  };
-  const l2Dependencies = {
-    ...addresses.getL2(await l2Params.deployer.getChainId()),
-    ...options?.dependencies?.l2,
-  };
+  // const l1Dependencies = {
+  //   ...addresses.getL1(await l1Params.deployer.getChainId()),
+  //   ...options?.dependencies?.l1,
+  // };
+  // const l2Dependencies = {
+  //   ...addresses.getL2(await l2Params.deployer.getChainId()),
+  //   ...options?.dependencies?.l2,
+  // };
 
   const [expectedL1TokenBridgeImplAddress, expectedL1TokenBridgeProxyAddress] =
     await network.predictAddresses(l1Params.deployer, 2);
@@ -59,7 +50,7 @@ export async function createOptimismBridgeDeployScripts(
     .addStep({
       factory: L1ERC20TokenBridge__factory,
       args: [
-        l1Dependencies.messenger,
+        addresses.L1CrossDomainMessenger,
         expectedL2TokenBridgeProxyAddress,
         l1Token,
         expectedL2TokenProxyAddress,
@@ -118,7 +109,7 @@ export async function createOptimismBridgeDeployScripts(
     .addStep({
       factory: L2ERC20TokenBridge__factory,
       args: [
-        l2Dependencies.messenger,
+        addresses.L2CrossDomainMessenger,
         expectedL1TokenBridgeProxyAddress,
         l1Token,
         expectedL2TokenProxyAddress,

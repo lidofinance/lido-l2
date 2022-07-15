@@ -1,10 +1,13 @@
 import hre from "hardhat";
-import { providers, Wallet } from "ethers";
+import { providers, Signer, Wallet } from "ethers";
 import { getContractAddress } from "ethers/lib/utils";
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { JsonRpcProvider, Provider } from "@ethersproject/providers";
 import { HardhatRuntimeEnvironment, HttpNetworkConfig } from "hardhat/types";
 
 import env from "./env";
+
+export type ChainId = 1 | 4 | 31337;
+export type SignerOrProvider = Signer | Provider;
 
 export function getNetworkConfig(
   networkName: string,
@@ -50,7 +53,11 @@ function loadAccount(rpcURL: string, accountPrivateKeyName: string) {
 }
 
 type L2Protocol = "arbitrum" | "optimism";
-export type Network = "local" | "testnet" | "mainnet";
+export type NetworkName =
+  | "mainnet"
+  | "testnet"
+  | "local_mainnet"
+  | "local_testnet";
 
 export interface ChainNetwork {
   signer: Wallet;
@@ -64,30 +71,40 @@ export interface MultiChainNetwork {
   l2: ChainNetwork;
 }
 
+const NETWORK_BINDINGS = {
+  arbitrum: {
+    local_mainnet: ["local_eth_mainnet", "local_arb_mainnet"],
+    local_testnet: ["local_eth_rinkeby", "local_arb_rinkeby"],
+    testnet: ["eth_rinkeby", "arb_rinkeby"],
+    mainnet: ["eth_mainnet", "arb_mainnet"],
+  },
+  optimism: {
+    local_mainnet: ["local_eth_mainnet", "local_opt_mainnet"],
+    local_testnet: ["local_eth_kovan", "local_opt_kovan"],
+    testnet: ["eth_kovan", "opt_kovan"],
+    mainnet: ["eth_mainnet", "opt_mainnet"],
+  },
+};
+
 function getMultichainNetwork(
   l2Protocol: L2Protocol,
-  network: Network = env.network(),
+  network: NetworkName = env.network(),
   signerPK: string = env.privateKey()
-): MultiChainNetwork {
-  const networks = {
-    arbitrum: {
-      local: ["local", "local_arbitrum"],
-      testnet: ["rinkeby", "rinkeby_arbitrum"],
-      mainnet: ["mainnet", "mainnet_arbitrum"],
-    },
-    optimism: {
-      local: ["local", "local_optimism"],
-      testnet: ["kovan", "kovan_optimism"],
-      mainnet: ["mainnet", "mainnet_optimism"],
-    },
-  };
-
-  const [l1NetworkName, l2NetworkName] = networks[l2Protocol][network];
+) {
+  const [l1NetworkName, l2NetworkName] = NETWORK_BINDINGS[l2Protocol][network];
   const l1Network = getNetworkConfig(l1NetworkName, hre);
   const l2Network = getNetworkConfig(l2NetworkName, hre);
   const l1Provider = getProvider(l1Network.url);
   const l2Provider = getProvider(l2Network.url);
   return {
+    l1Network,
+    l1Provider,
+    l1NetworkName,
+    l1Signer: new Wallet(signerPK, l1Provider),
+    l2Network,
+    l2Provider,
+    l2NetworkName,
+    l2Signer: new Wallet(signerPK, l2Provider),
     l1: {
       network: l1Network,
       provider: l1Provider,
@@ -103,10 +120,48 @@ function getMultichainNetwork(
   };
 }
 
+function getMultiChainNetwork(
+  l2Protocol: L2Protocol,
+  networkName: NetworkName
+) {
+  const [l1NetworkName, l2NetworkName] =
+    NETWORK_BINDINGS[l2Protocol][networkName];
+  return [
+    getNetworkConfig(l1NetworkName, hre),
+    getNetworkConfig(l2NetworkName, hre),
+  ];
+}
+
+function getMultiChainProvider(
+  l2Protocol: L2Protocol,
+  networkName: NetworkName
+) {
+  const [l1Network, l2Network] = getMultiChainNetwork(l2Protocol, networkName);
+  return [getProvider(l1Network.url), getProvider(l2Network.url)];
+}
+
+function getMultiChainSigner(
+  l2Protocol: L2Protocol,
+  networkName: NetworkName,
+  privateKey: string
+) {
+  const [l1Provider, l2Provider] = getMultiChainProvider(
+    l2Protocol,
+    networkName
+  );
+  return [
+    new Wallet(privateKey, l1Provider),
+    new Wallet(privateKey, l2Provider),
+  ];
+}
+
 export default {
   loadAccount,
   getDeployer,
   getConfig: getNetworkConfig,
   getMultichainNetwork,
   predictAddresses,
+  getProvider,
+  getMultiChainProvider,
+  getMultiChainSigner,
 };

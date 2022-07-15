@@ -35,34 +35,57 @@ const config: HardhatUserConfig = {
     ],
   },
   networks: {
-    local: {
+    // local Ethereum networks
+    local_eth_mainnet: {
       url: "http://localhost:8545",
     },
-    local_arbitrum: {
+    local_eth_kovan: {
+      url: "http://localhost:8545",
+    },
+    local_eth_rinkeby: {
+      url: "http://localhost:8545",
+    },
+
+    // local Arbitrum networks
+    local_arb_mainnet: {
       url: "http://localhost:8546",
     },
-    local_optimism: {
+    local_arb_rinkeby: {
+      url: "http://localhost:8546",
+    },
+
+    // local Optimism networks
+    local_opt_mainnet: {
       url: "http://localhost:9545",
     },
-    kovan: {
+    local_opt_kovan: {
+      url: "http://localhost:9545",
+    },
+
+    // public Ethereum networks
+    eth_kovan: {
       url: env.string("RPC_ETH_KOVAN", ""),
     },
-    kovan_optimism: {
-      url: env.string("RPC_OPT_KOVAN", ""),
-    },
-    rinkeby: {
+    eth_rinkeby: {
       url: env.string("RPC_ETH_RINKEBY", ""),
     },
-    rinkeby_arbitrum: {
-      url: env.string("RPC_ARB_RINKEBY", ""),
-    },
-    mainnet: {
+    eth_mainnet: {
       url: env.string("RPC_ETH_MAINNET", ""),
     },
-    mainnet_arbitrum: {
+
+    // public Arbitrum networks
+    arb_rinkeby: {
+      url: env.string("RPC_ARB_RINKEBY", ""),
+    },
+    arb_mainnet: {
       url: env.string("RPC_ARB_MAINNET", ""),
     },
-    mainnet_optimism: {
+
+    // public Optimism networks
+    opt_kovan: {
+      url: env.string("RPC_OPT_KOVAN", ""),
+    },
+    opt_mainnet: {
       url: env.string("RPC_OPT_MAINNET", ""),
     },
   },

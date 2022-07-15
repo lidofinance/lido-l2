@@ -3,34 +3,42 @@ import network from "../../utils/network";
 import optimism from "../../utils/optimism";
 import deployment from "../../utils/deployment";
 import { BridgingManagement } from "../../utils/bridging-management";
+import env from "../../utils/env";
 
 async function main() {
-  const networkConfig = network.getMultichainNetwork("optimism");
+  const networkName = env.network();
+  const [l1Deployer, l2Deployer] = network.getMultiChainSigner(
+    "optimism",
+    networkName,
+    env.privateKey()
+  );
   const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
 
   const [l1DeployScript, l2DeployScript] =
     await optimism.deployment.createOptimismBridgeDeployScripts(
       deploymentConfig.token,
       {
-        deployer: networkConfig.l1.signer,
+        deployer: l1Deployer,
         admins: {
           proxy: deploymentConfig.l1.proxyAdmin,
-          bridge: networkConfig.l1.signer.address,
+          bridge: l1Deployer.address,
         },
       },
       {
-        deployer: networkConfig.l2.signer,
+        deployer: l2Deployer,
         admins: {
           proxy: deploymentConfig.l2.proxyAdmin,
-          bridge: networkConfig.l2.signer.address,
+          bridge: l2Deployer.address,
         },
       },
+      optimism.addresses(networkName),
       { logger: console }
     );
 
-  deployment.printMultiChainDeploymentConfig(
+  await deployment.printMultiChainDeploymentConfig(
     "Deploy Optimism Bridge",
-    networkConfig,
+    l1Deployer,
+    l2Deployer,
     deploymentConfig,
     l1DeployScript,
     l2DeployScript
@@ -44,14 +52,14 @@ async function main() {
   const l1ERC20TokenBridgeProxyDeployStepIndex = 1;
   const l1BridgingManagement = new BridgingManagement(
     l1DeployScript.getContractAddress(l1ERC20TokenBridgeProxyDeployStepIndex),
-    networkConfig.l1.signer,
+    l1Deployer,
     { logger: console }
   );
 
   const l2ERC20TokenBridgeProxyDeployStepIndex = 3;
   const l2BridgingManagement = new BridgingManagement(
     l2DeployScript.getContractAddress(l2ERC20TokenBridgeProxyDeployStepIndex),
-    networkConfig.l2.signer,
+    l2Deployer,
     { logger: console }
   );
 

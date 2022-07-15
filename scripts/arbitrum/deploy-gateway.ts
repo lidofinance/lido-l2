@@ -3,36 +3,43 @@ import network from "../../utils/network";
 import arbitrum from "../../utils/arbitrum";
 import deployment from "../../utils/deployment";
 import { BridgingManagement } from "../../utils/bridging-management";
+import env from "../../utils/env";
 
 async function main() {
-  const networkConfig = network.getMultichainNetwork("arbitrum");
+  const networkName = env.network();
+  const [l1Deployer, l2Deployer] = network.getMultiChainSigner(
+    "arbitrum",
+    networkName,
+    env.privateKey()
+  );
+
   const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
 
-  const [l1DeployScript, l2DeployScript] =
-    await arbitrum.deployment.createGatewayDeployScripts(
+  const [l1DeployScript, l2DeployScript] = await arbitrum.deployment
+    .erc20TokenGateways(networkName)
+    .createDeployScripts(
       deploymentConfig.token,
       {
-        deployer: networkConfig.l1.signer,
+        deployer: l1Deployer,
         admins: {
           proxy: deploymentConfig.l1.proxyAdmin,
-          bridge: networkConfig.l1.signer.address,
+          bridge: l1Deployer.address,
         },
       },
       {
-        deployer: networkConfig.l2.signer,
+        deployer: l2Deployer,
         admins: {
           proxy: deploymentConfig.l2.proxyAdmin,
-          bridge: networkConfig.l2.signer.address,
+          bridge: l2Deployer.address,
         },
       },
-      {
-        logger: console,
-      }
+      { logger: console }
     );
 
-  deployment.printMultiChainDeploymentConfig(
+  await deployment.printMultiChainDeploymentConfig(
     "Deploy Arbitrum Gateway",
-    networkConfig,
+    l1Deployer,
+    l2Deployer,
     deploymentConfig,
     l1DeployScript,
     l2DeployScript
@@ -46,14 +53,14 @@ async function main() {
   const l1ERC20TokenGatewayProxyDeployStepIndex = 1;
   const l1BridgingManagement = new BridgingManagement(
     l1DeployScript.getContractAddress(l1ERC20TokenGatewayProxyDeployStepIndex),
-    networkConfig.l1.signer,
+    l1Deployer,
     { logger: console }
   );
 
   const l2ERC20TokenGatewayProxyDeployStepIndex = 3;
   const l2BridgingManagement = new BridgingManagement(
     l2DeployScript.getContractAddress(l2ERC20TokenGatewayProxyDeployStepIndex),
-    networkConfig.l2.signer,
+    l2Deployer,
     { logger: console }
   );
 

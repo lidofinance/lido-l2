@@ -268,7 +268,7 @@ unit("Arbitrum :: L2ERC20TokensGateway", ctxFactory)
     await assert.emits(l2TokensGateway, tx, "TxToL1", [
       sender.address,
       l1TokensGateway.address,
-      l2ToL1Id,
+      l2ToL1Id + 1,
       expectedCalldata,
     ]);
 
@@ -277,7 +277,7 @@ unit("Arbitrum :: L2ERC20TokensGateway", ctxFactory)
       l1Token.address,
       sender.address,
       recipient.address,
-      l2ToL1Id,
+      l2ToL1Id + 1,
       0,
       amount,
     ]);
@@ -340,7 +340,7 @@ unit("Arbitrum :: L2ERC20TokensGateway", ctxFactory)
           gasPriceBid,
           data
         ),
-      hre.ethers.utils.defaultAbiCoder.encode(["uint256"], [l2ToL1Id])
+      hre.ethers.utils.defaultAbiCoder.encode(["uint256"], [l2ToL1Id + 1])
     );
 
     // initiate outbound transfer
@@ -365,7 +365,7 @@ unit("Arbitrum :: L2ERC20TokensGateway", ctxFactory)
     await assert.emits(l2TokensGateway, tx, "TxToL1", [
       sender.address,
       l1TokensGateway.address,
-      l2ToL1Id,
+      l2ToL1Id + 1,
       expectedCalldata,
     ]);
 
@@ -374,7 +374,7 @@ unit("Arbitrum :: L2ERC20TokensGateway", ctxFactory)
       l1Token.address,
       sender.address,
       recipient.address,
-      l2ToL1Id,
+      l2ToL1Id + 1,
       0,
       amount,
     ]);

@@ -1,8 +1,9 @@
 import chalk from "chalk";
+import { Wallet } from "ethers";
+
 import env from "./env";
-import { BridgingManagerSetupConfig } from "./bridging-management";
 import { DeployScript } from "./deployment/DeployScript";
-import { ChainNetwork, MultiChainNetwork } from "./network";
+import { BridgingManagerSetupConfig } from "./bridging-management";
 
 interface ChainDeploymentConfig extends BridgingManagerSetupConfig {
   proxyAdmin: string;
@@ -40,9 +41,10 @@ export function loadMultiChainDeploymentConfig(): MultiChainDeploymentConfig {
   };
 }
 
-export function printMultiChainDeploymentConfig(
+export async function printMultiChainDeploymentConfig(
   title: string,
-  networkConfig: MultiChainNetwork,
+  l1Deployer: Wallet,
+  l2Deployer: Wallet,
   deploymentParams: MultiChainDeploymentConfig,
   l1DeployScript: DeployScript,
   l2DeployScript: DeployScript
@@ -50,25 +52,26 @@ export function printMultiChainDeploymentConfig(
   const { token, l1, l2 } = deploymentParams;
   console.log(chalk.bold(`${title} :: ${chalk.underline(token)}\n`));
   console.log(chalk.bold("  · L1 Deployment Params:"));
-  printChainDeploymentConfig(networkConfig.l1, l1);
+  await printChainDeploymentConfig(l1Deployer, l1);
   console.log();
   console.log(chalk.bold("  · L1 Deployment Actions:"));
   l1DeployScript.print({ padding: 6 });
 
   console.log(chalk.bold("  · L2 Deployment Params:"));
-  printChainDeploymentConfig(networkConfig.l2, l2);
+  await printChainDeploymentConfig(l2Deployer, l2);
   console.log();
   console.log(chalk.bold("  · L2 Deployment Actions:"));
   l2DeployScript.print({ padding: 6 });
 }
 
-function printChainDeploymentConfig(
-  config: ChainNetwork,
+async function printChainDeploymentConfig(
+  deployer: Wallet,
   params: ChainDeploymentConfig
 ) {
   const pad = " ".repeat(4);
-  console.log(`${pad}· Network: ${config.networkName}`);
-  console.log(`${pad}· Deployer: ${chalk.underline(config.signer.address)}`);
+  const chainId = await deployer.getChainId();
+  console.log(`${pad}· Chain ID: ${chainId}`);
+  console.log(`${pad}· Deployer: ${chalk.underline(deployer.address)}`);
   console.log(`${pad}· Proxy Admin: ${chalk.underline(params.proxyAdmin)}`);
   console.log(`${pad}· Bridge Admin: ${chalk.underline(params.bridgeAdmin)}`);
   console.log(`${pad}· Deposits Enabled: ${params.depositsEnabled}`);
