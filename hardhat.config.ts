@@ -84,6 +84,7 @@ const config: HardhatUserConfig = {
   typechain: {
     externalArtifacts: [
       "./interfaces/**/*.json",
+      "./utils/optimism/artifacts/*.json",
       "./utils/arbitrum/artifacts/*.json",
     ],
   },
