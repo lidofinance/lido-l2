@@ -261,9 +261,9 @@ scenario("Optimism Bridge :: deployment acceptance test", ctxFactory)
 async function ctxFactory() {
   const networkName = loadNetworkName();
   const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
-  const testingSetup = await optimism.testing.getAcceptanceTestSetup(
-    networkName
-  );
+  const testingSetup = await optimism
+    .testing(networkName)
+    .getAcceptanceTestSetup();
 
   const l1Token = IERC20Metadata__factory.connect(
     deploymentConfig.token,

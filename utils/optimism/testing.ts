@@ -1,4 +1,4 @@
-import testing from "../testing";
+import { Signer } from "ethers";
 import network, { NetworkName, SignerOrProvider } from "../network";
 import {
   CrossDomainMessengerStub__factory,
@@ -12,109 +12,125 @@ import {
   L2ERC20TokenBridge,
   L2ERC20TokenBridge__factory,
 } from "../../typechain";
-import optimism from ".";
+import addresses from "./addresses";
+import contracts from "./contracts";
+import testingUtils from "../testing";
 import { BridgingManagement } from "../bridging-management";
-import { Signer } from "ethers";
+import deployment from "./deployment";
 
-export default {
-  async getAcceptanceTestSetup(networkName: NetworkName) {
-    const [l1Provider, l2Provider] = network.getMultiChainProvider(
-      "optimism",
-      networkName
-    );
+export default function testing(networkName: NetworkName) {
+  const optAddresses = addresses(networkName);
+  const optContracts = contracts(networkName);
 
-    const bridgeContracts = await loadDeployedBridges(l1Provider, l2Provider);
+  return {
+    async getAcceptanceTestSetup() {
+      const [l1Provider, l2Provider] = network.getMultiChainProvider(
+        "optimism",
+        networkName
+      );
 
-    await printLoadedTestConfig(networkName, bridgeContracts);
+      const bridgeContracts = await loadDeployedBridges(l1Provider, l2Provider);
 
-    return {
-      l1Provider,
-      l2Provider,
-      ...bridgeContracts,
-    };
-  },
-  async getIntegrationTestSetup(networkName: NetworkName) {
-    const hasDeployedContracts = testing.env.USE_DEPLOYED_CONTRACTS(false);
-    const [l1Provider, l2Provider] = network.getMultiChainProvider(
-      "optimism",
-      networkName
-    );
-    const bridgeContracts = hasDeployedContracts
-      ? await loadDeployedBridges(l1Provider, l2Provider)
-      : await deployTestBridge(networkName);
+      await printLoadedTestConfig(networkName, bridgeContracts);
 
-    const [l1ERC20TokenBridgeAdminAddress] = await BridgingManagement.getAdmins(
-      bridgeContracts.l1ERC20TokenBridge
-    );
+      return {
+        l1Provider,
+        l2Provider,
+        ...bridgeContracts,
+      };
+    },
+    async getIntegrationTestSetup() {
+      const hasDeployedContracts =
+        testingUtils.env.USE_DEPLOYED_CONTRACTS(false);
+      const [l1Provider, l2Provider] = network.getMultiChainProvider(
+        "optimism",
+        networkName
+      );
+      const bridgeContracts = hasDeployedContracts
+        ? await loadDeployedBridges(l1Provider, l2Provider)
+        : await deployTestBridge(networkName);
 
-    const [l2ERC20TokenBridgeAdminAddress] = await BridgingManagement.getAdmins(
-      bridgeContracts.l2ERC20TokenBridge
-    );
+      const [l1ERC20TokenBridgeAdminAddress] =
+        await BridgingManagement.getAdmins(bridgeContracts.l1ERC20TokenBridge);
 
-    const l1TokensHolder = hasDeployedContracts
-      ? await testing.impersonate(testing.env.L1_TOKENS_HOLDER(), l1Provider)
-      : testing.accounts.deployer(l1Provider);
+      const [l2ERC20TokenBridgeAdminAddress] =
+        await BridgingManagement.getAdmins(bridgeContracts.l2ERC20TokenBridge);
 
-    const optContracts = optimism.contracts(networkName);
+      const l1TokensHolder = hasDeployedContracts
+        ? await testingUtils.impersonate(
+            testingUtils.env.L1_TOKENS_HOLDER(),
+            l1Provider
+          )
+        : testingUtils.accounts.deployer(l1Provider);
 
-    if (hasDeployedContracts) {
-      await printLoadedTestConfig(networkName, bridgeContracts, l1TokensHolder);
-    }
+      if (hasDeployedContracts) {
+        await printLoadedTestConfig(
+          networkName,
+          bridgeContracts,
+          l1TokensHolder
+        );
+      }
 
-    return {
-      l1Provider,
-      l2Provider,
-      l1TokensHolder,
-      ...bridgeContracts,
-      l1CrossDomainMessenger: optContracts.L1CrossDomainMessengerStub,
-      l2CrossDomainMessenger: optContracts.L2CrossDomainMessenger,
-      l1ERC20TokenBridgeAdmin: await testing.impersonate(
-        l1ERC20TokenBridgeAdminAddress,
-        l1Provider
-      ),
-      l2ERC20TokenBridgeAdmin: await testing.impersonate(
-        l2ERC20TokenBridgeAdminAddress,
-        l2Provider
-      ),
-      canonicalTransactionChain: optContracts.CanonicalTransactionChain,
-    };
-  },
-  async getE2ETestSetup(networkName: NetworkName) {
-    const testerPrivateKey = testing.env.TESTING_PRIVATE_KEY();
-    const [l1Tester, l2Tester] = network.getMultiChainSigner(
-      "optimism",
-      networkName,
-      testerPrivateKey
-    );
-    const [l1Provider, l2Provider] = network.getMultiChainProvider(
-      "optimism",
-      networkName
-    );
+      return {
+        l1Provider,
+        l2Provider,
+        l1TokensHolder,
+        ...bridgeContracts,
+        l1CrossDomainMessenger: optContracts.L1CrossDomainMessengerStub,
+        l2CrossDomainMessenger: optContracts.L2CrossDomainMessenger,
+        l1ERC20TokenBridgeAdmin: await testingUtils.impersonate(
+          l1ERC20TokenBridgeAdminAddress,
+          l1Provider
+        ),
+        l2ERC20TokenBridgeAdmin: await testingUtils.impersonate(
+          l2ERC20TokenBridgeAdminAddress,
+          l2Provider
+        ),
+        canonicalTransactionChain: optContracts.CanonicalTransactionChain,
+      };
+    },
+    async getE2ETestSetup() {
+      const testerPrivateKey = testingUtils.env.TESTING_PRIVATE_KEY();
+      const [l1Tester, l2Tester] = network.getMultiChainSigner(
+        "optimism",
+        networkName,
+        testerPrivateKey
+      );
+      const [l1Provider, l2Provider] = network.getMultiChainProvider(
+        "optimism",
+        networkName
+      );
 
-    const bridgeContracts = await loadDeployedBridges(l1Tester, l2Tester);
+      const bridgeContracts = await loadDeployedBridges(l1Tester, l2Tester);
 
-    await printLoadedTestConfig(networkName, bridgeContracts, l1Tester);
+      await printLoadedTestConfig(networkName, bridgeContracts, l1Tester);
 
-    return {
-      l1Tester,
-      l2Tester,
-      l1Provider,
-      l2Provider,
-      ...bridgeContracts,
-    };
-  },
-  async stubL1CrossChainMessengerContract(networkName: NetworkName) {
-    const [l1Provider] = network.getMultiChainProvider("optimism", networkName);
-    const deployer = testing.accounts.deployer(l1Provider);
-    const stub = await new CrossDomainMessengerStub__factory(deployer).deploy();
-    const stubBytecode = await l1Provider.send("eth_getCode", [stub.address]);
+      return {
+        l1Tester,
+        l2Tester,
+        l1Provider,
+        l2Provider,
+        ...bridgeContracts,
+      };
+    },
+    async stubL1CrossChainMessengerContract() {
+      const [l1Provider] = network.getMultiChainProvider(
+        "optimism",
+        networkName
+      );
+      const deployer = testingUtils.accounts.deployer(l1Provider);
+      const stub = await new CrossDomainMessengerStub__factory(
+        deployer
+      ).deploy();
+      const stubBytecode = await l1Provider.send("eth_getCode", [stub.address]);
 
-    await l1Provider.send("hardhat_setCode", [
-      optimism.addresses(networkName).L1CrossDomainMessenger,
-      stubBytecode,
-    ]);
-  },
-};
+      await l1Provider.send("hardhat_setCode", [
+        optAddresses.L1CrossDomainMessenger,
+        stubBytecode,
+      ]);
+    },
+  };
+}
 
 function connectBridgeContracts(
   addresses: {
@@ -150,14 +166,14 @@ async function loadDeployedBridges(
 ) {
   return {
     l1Token: IERC20__factory.connect(
-      testing.env.OPT_L1_TOKEN(),
+      testingUtils.env.OPT_L1_TOKEN(),
       l1SignerOrProvider
     ),
     ...connectBridgeContracts(
       {
-        l2Token: testing.env.OPT_L2_TOKEN(),
-        l1ERC20TokenBridge: testing.env.OPT_L1_ERC20_TOKEN_BRIDGE(),
-        l2ERC20TokenBridge: testing.env.OPT_L2_ERC20_TOKEN_BRIDGE(),
+        l2Token: testingUtils.env.OPT_L2_TOKEN(),
+        l1ERC20TokenBridge: testingUtils.env.OPT_L1_ERC20_TOKEN_BRIDGE(),
+        l2ERC20TokenBridge: testingUtils.env.OPT_L2_ERC20_TOKEN_BRIDGE(),
       },
       l1SignerOrProvider,
       l2SignerOrProvider
@@ -171,27 +187,27 @@ async function deployTestBridge(networkName: NetworkName) {
     networkName
   );
 
-  const l1Deployer = testing.accounts.deployer(l1Provider);
-  const l2Deployer = testing.accounts.deployer(l2Provider);
+  const l1Deployer = testingUtils.accounts.deployer(l1Provider);
+  const l2Deployer = testingUtils.accounts.deployer(l2Provider);
 
   const l1Token = await new ERC20BridgedStub__factory(l1Deployer).deploy(
     "Test Token",
     "TT"
   );
 
-  const [l1DeployScript, l2DeployScript] =
-    await optimism.deployment.createOptimismBridgeDeployScripts(
-      l1Token.address,
-      {
-        deployer: l1Deployer,
-        admins: { proxy: l1Deployer.address, bridge: l1Deployer.address },
-      },
-      {
-        deployer: l2Deployer,
-        admins: { proxy: l2Deployer.address, bridge: l2Deployer.address },
-      },
-      optimism.addresses(networkName)
-    );
+  const [l1DeployScript, l2DeployScript] = await deployment(
+    networkName
+  ).erc20TokenBridgeDeployScript(
+    l1Token.address,
+    {
+      deployer: l1Deployer,
+      admins: { proxy: l1Deployer.address, bridge: l1Deployer.address },
+    },
+    {
+      deployer: l2Deployer,
+      admins: { proxy: l2Deployer.address, bridge: l2Deployer.address },
+    }
+  );
 
   await l1DeployScript.run();
   await l2DeployScript.run();

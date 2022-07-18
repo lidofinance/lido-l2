@@ -15,9 +15,9 @@ async function main() {
 
   const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
 
-  const [l1DeployScript, l2DeployScript] = await arbitrum.deployment
-    .erc20TokenGateways(networkName)
-    .createDeployScripts(
+  const [l1DeployScript, l2DeployScript] = await arbitrum
+    .deployment(networkName, { logger: console })
+    .erc20TokenGatewayDeployScript(
       deploymentConfig.token,
       {
         deployer: l1Deployer,
@@ -32,8 +32,7 @@ async function main() {
           proxy: deploymentConfig.l2.proxyAdmin,
           bridge: l2Deployer.address,
         },
-      },
-      { logger: console }
+      }
     );
 
   await deployment.printMultiChainDeploymentConfig(

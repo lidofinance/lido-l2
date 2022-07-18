@@ -409,12 +409,12 @@ async function ctxFactory() {
     l1ERC20TokenBridgeAdmin,
     l2ERC20TokenBridgeAdmin,
     ...contracts
-  } = await optimism.testing.getIntegrationTestSetup(networkName);
+  } = await optimism.testing(networkName).getIntegrationTestSetup();
 
   const l1Snapshot = await l1Provider.send("evm_snapshot", []);
   const l2Snapshot = await l2Provider.send("evm_snapshot", []);
 
-  await optimism.testing.stubL1CrossChainMessengerContract(networkName);
+  await optimism.testing(networkName).stubL1CrossChainMessengerContract();
 
   const l1Sender = testing.accounts.sender(l1Provider);
   const l2Sender = testing.accounts.sender(l2Provider);

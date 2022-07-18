@@ -280,9 +280,9 @@ function loadNetworkName() {
 async function ctxFactory() {
   const networkName = loadNetworkName();
   const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
-  const testingSetup = await arbitrum.testing.getAcceptanceTestSetup(
-    networkName
-  );
+  const testingSetup = await arbitrum
+    .testing(networkName)
+    .getAcceptanceTestSetup();
 
   const l1TokenMeta = IERC20Metadata__factory.connect(
     deploymentConfig.token,

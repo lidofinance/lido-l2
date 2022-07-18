@@ -211,7 +211,7 @@ scenario("Arbitrum :: Bridging integration test", ctx)
     "Sender withdraws tokens to himself via L2GatewayRouter",
     async (ctx) => {
       const { l2Sender } = ctx.accounts;
-      const { l1Token, arbSys, l2ERC20TokenGateway } = ctx;
+      const { l1Token, arbSysStub: arbSys, l2ERC20TokenGateway } = ctx;
       const { amount } = ctx.constants;
 
       const prevL2ToL1TxId = await arbSys.l2ToL1TxId();
@@ -265,15 +265,16 @@ function loadNetworkName() {
 
 async function ctx() {
   const networkName = loadNetworkName();
-  const { l1Provider, l2Provider, ...contracts } =
-    await arbitrum.testing.getIntegrationTestSetup(networkName);
+  const { l1Provider, l2Provider, ...contracts } = await arbitrum
+    .testing(networkName)
+    .getIntegrationTestSetup();
 
   const l1Snapshot = await l1Provider.send("evm_snapshot", []);
   const l2Snapshot = await l2Provider.send("evm_snapshot", []);
 
   // by default arbSys contract doesn't exist on the hardhat fork
   // so we have to deploy there a stub contract
-  await arbitrum.testing.stubArbSysContract(networkName);
+  await arbitrum.testing(networkName).stubArbSysContract();
 
   const l1Sender = testing.accounts.sender(l1Provider);
   const l2Sender = testing.accounts.sender(l2Provider);
@@ -333,7 +334,7 @@ async function ctx() {
     l2Token: contracts.l2Token,
     l2GatewayRouter: contracts.l2GatewayRouter,
     l2ERC20TokenGateway: contracts.l2ERC20TokenGateway,
-    arbSys: contracts.arbSys,
+    arbSysStub: contracts.arbSysStub,
     l1GatewayRouter: contracts.l1GatewayRouter,
     l1ERC20TokenGateway: contracts.l1ERC20TokenGateway,
     accounts: {

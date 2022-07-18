@@ -1,5 +1,3 @@
-import { ERC20Mintable } from "../../typechain";
-import { wei } from "../../utils/wei";
 import {
   CrossChainMessenger,
   DAIBridgeAdapter,
@@ -7,20 +5,12 @@ import {
 } from "@eth-optimism/sdk";
 import { assert } from "chai";
 import { TransactionResponse } from "@ethersproject/providers";
-import env from "../../utils/env";
-import { scenario } from "../../utils/testing";
-import optimism from "../../utils/optimism";
 
-const E2E_TEST_CONTRACTS = {
-  l1: {
-    l1Token: "0xaF8a2F0aE374b03376155BF745A3421Dac711C12",
-    l1ERC20TokenBridge: "0x243b661276670bD17399C488E7287ea4D416115b",
-  },
-  l2: {
-    l2Token: "0xAED5F9aaF167923D34174b8E636aaF040A11f6F7",
-    l2ERC20TokenBridge: "0x447CD1794d209Ac4E6B4097B34658bc00C4d0a51",
-  },
-};
+import env from "../../utils/env";
+import { wei } from "../../utils/wei";
+import optimism from "../../utils/optimism";
+import { ERC20Mintable } from "../../typechain";
+import { scenario } from "../../utils/testing";
 
 let depositTokensTxResponse: TransactionResponse;
 let withdrawTokensTxResponse: TransactionResponse;
@@ -136,7 +126,7 @@ scenario("Optimism :: Bridging E2E test", ctxFactory)
 
 async function ctxFactory() {
   const networkName = env.enum("NETWORK", ["mainnet", "testnet"]);
-  const testingSetup = await optimism.testing.getE2ETestSetup(networkName);
+  const testingSetup = await optimism.testing(networkName).getE2ETestSetup();
 
   return {
     depositAmount: wei`0.025 ether`,
@@ -152,8 +142,8 @@ async function ctxFactory() {
       bridges: {
         LidoBridge: {
           Adapter: DAIBridgeAdapter,
-          l1Bridge: E2E_TEST_CONTRACTS.l1.l1ERC20TokenBridge,
-          l2Bridge: E2E_TEST_CONTRACTS.l2.l2ERC20TokenBridge,
+          l1Bridge: testingSetup.l1ERC20TokenBridge.address,
+          l2Bridge: testingSetup.l2ERC20TokenBridge.address,
         },
       },
     }),

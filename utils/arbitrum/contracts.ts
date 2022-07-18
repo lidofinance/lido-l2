@@ -1,57 +1,34 @@
-import { Signer } from "ethers";
-import { ArbitrumContractAddresses } from "./addresses";
+import { ArbSys__factory } from "arb-ts";
+
 import {
   L1GatewayRouter__factory,
-  L2GatewayRouter,
   L2GatewayRouter__factory,
-  L1GatewayRouter,
-  ArbSysStub,
   ArbSysStub__factory,
 } from "../../typechain/";
-import { Provider } from "@ethersproject/providers";
+import addresses from "./addresses";
+import network, { NetworkName } from "../network";
+import { CustomArbContractAddresses } from "./types";
 
-type SignerOrProvider = Signer | Provider;
+export default function contracts(
+  networkName: NetworkName,
+  customAddresses?: CustomArbContractAddresses
+) {
+  const [l1Provider, l2Provider] = network.getMultiChainProvider(
+    "arbitrum",
+    networkName
+  );
+  const arbAddresses = addresses(networkName, customAddresses);
 
-export class ArbitrumContracts {
-  private readonly addresses: ArbitrumContractAddresses;
-  public readonly L1GatewayRouter: L1GatewayRouter;
-  public readonly L2GatewayRouter: L2GatewayRouter;
-  public readonly ArbSys: ArbSysStub;
-
-  constructor(
-    l1SignerOrProvider: SignerOrProvider,
-    l2SignerOrProvider: SignerOrProvider,
-    addresses: ArbitrumContractAddresses
-  ) {
-    this.addresses = addresses;
-
-    this.L1GatewayRouter = L1GatewayRouter__factory.connect(
-      this.addresses.L1GatewayRouter,
-      l1SignerOrProvider
-    );
-
-    this.ArbSys = ArbSysStub__factory.connect(
-      this.addresses.ArbSys,
-      l2SignerOrProvider
-    );
-
-    this.L2GatewayRouter = L2GatewayRouter__factory.connect(
-      this.addresses.L2GatewayRouter,
-      l2SignerOrProvider
-    );
-  }
+  return {
+    ArbSys: ArbSys__factory.connect(arbAddresses.ArbSys, l2Provider),
+    ArbSysStub: ArbSysStub__factory.connect(arbAddresses.ArbSys, l2Provider),
+    L1GatewayRouter: L1GatewayRouter__factory.connect(
+      arbAddresses.L1GatewayRouter,
+      l1Provider
+    ),
+    L2GatewayRouter: L2GatewayRouter__factory.connect(
+      arbAddresses.L2GatewayRouter,
+      l2Provider
+    ),
+  };
 }
-
-export default {
-  get(
-    addresses: ArbitrumContractAddresses,
-    l1SignerOrProvider: SignerOrProvider,
-    l2SignerOrProvider: SignerOrProvider
-  ) {
-    return new ArbitrumContracts(
-      l1SignerOrProvider,
-      l2SignerOrProvider,
-      addresses
-    );
-  },
-};

@@ -6,170 +6,179 @@ import {
   ArbSysStub__factory,
   ERC20Bridged__factory,
 } from "../../typechain";
-import testing from "../testing";
-import arbitrum from "../arbitrum";
+import contracts from "./contracts";
+import addresses from "./addresses";
+import deployment from "./deployment";
+import testingUtils from "../testing";
 import { BridgingManagement } from "../bridging-management";
 import network, { NetworkName, SignerOrProvider } from "../network";
 
-export default {
-  async getAcceptanceTestSetup(networkName: NetworkName) {
-    const [l1Provider, l2Provider] = network.getMultiChainProvider(
-      "arbitrum",
-      networkName
-    );
-    const gatewayContracts = await loadDeployedGateways(l1Provider, l2Provider);
+export default function testing(networkName: NetworkName) {
+  const defaultArbAddresses = addresses(networkName);
+  const defaultArbContracts = contracts(networkName);
+  return {
+    async getAcceptanceTestSetup() {
+      const [l1Provider, l2Provider] = network.getMultiChainProvider(
+        "arbitrum",
+        networkName
+      );
+      const gatewayContracts = await loadDeployedGateways(
+        l1Provider,
+        l2Provider
+      );
 
-    const gatewayRouterAddresses = arbitrum.addresses(networkName, {
-      L1GatewayRouter: testing.env.ARB_L1_GATEWAY_ROUTER(
-        arbitrum.addresses(networkName).L1GatewayRouter
-      ),
-      L2GatewayRouter: testing.env.ARB_L2_GATEWAY_ROUTER(
-        arbitrum.addresses(networkName).L2GatewayRouter
-      ),
-    });
+      const gatewayRouterAddresses = addresses(networkName, {
+        L1GatewayRouter: testingUtils.env.ARB_L1_GATEWAY_ROUTER(
+          defaultArbAddresses.L1GatewayRouter
+        ),
+        L2GatewayRouter: testingUtils.env.ARB_L2_GATEWAY_ROUTER(
+          defaultArbAddresses.L2GatewayRouter
+        ),
+      });
 
-    const arbContracts = arbitrum.addresses(
-      networkName,
-      gatewayRouterAddresses
-    );
+      const arbAddresses = addresses(networkName, gatewayRouterAddresses);
 
-    return {
-      l1Provider,
-      l2Provider,
-      ...gatewayContracts,
-      arbSys: arbitrum.contracts(networkName).ArbSys,
-      ...connectGatewayRouters(networkName, arbContracts),
-    };
-  },
-  async getIntegrationTestSetup(networkName: NetworkName) {
-    const hasDeployedContracts = testing.env.USE_DEPLOYED_CONTRACTS(false);
+      return {
+        l1Provider,
+        l2Provider,
+        ...gatewayContracts,
+        arbSys: defaultArbContracts.ArbSys,
+        ...connectGatewayRouters(networkName, arbAddresses),
+      };
+    },
+    async getIntegrationTestSetup() {
+      const hasDeployedContracts =
+        testingUtils.env.USE_DEPLOYED_CONTRACTS(false);
 
-    const [l1Provider, l2Provider] = network.getMultiChainProvider(
-      "arbitrum",
-      networkName
-    );
+      const [l1Provider, l2Provider] = network.getMultiChainProvider(
+        "arbitrum",
+        networkName
+      );
 
-    const gatewayContracts = hasDeployedContracts
-      ? await loadDeployedGateways(l1Provider, l2Provider)
-      : await deployTestGateway(networkName);
+      const gatewayContracts = hasDeployedContracts
+        ? await loadDeployedGateways(l1Provider, l2Provider)
+        : await deployTestGateway(networkName);
 
-    const [l1ERC20TokenGatewayAdminAddress] =
-      await BridgingManagement.getAdmins(gatewayContracts.l1ERC20TokenGateway);
+      const [l1ERC20TokenGatewayAdminAddress] =
+        await BridgingManagement.getAdmins(
+          gatewayContracts.l1ERC20TokenGateway
+        );
 
-    const [l2ERC20TokenGatewayAdminAddress] =
-      await BridgingManagement.getAdmins(gatewayContracts.l2ERC20TokenGateway);
+      const [l2ERC20TokenGatewayAdminAddress] =
+        await BridgingManagement.getAdmins(
+          gatewayContracts.l2ERC20TokenGateway
+        );
 
-    const gatewayRouterAddresses = arbitrum.addresses(networkName, {
-      L1GatewayRouter: hasDeployedContracts
-        ? testing.env.ARB_L1_GATEWAY_ROUTER(
-            arbitrum.addresses(networkName).L1GatewayRouter
+      const gatewayRouterAddresses = addresses(networkName, {
+        L1GatewayRouter: hasDeployedContracts
+          ? testingUtils.env.ARB_L1_GATEWAY_ROUTER(
+              defaultArbAddresses.L2GatewayRouter
+            )
+          : defaultArbAddresses.L1GatewayRouter,
+        L2GatewayRouter: hasDeployedContracts
+          ? testingUtils.env.ARB_L2_GATEWAY_ROUTER(
+              defaultArbAddresses.L2GatewayRouter
+            )
+          : defaultArbAddresses.L2GatewayRouter,
+      });
+
+      const arbContracts = addresses(networkName, gatewayRouterAddresses);
+
+      const gatewayRouters = connectGatewayRouters(networkName, arbContracts);
+
+      const l1TokensHolder = hasDeployedContracts
+        ? await testingUtils.impersonate(
+            testingUtils.env.L1_TOKENS_HOLDER(),
+            l1Provider
           )
-        : undefined,
-      L2GatewayRouter: hasDeployedContracts
-        ? testing.env.ARB_L2_GATEWAY_ROUTER(
-            arbitrum.addresses(networkName).L2GatewayRouter
-          )
-        : undefined,
-    });
+        : testingUtils.accounts.deployer(l1Provider);
 
-    const arbContracts = arbitrum.addresses(
-      networkName,
-      gatewayRouterAddresses
-    );
+      if (hasDeployedContracts) {
+        await printLoadedTestConfig(
+          networkName,
+          l1TokensHolder,
+          gatewayContracts,
+          gatewayRouters
+        );
+      }
 
-    const gatewayRouters = connectGatewayRouters(networkName, arbContracts);
+      return {
+        l1Provider,
+        l2Provider,
+        l1TokensHolder,
+        ...gatewayContracts,
+        arbSysStub: defaultArbContracts.ArbSysStub,
+        ...gatewayRouters,
+        l1ERC20TokenGatewayAdmin: await testingUtils.impersonate(
+          l1ERC20TokenGatewayAdminAddress,
+          l1Provider
+        ),
+        l2ERC20TokenGatewayAdmin: await testingUtils.impersonate(
+          l2ERC20TokenGatewayAdminAddress,
+          l2Provider
+        ),
+      };
+    },
+    async getE2ETestSetup() {
+      const testerPrivateKey = testingUtils.env.TESTING_PRIVATE_KEY();
+      const [l1Tester, l2Tester] = network.getMultiChainSigner(
+        "arbitrum",
+        networkName,
+        testerPrivateKey
+      );
+      const [l1Provider, l2Provider] = network.getMultiChainProvider(
+        "arbitrum",
+        networkName
+      );
 
-    const l1TokensHolder = hasDeployedContracts
-      ? await testing.impersonate(testing.env.L1_TOKENS_HOLDER(), l1Provider)
-      : testing.accounts.deployer(l1Provider);
+      const gatewayRouterAddresses = {
+        L1GatewayRouter: testingUtils.env.ARB_L1_GATEWAY_ROUTER(
+          defaultArbAddresses.L1GatewayRouter
+        ),
+        L2GatewayRouter: testingUtils.env.ARB_L2_GATEWAY_ROUTER(
+          defaultArbAddresses.L2GatewayRouter
+        ),
+      };
 
-    if (hasDeployedContracts) {
+      const gatewayContracts = await loadDeployedGateways(l1Tester, l2Tester);
+
+      const gatewayRouters = connectGatewayRouters(
+        networkName,
+        gatewayRouterAddresses
+      );
+
       await printLoadedTestConfig(
         networkName,
-        l1TokensHolder,
+        l1Tester,
         gatewayContracts,
         gatewayRouters
       );
-    }
 
-    return {
-      l1Provider,
-      l2Provider,
-      l1TokensHolder,
-      ...gatewayContracts,
-      arbSys: arbitrum.contracts(networkName).ArbSys,
-      ...gatewayRouters,
-      l1ERC20TokenGatewayAdmin: await testing.impersonate(
-        l1ERC20TokenGatewayAdminAddress,
-        l1Provider
-      ),
-      l2ERC20TokenGatewayAdmin: await testing.impersonate(
-        l2ERC20TokenGatewayAdminAddress,
-        l2Provider
-      ),
-    };
-  },
-  async getE2ETestSetup(networkName: NetworkName) {
-    const testerPrivateKey = testing.env.TESTING_PRIVATE_KEY();
-    const [l1Tester, l2Tester] = network.getMultiChainSigner(
-      "arbitrum",
-      networkName,
-      testerPrivateKey
-    );
-    const [l1Provider, l2Provider] = network.getMultiChainProvider(
-      "arbitrum",
-      networkName
-    );
+      return {
+        l1Tester,
+        l2Tester,
+        l1Provider,
+        l2Provider,
+        ...gatewayContracts,
+        ...gatewayRouters,
+      };
+    },
+    async stubArbSysContract() {
+      const [, l2Provider] = network.getMultiChainProvider(
+        "arbitrum",
+        networkName
+      );
+      const deployer = testingUtils.accounts.deployer(l2Provider);
+      const stub = await new ArbSysStub__factory(deployer).deploy();
+      const stubBytecode = await l2Provider.send("eth_getCode", [stub.address]);
 
-    const arbAddresses = arbitrum.addresses(networkName);
-
-    const gatewayRouterAddresses = {
-      L1GatewayRouter: testing.env.ARB_L1_GATEWAY_ROUTER(
-        arbAddresses.L1GatewayRouter
-      ),
-      L2GatewayRouter: testing.env.ARB_L2_GATEWAY_ROUTER(
-        arbAddresses.L2GatewayRouter
-      ),
-    };
-
-    const gatewayContracts = await loadDeployedGateways(l1Tester, l2Tester);
-
-    const gatewayRouters = connectGatewayRouters(
-      networkName,
-      gatewayRouterAddresses
-    );
-
-    await printLoadedTestConfig(
-      networkName,
-      l1Tester,
-      gatewayContracts,
-      gatewayRouters
-    );
-
-    return {
-      l1Tester,
-      l2Tester,
-      l1Provider,
-      l2Provider,
-      ...gatewayContracts,
-      ...gatewayRouters,
-    };
-  },
-  async stubArbSysContract(networkName: NetworkName) {
-    const [, l2Provider] = network.getMultiChainProvider(
-      "arbitrum",
-      networkName
-    );
-    const deployer = testing.accounts.deployer(l2Provider);
-    const stub = await new ArbSysStub__factory(deployer).deploy();
-    const stubBytecode = await l2Provider.send("eth_getCode", [stub.address]);
-
-    await l2Provider.send("hardhat_setCode", [
-      arbitrum.addresses(networkName).ArbSys,
-      stubBytecode,
-    ]);
-  },
-};
+      await l2Provider.send("hardhat_setCode", [
+        defaultArbAddresses.ArbSys,
+        stubBytecode,
+      ]);
+    },
+  };
+}
 
 async function deployTestGateway(networkName: NetworkName) {
   const [l1Provider, l2Provider] = network.getMultiChainProvider(
@@ -177,27 +186,27 @@ async function deployTestGateway(networkName: NetworkName) {
     networkName
   );
 
-  const l1Deployer = testing.accounts.deployer(l1Provider);
-  const l2Deployer = testing.accounts.deployer(l2Provider);
+  const l1Deployer = testingUtils.accounts.deployer(l1Provider);
+  const l2Deployer = testingUtils.accounts.deployer(l2Provider);
 
   const l1Token = await new ERC20BridgedStub__factory(l1Deployer).deploy(
     "Test Token",
     "TT"
   );
 
-  const [l1DeployScript, l2DeployScript] = await arbitrum.deployment
-    .erc20TokenGateways(networkName)
-    .createDeployScripts(
-      l1Token.address,
-      {
-        deployer: l1Deployer,
-        admins: { proxy: l1Deployer.address, bridge: l1Deployer.address },
-      },
-      {
-        deployer: l2Deployer,
-        admins: { proxy: l2Deployer.address, bridge: l2Deployer.address },
-      }
-    );
+  const [l1DeployScript, l2DeployScript] = await deployment(
+    networkName
+  ).erc20TokenGatewayDeployScript(
+    l1Token.address,
+    {
+      deployer: l1Deployer,
+      admins: { proxy: l1Deployer.address, bridge: l1Deployer.address },
+    },
+    {
+      deployer: l2Deployer,
+      admins: { proxy: l2Deployer.address, bridge: l2Deployer.address },
+    }
+  );
 
   await l1DeployScript.run();
   await l2DeployScript.run();
@@ -222,14 +231,14 @@ async function loadDeployedGateways(
 ) {
   return {
     l1Token: IERC20__factory.connect(
-      testing.env.ARB_L1_TOKEN(),
+      testingUtils.env.ARB_L1_TOKEN(),
       l1SignerOrProvider
     ),
     ...connectGatewayContracts(
       {
-        l2Token: testing.env.ARB_L2_TOKEN(),
-        l1ERC20TokenGateway: testing.env.ARB_L1_ERC20_TOKEN_GATEWAY(),
-        l2ERC20TokenGateway: testing.env.ARB_L2_ERC20_TOKEN_GATEWAY(),
+        l2Token: testingUtils.env.ARB_L2_TOKEN(),
+        l1ERC20TokenGateway: testingUtils.env.ARB_L1_ERC20_TOKEN_GATEWAY(),
+        l2ERC20TokenGateway: testingUtils.env.ARB_L2_ERC20_TOKEN_GATEWAY(),
       },
       l1SignerOrProvider,
       l2SignerOrProvider
@@ -244,7 +253,7 @@ function connectGatewayRouters(
     L2GatewayRouter: string;
   }
 ) {
-  const arbContracts = arbitrum.contracts(networkName, addresses);
+  const arbContracts = contracts(networkName, addresses);
   return {
     l1GatewayRouter: arbContracts.L1GatewayRouter,
     l2GatewayRouter: arbContracts.L2GatewayRouter,
