@@ -198,7 +198,7 @@ async function ctxFactory() {
   const l1CrossDomainMessengerStub =
     await new CrossDomainMessengerStub__factory(l1Deployer).deploy();
 
-  const [_, l2DeployScript] =
+  const [, l2DeployScript] =
     await optimism.deployment.createOptimismBridgeDeployScripts(
       l1Token.address,
       {
@@ -207,7 +207,10 @@ async function ctxFactory() {
       },
       {
         deployer: l2Deployer,
-        admins: { proxy: l2Deployer.address, bridge: bridgeExecutor.address },
+        admins: {
+          proxy: bridgeExecutor.address,
+          bridge: bridgeExecutor.address,
+        },
       },
       {
         dependencies: { l1: { messenger: l1CrossDomainMessengerStub.address } },

@@ -176,7 +176,7 @@ async function ctx() {
     l2Deployer.address
   );
 
-  const [_, l2DeployScript] =
+  const [, l2DeployScript] =
     await arbitrum.deployment.createGatewayDeployScripts(
       l1Token.address,
       {

@@ -107,7 +107,7 @@ export async function createOptimismBridgeDeployScripts(
       factory: OssifiableProxy__factory,
       args: [
         expectedL2TokenImplAddress,
-        l2Params.admins.bridge,
+        l2Params.admins.proxy,
         ERC20Bridged__factory.createInterface().encodeFunctionData(
           "initialize",
           [l2TokenName, l2TokenSymbol]
@@ -130,7 +130,7 @@ export async function createOptimismBridgeDeployScripts(
       factory: OssifiableProxy__factory,
       args: [
         expectedL2TokenBridgeImplAddress,
-        l2Params.admins.bridge,
+        l2Params.admins.proxy,
         L2ERC20TokenBridge__factory.createInterface().encodeFunctionData(
           "initialize",
           [l2Params.admins.bridge]
