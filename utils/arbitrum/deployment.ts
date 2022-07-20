@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import { Wallet } from "ethers";
+import { Overrides, Wallet } from "ethers";
 import {
   ERC20Bridged__factory,
   IERC20Metadata__factory,
@@ -27,6 +27,7 @@ interface ArbL2DeployScriptParams extends ArbL1DeployScriptParams {
 interface ArbDeploymentOptions {
   logger?: Logger;
   customAddresses?: CustomArbContractAddresses;
+  overrides?: Overrides;
 }
 
 export default function deployment(
@@ -65,6 +66,7 @@ export default function deployment(
             expectedL2TokensGatewayProxyAddress,
             l1Token,
             expectedL2TokenProxyAddress,
+            options?.overrides,
           ],
           afterDeploy: (c) =>
             assert.equal(c.address, expectedL1TokensGatewayImplAddress),
@@ -78,6 +80,7 @@ export default function deployment(
               "initialize",
               [l1Params.admins.bridge]
             ),
+            options?.overrides,
           ],
           afterDeploy: (c) =>
             assert.equal(c.address, expectedL1TokensGatewayProxyAddress),
@@ -105,6 +108,7 @@ export default function deployment(
             l2TokenSymbol,
             decimals,
             expectedL2TokensGatewayProxyAddress,
+            options?.overrides,
           ],
           afterDeploy: (c) =>
             assert.equal(c.address, expectedL2TokenImplAddress),
@@ -118,6 +122,7 @@ export default function deployment(
               "initialize",
               [l2TokenName, l2TokenSymbol]
             ),
+            options?.overrides,
           ],
           afterDeploy: (c) =>
             assert.equal(c.address, expectedL2TokenProxyAddress),
@@ -130,6 +135,7 @@ export default function deployment(
             expectedL1TokensGatewayProxyAddress,
             l1Token,
             expectedL2TokenProxyAddress,
+            options?.overrides,
           ],
           afterDeploy: (c) =>
             assert.equal(c.address, expectedL2TokensGatewayImplAddress),
@@ -143,6 +149,7 @@ export default function deployment(
               "initialize",
               [l2Params.admins.bridge]
             ),
+            options?.overrides,
           ],
         });
 
@@ -163,7 +170,7 @@ export default function deployment(
         options?.logger
       ).addStep({
         factory: L1GatewayRouter__factory,
-        args: [],
+        args: [options?.overrides],
         afterDeploy: async (l1GatewayRouter) => {
           assert.equal(l1GatewayRouter.address, expectedL1GatewayRouter);
           await l1GatewayRouter.initialize(
@@ -181,7 +188,7 @@ export default function deployment(
         options?.logger
       ).addStep({
         factory: L2GatewayRouter__factory,
-        args: [],
+        args: [options?.overrides],
         afterDeploy: async (l2GatewayRouter) => {
           assert.equal(l2GatewayRouter.address, expectedL2GatewayRouter);
           await l2GatewayRouter.initialize(

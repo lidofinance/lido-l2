@@ -116,8 +116,8 @@ export class DeployScript {
     const { abi } = step.factory;
     const constructorABI = this._findConstructABI(abi);
 
-    for (let i = 0; i < step.args.length; ++i) {
-      const name = constructorABI?.inputs[i]?.name || "<UNKNOWN>";
+    for (let i = 0; i < constructorABI.inputs.length; ++i) {
+      const name = constructorABI.inputs[i]?.name || "<UNKNOWN>";
       res.args.push({ index: i, name, value: step.args[i] });
     }
     return res;
@@ -154,14 +154,14 @@ export class DeployScript {
   ) {
     const chainId = await this.deployer.getChainId();
     const networkNameByChainId: Record<number, string> = {
-      1: "mainnet",
-      4: "rinkeby",
-      10: "mainnet_optimism",
-      42: "kovan",
-      69: "kovan_optimism",
+      1: "eth_mainnet",
+      4: "eth_rinkeby",
+      10: "opt_mainnet",
+      42: "eth_kovan",
+      69: "opt_kovan",
       31337: "hardhat",
-      42161: "mainnet_arbitrum",
-      421611: "rinkeby_arbitrum",
+      42161: "arb_mainnet",
+      421611: "arb_rinkeby",
     };
     const networkName = networkNameByChainId[chainId] || "<NETWORK_NAME>";
     const arsString = stepInfo.args.map((a) => `"${a.value}"`).join(" ");

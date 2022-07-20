@@ -4,6 +4,8 @@ import arbitrum from "../../utils/arbitrum";
 import deployment from "../../utils/deployment";
 import { BridgingManagement } from "../../utils/bridging-management";
 import env from "../../utils/env";
+import { Overrides } from "ethers";
+import { wei } from "../../utils/wei";
 
 async function main() {
   const networkName = env.network();
@@ -15,8 +17,10 @@ async function main() {
 
   const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
 
+  const overrides: Overrides = { maxPriorityFeePerGas: wei`1.5 gwei` };
+
   const [l1DeployScript, l2DeployScript] = await arbitrum
-    .deployment(networkName, { logger: console })
+    .deployment(networkName, { logger: console, overrides })
     .erc20TokenGatewayDeployScript(
       deploymentConfig.token,
       {

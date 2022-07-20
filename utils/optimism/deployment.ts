@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import { Wallet } from "ethers";
+import { Overrides, Wallet } from "ethers";
 import {
   ERC20Bridged__factory,
   IERC20Metadata__factory,
@@ -24,6 +24,7 @@ interface OptL2DeployScriptParams extends OptL1DeployScriptParams {
 interface OptDeploymentOptions {
   logger?: Logger;
   customAddresses?: CustomOptContractAddresses;
+  overrides?: Overrides;
 }
 
 export default function deployment(
@@ -60,6 +61,7 @@ export default function deployment(
             expectedL2TokenBridgeProxyAddress,
             l1Token,
             expectedL2TokenProxyAddress,
+            options?.overrides,
           ],
           afterDeploy: (c) =>
             assert.equal(c.address, expectedL1TokenBridgeImplAddress),
@@ -73,6 +75,7 @@ export default function deployment(
               "initialize",
               [l1Params.admins.bridge]
             ),
+            options?.overrides,
           ],
           afterDeploy: (c) =>
             assert.equal(c.address, expectedL1TokenBridgeProxyAddress),
@@ -100,6 +103,7 @@ export default function deployment(
             l2TokenSymbol,
             decimals,
             expectedL2TokenBridgeProxyAddress,
+            options?.overrides,
           ],
           afterDeploy: (c) =>
             assert.equal(c.address, expectedL2TokenImplAddress),
@@ -113,6 +117,7 @@ export default function deployment(
               "initialize",
               [l2TokenName, l2TokenSymbol]
             ),
+            options?.overrides,
           ],
           afterDeploy: (c) =>
             assert.equal(c.address, expectedL2TokenProxyAddress),
@@ -124,6 +129,7 @@ export default function deployment(
             expectedL1TokenBridgeProxyAddress,
             l1Token,
             expectedL2TokenProxyAddress,
+            options?.overrides,
           ],
           afterDeploy: (c) =>
             assert.equal(c.address, expectedL2TokenBridgeImplAddress),
@@ -137,6 +143,7 @@ export default function deployment(
               "initialize",
               [l2Params.admins.bridge]
             ),
+            options?.overrides,
           ],
         });
 
