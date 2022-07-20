@@ -71,6 +71,19 @@ export default function testing(networkName: NetworkName) {
         );
       }
 
+      // if the L1 bridge admin is a contract, remove it's code to
+      // make it behave as EOA
+      await l1Provider.send("hardhat_setCode", [
+        l1ERC20TokenBridgeAdminAddress,
+        "0x",
+      ]);
+
+      // same for the L2 bridge admin
+      await l2Provider.send("hardhat_setCode", [
+        l2ERC20TokenBridgeAdminAddress,
+        "0x",
+      ]);
+
       return {
         l1Provider,
         l2Provider,
