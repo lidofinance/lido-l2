@@ -81,7 +81,7 @@ scenario("Arbitrum Gateway :: deployment acceptance test", ctxFactory)
   .step("L1 Bridge :: deposits disablers", async (ctx) => {
     const actualDepositsDisablers = await getRoleHolders(
       ctx.l1ERC20TokenGateway,
-      BridgingManagerRole.DEPOSITS_ENABLER_ROLE.hash
+      BridgingManagerRole.DEPOSITS_DISABLER_ROLE.hash
     );
     const expectedDepositsDisablers = ctx.deployment.l1.depositsDisablers || [];
 
@@ -194,7 +194,7 @@ scenario("Arbitrum Gateway :: deployment acceptance test", ctxFactory)
   .step("L2 Bridge :: deposits disablers", async (ctx) => {
     const actualDepositsDisablers = await getRoleHolders(
       ctx.l2ERC20TokenGateway,
-      BridgingManagerRole.DEPOSITS_ENABLER_ROLE.hash
+      BridgingManagerRole.DEPOSITS_DISABLER_ROLE.hash
     );
     const expectedDepositsDisablers = ctx.deployment.l2.depositsDisablers || [];
 
@@ -244,7 +244,7 @@ scenario("Arbitrum Gateway :: deployment acceptance test", ctxFactory)
   .step("L2 Token :: proxy admin", async (ctx) => {
     assert.equal(
       await ctx.erc20BridgedProxy.proxy__getAdmin(),
-      ctx.deployment.l1.proxyAdmin
+      ctx.deployment.l2.proxyAdmin
     );
   })
   .step("L2 Token :: name", async (ctx) => {

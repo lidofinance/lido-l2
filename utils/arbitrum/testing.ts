@@ -72,7 +72,7 @@ export default function testing(networkName: NetworkName) {
       const gatewayRouterAddresses = addresses(networkName, {
         L1GatewayRouter: hasDeployedContracts
           ? testingUtils.env.ARB_L1_GATEWAY_ROUTER(
-              defaultArbAddresses.L2GatewayRouter
+              defaultArbAddresses.L1GatewayRouter
             )
           : defaultArbAddresses.L1GatewayRouter,
         L2GatewayRouter: hasDeployedContracts
@@ -101,6 +101,19 @@ export default function testing(networkName: NetworkName) {
           gatewayRouters
         );
       }
+
+      // if the L1 bridge admin is a contract, remove it's code to
+      // make it behave as EOA
+      await l1Provider.send("hardhat_setCode", [
+        l1ERC20TokenGatewayAdminAddress,
+        "0x",
+      ]);
+
+      // same for the L2 bridge admin
+      await l2Provider.send("hardhat_setCode", [
+        l2ERC20TokenGatewayAdminAddress,
+        "0x",
+      ]);
 
       return {
         l1Provider,
