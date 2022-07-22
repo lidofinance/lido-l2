@@ -25,7 +25,7 @@ async function ctxFactory() {
   };
 }
 
-scenario("Arbitrum :: Bridging E2E test", ctxFactory)
+scenario("Arbitrum :: Bridging E2E test via router", ctxFactory)
   .step(
     "Check test environment is set correctly",
     async ({ erc20Bridge, l1Token, ...ctx }) => {
