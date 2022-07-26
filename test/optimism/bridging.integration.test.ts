@@ -445,7 +445,8 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const networkName = loadNetworkName();
+  const networkName = env.network("NETWORK", "mainnet");
+
   const {
     l1Provider,
     l2Provider,
@@ -526,13 +527,4 @@ function applyL1ToL2Alias(address: string) {
   return hre.ethers.utils.getAddress(
     hre.ethers.BigNumber.from(address).add(offset).mod(mask).toHexString()
   );
-}
-
-function loadNetworkName() {
-  const networkName = env.network("NETWORK", "local_mainnet");
-  return networkName === "mainnet"
-    ? "local_mainnet"
-    : networkName === "testnet"
-    ? "local_testnet"
-    : networkName;
 }

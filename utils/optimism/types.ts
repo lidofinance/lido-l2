@@ -5,3 +5,6 @@ export type OptContractNames =
 
 export type OptContractAddresses = Record<OptContractNames, string>;
 export type CustomOptContractAddresses = Partial<OptContractAddresses>;
+export interface CommonOptions {
+  customAddresses?: CustomOptContractAddresses;
+}

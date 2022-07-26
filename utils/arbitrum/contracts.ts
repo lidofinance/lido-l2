@@ -6,18 +6,22 @@ import {
   ArbSysStub__factory,
 } from "../../typechain/";
 import addresses from "./addresses";
+import { CommonOptions } from "./types";
 import network, { NetworkName } from "../network";
-import { CustomArbContractAddresses } from "./types";
+
+interface ContractsOptions extends CommonOptions {
+  forking: boolean;
+}
 
 export default function contracts(
   networkName: NetworkName,
-  customAddresses?: CustomArbContractAddresses
+  options: ContractsOptions
 ) {
-  const [l1Provider, l2Provider] = network.getMultiChainProvider(
-    "arbitrum",
-    networkName
-  );
-  const arbAddresses = addresses(networkName, customAddresses);
+  const [l1Provider, l2Provider] = network
+    .multichain(["eth", "arb"], networkName)
+    .getProviders(options);
+
+  const arbAddresses = addresses(networkName, options);
 
   return {
     ArbSys: ArbSys__factory.connect(arbAddresses.ArbSys, l2Provider),

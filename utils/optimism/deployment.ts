@@ -7,9 +7,10 @@ import {
   L2ERC20TokenBridge__factory,
   OssifiableProxy__factory,
 } from "../../typechain";
+
 import addresses from "./addresses";
+import { CommonOptions } from "./types";
 import network, { NetworkName } from "../network";
-import { CustomOptContractAddresses } from "./types";
 import { DeployScript, Logger } from "../deployment/DeployScript";
 
 interface OptL1DeployScriptParams {
@@ -21,9 +22,8 @@ interface OptL2DeployScriptParams extends OptL1DeployScriptParams {
   l2Token?: { name?: string; symbol?: string };
 }
 
-interface OptDeploymentOptions {
+interface OptDeploymentOptions extends CommonOptions {
   logger?: Logger;
-  customAddresses?: CustomOptContractAddresses;
   overrides?: Overrides;
 }
 
@@ -31,7 +31,7 @@ export default function deployment(
   networkName: NetworkName,
   options: OptDeploymentOptions = {}
 ) {
-  const optAddresses = addresses(networkName, options?.customAddresses);
+  const optAddresses = addresses(networkName, options);
   return {
     async erc20TokenBridgeDeployScript(
       l1Token: string,

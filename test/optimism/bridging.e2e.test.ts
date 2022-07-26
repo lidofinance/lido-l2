@@ -125,7 +125,7 @@ scenario("Optimism :: Bridging E2E test", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const networkName = env.enum("NETWORK", ["mainnet", "testnet"]);
+  const networkName = env.network();
   const testingSetup = await optimism.testing(networkName).getE2ETestSetup();
 
   return {
@@ -136,7 +136,9 @@ async function ctxFactory() {
     l2Token: testingSetup.l2Token,
     l1ERC20TokenBridge: testingSetup.l1ERC20TokenBridge,
     crossChainMessenger: new CrossChainMessenger({
-      l1ChainId: 42,
+      l1ChainId: await testingSetup.l1Provider
+        .getNetwork()
+        .then((n) => n.chainId),
       l1SignerOrProvider: testingSetup.l1Tester,
       l2SignerOrProvider: testingSetup.l2Tester,
       bridges: {

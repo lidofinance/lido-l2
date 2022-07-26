@@ -5,12 +5,14 @@ import prompt from "../../utils/prompt";
 
 async function main() {
   const networkName = env.network();
-  const networkConfig = network.getMultichainNetwork("arbitrum");
-  const [l1DeployScript, l2DeployScript] = await arbitrum.deployment
-    .gatewayRouters(networkName)
-    .createDeployScripts(networkConfig.l1.signer, networkConfig.l2.signer, {
-      logger: console,
-    });
+
+  const [ethDeployer, arbDeployer] = network
+    .multichain(["eth", "arb"], networkName)
+    .getSigners(env.privateKey(), { forking: env.forking() });
+
+  const [l1DeployScript, l2DeployScript] = await arbitrum
+    .deployment(networkName, { logger: console })
+    .gatewayRouterDeployScript(ethDeployer, arbDeployer);
 
   l1DeployScript.print();
   l2DeployScript.print();

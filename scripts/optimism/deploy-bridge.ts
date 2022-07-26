@@ -1,7 +1,4 @@
-import { Overrides } from "ethers";
-
 import env from "../../utils/env";
-import { wei } from "../../utils/wei";
 import prompt from "../../utils/prompt";
 import network from "../../utils/network";
 import optimism from "../../utils/optimism";
@@ -10,39 +7,36 @@ import { BridgingManagement } from "../../utils/bridging-management";
 
 async function main() {
   const networkName = env.network();
-  const [l1Deployer, l2Deployer] = network.getMultiChainSigner(
-    "optimism",
-    networkName,
-    env.privateKey()
-  );
+  const [ethDeployer, arbDeployer] = network
+    .multichain(["eth", "opt"], networkName)
+    .getSigners(env.privateKey(), { forking: env.forking() });
+
   const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
 
-  const overrides: Overrides = { maxPriorityFeePerGas: wei`1.5 gwei` };
-
   const [l1DeployScript, l2DeployScript] = await optimism
-    .deployment(networkName, { logger: console, overrides })
+    .deployment(networkName, { logger: console })
     .erc20TokenBridgeDeployScript(
       deploymentConfig.token,
       {
-        deployer: l1Deployer,
+        deployer: ethDeployer,
         admins: {
           proxy: deploymentConfig.l1.proxyAdmin,
-          bridge: l1Deployer.address,
+          bridge: ethDeployer.address,
         },
       },
       {
-        deployer: l2Deployer,
+        deployer: arbDeployer,
         admins: {
           proxy: deploymentConfig.l2.proxyAdmin,
-          bridge: l2Deployer.address,
+          bridge: arbDeployer.address,
         },
       }
     );
 
   await deployment.printMultiChainDeploymentConfig(
     "Deploy Optimism Bridge",
-    l1Deployer,
-    l2Deployer,
+    ethDeployer,
+    arbDeployer,
     deploymentConfig,
     l1DeployScript,
     l2DeployScript
@@ -56,14 +50,14 @@ async function main() {
   const l1ERC20TokenBridgeProxyDeployStepIndex = 1;
   const l1BridgingManagement = new BridgingManagement(
     l1DeployScript.getContractAddress(l1ERC20TokenBridgeProxyDeployStepIndex),
-    l1Deployer,
+    ethDeployer,
     { logger: console }
   );
 
   const l2ERC20TokenBridgeProxyDeployStepIndex = 3;
   const l2BridgingManagement = new BridgingManagement(
     l2DeployScript.getContractAddress(l2ERC20TokenBridgeProxyDeployStepIndex),
-    l2Deployer,
+    arbDeployer,
     { logger: console }
   );
 

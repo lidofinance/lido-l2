@@ -1,4 +1,5 @@
 import { assert } from "chai";
+import { ethers } from "hardhat";
 import { Overrides, Wallet } from "ethers";
 import {
   ERC20Bridged__factory,
@@ -9,11 +10,11 @@ import {
   L2GatewayRouter__factory,
   OssifiableProxy__factory,
 } from "../../typechain";
+
 import addresses from "./addresses";
+import { CommonOptions } from "./types";
 import network, { NetworkName } from "../network";
 import { DeployScript, Logger } from "../deployment/DeployScript";
-import { ethers } from "hardhat";
-import { CustomArbContractAddresses } from "./types";
 
 interface ArbL1DeployScriptParams {
   deployer: Wallet;
@@ -24,9 +25,8 @@ interface ArbL2DeployScriptParams extends ArbL1DeployScriptParams {
   l2Token?: { name?: string; symbol?: string };
 }
 
-interface ArbDeploymentOptions {
+interface ArbDeploymentOptions extends CommonOptions {
   logger?: Logger;
-  customAddresses?: CustomArbContractAddresses;
   overrides?: Overrides;
 }
 
@@ -34,7 +34,7 @@ export default function deployment(
   networkName: NetworkName,
   options: ArbDeploymentOptions = {}
 ) {
-  const arbAddresses = addresses(networkName, options?.customAddresses);
+  const arbAddresses = addresses(networkName, options);
 
   return {
     async erc20TokenGatewayDeployScript(

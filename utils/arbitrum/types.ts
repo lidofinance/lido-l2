@@ -9,3 +9,7 @@ export type ArbContractNames =
 export type ArbContractAddresses = Record<ArbContractNames, string>;
 
 export type CustomArbContractAddresses = Partial<ArbContractAddresses>;
+
+export interface CommonOptions {
+  customAddresses?: CustomArbContractAddresses;
+}

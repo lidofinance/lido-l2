@@ -1,54 +1,59 @@
 import { Signer } from "ethers";
-import network, { NetworkName, SignerOrProvider } from "../network";
+import { JsonRpcProvider } from "@ethersproject/providers";
+
 import {
-  CrossDomainMessengerStub__factory,
-  ERC20Bridged,
-  ERC20BridgedStub__factory,
-  ERC20Bridged__factory,
   IERC20,
+  ERC20Bridged,
   IERC20__factory,
   L1ERC20TokenBridge,
-  L1ERC20TokenBridge__factory,
   L2ERC20TokenBridge,
+  ERC20Bridged__factory,
+  ERC20BridgedStub__factory,
+  L1ERC20TokenBridge__factory,
   L2ERC20TokenBridge__factory,
+  CrossDomainMessengerStub__factory,
 } from "../../typechain";
 import addresses from "./addresses";
 import contracts from "./contracts";
+import deployment from "./deployment";
 import testingUtils from "../testing";
 import { BridgingManagement } from "../bridging-management";
-import deployment from "./deployment";
+import network, { NetworkName, SignerOrProvider } from "../network";
 
 export default function testing(networkName: NetworkName) {
   const optAddresses = addresses(networkName);
-  const optContracts = contracts(networkName);
+  const ethOptNetworks = network.multichain(["eth", "opt"], networkName);
 
   return {
     async getAcceptanceTestSetup() {
-      const [l1Provider, l2Provider] = network.getMultiChainProvider(
-        "optimism",
-        networkName
-      );
+      const [ethProvider, optProvider] = ethOptNetworks.getProviders({
+        forking: true,
+      });
 
-      const bridgeContracts = await loadDeployedBridges(l1Provider, l2Provider);
+      const bridgeContracts = await loadDeployedBridges(
+        ethProvider,
+        optProvider
+      );
 
       await printLoadedTestConfig(networkName, bridgeContracts);
 
       return {
-        l1Provider,
-        l2Provider,
+        l1Provider: ethProvider,
+        l2Provider: optProvider,
         ...bridgeContracts,
       };
     },
     async getIntegrationTestSetup() {
       const hasDeployedContracts =
         testingUtils.env.USE_DEPLOYED_CONTRACTS(false);
-      const [l1Provider, l2Provider] = network.getMultiChainProvider(
-        "optimism",
-        networkName
-      );
+
+      const [ethProvider, optProvider] = ethOptNetworks.getProviders({
+        forking: true,
+      });
+
       const bridgeContracts = hasDeployedContracts
-        ? await loadDeployedBridges(l1Provider, l2Provider)
-        : await deployTestBridge(networkName);
+        ? await loadDeployedBridges(ethProvider, optProvider)
+        : await deployTestBridge(networkName, ethProvider, optProvider);
 
       const [l1ERC20TokenBridgeAdminAddress] =
         await BridgingManagement.getAdmins(bridgeContracts.l1ERC20TokenBridge);
@@ -59,9 +64,9 @@ export default function testing(networkName: NetworkName) {
       const l1TokensHolder = hasDeployedContracts
         ? await testingUtils.impersonate(
             testingUtils.env.L1_TOKENS_HOLDER(),
-            l1Provider
+            ethProvider
           )
-        : testingUtils.accounts.deployer(l1Provider);
+        : testingUtils.accounts.deployer(ethProvider);
 
       if (hasDeployedContracts) {
         await printLoadedTestConfig(
@@ -73,46 +78,44 @@ export default function testing(networkName: NetworkName) {
 
       // if the L1 bridge admin is a contract, remove it's code to
       // make it behave as EOA
-      await l1Provider.send("hardhat_setCode", [
+      await ethProvider.send("hardhat_setCode", [
         l1ERC20TokenBridgeAdminAddress,
         "0x",
       ]);
 
       // same for the L2 bridge admin
-      await l2Provider.send("hardhat_setCode", [
+      await optProvider.send("hardhat_setCode", [
         l2ERC20TokenBridgeAdminAddress,
         "0x",
       ]);
 
+      const optContracts = contracts(networkName, { forking: true });
       return {
-        l1Provider,
-        l2Provider,
+        l1Provider: ethProvider,
+        l2Provider: optProvider,
         l1TokensHolder,
         ...bridgeContracts,
         l1CrossDomainMessenger: optContracts.L1CrossDomainMessengerStub,
         l2CrossDomainMessenger: optContracts.L2CrossDomainMessenger,
         l1ERC20TokenBridgeAdmin: await testingUtils.impersonate(
           l1ERC20TokenBridgeAdminAddress,
-          l1Provider
+          ethProvider
         ),
         l2ERC20TokenBridgeAdmin: await testingUtils.impersonate(
           l2ERC20TokenBridgeAdminAddress,
-          l2Provider
+          optProvider
         ),
         canonicalTransactionChain: optContracts.CanonicalTransactionChain,
       };
     },
     async getE2ETestSetup() {
       const testerPrivateKey = testingUtils.env.TESTING_PRIVATE_KEY();
-      const [l1Tester, l2Tester] = network.getMultiChainSigner(
-        "optimism",
-        networkName,
-        testerPrivateKey
-      );
-      const [l1Provider, l2Provider] = network.getMultiChainProvider(
-        "optimism",
-        networkName
-      );
+      const [ethProvider, optProvider] = ethOptNetworks.getProviders({
+        forking: false,
+      });
+      const [l1Tester, l2Tester] = ethOptNetworks.getSigners(testerPrivateKey, {
+        forking: false,
+      });
 
       const bridgeContracts = await loadDeployedBridges(l1Tester, l2Tester);
 
@@ -121,55 +124,26 @@ export default function testing(networkName: NetworkName) {
       return {
         l1Tester,
         l2Tester,
-        l1Provider,
-        l2Provider,
+        l1Provider: ethProvider,
+        l2Provider: optProvider,
         ...bridgeContracts,
       };
     },
     async stubL1CrossChainMessengerContract() {
-      const [l1Provider] = network.getMultiChainProvider(
-        "optimism",
-        networkName
-      );
-      const deployer = testingUtils.accounts.deployer(l1Provider);
+      const [ethProvider] = ethOptNetworks.getProviders({ forking: true });
+      const deployer = testingUtils.accounts.deployer(ethProvider);
       const stub = await new CrossDomainMessengerStub__factory(
         deployer
       ).deploy();
-      const stubBytecode = await l1Provider.send("eth_getCode", [stub.address]);
+      const stubBytecode = await ethProvider.send("eth_getCode", [
+        stub.address,
+      ]);
 
-      await l1Provider.send("hardhat_setCode", [
+      await ethProvider.send("hardhat_setCode", [
         optAddresses.L1CrossDomainMessenger,
         stubBytecode,
       ]);
     },
-  };
-}
-
-function connectBridgeContracts(
-  addresses: {
-    l2Token: string;
-    l1ERC20TokenBridge: string;
-    l2ERC20TokenBridge: string;
-  },
-  l1SignerOrProvider: SignerOrProvider,
-  l2SignerOrProvider: SignerOrProvider
-) {
-  const l1ERC20TokenBridge = L1ERC20TokenBridge__factory.connect(
-    addresses.l1ERC20TokenBridge,
-    l1SignerOrProvider
-  );
-  const l2ERC20TokenBridge = L2ERC20TokenBridge__factory.connect(
-    addresses.l2ERC20TokenBridge,
-    l2SignerOrProvider
-  );
-  const l2Token = ERC20Bridged__factory.connect(
-    addresses.l2Token,
-    l2SignerOrProvider
-  );
-  return {
-    l2Token,
-    l1ERC20TokenBridge,
-    l2ERC20TokenBridge,
   };
 }
 
@@ -194,14 +168,13 @@ async function loadDeployedBridges(
   };
 }
 
-async function deployTestBridge(networkName: NetworkName) {
-  const [l1Provider, l2Provider] = network.getMultiChainProvider(
-    "optimism",
-    networkName
-  );
-
-  const l1Deployer = testingUtils.accounts.deployer(l1Provider);
-  const l2Deployer = testingUtils.accounts.deployer(l2Provider);
+async function deployTestBridge(
+  networkName: NetworkName,
+  ethProvider: JsonRpcProvider,
+  optProvider: JsonRpcProvider
+) {
+  const l1Deployer = testingUtils.accounts.deployer(ethProvider);
+  const l2Deployer = testingUtils.accounts.deployer(optProvider);
 
   const l1Token = await new ERC20BridgedStub__factory(l1Deployer).deploy(
     "Test Token",
@@ -226,16 +199,44 @@ async function deployTestBridge(networkName: NetworkName) {
   await l2DeployScript.run();
 
   return {
-    l1Token: l1Token.connect(l1Provider),
+    l1Token: l1Token.connect(ethProvider),
     ...connectBridgeContracts(
       {
         l2Token: l2DeployScript.getContractAddress(1),
         l1ERC20TokenBridge: l1DeployScript.getContractAddress(1),
         l2ERC20TokenBridge: l2DeployScript.getContractAddress(3),
       },
-      l1Provider,
-      l2Provider
+      ethProvider,
+      optProvider
     ),
+  };
+}
+
+function connectBridgeContracts(
+  addresses: {
+    l2Token: string;
+    l1ERC20TokenBridge: string;
+    l2ERC20TokenBridge: string;
+  },
+  ethSignerOrProvider: SignerOrProvider,
+  optSignerOrProvider: SignerOrProvider
+) {
+  const l1ERC20TokenBridge = L1ERC20TokenBridge__factory.connect(
+    addresses.l1ERC20TokenBridge,
+    ethSignerOrProvider
+  );
+  const l2ERC20TokenBridge = L2ERC20TokenBridge__factory.connect(
+    addresses.l2ERC20TokenBridge,
+    optSignerOrProvider
+  );
+  const l2Token = ERC20Bridged__factory.connect(
+    addresses.l2Token,
+    optSignerOrProvider
+  );
+  return {
+    l2Token,
+    l1ERC20TokenBridge,
+    l2ERC20TokenBridge,
   };
 }
 

@@ -290,17 +290,8 @@ scenario("Arbitrum :: Bridging integration test", ctx)
 
   .run();
 
-function loadNetworkName() {
-  const networkName = env.network("NETWORK", "local_mainnet");
-  return networkName === "mainnet"
-    ? "local_mainnet"
-    : networkName === "testnet"
-    ? "local_testnet"
-    : networkName;
-}
-
 async function ctx() {
-  const networkName = loadNetworkName();
+  const networkName = env.network();
   const {
     l1Provider,
     l2Provider,

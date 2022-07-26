@@ -258,7 +258,7 @@ scenario("Optimism Bridge :: deployment acceptance test", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const networkName = loadNetworkName();
+  const networkName = env.network();
   const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
   const testingSetup = await optimism
     .testing(networkName)
@@ -298,13 +298,4 @@ async function ctxFactory() {
       testingSetup.l2Provider
     ),
   };
-}
-
-function loadNetworkName() {
-  const networkName = env.network("NETWORK", "local_mainnet");
-  return networkName === "mainnet"
-    ? "local_mainnet"
-    : networkName === "testnet"
-    ? "local_testnet"
-    : networkName;
 }

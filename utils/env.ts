@@ -50,13 +50,17 @@ function getAddressList(variableName: string, defaultValue?: string[]) {
 function getNetwork(name: string = "NETWORK", defaultNetwork?: NetworkName) {
   return getEnum(
     name,
-    ["testnet", "mainnet", "local_testnet", "local_mainnet"],
+    ["mainnet", "kovan", "goerli", "rinkeby"],
     defaultNetwork
   );
 }
 
 function getPrivateKey() {
   return getString("DEPLOYER_PRIVATE_KEY");
+}
+
+function getForking() {
+  return getBool("FORKING", false);
 }
 
 export default {
@@ -68,4 +72,5 @@ export default {
   addresses: getAddressList,
   network: getNetwork,
   privateKey: getPrivateKey,
+  forking: getForking,
 };

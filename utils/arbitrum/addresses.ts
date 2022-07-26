@@ -1,5 +1,5 @@
 import { NetworkName } from "../network";
-import { ArbContractAddresses, CustomArbContractAddresses } from "./types";
+import { ArbContractAddresses, CommonOptions } from "./types";
 
 const ArbitrumMainnetAddresses: ArbContractAddresses = {
   Inbox: "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f",
@@ -10,7 +10,7 @@ const ArbitrumMainnetAddresses: ArbContractAddresses = {
   L2GatewayRouter: "0x5288c571Fd7aD117beA99bF60FE0846C4E84F933",
 };
 
-const ArbitrumTestnetAddresses: ArbContractAddresses = {
+const ArbitrumRinkebyAddresses: ArbContractAddresses = {
   Inbox: "0x578BAde599406A8fE3d24Fd7f7211c0911F5B29e",
   ArbSys: "0x0000000000000000000000000000000000000064",
   Bridge: "0x9a28E783c47bBEB813F32B861A431d0776681E95",
@@ -19,16 +19,28 @@ const ArbitrumTestnetAddresses: ArbContractAddresses = {
   L2GatewayRouter: "0x9413AD42910c1eA60c737dB5f58d1C504498a3cD",
 };
 
+// DEPRECATED
+const ArbitrumGoerliAddresses: ArbContractAddresses = {
+  Inbox: "0x6BEbC4925716945D46F0Ec336D5C2564F419682C",
+  ArbSys: "0x0000000000000000000000000000000000000064",
+  Bridge: "0xaf4159A80B6Cc41ED517DB1c453d1Ef5C2e4dB72",
+  Outbox: "0x45Af9Ed1D03703e480CE7d328fB684bb67DA5049",
+  L1GatewayRouter: "0x4c7708168395aEa569453Fc36862D2ffcDaC588c",
+  L2GatewayRouter: "0xE5B9d8d42d656d1DcB8065A6c012FE3780246041",
+};
+
 export default function addresses(
   networkName: NetworkName,
-  customAddresses: CustomArbContractAddresses = {}
+  options: CommonOptions = {}
 ) {
   switch (networkName) {
     case "mainnet":
-    case "local_mainnet":
-      return { ...ArbitrumMainnetAddresses, ...customAddresses };
-    case "testnet":
-    case "local_testnet":
-      return { ...ArbitrumTestnetAddresses, ...customAddresses };
+      return { ...ArbitrumMainnetAddresses, ...options.customAddresses };
+    case "goerli":
+      return { ...ArbitrumGoerliAddresses, ...options.customAddresses };
+    case "rinkeby":
+      return { ...ArbitrumRinkebyAddresses, ...options.customAddresses };
+    default:
+      throw new Error(`Network "${networkName}" is not supported`);
   }
 }

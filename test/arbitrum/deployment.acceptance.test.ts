@@ -268,17 +268,8 @@ scenario("Arbitrum Gateway :: deployment acceptance test", ctxFactory)
 
   .run();
 
-function loadNetworkName() {
-  const networkName = env.network("NETWORK", "local_mainnet");
-  return networkName === "mainnet"
-    ? "local_mainnet"
-    : networkName === "testnet"
-    ? "local_testnet"
-    : networkName;
-}
-
 async function ctxFactory() {
-  const networkName = loadNetworkName();
+  const networkName = env.network();
   const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
   const testingSetup = await arbitrum
     .testing(networkName)
