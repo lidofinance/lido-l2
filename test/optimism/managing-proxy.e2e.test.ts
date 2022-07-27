@@ -1,3 +1,7 @@
+import { assert } from "chai";
+import { TransactionResponse } from "@ethersproject/providers";
+import { CrossChainMessenger, MessageStatus } from "@eth-optimism/sdk";
+
 import {
   ERC20Bridged__factory,
   ERC20Mintable__factory,
@@ -10,18 +14,15 @@ import {
   TokenManager__factory,
   CrossDomainMessanger__factory,
 } from "../../typechain";
-import { wei } from "../../utils/wei";
-import { CrossChainMessenger, MessageStatus } from "@eth-optimism/sdk";
-import { expect } from "chai";
-import { TransactionResponse } from "@ethersproject/providers";
-import network from "../../utils/network";
-import env from "../../utils/env";
-import { scenario } from "../../utils/testing";
 import {
   E2E_TEST_CONTRACTS_OPTIMISM as E2E_TEST_CONTRACTS,
   createOptimismVoting,
   sleep,
 } from "../../utils/testing/e2e";
+import env from "../../utils/env";
+import { wei } from "../../utils/wei";
+import network from "../../utils/network";
+import { scenario } from "../../utils/testing";
 
 let ossifyMessageResponse: TransactionResponse;
 let upgradeMessageResponse: TransactionResponse;
@@ -34,13 +35,13 @@ scenario(
     const { proxyToOssify } = ctx;
     const admin = await proxyToOssify.proxy__getAdmin();
 
-    expect(admin).equals(E2E_TEST_CONTRACTS.l2.govBridgeExecutor);
+    assert.equal(admin, E2E_TEST_CONTRACTS.l2.govBridgeExecutor);
   })
 
   .step("Proxy upgrade: send crosschain message", async (ctx) => {
     const implBefore = await await ctx.proxyToOssify.proxy__getImplementation();
 
-    expect(implBefore).equals(ctx.l2ERC20TokenBridge.address);
+    assert.equal(implBefore, ctx.l2ERC20TokenBridge.address);
     const executorCalldata =
       await ctx.govBridgeExecutor.interface.encodeFunctionData("queue", [
         [ctx.proxyToOssify.address],
@@ -94,13 +95,14 @@ scenario(
       await executeTx.wait();
       const implAfter = await await proxyToOssify.proxy__getImplementation();
 
-      expect(implAfter).equals(l2Token.address);
+      assert(implAfter, l2Token.address);
     }
   )
 
   .step("Proxy ossify: send crosschain message", async (ctx) => {
     const isOssifiedBefore = await ctx.proxyToOssify.proxy__getIsOssified();
-    expect(isOssifiedBefore).is.false;
+
+    assert.isFalse(isOssifiedBefore);
 
     const executorCalldata =
       await ctx.govBridgeExecutor.interface.encodeFunctionData("queue", [
@@ -121,7 +123,7 @@ scenario(
     const voteTx = await voting.vote(targetVote, true, true);
     await voteTx.wait();
 
-    while ((await voting.getVotePhase(targetVote)) != 2) {
+    while ((await voting.getVotePhase(targetVote)) !== 2) {
       await sleep(5000);
     }
 
@@ -150,7 +152,7 @@ scenario(
 
       const isOssifiedAfter = await proxyToOssify.proxy__getIsOssified();
 
-      expect(isOssifiedAfter).is.true;
+      assert.isTrue(isOssifiedAfter);
     }
   )
 

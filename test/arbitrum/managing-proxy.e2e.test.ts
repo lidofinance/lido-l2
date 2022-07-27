@@ -1,4 +1,12 @@
 import {
+  getL2Network,
+  L1TransactionReceipt,
+  L1ToL2MessageStatus,
+} from "@arbitrum/sdk";
+import { assert } from "chai";
+import { ContractReceipt } from "ethers";
+
+import {
   ERC20Bridged__factory,
   ERC20Mintable__factory,
   Inbox__factory,
@@ -9,52 +17,45 @@ import {
   TokenManager__factory,
   OssifiableProxy__factory,
 } from "../../typechain";
-import { wei } from "../../utils/wei";
-import { expect } from "chai";
-import network from "../../utils/network";
-import env from "../../utils/env";
-import { scenario } from "../../utils/testing";
 import {
   E2E_TEST_CONTRACTS_ARBITRUM as E2E_TEST_CONTRACTS,
   createArbitrumVoting as createDAOVoting,
   sleep,
 } from "../../utils/testing/e2e";
-import { ContractReceipt } from "ethers";
-import {
-  getL2Network,
-  L1TransactionReceipt,
-  L1ToL2MessageStatus,
-} from "@arbitrum/sdk";
+import env from "../../utils/env";
+import { wei } from "../../utils/wei";
+import network from "../../utils/network";
+import { scenario } from "../../utils/testing";
 
 let upgradeMessageResponse: ContractReceipt;
 let ossifyMessageResponse: ContractReceipt;
 
 scenario("Arbitrum :: AAVE governance crosschain bridge", ctxFactory)
   .step("LDO Holder has enought ETH", async ({ l1LDOHolder, gasAmount }) => {
-    expect(await l1LDOHolder.getBalance()).to.gte(gasAmount);
+    assert.gte(await l1LDOHolder.getBalance(), gasAmount);
   })
 
   .step("L2 Tester has enought ETH", async ({ l2Tester, gasAmount }) => {
-    expect(await l2Tester.getBalance()).to.gte(gasAmount);
+    assert.gte(await l2Tester.getBalance(), gasAmount);
   })
 
   .step(
     "L2 Agent has enought ETH",
     async ({ l1Provider, agent, gasAmount }) => {
-      expect(await l1Provider.getBalance(agent.address)).to.gte(gasAmount);
+      assert.gte(await l1Provider.getBalance(agent.address), gasAmount);
     }
   )
   .step("Check OssifiableProxy deployed correct", async (ctx) => {
     const { proxyToOssify } = ctx;
     const admin = await proxyToOssify.proxy__getAdmin();
 
-    expect(admin).equals(E2E_TEST_CONTRACTS.l2.govBridgeExecutor);
+    assert.equal(admin, E2E_TEST_CONTRACTS.l2.govBridgeExecutor);
   })
 
   .step("Proxy upgrade: send crosschain message", async (ctx) => {
     const implBefore = await await ctx.proxyToOssify.proxy__getImplementation();
 
-    expect(implBefore).equals(ctx.l2ERC20TokenGateway.address);
+    assert.equal(implBefore, ctx.l2ERC20TokenGateway.address);
     const executorCalldata =
       await ctx.govBridgeExecutor.interface.encodeFunctionData("queue", [
         [ctx.proxyToOssify.address],
@@ -128,12 +129,12 @@ scenario("Arbitrum :: AAVE governance crosschain bridge", ctxFactory)
 
   .step("Proxy upgrade: check state", async ({ proxyToOssify, l2Token }) => {
     const implAfter = await await proxyToOssify.proxy__getImplementation();
-    expect(implAfter).equals(l2Token.address);
+    assert.equal(implAfter, l2Token.address);
   })
 
   .step("Proxy ossify: send crosschain message", async (ctx) => {
     const isOssifiedBefore = await ctx.proxyToOssify.proxy__getIsOssified();
-    expect(isOssifiedBefore).is.false;
+    assert.isFalse(isOssifiedBefore);
 
     const executorCalldata =
       await ctx.govBridgeExecutor.interface.encodeFunctionData("queue", [
@@ -154,7 +155,7 @@ scenario("Arbitrum :: AAVE governance crosschain bridge", ctxFactory)
     const voteTx = await voting.vote(targetVote, true, true);
     await voteTx.wait();
 
-    while ((await voting.getVotePhase(targetVote)) != 2) {}
+    while ((await voting.getVotePhase(targetVote)) !== 2);
 
     const enactTx = await voting.executeVote(targetVote);
     ossifyMessageResponse = await enactTx.wait();
@@ -186,7 +187,7 @@ scenario("Arbitrum :: AAVE governance crosschain bridge", ctxFactory)
   .step("Proxy upgrade: check state", async ({ proxyToOssify, l2Token }) => {
     const isOssifiedAfter = await proxyToOssify.proxy__getIsOssified();
 
-    expect(isOssifiedAfter).is.true;
+    assert.isTrue(isOssifiedAfter);
   })
 
   .run();

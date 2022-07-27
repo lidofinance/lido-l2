@@ -1,4 +1,12 @@
 import {
+  getL2Network,
+  L1TransactionReceipt,
+  L1ToL2MessageStatus,
+} from "@arbitrum/sdk";
+import { assert } from "chai";
+import { ContractReceipt } from "ethers";
+
+import {
   ERC20Bridged__factory,
   ERC20Mintable__factory,
   Inbox__factory,
@@ -9,22 +17,15 @@ import {
   Agent__factory,
   TokenManager__factory,
 } from "../../typechain";
-import { wei } from "../../utils/wei";
-import { expect } from "chai";
-import network from "../../utils/network";
-import env from "../../utils/env";
-import { scenario } from "../../utils/testing";
 import {
   E2E_TEST_CONTRACTS_ARBITRUM as E2E_TEST_CONTRACTS,
   createArbitrumVoting as createDAOVoting,
   sleep,
 } from "../../utils/testing/e2e";
-import { ContractReceipt } from "ethers";
-import {
-  getL2Network,
-  L1TransactionReceipt,
-  L1ToL2MessageStatus,
-} from "@arbitrum/sdk";
+import { wei } from "../../utils/wei";
+import network from "../../utils/network";
+import env from "../../utils/env";
+import { scenario } from "../../utils/testing";
 
 const DEPOSIT_ENABLER_ROLE =
   "0x4b43b36766bde12c5e9cbbc37d15f8d1f769f08f54720ab370faeb4ce893753a";
@@ -39,17 +40,17 @@ scenario(
   ctxFactory
 )
   .step("LDO Holder has enought ETH", async ({ l1LDOHolder, gasAmount }) => {
-    expect(await l1LDOHolder.getBalance()).to.gte(gasAmount);
+    assert.gte(await l1LDOHolder.getBalance(), gasAmount);
   })
 
   .step("L2 Tester has enought ETH", async ({ l2Tester, gasAmount }) => {
-    expect(await l2Tester.getBalance()).to.gte(gasAmount);
+    assert.gte(await l2Tester.getBalance(), gasAmount);
   })
 
   .step(
     "L2 Agent has enought ETH",
     async ({ l1Provider, agent, gasAmount }) => {
-      expect(await l1Provider.getBalance(agent.address)).to.gte(gasAmount);
+      assert.gte(await l1Provider.getBalance(agent.address), gasAmount);
     }
   )
 
@@ -136,7 +137,8 @@ scenario(
   })
 
   .step("Checking deposits state", async ({ l2ERC20TokenGateway }) => {
-    expect(await l2ERC20TokenGateway.isDepositsEnabled()).to.eq(
+    assert.equal(
+      await l2ERC20TokenGateway.isDepositsEnabled(),
       !l2DepositsInitialState
     );
   })
@@ -160,7 +162,6 @@ async function ctxFactory() {
   // replace gateway router addresses with test
   l2Network.tokenBridge.l1GatewayRouter = E2E_TEST_CONTRACTS.l1.l1GatewayRouter;
   l2Network.tokenBridge.l2GatewayRouter = E2E_TEST_CONTRACTS.l2.l2GatewayRouter;
-
   return {
     gasAmount: wei`0.1 ether`,
     depositAmount: wei`0.025 ether`,

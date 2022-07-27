@@ -1,4 +1,13 @@
-import { expect } from "chai";
+import {
+  Erc20Bridger,
+  getL2Network,
+  L1TransactionReceipt,
+  L1ToL2MessageStatus,
+} from "@arbitrum/sdk";
+import { assert } from "chai";
+import { ContractReceipt } from "ethers";
+import { L2ERC20Gateway__factory } from "arb-ts";
+
 import {
   ERC20Bridged__factory,
   ERC20Mintable__factory,
@@ -9,24 +18,15 @@ import {
   GovBridgeExecutor__factory,
   Inbox__factory,
 } from "../../typechain";
-import env from "../../utils/env";
-import network from "../../utils/network";
-import { wei } from "../../utils/wei";
-import {
-  Erc20Bridger,
-  getL2Network,
-  L1TransactionReceipt,
-  L1ToL2MessageStatus,
-} from "@arbitrum/sdk";
-import { scenario } from "../../utils/testing";
-import { L2ERC20Gateway__factory } from "arb-ts";
-import { ContractReceipt } from "ethers";
-
 import {
   E2E_TEST_CONTRACTS_ARBITRUM as E2E_TEST_CONTRACTS,
   createArbitrumVoting as createDAOVoting,
   sleep,
 } from "../../utils/testing/e2e";
+import env from "../../utils/env";
+import network from "../../utils/network";
+import { wei } from "../../utils/wei";
+import { scenario } from "../../utils/testing";
 
 let oldGuardian: string;
 let newGuardian: string;
@@ -34,17 +34,17 @@ let ticketTx: ContractReceipt;
 
 scenario("Arbitrum :: Update guardian", ctxFactory)
   .step("LDO Holder has enought ETH", async ({ l1LDOHolder, gasAmount }) => {
-    expect(await l1LDOHolder.getBalance()).to.gte(gasAmount);
+    assert.gte(await l1LDOHolder.getBalance(), gasAmount);
   })
 
   .step("L2 Tester has enought ETH", async ({ l2Tester, gasAmount }) => {
-    expect(await l2Tester.getBalance()).to.gte(gasAmount);
+    assert.gte(await l2Tester.getBalance(), gasAmount);
   })
 
   .step(
     "L2 Agent has enought ETH",
     async ({ l1Provider, agent, gasAmount }) => {
-      expect(await l1Provider.getBalance(agent.address)).to.gte(gasAmount);
+      assert.gte(await l1Provider.getBalance(agent.address), gasAmount);
     }
   )
 
@@ -123,7 +123,7 @@ scenario("Arbitrum :: Update guardian", ctxFactory)
   })
 
   .step("Checking guardian", async ({ govBridgeExecutor }) => {
-    expect(await govBridgeExecutor.getGuardian()).to.eq(newGuardian);
+    assert.equal(await govBridgeExecutor.getGuardian(), newGuardian);
   })
   .run();
 

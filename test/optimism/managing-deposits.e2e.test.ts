@@ -1,3 +1,7 @@
+import { assert } from "chai";
+import { TransactionResponse } from "@ethersproject/providers";
+import { CrossChainMessenger, MessageStatus } from "@eth-optimism/sdk";
+
 import {
   ERC20Bridged__factory,
   ERC20Mintable__factory,
@@ -9,18 +13,15 @@ import {
   TokenManager__factory,
   CrossDomainMessanger__factory,
 } from "../../typechain";
-import { wei } from "../../utils/wei";
-import { CrossChainMessenger, MessageStatus } from "@eth-optimism/sdk";
-import { expect } from "chai";
-import { TransactionResponse } from "@ethersproject/providers";
-import network from "../../utils/network";
-import env from "../../utils/env";
-import { scenario } from "../../utils/testing";
 import {
   E2E_TEST_CONTRACTS_OPTIMISM as E2E_TEST_CONTRACTS,
   createOptimismVoting as createDAOVoting,
   sleep,
 } from "../../utils/testing/e2e";
+import env from "../../utils/env";
+import { wei } from "../../utils/wei";
+import network from "../../utils/network";
+import { scenario } from "../../utils/testing";
 
 const DEPOSIT_ENABLER_ROLE =
   "0x4b43b36766bde12c5e9cbbc37d15f8d1f769f08f54720ab370faeb4ce893753a";
@@ -36,7 +37,7 @@ scenario(
   ctxFactory
 )
   .step("LDO Holder has enought ETH", async ({ l1LDOHolder, gasAmount }) => {
-    expect(await l1LDOHolder.getBalance()).to.gte(gasAmount);
+    assert.gte(await l1LDOHolder.getBalance(), gasAmount);
   })
 
   .step("Checking deposits status", async ({ l2ERC20TokenBridge }) => {
@@ -79,7 +80,7 @@ scenario(
     const voteTx = await voting.vote(targetVote, true, true);
     await voteTx.wait();
 
-    while ((await voting.getVotePhase(targetVote)) != 2) {
+    while ((await voting.getVotePhase(targetVote)) !== 2) {
       await sleep(5000);
     }
 
@@ -123,7 +124,8 @@ scenario(
   })
 
   .step("Checking deposits state", async ({ l2ERC20TokenBridge }) => {
-    expect(await l2ERC20TokenBridge.isDepositsEnabled()).to.eq(
+    assert.equal(
+      await l2ERC20TokenBridge.isDepositsEnabled(),
       !l2DepositsInitialState
     );
   })

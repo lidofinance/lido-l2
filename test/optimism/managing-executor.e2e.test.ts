@@ -1,3 +1,7 @@
+import { assert } from "chai";
+import { TransactionResponse } from "@ethersproject/providers";
+import { CrossChainMessenger, MessageStatus } from "@eth-optimism/sdk";
+
 import {
   ERC20Bridged__factory,
   ERC20Mintable__factory,
@@ -9,18 +13,15 @@ import {
   TokenManager__factory,
   CrossDomainMessanger__factory,
 } from "../../typechain";
-import { wei } from "../../utils/wei";
-import { CrossChainMessenger, MessageStatus } from "@eth-optimism/sdk";
-import { expect } from "chai";
-import { TransactionResponse } from "@ethersproject/providers";
-import network from "../../utils/network";
-import env from "../../utils/env";
-import { scenario } from "../../utils/testing";
 import {
   E2E_TEST_CONTRACTS_OPTIMISM as E2E_TEST_CONTRACTS,
   createOptimismVoting as createDAOVoting,
   sleep,
 } from "../../utils/testing/e2e";
+import env from "../../utils/env";
+import { wei } from "../../utils/wei";
+import network from "../../utils/network";
+import { scenario } from "../../utils/testing";
 
 let messageTx: TransactionResponse;
 let oldGuardian: string;
@@ -28,7 +29,7 @@ let newGuardian: string;
 
 scenario("Optimism :: AAVE governance crosschain bridge management", ctxFactory)
   .step("LDO Holder has enought ETH", async ({ l1LDOHolder, gasAmount }) => {
-    expect(await l1LDOHolder.getBalance()).to.gte(gasAmount);
+    assert.gte(await l1LDOHolder.getBalance(), gasAmount);
   })
 
   .step(`Starting DAO vote: Update guardian`, async (ctx) => {
@@ -107,7 +108,7 @@ scenario("Optimism :: AAVE governance crosschain bridge management", ctxFactory)
   })
 
   .step("Checking guardian", async ({ govBridgeExecutor }) => {
-    expect(await govBridgeExecutor.getGuardian()).to.eq(newGuardian);
+    assert.equal(await govBridgeExecutor.getGuardian(), newGuardian);
   })
 
   .run();
