@@ -30,38 +30,6 @@ scenario(
   "Optimism :: AAVE governance crosschain bridge: proxy management",
   ctxFactory
 )
-  // .step("Clean executor out of queued tasks", async ({ govBridgeExecutor }) => {
-  //   const QUEUED_TASK_STATUS = 0;
-  //   const taskId =
-  //     (await govBridgeExecutor.getActionsSetCount()).toNumber() - 1;
-  //   const isLatestTaskQueued =
-  //     (await govBridgeExecutor.getCurrentState(taskId)) === QUEUED_TASK_STATUS;
-
-  //   if (isLatestTaskQueued) {
-  //     const tasksToCancel = [taskId];
-
-  //     while (true) {
-  //       const currentTaskId = taskId - 1;
-  //       const currentTaskQueued =
-  //         (await govBridgeExecutor.getCurrentState(currentTaskId)) ===
-  //         QUEUED_TASK_STATUS;
-
-  //       if (currentTaskQueued) {
-  //         tasksToCancel.unshift(currentTaskId);
-  //       } else {
-  //         break;
-  //       }
-  //     }
-
-  //     for (const task of tasksToCancel) {
-  //       const executeTx = await govBridgeExecutor.cancel(task, {
-  //         gasLimit: 1000000,
-  //       });
-  //       await executeTx.wait();
-  //     }
-  //   }
-  // })
-
   .step("Check OssifiableProxy deployed correct", async (ctx) => {
     const { proxyToOssify } = ctx;
     const admin = await proxyToOssify.proxy__getAdmin();
