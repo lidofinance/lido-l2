@@ -28,41 +28,43 @@ class ScenarioTest<T> {
     return this;
   }
 
-  run() {
+  run(repeat: number = 1) {
     const self = this;
     const { beforeFn, afterFn } = this;
-    describe(this.title, function () {
-      // @ts-ignore
-      let ctx: T = {};
-      before(async () => {
-        ctx = Object.assign(ctx, await self.ctxFactory());
-        if (beforeFn) {
-          await beforeFn(ctx);
-        }
-      });
-
-      let skipOtherTests = false;
-      for (let i = 0; i < self.steps.length; ++i) {
-        const step = self.steps[i];
-        const stepTitle = `${i + 1}/${self.steps.length} ${step.title}`;
-
-        it(stepTitle, async function () {
-          if (skipOtherTests) {
-            this.skip();
-          }
-          try {
-            await step.test(ctx);
-          } catch (error) {
-            skipOtherTests = true;
-            throw error;
+    for (let i = 0; i < repeat; i++) {
+      describe(this.title, function () {
+        // @ts-ignore
+        let ctx: T = {};
+        before(async () => {
+          ctx = Object.assign(ctx, await self.ctxFactory());
+          if (beforeFn) {
+            await beforeFn(ctx);
           }
         });
-      }
 
-      if (afterFn !== undefined) {
-        after(async () => afterFn(ctx));
-      }
-    });
+        let skipOtherTests = false;
+        for (let i = 0; i < self.steps.length; ++i) {
+          const step = self.steps[i];
+          const stepTitle = `${i + 1}/${self.steps.length} ${step.title}`;
+
+          it(stepTitle, async function () {
+            if (skipOtherTests) {
+              this.skip();
+            }
+            try {
+              await step.test(ctx);
+            } catch (error) {
+              skipOtherTests = true;
+              throw error;
+            }
+          });
+        }
+
+        if (afterFn !== undefined) {
+          after(async () => afterFn(ctx));
+        }
+      });
+    }
   }
 }
 

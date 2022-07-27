@@ -39,3 +39,25 @@ chai.util.addMethod(
     chai.assert.deepEqual(BigNumber.from(actual), BigNumber.from(expected));
   }
 );
+
+chai.util.addMethod(
+  chai.assert,
+  "gte",
+  (val1: BigNumberish, val2: BigNumberish) => {
+    chai.assert.isTrue(
+      BigNumber.from(val1).gte(val2),
+      `Value ${val1.toString()} is not gte than ${val2.toString()}`
+    );
+  }
+);
+
+chai.util.addMethod(
+  chai.assert,
+  "eq",
+  (val1: BigNumberish, val2: BigNumberish) => {
+    chai.assert.isTrue(
+      BigNumber.from(val1).eq(val2),
+      `Value ${val1.toString()} is not equal to ${val2.toString()}`
+    );
+  }
+);

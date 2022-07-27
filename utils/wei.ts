@@ -42,14 +42,31 @@ wei.fromBigNumber = (value: BigNumber) => {
 };
 
 function shiftDecimalPointsRight(number: string, shift: number) {
-  const [integer, fraction = ""] = number.split(".");
-  const leadingZeros = fraction.length === 0 ? 0 : fraction.length - 1;
+  const [integerPart, fractionPart = ""] = number.split(".");
+  const totalLength = integerPart.length + shift;
 
-  let result = integer === "0" ? "" : integer;
+  // Example: 12,0001 kwei must be 12000 wei
+  // 1. remove floating point -> 120001
+  // 2. add missing zeros -> 120001
+  // 3. substring the result 12000
+  // 4. remove leading zeros 12000
 
-  for (let i = 0; i < shift; ++i) {
-    result += fraction[i] || "0";
+  // Example: 0.01 kwei must be 10
+  // 1. remove floating point -> 001
+  // 2. add missing zeros -> 0010
+  // 3. substring the result -> 0010
+  // 4. remove leading zeros -> 10
+  return removeLeadingZeros(
+    (integerPart + fractionPart)
+      .padEnd(totalLength, "0")
+      .substring(0, totalLength)
+  );
+}
+
+function removeLeadingZeros(value: string) {
+  let leadingZerosCount = 0;
+  while (leadingZerosCount < value.length && value[leadingZerosCount] === "0") {
+    leadingZerosCount += 1;
   }
-
-  return result.slice(leadingZeros) || "0";
+  return value.substring(leadingZerosCount) || "0";
 }

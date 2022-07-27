@@ -129,7 +129,11 @@ npm run optimism:test:integration
 
 ### E2E tests
 
-E2E tests run on the real contracts deployed on the testnet networks. To run such tests the [`E2E_TESTER_PRIVATE_KEY`](#E2E_TESTER_PRIVATE_KEY) env variable must be set in the `.env` file.
+E2E tests run on the real contracts deployed on the testnet networks. To run such tests next env variables must be set in the `.env` file.
+
+[`E2E_TESTER_PRIVATE_KEY`](#E2E_TESTER_PRIVATE_KEY)
+[`E2E_KOVAN_LDO_HOLDER_PRIVATE_KEY`](#E2E_KOVAN_LDO_HOLDER_PRIVATE_KEY)
+[`E2E_RINKEBY_LDO_HOLDER_PRIVATE_KEY`](#E2E_RINKEBY_LDO_HOLDER_PRIVATE_KEY)
 
 To run E2E tests use the following commands:
 
@@ -359,6 +363,23 @@ The array of addresses to grant `WITHDRAWALS_DISABLER_ROLE` on L2 bridge/gateway
 ### E2E Testing
 
 The following variables are used in the process of the E2E testing.
+
+#### `E2E_TESTER_PRIVATE_KEY`
+
+The private key from the address which holds:
+
+- Kovan and Optimismic Kovan Ether to launch Optimism E2E tests
+- Rinkeby and Arbitrum Rinkeby Ether to launch Arbitrum E2E tests
+
+The test Ether might be retrived via [Paradigm Faucet](https://faucet.paradigm.xyz/).
+
+#### `E2E_KOVAN_LDO_HOLDER_PRIVATE_KEY`
+
+The private key from the address which holds 50+% TLDO
+
+#### `E2E_RINKEBY_LDO_HOLDER_PRIVATE_KEY`
+
+The private key from the address which holds 50+% TLDO
 
 #### `E2E_TESTER_PRIVATE_KEY`
 
