@@ -20,25 +20,29 @@ import { scenario } from "../../utils/testing";
 import {
   E2E_TEST_CONTRACTS_OPTIMISM as E2E_TEST_CONTRACTS,
   createOptimismVoting,
+  sleep,
 } from "../../utils/testing/e2e";
 
 let ossifyMessageResponse: TransactionResponse;
 let upgradeMessageResponse: TransactionResponse;
 
-scenario("Optimism :: AAVE governance crosschain bridge", ctxFactory)
+scenario(
+  "Optimism :: AAVE governance crosschain bridge: proxy management",
+  ctxFactory
+)
   // .step("Clean executor out of queued tasks", async ({ govBridgeExecutor }) => {
   //   const QUEUED_TASK_STATUS = 0;
   //   const taskId =
   //     (await govBridgeExecutor.getActionsSetCount()).toNumber() - 1;
-  //   let isLatestTaskQueued =
+  //   const isLatestTaskQueued =
   //     (await govBridgeExecutor.getCurrentState(taskId)) === QUEUED_TASK_STATUS;
 
   //   if (isLatestTaskQueued) {
   //     const tasksToCancel = [taskId];
 
   //     while (true) {
-  //       let currentTaskId = taskId - 1;
-  //       let currentTaskQueued =
+  //       const currentTaskId = taskId - 1;
+  //       const currentTaskQueued =
   //         (await govBridgeExecutor.getCurrentState(currentTaskId)) ===
   //         QUEUED_TASK_STATUS;
 
@@ -93,7 +97,9 @@ scenario("Optimism :: AAVE governance crosschain bridge", ctxFactory)
     const voteTx = await voting.vote(targetVote, true, true);
     await voteTx.wait();
 
-    while ((await voting.getVotePhase(targetVote)) < 2) {}
+    while ((await voting.getVotePhase(targetVote)) < 2) {
+      await sleep(5000);
+    }
 
     const enactTx = await voting.executeVote(targetVote);
     await enactTx.wait();
@@ -147,7 +153,9 @@ scenario("Optimism :: AAVE governance crosschain bridge", ctxFactory)
     const voteTx = await voting.vote(targetVote, true, true);
     await voteTx.wait();
 
-    while ((await voting.getVotePhase(targetVote)) != 2) {}
+    while ((await voting.getVotePhase(targetVote)) != 2) {
+      await sleep(5000);
+    }
 
     const enactTx = await voting.executeVote(targetVote);
     await enactTx.wait();

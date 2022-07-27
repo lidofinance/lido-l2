@@ -95,7 +95,7 @@ export const createArbitrumVoting = async (
     [
       ctx.govBridgeExecutor.address,
       0,
-      wei`0.001 ether`,
+      wei`0.01 ether`,
       ctx.l2Tester.address,
       ctx.l2Tester.address,
       3000000,
@@ -106,7 +106,7 @@ export const createArbitrumVoting = async (
 
   const agentCalldata = ctx.agent.interface.encodeFunctionData("execute", [
     ctx.inbox.address,
-    wei`0.001 ether`,
+    wei`0.01 ether`,
     messageCalldata,
   ]);
   const agentEvmScript = encodeEVMScript(ctx.agent.address, agentCalldata);
@@ -121,3 +121,6 @@ export const createArbitrumVoting = async (
 
   await newVotingTx.wait();
 };
+
+export const sleep = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms));

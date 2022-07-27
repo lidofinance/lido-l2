@@ -19,6 +19,7 @@ import { scenario } from "../../utils/testing";
 import {
   E2E_TEST_CONTRACTS_OPTIMISM as E2E_TEST_CONTRACTS,
   createOptimismVoting as createDAOVoting,
+  sleep,
 } from "../../utils/testing/e2e";
 
 const DEPOSIT_ENABLER_ROLE =
@@ -78,7 +79,9 @@ scenario(
     const voteTx = await voting.vote(targetVote, true, true);
     await voteTx.wait();
 
-    while ((await voting.getVotePhase(targetVote)) != 2) {}
+    while ((await voting.getVotePhase(targetVote)) != 2) {
+      await sleep(5000);
+    }
 
     const enactTx = await voting.executeVote(targetVote);
     await enactTx.wait();
@@ -107,6 +110,7 @@ scenario(
     let chainTime;
 
     do {
+      await sleep(5000);
       const currentBlockNumber = await l2Tester.provider.getBlockNumber();
       const currentBlock = await l2Tester.provider.getBlock(currentBlockNumber);
       chainTime = currentBlock.timestamp;
@@ -124,7 +128,7 @@ scenario(
     );
   })
 
-  .run();
+  .run(2);
 
 async function ctxFactory() {
   const pk = env.string("E2E_TESTER_PRIVATE_KEY");

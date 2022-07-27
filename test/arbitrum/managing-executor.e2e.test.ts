@@ -25,13 +25,14 @@ import { ContractReceipt } from "ethers";
 import {
   E2E_TEST_CONTRACTS_ARBITRUM as E2E_TEST_CONTRACTS,
   createArbitrumVoting as createDAOVoting,
+  sleep,
 } from "../../utils/testing/e2e";
 
 let oldGuardian: string;
 let newGuardian: string;
 let ticketTx: ContractReceipt;
 
-scenario("Arbitrum :: Bridging E2E test", ctxFactory)
+scenario("Arbitrum :: Update guardian", ctxFactory)
   .step("LDO Holder has enought ETH", async ({ l1LDOHolder, gasAmount }) => {
     expect(await l1LDOHolder.getBalance()).to.gte(gasAmount);
   })
@@ -39,6 +40,13 @@ scenario("Arbitrum :: Bridging E2E test", ctxFactory)
   .step("L2 Tester has enought ETH", async ({ l2Tester, gasAmount }) => {
     expect(await l2Tester.getBalance()).to.gte(gasAmount);
   })
+
+  .step(
+    "L2 Agent has enought ETH",
+    async ({ l1Provider, agent, gasAmount }) => {
+      expect(await l1Provider.getBalance(agent.address)).to.gte(gasAmount);
+    }
+  )
 
   .step(`Starting DAO vote: Update guardian`, async (ctx) => {
     oldGuardian = await ctx.govBridgeExecutor.getGuardian();
@@ -72,7 +80,9 @@ scenario("Arbitrum :: Bridging E2E test", ctxFactory)
     const voteTx = await voting.vote(targetVote, true, true);
     await voteTx.wait();
 
-    while ((await voting.getVotePhase(targetVote)) < 2) {}
+    while ((await voting.getVotePhase(targetVote)) < 2) {
+      await sleep(5000);
+    }
 
     const enactTx = await voting.executeVote(targetVote);
     ticketTx = await enactTx.wait();
@@ -100,6 +110,7 @@ scenario("Arbitrum :: Bridging E2E test", ctxFactory)
     let chainTime;
 
     do {
+      await sleep(5000);
       const currentBlockNumber = await l2Tester.provider.getBlockNumber();
       const currentBlock = await l2Tester.provider.getBlock(currentBlockNumber);
       chainTime = currentBlock.timestamp;

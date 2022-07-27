@@ -19,13 +19,14 @@ import { scenario } from "../../utils/testing";
 import {
   E2E_TEST_CONTRACTS_OPTIMISM as E2E_TEST_CONTRACTS,
   createOptimismVoting as createDAOVoting,
+  sleep,
 } from "../../utils/testing/e2e";
 
 let messageTx: TransactionResponse;
 let oldGuardian: string;
 let newGuardian: string;
 
-scenario("Optimism :: AAVE governance crosschain bridge", ctxFactory)
+scenario("Optimism :: AAVE governance crosschain bridge management", ctxFactory)
   .step("LDO Holder has enought ETH", async ({ l1LDOHolder, gasAmount }) => {
     expect(await l1LDOHolder.getBalance()).to.gte(gasAmount);
   })
@@ -62,7 +63,9 @@ scenario("Optimism :: AAVE governance crosschain bridge", ctxFactory)
     const voteTx = await voting.vote(targetVote, true, true);
     await voteTx.wait();
 
-    while ((await voting.getVotePhase(targetVote)) < 2) {}
+    while ((await voting.getVotePhase(targetVote)) < 2) {
+      await sleep(5000);
+    }
 
     const enactTx = await voting.executeVote(targetVote);
     await enactTx.wait();
@@ -91,6 +94,7 @@ scenario("Optimism :: AAVE governance crosschain bridge", ctxFactory)
     let chainTime;
 
     do {
+      await sleep(5000);
       const currentBlockNumber = await l2Tester.provider.getBlockNumber();
       const currentBlock = await l2Tester.provider.getBlock(currentBlockNumber);
       chainTime = currentBlock.timestamp;
