@@ -153,6 +153,7 @@ async function ctxFactory() {
     ),
     crossChainMessenger: new CrossChainMessenger({
       l1ChainId: 42,
+      l2ChainId: 69,
       l1SignerOrProvider: l1Tester,
       l2SignerOrProvider: l2Tester,
       bridges: {

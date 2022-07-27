@@ -16,6 +16,8 @@ declare module "chai" {
           eventName: string
         ): Promise<void>;
         equalBN(actual: BigNumberish, expected: BigNumberish): void;
+        gte(val1: BigNumberish, val2: BigNumberish): void;
+        eq(val1: BigNumberish, val2: BigNumberish): void;
       }
     }
   }
