@@ -150,7 +150,6 @@ async function ctxFactory() {
       l1SignerOrProvider: l1Tester,
       l2SignerOrProvider: l2Tester,
       l1ChainId: 42,
-      l2ChainId: 69,
     }),
     l1CrossDomainMessenger: CrossDomainMessanger__factory.connect(
       E2E_TEST_CONTRACTS.l1.l1CrossDomainMessenger,
