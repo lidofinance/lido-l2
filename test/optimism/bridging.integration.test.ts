@@ -1,10 +1,10 @@
-import hre, { ethers } from "hardhat";
-import testing, { scenario } from "../../utils/testing";
-import optimism from "../../utils/optimism";
-import { wei } from "../../utils/wei";
 import { assert } from "chai";
-import { BridgingManagement } from "../../utils/bridging-management";
+
 import env from "../../utils/env";
+import { wei } from "../../utils/wei";
+import optimism from "../../utils/optimism";
+import testing, { scenario } from "../../utils/testing";
+import { BridgingManagement } from "../../utils/bridging-management";
 
 scenario("Optimism :: Bridging integration test", ctxFactory)
   .after(async (ctx) => {
@@ -488,7 +488,7 @@ async function ctxFactory() {
     .transfer(l1Sender.address, depositAmount);
 
   const l1CrossDomainMessengerAliased = await testing.impersonate(
-    applyL1ToL2Alias(contracts.l1CrossDomainMessenger.address),
+    testing.accounts.applyL1ToL2Alias(contracts.l1CrossDomainMessenger.address),
     l2Provider
   );
 
@@ -519,12 +519,4 @@ async function ctxFactory() {
       l2: l2Snapshot,
     },
   };
-}
-
-function applyL1ToL2Alias(address: string) {
-  const offset = "0x1111000000000000000000000000000000001111";
-  const mask = ethers.BigNumber.from(2).pow(160);
-  return hre.ethers.utils.getAddress(
-    hre.ethers.BigNumber.from(address).add(offset).mod(mask).toHexString()
-  );
 }

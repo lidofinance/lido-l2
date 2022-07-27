@@ -1,7 +1,4 @@
-import hre, { ethers } from "hardhat";
 import { assert } from "chai";
-import testing, { scenario } from "../../utils/testing";
-import optimism from "../../utils/optimism";
 import {
   CrossDomainMessengerStub__factory,
   ERC20BridgedStub__factory,
@@ -10,12 +7,14 @@ import {
   OptimismBridgeExecutor__factory,
   ERC20Bridged__factory,
 } from "../../typechain";
-import { BridgingManagerRole } from "../../utils/bridging-management";
 import { wei } from "../../utils/wei";
+import optimism from "../../utils/optimism";
+import testing, { scenario } from "../../utils/testing";
+import { BridgingManagerRole } from "../../utils/bridging-management";
 
+import env from "../../utils/env";
 import network from "../../utils/network";
 import { getBridgeExecutorParams } from "../../utils/bridge-executor";
-import env from "../../utils/env";
 
 scenario("Optimism :: Bridge Executor integration test", ctxFactory)
   .step("Activate L2 bridge", async (ctx) => {
@@ -166,21 +165,12 @@ scenario("Optimism :: Bridge Executor integration test", ctxFactory)
   })
   .run();
 
-function loadNetworkName() {
-  const networkName = env.network("NETWORK", "local_mainnet");
-  return networkName === "mainnet"
-    ? "local_mainnet"
-    : networkName === "testnet"
-    ? "local_testnet"
-    : networkName;
-}
-
 async function ctxFactory() {
-  const networkName = loadNetworkName();
-  const [l1Provider, l2Provider] = network.getMultiChainProvider(
-    "optimism",
-    networkName
-  );
+  const networkName = env.network("NETWORK", "mainnet");
+  const [l1Provider, l2Provider] = network
+    .multichain(["eth", "opt"], networkName)
+    .getProviders({ forking: true });
+
   const l1Deployer = testing.accounts.deployer(l1Provider);
   const l2Deployer = testing.accounts.deployer(l2Provider);
 
@@ -193,7 +183,9 @@ async function ctxFactory() {
     await new CrossDomainMessengerStub__factory(l1Deployer).deploy();
 
   const optAddresses = optimism.addresses(networkName, {
-    L1CrossDomainMessenger: l1CrossDomainMessengerStub.address,
+    customAddresses: {
+      L1CrossDomainMessenger: l1CrossDomainMessengerStub.address,
+    },
   });
 
   const bridgeExecutor = await new OptimismBridgeExecutor__factory(
@@ -237,10 +229,12 @@ async function ctxFactory() {
     l2Deployer
   );
 
-  const optContracts = optimism.contracts(networkName);
+  const optContracts = optimism.contracts(networkName, { forking: true });
 
   const l1CrossDomainMessengerAliased = await testing.impersonate(
-    applyL1ToL2Alias(optContracts.L1CrossDomainMessenger.address),
+    testing.accounts.applyL1ToL2Alias(
+      optContracts.L1CrossDomainMessenger.address
+    ),
     l2Provider
   );
 
@@ -272,12 +266,4 @@ async function ctxFactory() {
       },
     },
   };
-}
-
-function applyL1ToL2Alias(address: string) {
-  const offset = "0x1111000000000000000000000000000000001111";
-  const mask = ethers.BigNumber.from(2).pow(160);
-  return hre.ethers.utils.getAddress(
-    hre.ethers.BigNumber.from(address).add(offset).mod(mask).toHexString()
-  );
 }

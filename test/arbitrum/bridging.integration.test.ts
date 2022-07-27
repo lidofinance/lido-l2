@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import hre, { ethers } from "hardhat";
+import { ethers } from "hardhat";
 
 import env from "../../utils/env";
 import { wei } from "../../utils/wei";
@@ -291,7 +291,7 @@ scenario("Arbitrum :: Bridging integration test", ctx)
   .run();
 
 async function ctx() {
-  const networkName = env.network();
+  const networkName = env.network("NETWORK", "mainnet");
   const {
     l1Provider,
     l2Provider,
@@ -327,12 +327,12 @@ async function ctx() {
     .transfer(l1Sender.address, depositAmount);
 
   const l1ERC20TokenGatewayAliased = await testing.impersonate(
-    applyL1ToL2Alias(contracts.l1ERC20TokenGateway.address),
+    testing.accounts.applyL1ToL2Alias(contracts.l1ERC20TokenGateway.address),
     l2Provider
   );
 
   const l1GatewayRouterAliased = await testing.impersonate(
-    applyL1ToL2Alias(contracts.l1GatewayRouter.address),
+    testing.accounts.applyL1ToL2Alias(contracts.l1GatewayRouter.address),
     l2Provider
   );
 
@@ -429,12 +429,4 @@ async function ctx() {
       l2: l2Snapshot,
     },
   };
-}
-
-function applyL1ToL2Alias(address: string) {
-  const offset = "0x1111000000000000000000000000000000001111";
-  const mask = ethers.BigNumber.from(2).pow(160);
-  return hre.ethers.utils.getAddress(
-    hre.ethers.BigNumber.from(address).add(offset).mod(mask).toHexString()
-  );
 }

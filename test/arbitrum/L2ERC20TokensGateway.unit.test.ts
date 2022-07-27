@@ -8,7 +8,7 @@ import {
   EmptyContractStub__factory,
 } from "../../typechain";
 import { assert } from "chai";
-import { unit } from "../../utils/testing";
+import testing, { unit } from "../../utils/testing";
 import { ArbSysStub__factory } from "../../typechain/factories/ArbSysStub__factory";
 
 unit("Arbitrum :: L2ERC20TokensGateway", ctxFactory)
@@ -604,11 +604,9 @@ async function ctxFactory() {
     deployer
   ).deploy(l2TokensGatewayImpl.address, deployer.address, "0x");
 
-  const l1TokensGatewayAliasedEOAAddress = hre.ethers.BigNumber.from(
+  const l1TokensGatewayAliasedEOAAddress = testing.accounts.applyL1ToL2Alias(
     l1TokensGatewayStub.address
-  )
-    .add("0x1111000000000000000000000000000000001111")
-    .toHexString();
+  );
 
   await hre.network.provider.request({
     method: "hardhat_impersonateAccount",

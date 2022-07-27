@@ -1,5 +1,6 @@
+import hre from "hardhat";
+import { Wallet, BigNumber } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { Wallet } from "ethers";
 
 const PRIVATE_KEYS = {
   deployer:
@@ -19,5 +20,18 @@ export default {
   },
   recipient(provider: JsonRpcProvider) {
     return new Wallet(PRIVATE_KEYS.recipient, provider);
+  },
+  async impersonate(address: string, provider?: JsonRpcProvider) {
+    provider ||= hre.ethers.provider;
+
+    await provider.send("hardhat_impersonateAccount", [address]);
+    return provider.getSigner(address);
+  },
+  applyL1ToL2Alias(address: string) {
+    const offset = "0x1111000000000000000000000000000000001111";
+    const mask = BigNumber.from(2).pow(160);
+    return hre.ethers.utils.getAddress(
+      hre.ethers.BigNumber.from(address).add(offset).mod(mask).toHexString()
+    );
   },
 };

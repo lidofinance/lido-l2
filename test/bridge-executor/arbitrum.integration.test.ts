@@ -1,4 +1,4 @@
-import hre, { ethers } from "hardhat";
+import { assert } from "chai";
 import testing, { scenario } from "../../utils/testing";
 import {
   ArbSysStub__factory,
@@ -9,7 +9,6 @@ import {
   OssifiableProxy__factory,
 } from "../../typechain";
 import { wei } from "../../utils/wei";
-import { assert } from "chai";
 import { getBridgeExecutorParams } from "../../utils/bridge-executor";
 import { BridgingManagerRole } from "../../utils/bridging-management";
 
@@ -150,21 +149,12 @@ scenario("Arbitrum :: Bridge Executor integration test", ctx)
 
   .run();
 
-function loadNetworkName() {
-  const networkName = env.network("NETWORK", "local_mainnet");
-  return networkName === "mainnet"
-    ? "local_mainnet"
-    : networkName === "testnet"
-    ? "local_testnet"
-    : networkName;
-}
-
 async function ctx() {
-  const networkName = loadNetworkName();
-  const [l1Provider, l2Provider] = network.getMultiChainProvider(
-    "arbitrum",
-    networkName
-  );
+  const networkName = env.network("NETWORK", "mainnet");
+  const [l1Provider, l2Provider] = network
+    .multichain(["eth", "arb"], networkName)
+    .getProviders({ forking: true });
+
   const l1Deployer = testing.accounts.deployer(l1Provider);
   const l2Deployer = testing.accounts.deployer(l2Provider);
 
@@ -182,7 +172,9 @@ async function ctx() {
   );
 
   const arbAddresses = arbitrum.addresses(networkName, {
-    ArbSys: arbSysStub.address,
+    customAddresses: {
+      ArbSys: arbSysStub.address,
+    },
   });
 
   const [, l2DeployScript] = await arbitrum
@@ -217,7 +209,7 @@ async function ctx() {
     l2Deployer
   );
   const l1ExecutorAliased = await testing.impersonate(
-    applyL1ToL2Alias(l1Deployer.address),
+    testing.accounts.applyL1ToL2Alias(l1Deployer.address),
     l2Provider
   );
   await l2Deployer.sendTransaction({
@@ -225,7 +217,7 @@ async function ctx() {
     value: wei`1 ether`,
   });
   const l2Executor = await testing.impersonate(
-    applyL1ToL2Alias(l1Deployer.address),
+    testing.accounts.applyL1ToL2Alias(l1Deployer.address),
     l2Provider
   );
   const bridgeExecutor = ArbitrumBridgeExecutor__factory.connect(
@@ -249,12 +241,4 @@ async function ctx() {
       l2: "",
     },
   };
-}
-
-function applyL1ToL2Alias(address: string) {
-  const offset = "0x1111000000000000000000000000000000001111";
-  const mask = ethers.BigNumber.from(2).pow(160);
-  return hre.ethers.utils.getAddress(
-    hre.ethers.BigNumber.from(address).add(offset).mod(mask).toHexString()
-  );
 }
