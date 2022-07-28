@@ -90,12 +90,6 @@ export class BridgingManagement {
 
     const adminAddress = await this.admin.getAddress();
 
-    if (config.bridgeAdmin !== adminAddress) {
-      await this.grantRole(BridgingManagerRole.DEFAULT_ADMIN_ROLE, [
-        config.bridgeAdmin,
-      ]);
-    }
-
     await this.grantManagerRoles({
       ...config,
       depositsEnablers: config.depositsEnabled
