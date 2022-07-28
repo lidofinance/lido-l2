@@ -132,6 +132,18 @@ async function main() {
       callValue,
     }
   );
+  const votesLength = await voting.votesLength();
+  const targetVote = votesLength.toNumber() - 1;
+  console.log(`Vote ${targetVote} successfully created!`);
+
+  const voteTx = await voting.vote(targetVote, true, true);
+  await voteTx.wait();
+
+  console.log(`Successfully voted 'yay'!`);
+
+  console.log(await voting.getVote(targetVote));
+
+  console.log("Done!");
 }
 
 main().catch((error) => {

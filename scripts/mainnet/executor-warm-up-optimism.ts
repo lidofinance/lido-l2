@@ -5,10 +5,7 @@ import {
   GovBridgeExecutor__factory,
   Greeter__factory,
 } from "../../typechain";
-import {
-  sleep,
-  createOptimismVoting as createDAOVoting,
-} from "../../utils/testing/e2e";
+import { createOptimismVoting as createDAOVoting } from "../../utils/testing/e2e";
 import env from "../../utils/env";
 import network from "../../utils/network";
 import optimism from "../../utils/optimism";
@@ -21,8 +18,8 @@ const CONTRACTS = {
     inbox: "0x4dbd4fc535ac27206064b68ffcf827b0a60bab3f",
   },
   l2: {
-    govBridgeExecutor: "0x18Ff3bD97739bf910cDCDb8d138976c6afDB4449",
-    greeter: "0x1dca41859cd23b526cbe74da8f48ac96e14b1a29",
+    govBridgeExecutor: "0x1dca41859cd23b526cbe74da8f48ac96e14b1a29",
+    greeter: "0x18Ff3bD97739bf910cDCDb8d138976c6afDB4449",
   },
 };
 
@@ -99,13 +96,6 @@ async function main() {
 
   console.log(await voting.getVote(targetVote));
 
-  while (!(await voting.canExecute(targetVote))) {
-    await sleep(5000);
-    console.log("Waiting vote ready to execute...");
-  }
-
-  const enactTx = await voting.executeVote(targetVote);
-  await enactTx.wait();
   console.log("Done!");
 }
 
