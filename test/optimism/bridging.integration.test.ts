@@ -485,7 +485,7 @@ async function ctxFactory() {
 
   await contracts.l1Token
     .connect(contracts.l1TokensHolder)
-    .transfer(l1Sender.address, depositAmount);
+    .transfer(l1Sender.address, wei.toBigNumber(depositAmount).mul(2));
 
   const l1CrossDomainMessengerAliased = await testing.impersonate(
     testing.accounts.applyL1ToL2Alias(contracts.l1CrossDomainMessenger.address),

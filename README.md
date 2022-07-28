@@ -43,7 +43,8 @@ Fill the newly created `.env` file with the required variables. See the [Project
 The configuration of the deployment scripts happens via the ENV variables. The following variables are required:
 
 - [`TOKEN`](#TOKEN) - address of the token to deploy a new bridge on the Ethereum chain.
-- [`NETWORK`](#NETWORK) - name of the network environments used by deployment scripts. Allowed values: `local`, `testnet`, `mainnet`.
+- [`NETWORK`](#NETWORK) - name of the network environments used by deployment scripts. Allowed values: `mainnet`, `goerli`, `rinkeby`, `kovan`.
+- [`FORKING`](#FORKING) - run deployment in the forking network instead of real ones
 - [`DEPLOYER_PRIVATE_KEY`](#DEPLOYER_PRIVATE_KEY) - Private key of the deployer account used during deployment process.
 - [`L1_PROXY_ADMIN`](#L1_PROXY_ADMIN) - The address to grant admin rights of the `OssifiableProxy` on the L1 bridge
 - [`L1_BRIDGE_ADMIN`](#L1_BRIDGE_ADMIN) - Address to grant the `DEFAULT_ADMIN_ROLE` on the L1 bridge
@@ -101,17 +102,17 @@ npm run optimism:test:unit
 
 ### Integration tests
 
-Before running integration tests, run the hardhat forked nodes in the standalone tabs:
+Before running integration tests, run the hardhat forked nodes in the standalone tabs corresponding to `NETWORK` env variable or if it's not set use `mainnet` network. Example of the commands for the `mainnet` network:
 
 ```bash
 # Required to run both Arbitrum and Optimism integraton tests
-npm run fork:ethereum
+npm run fork:eth:mainnet
 
 # Required to run Optimism integration tests
-npm run fork:optimism
+npm run fork:opt:mainnet
 
 # Required to run Arbitrum integration tests
-npm run fork:arbitrum
+npm run fork:arb:mainnet
 ```
 
 The integration tests might be run via the following commands:
@@ -127,13 +128,38 @@ npm run arbitrum:test:integration
 npm run optimism:test:integration
 ```
 
+Additionally, tests might be run on the deployed contracts. To do it, set the following variables values in the `.env` file:
+
+```bash
+# Activates testing on already deployed contracts
+TESTING_USE_DEPLOYED_CONTRACTS=true
+# Address of the account which has tokens to test
+TESTING_L1_TOKENS_HOLDER=
+
+# Addresses of the Arbitrum gateway
+TESTING_ARB_L1_TOKEN=
+TESTING_ARB_L2_TOKEN=
+TESTING_ARB_L1_ERC20_TOKEN_GATEWAY=
+TESTING_ARB_L2_ERC20_TOKEN_GATEWAY=
+
+# Below addresses are not required when the gateway uses the default Arbitrum router
+TESTING_ARB_L1_GATEWAY_ROUTER=
+TESTING_ARB_L2_GATEWAY_ROUTER=
+
+# Addresses of the Optimism bridge
+TESTING_OPT_L1_TOKEN=
+TESTING_OPT_L2_TOKEN=
+TESTING_OPT_L1_ERC20_TOKEN_BRIDGE=
+TESTING_OPT_L2_ERC20_TOKEN_BRIDGE=
+```
+
 ### E2E tests
 
 E2E tests run on the real contracts deployed on the testnet networks. To run such tests next env variables must be set in the `.env` file.
 
-[`E2E_TESTER_PRIVATE_KEY`](#E2E_TESTER_PRIVATE_KEY)
-[`E2E_KOVAN_LDO_HOLDER_PRIVATE_KEY`](#E2E_KOVAN_LDO_HOLDER_PRIVATE_KEY)
-[`E2E_RINKEBY_LDO_HOLDER_PRIVATE_KEY`](#E2E_RINKEBY_LDO_HOLDER_PRIVATE_KEY)
+[`TESTING_PRIVATE_KEY`](#TESTING_PRIVATE_KEY)
+[`TESTING_KOVAN_LDO_HOLDER_PRIVATE_KEY`](#TESTING_KOVAN_LDO_HOLDER_PRIVATE_KEY)
+[`TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY`](#TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY)
 
 To run E2E tests use the following commands:
 
@@ -148,15 +174,52 @@ npm run arbitrum:test:e2e
 npm run optimism:test:e2e
 ```
 
+Additionally, tests might be run on the deployed contracts. To do it, set the following variables values in the `.env` file:
+
+```bash
+# private key of the tester. It must have tokens for testing
+TESTING_PRIVATE_KEY=
+
+# Addresses of the Arbitrum gateway
+TESTING_ARB_L1_TOKEN=
+TESTING_ARB_L2_TOKEN=
+TESTING_ARB_L1_ERC20_TOKEN_GATEWAY=
+TESTING_ARB_L2_ERC20_TOKEN_GATEWAY=
+
+# Below addresses are not required when the gateway uses the default Arbitrum router
+TESTING_ARB_L1_GATEWAY_ROUTER=
+TESTING_ARB_L2_GATEWAY_ROUTER=
+
+# Addresses of the Optimism bridge
+TESTING_OPT_L1_TOKEN=
+TESTING_OPT_L2_TOKEN=
+TESTING_OPT_L1_ERC20_TOKEN_BRIDGE=
+TESTING_OPT_L2_ERC20_TOKEN_BRIDGE=
+```
+
 ### Acceptance tests
 
 The acceptance tests might be run after the deployment to validate that the bridge was deployed with the correct parameters.
 
 The following ENV variables must be set before the tests running:
 
-- [`ERC20_BRIDGED`](#ERC20_BRIDGED) - Address of the proxied `ERC20Bridged` token in the Optimism network
-- [`L1_ERC20_TOKEN_BRIDGE`](#L1_ERC20_TOKEN_BRIDGE) - Address of the proxied `L1ERC20TokenBridge` contract in the Ethereum network
-- [`L2_ERC20_TOKEN_BRIDGE`](#L2_ERC20_TOKEN_BRIDGE) - Address of the proxied `L2ERC20TokenBridge` contract in the Optimism network
+```bash
+# Addresses of the Arbitrum gateway
+TESTING_ARB_L1_TOKEN=
+TESTING_ARB_L2_TOKEN=
+TESTING_ARB_L1_ERC20_TOKEN_GATEWAY=
+TESTING_ARB_L2_ERC20_TOKEN_GATEWAY=
+
+# Below addresses are not required when the gateway uses the default Arbitrum router
+TESTING_ARB_L1_GATEWAY_ROUTER=
+TESTING_ARB_L2_GATEWAY_ROUTER=
+
+# Addresses of the Optimism bridge
+TESTING_OPT_L1_TOKEN=
+TESTING_OPT_L2_TOKEN=
+TESTING_OPT_L1_ERC20_TOKEN_BRIDGE=
+TESTING_OPT_L2_ERC20_TOKEN_BRIDGE=
+```
 
 To run the acceptance tests, use the following commands:
 
@@ -186,19 +249,17 @@ The configuration of the project happens via set of ENV variables. The full list
 
 Address of the RPC node for **Kovan** Ethereum testnet.
 
-> Default value: `https://mainnet.infura.io/v3/<INFURA_API_KEY>`
-
 #### `RPC_ETH_RINKEBY`
 
 Address of the RPC node for **Mainnet** Ethereum network.
-
-> Default value: `https://rinkeby.infura.io/v3/<INFURA_API_KEY>`
 
 #### `RPC_ETH_KOVAN`
 
 Address of the RPC node for **Kovan** Ethereum network.
 
-> Default value: `https://kovan.infura.io/v3/<INFURA_API_KEY>`
+#### `RPC_ETH_GOERLI`
+
+Address of the RPC node for **Goerli** Ethereum network.
 
 #### `RPC_ARB_RINKEBY`
 
@@ -216,11 +277,23 @@ Address of the RPC node for **Mainnet** Arbitrum network.
 
 > Default value: `https://arb1.arbitrum.io/rpc`
 
+#### `RPC_ARB_GOERLI`
+
+Address of the RPC node for **Goerli** Arbitrum network.
+
+> Default value: `https://goerli-rollup.arbitrum.io/rpc`
+
 #### `RPC_OPT_KOVAN`
 
 Address of the RPC node for **Kovan** Optimism network.
 
 > Default value: `https://kovan.optimism.io`
+
+#### `RPC_OPT_GOERLI`
+
+Address of the RPC node for **Goerli** Optimism network.
+
+> Default value: `https://goerli-rollup.arbitrum.io/rpc`
 
 #### `RPC_OPT_MAINNET`
 
@@ -258,7 +331,15 @@ Address of the token to deploy a new bridge on the Ethereum chain.
 
 #### `NETWORK`
 
-Name of the network environments used by deployment scripts. Might be one of: `local`, `testnet`, `mainnet`.
+> Default value: `mainnet`
+
+Name of the network environments used by deployment scripts. Might be one of: `mainnet`, `goerli`, `rinkeby`, `kovan`.
+
+#### `FORKING`
+
+Run deployment in the forking network instead of public ones
+
+> Default value: `true`
 
 #### `DEPLOYER_PRIVATE_KEY`
 
@@ -360,48 +441,96 @@ The array of addresses to grant `WITHDRAWALS_ENABLER_ROLE` on L2 bridge/gateway.
 The array of addresses to grant `WITHDRAWALS_DISABLER_ROLE` on L2 bridge/gateway. The value must be in the form of JSON array of strings. For example:
 `["0x00000000219ab540356cbb839cbe05303d7705fa","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
 
+### Acceptance Integration & E2E Testing
+
+The following variables are used in the process of the Integration & E2E testing.
+
+#### `TESTING_ARB_L1_TOKEN`
+
+Address of the token to use in the Acceptance Integration & E2E (when `TESTING_USE_DEPLOYED_CONTRACTS` is set to true) testing of the bridging between Ethereum and Arbitrum networks.
+
+> Default value: `0x7AEE39c46f20135114e85A03C02aB4FE73fB8127`
+
+#### `TESTING_ARB_L2_TOKEN`
+
+Address of the token minted on L2 in the Acceptance Integration & E2E (when `TESTING_USE_DEPLOYED_CONTRACTS` is set to true) testing of the bridging between Ethereum and Arbitrum networks.
+
+> Default value: `0x775ede8029C117effce283b3391E420EacF3c85F`
+
+#### `TESTING_ARB_L1_ERC20_TOKEN_GATEWAY`
+
+Address of the L1 ERC20 token gateway used in the Acceptance Integration & E2E (when `TESTING_USE_DEPLOYED_CONTRACTS` is set to true) testing of the bridging between Ethereum and Arbitrum networks.
+
+> Default value: `0x0A7e12b563Ba623646a31a09F0182e8aD45D6cfD`
+
+#### `TESTING_ARB_L2_ERC20_TOKEN_GATEWAY`
+
+Address of the L2 ERC20 token gateway used in the Acceptance Integration & E2E (when `TESTING_USE_DEPLOYED_CONTRACTS` is set to true) testing of the bridging between Ethereum and Arbitrum networks.
+
+> Default value: `0x8c269989D839eE9DaEe64D57C8c41404DF87F722`
+
+#### `TESTING_ARB_L1_GATEWAY_ROUTER`
+
+Address of the L1 gateway router used in the Acceptance Integration & E2E (when `TESTING_USE_DEPLOYED_CONTRACTS` is set to true) testing of the bridging between Ethereum and Arbitrum networks. If not set, will be used default Arbitrum's L1 Gateway Router
+
+> Default value: `0xa2a8F940752aDc4A3278B63B96d56D72D2b075B1`
+
+#### `TESTING_ARB_L2_GATEWAY_ROUTER`
+
+Address of the L2 gateway router used in the Acceptance Integration & E2E (when `TESTING_USE_DEPLOYED_CONTRACTS` is set to true) testing of the bridging between Ethereum and Arbitrum networks. If not set, will be used default Arbitrum's L2 Gateway Router
+
+> Default value: `0x57f54f87C44d816f60b92864e23b8c0897D4d81D`
+
+#### `TESTING_OPT_L1_TOKEN`
+
+Address of the token to use in the Acceptance Integration & E2E (when `TESTING_USE_DEPLOYED_CONTRACTS` is set to true) testing of the bridging between Ethereum and Optimism networks.
+
+> Default value: `0xaF8a2F0aE374b03376155BF745A3421Dac711C12`
+
+#### `TESTING_OPT_L2_TOKEN`
+
+Address of the token minted on L2 in the Acceptance Integration & E2E (when `TESTING_USE_DEPLOYED_CONTRACTS` is set to true) testing of the bridging between Ethereum and Optimism networks.
+
+> Default value: `0xAED5F9aaF167923D34174b8E636aaF040A11f6F7`
+
+#### `TESTING_OPT_L1_ERC20_TOKEN_BRIDGE`
+
+Address of the L1 ERC20 token bridge used in the Acceptance Integration & E2E (when `TESTING_USE_DEPLOYED_CONTRACTS` is set to true) testing of the bridging between Ethereum and Optimism networks.
+
+> Default value: `0x243b661276670bD17399C488E7287ea4D416115b`
+
+#### `TESTING_OPT_L2_ERC20_TOKEN_BRIDGE`
+
+Address of the L2 ERC20 token bridge used in the Acceptance Integration & E2E (when `TESTING_USE_DEPLOYED_CONTRACTS` is set to true) testing of the bridging between Ethereum and Optimism networks.
+
+> Default value: `0x447CD1794d209Ac4E6B4097B34658bc00C4d0a51`
+
+### Integration Testing
+
+#### `TESTING_USE_DEPLOYED_CONTRACTS`
+
+When set to `true` integration tests will use addresses of deployed contracts set in corresponding variables in the `.env` file. In other cases, bridges will be deployed on fork nodes from scratch.
+
+#### `TESTING_L1_TOKENS_HOLDER`
+
+When `TESTING_USE_DEPLOYED_CONTRACTS` is set to true, this address will be used as the holder of the tokens, bridged between L1 and L2.
+
 ### E2E Testing
 
-The following variables are used in the process of the E2E testing.
-
-#### `E2E_TESTER_PRIVATE_KEY`
+#### `TESTING_PRIVATE_KEY`
 
 The private key from the address which holds:
 
 - Kovan and Optimismic Kovan Ether to launch Optimism E2E tests
 - Rinkeby and Arbitrum Rinkeby Ether to launch Arbitrum E2E tests
+- Goerli and Arbitrum/Optimistic Goerli Ether to launch Arbitrum/Optimism E2E tests
 
 The test Ether might be retrived via [Paradigm Faucet](https://faucet.paradigm.xyz/).
 
-#### `E2E_KOVAN_LDO_HOLDER_PRIVATE_KEY`
+#### `TESTING_KOVAN_LDO_HOLDER_PRIVATE_KEY`
 
 The private key from the address which holds 50+% TLDO
 
-#### `E2E_RINKEBY_LDO_HOLDER_PRIVATE_KEY`
+#### `TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY`
 
 The private key from the address which holds 50+% TLDO
-
-#### `E2E_TESTER_PRIVATE_KEY`
-
-The private key from the address which holds:
-
-- Kovan and Optimismic Kovan Ether to launch Optimism E2E tests
-- Rinkeby and Arbitrum Rinkeby Ether to launch Arbitrum E2E tests
-
-The test Ether might be retrived via [Paradigm Faucet](https://faucet.paradigm.xyz/).
-
-### Acceptance Test
-
-Bellow variables are used to test the deployment of the ERC20 bridge for Arbitrum and Optimism
-
-#### `ERC20_BRIDGED`
-
-Address of the proxied `ERC20Bridged` token in the Optimism network
-
-#### `L1_ERC20_TOKEN_BRIDGE`
-
-Address of the proxied `L1ERC20TokenBridge` contract in the Ethereum network
-
-#### `L2_ERC20_TOKEN_BRIDGE`
-
-Address of the proxied `L2ERC20TokenBridge` contract in the Optimism network

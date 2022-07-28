@@ -7,7 +7,7 @@ import { scenario } from "../../utils/testing";
 import arbitrum from "../../utils/arbitrum";
 
 async function ctxFactory() {
-  const networkName = env.network();
+  const networkName = env.network("NETWORK", "rinkeby");
   const testingSetup = await arbitrum.testing(networkName).getE2ETestSetup();
 
   const l2Network = await getL2Network(testingSetup.l2Provider);
