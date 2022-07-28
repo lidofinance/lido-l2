@@ -16,6 +16,7 @@ export async function getRoleHolders(
     revokedRolesFilter,
     fromBlockOrBlockHash
   );
+
   const sortedEvents = [...roleGrantedEvents, ...roleRevokedEvents].sort(
     (e1, e2) =>
       e1.blockNumber === e2.blockNumber

@@ -15,6 +15,7 @@ contract ArbSysStub {
         payable
         returns (uint256)
     {
+        l2ToL1TxId += 1;
         emit CreateL2ToL1Tx(recipient, data);
         return l2ToL1TxId;
     }

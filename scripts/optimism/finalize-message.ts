@@ -3,10 +3,10 @@ import env from "../../utils/env";
 import network from "../../utils/network";
 
 async function main() {
-  const {
-    l1: { signer: l1Signer },
-    l2: { signer: l2Signer },
-  } = network.getMultichainNetwork("optimism");
+  const networkName = env.network();
+  const [l1Signer, l2Signer] = network
+    .multichain(["eth", "opt"], networkName)
+    .getSigners(env.privateKey(), { forking: false });
 
   const txHash = env.string("TX_HASH");
 

@@ -1,4 +1,4 @@
-import hre, { ethers } from "hardhat";
+import { assert } from "chai";
 import testing, { scenario } from "../../utils/testing";
 import {
   ArbSysStub__factory,
@@ -9,12 +9,12 @@ import {
   OssifiableProxy__factory,
 } from "../../typechain";
 import { wei } from "../../utils/wei";
-import { assert } from "chai";
 import { getBridgeExecutorParams } from "../../utils/bridge-executor";
 import { BridgingManagerRole } from "../../utils/bridging-management";
 
 import arbitrum from "../../utils/arbitrum";
 import network from "../../utils/network";
+import env from "../../utils/env";
 
 scenario("Arbitrum :: Bridge Executor integration test", ctx)
   .before(async (ctx) => {
@@ -150,18 +150,13 @@ scenario("Arbitrum :: Bridge Executor integration test", ctx)
   .run();
 
 async function ctx() {
-  const privateKeys = {
-    deployer:
-      "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-    sender:
-      "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
-    recipient:
-      "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
-  };
-  const {
-    l1: { signer: l1Deployer },
-    l2: { signer: l2Deployer, provider: l2Provider },
-  } = network.getMultichainNetwork("arbitrum", "local", privateKeys.deployer);
+  const networkName = env.network("TESTING_ARB_NETWORK", "mainnet");
+  const [l1Provider, l2Provider] = network
+    .multichain(["eth", "arb"], networkName)
+    .getProviders({ forking: true });
+
+  const l1Deployer = testing.accounts.deployer(l1Provider);
+  const l2Deployer = testing.accounts.deployer(l2Provider);
 
   const l1Token = await new ERC20BridgedStub__factory(l1Deployer).deploy(
     "Test Token",
@@ -176,8 +171,15 @@ async function ctx() {
     l2Deployer.address
   );
 
-  const [, l2DeployScript] =
-    await arbitrum.deployment.createGatewayDeployScripts(
+  const arbAddresses = arbitrum.addresses(networkName, {
+    customAddresses: {
+      ArbSys: arbSysStub.address,
+    },
+  });
+
+  const [, l2DeployScript] = await arbitrum
+    .deployment(networkName, { customAddresses: arbAddresses })
+    .erc20TokenGatewayDeployScript(
       l1Token.address,
       {
         deployer: l1Deployer,
@@ -188,13 +190,6 @@ async function ctx() {
         admins: {
           proxy: bridgeExecutorContract.address,
           bridge: bridgeExecutorContract.address,
-        },
-      },
-      {
-        dependencies: {
-          l2: {
-            arbSys: arbSysStub.address,
-          },
         },
       }
     );
@@ -214,7 +209,7 @@ async function ctx() {
     l2Deployer
   );
   const l1ExecutorAliased = await testing.impersonate(
-    applyL1ToL2Alias(l1Deployer.address),
+    testing.accounts.applyL1ToL2Alias(l1Deployer.address),
     l2Provider
   );
   await l2Deployer.sendTransaction({
@@ -222,7 +217,7 @@ async function ctx() {
     value: wei`1 ether`,
   });
   const l2Executor = await testing.impersonate(
-    applyL1ToL2Alias(l1Deployer.address),
+    testing.accounts.applyL1ToL2Alias(l1Deployer.address),
     l2Provider
   );
   const bridgeExecutor = ArbitrumBridgeExecutor__factory.connect(
@@ -246,12 +241,4 @@ async function ctx() {
       l2: "",
     },
   };
-}
-
-function applyL1ToL2Alias(address: string) {
-  const offset = "0x1111000000000000000000000000000000001111";
-  const mask = ethers.BigNumber.from(2).pow(160);
-  return hre.ethers.utils.getAddress(
-    hre.ethers.BigNumber.from(address).add(offset).mod(mask).toHexString()
-  );
 }

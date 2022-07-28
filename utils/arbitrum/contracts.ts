@@ -1,32 +1,38 @@
-import { Signer } from "ethers";
-import addresses from "./addresses";
+import { ArbSys__factory } from "arb-ts";
+
 import {
-  Bridge__factory,
   L1GatewayRouter__factory,
   L2GatewayRouter__factory,
+  ArbSysStub__factory,
 } from "../../typechain/";
+import addresses from "./addresses";
+import { CommonOptions } from "./types";
+import network, { NetworkName } from "../network";
 
-export default {
-  l1: {
-    async L1GatewayRouter(signer: Signer) {
-      const chainId = await signer.getChainId();
-      return L1GatewayRouter__factory.connect(
-        addresses.getL1(chainId).l1GatewayRouter,
-        signer
-      );
-    },
-    async Bridge(signer: Signer) {
-      const chainId = await signer.getChainId();
-      return Bridge__factory.connect(addresses.getL1(chainId).bridge, signer);
-    },
-  },
-  l2: {
-    async L2GatewayRouter(signer: Signer) {
-      const chainId = await signer.getChainId();
-      return L2GatewayRouter__factory.connect(
-        addresses.getL2(chainId).l2GatewayRouter,
-        signer
-      );
-    },
-  },
-};
+interface ContractsOptions extends CommonOptions {
+  forking: boolean;
+}
+
+export default function contracts(
+  networkName: NetworkName,
+  options: ContractsOptions
+) {
+  const [l1Provider, l2Provider] = network
+    .multichain(["eth", "arb"], networkName)
+    .getProviders(options);
+
+  const arbAddresses = addresses(networkName, options);
+
+  return {
+    ArbSys: ArbSys__factory.connect(arbAddresses.ArbSys, l2Provider),
+    ArbSysStub: ArbSysStub__factory.connect(arbAddresses.ArbSys, l2Provider),
+    L1GatewayRouter: L1GatewayRouter__factory.connect(
+      arbAddresses.L1GatewayRouter,
+      l1Provider
+    ),
+    L2GatewayRouter: L2GatewayRouter__factory.connect(
+      arbAddresses.L2GatewayRouter,
+      l2Provider
+    ),
+  };
+}

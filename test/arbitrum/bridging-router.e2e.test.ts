@@ -1,63 +1,23 @@
 import { assert } from "chai";
-import {
-  ERC20Bridged__factory,
-  ERC20Mintable__factory,
-  L1ERC20TokenGateway__factory,
-} from "../../typechain";
+import { ERC20Mintable } from "../../typechain";
 import env from "../../utils/env";
-import network from "../../utils/network";
 import { wei } from "../../utils/wei";
 import { Erc20Bridger, getL2Network, L1ToL2MessageStatus } from "@arbitrum/sdk";
 import { scenario } from "../../utils/testing";
-import { L2ERC20Gateway__factory } from "arb-ts";
-
-const L1_TOKEN = "0x7AEE39c46f20135114e85A03C02aB4FE73fB8127";
-
-const E2E_TEST_CONTRACTS = {
-  l1: {
-    l1Token: L1_TOKEN,
-    l1GatewayRouter: "0xa2a8F940752aDc4A3278B63B96d56D72D2b075B1",
-    l1ERC20TokenGateway: "0x0A7e12b563Ba623646a31a09F0182e8aD45D6cfD",
-  },
-  l2: {
-    l2Token: "0x775ede8029C117effce283b3391E420EacF3c85F",
-    l2GatewayRouter: "0x57f54f87C44d816f60b92864e23b8c0897D4d81D",
-    l2ERC20TokenGateway: "0x8c269989D839eE9DaEe64D57C8c41404DF87F722",
-  },
-};
+import arbitrum from "../../utils/arbitrum";
 
 async function ctxFactory() {
-  const pk = env.string("E2E_TESTER_PRIVATE_KEY");
+  const networkName = env.network("TESTING_ARB_NETWORK", "rinkeby");
+  const testingSetup = await arbitrum.testing(networkName).getE2ETestSetup();
 
-  const {
-    l1: { provider: l1Provider, signer: l1Tester },
-    l2: { provider: l2Provider, signer: l2Tester },
-  } = network.getMultichainNetwork("arbitrum", "testnet", pk);
-
-  const l2Network = await getL2Network(l2Provider);
+  const l2Network = await getL2Network(testingSetup.l2Provider);
 
   // replace gateway router addresses with test
-  l2Network.tokenBridge.l1GatewayRouter = E2E_TEST_CONTRACTS.l1.l1GatewayRouter;
-  l2Network.tokenBridge.l2GatewayRouter = E2E_TEST_CONTRACTS.l2.l2GatewayRouter;
+  l2Network.tokenBridge.l1GatewayRouter = testingSetup.l1GatewayRouter.address;
+  l2Network.tokenBridge.l2GatewayRouter = testingSetup.l2GatewayRouter.address;
 
   return {
-    l1Tester,
-    l2Tester,
-    l1Provider,
-    l2Provider,
-    l1Token: ERC20Mintable__factory.connect(L1_TOKEN, l1Tester),
-    l2Token: ERC20Bridged__factory.connect(
-      E2E_TEST_CONTRACTS.l2.l2Token,
-      l2Tester
-    ),
-    l1ERC20TokenGateway: L1ERC20TokenGateway__factory.connect(
-      E2E_TEST_CONTRACTS.l1.l1ERC20TokenGateway,
-      l1Tester
-    ),
-    l2ERC20TokenGateway: L2ERC20Gateway__factory.connect(
-      E2E_TEST_CONTRACTS.l2.l2ERC20TokenGateway,
-      l2Tester
-    ),
+    ...testingSetup,
     l2Network,
     erc20Bridge: new Erc20Bridger(l2Network),
     depositAmount: wei`0.025 ether`,
@@ -65,7 +25,7 @@ async function ctxFactory() {
   };
 }
 
-scenario("Arbitrum :: Bridging E2E test", ctxFactory)
+scenario("Arbitrum :: Bridging E2E test via router", ctxFactory)
   .step(
     "Check test environment is set correctly",
     async ({ erc20Bridge, l1Token, ...ctx }) => {
@@ -80,12 +40,19 @@ scenario("Arbitrum :: Bridging E2E test", ctxFactory)
     }
   )
 
-  .step("Mint L1 token to tester account if needed", async (ctx) => {
+  .step("Validate tester has required amount of L1 token", async (ctx) => {
     const { l1Token, l1Tester, depositAmount } = ctx;
     const balanceBefore = await l1Token.balanceOf(l1Tester.address);
     if (balanceBefore.lt(depositAmount)) {
-      await l1Token.mint(l1Tester.address, depositAmount);
+      try {
+        await (l1Token as ERC20Mintable).mint(l1Tester.address, depositAmount);
+      } catch {}
     }
+    const balanceAfter = await l1Token.balanceOf(l1Tester.address);
+    assert.isTrue(
+      balanceAfter.gte(depositAmount),
+      "Tester has not enough L1 token"
+    );
   })
 
   .step("Set allowance for L1ERC20TokenGateway to deposit", async (ctx) => {

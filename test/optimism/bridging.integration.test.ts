@@ -1,50 +1,50 @@
-import hre, { ethers } from "hardhat";
-import testing, { scenario } from "../../utils/testing";
-import optimism from "../../utils/optimism";
-import {
-  CrossDomainMessengerStub__factory,
-  ERC20Bridged__factory,
-  ERC20BridgedStub__factory,
-  L1ERC20TokenBridge__factory,
-  L2ERC20TokenBridge__factory,
-} from "../../typechain";
-import { wei } from "../../utils/wei";
-import { Wallet } from "ethers";
 import { assert } from "chai";
+
+import env from "../../utils/env";
+import { wei } from "../../utils/wei";
+import optimism from "../../utils/optimism";
+import testing, { scenario } from "../../utils/testing";
 import { BridgingManagement } from "../../utils/bridging-management";
-import network from "../../utils/network";
 
 scenario("Optimism :: Bridging integration test", ctxFactory)
+  .after(async (ctx) => {
+    await ctx.l1Provider.send("evm_revert", [ctx.snapshot.l1]);
+    await ctx.l2Provider.send("evm_revert", [ctx.snapshot.l2]);
+  })
+
   .step("Activate bridging", async (ctx) => {
-    const { admin: l1Admin } = ctx.l1.accounts;
-    const { admin: l2Admin } = ctx.l2.accounts;
-    const { l1ERC20TokenBridge } = ctx.l1;
-    const { l2ERC20TokenBridge } = ctx.l2;
+    const { l1ERC20TokenBridge, l2ERC20TokenBridge } = ctx;
+    const { l1ERC20TokenBridgeAdmin, l2ERC20TokenBridgeAdmin } = ctx.accounts;
 
     const l1BridgingManagement = new BridgingManagement(
       l1ERC20TokenBridge.address,
-      l1Admin
+      l1ERC20TokenBridgeAdmin
     );
 
+    const [l1AdminAddress, l2AdminAddress] = await Promise.all([
+      l1ERC20TokenBridgeAdmin.getAddress(),
+      l2ERC20TokenBridgeAdmin.getAddress(),
+    ]);
+
     await l1BridgingManagement.setup({
-      bridgeAdmin: l1Admin.address,
+      bridgeAdmin: l1AdminAddress,
       depositsEnabled: true,
       withdrawalsEnabled: true,
-      depositsEnablers: [l1Admin.address],
-      withdrawalsEnablers: [l1Admin.address],
+      depositsEnablers: [l1AdminAddress],
+      withdrawalsEnablers: [l1AdminAddress],
     });
 
     const l2BridgingManagement = new BridgingManagement(
       l2ERC20TokenBridge.address,
-      l2Admin
+      l2ERC20TokenBridgeAdmin
     );
 
     await l2BridgingManagement.setup({
-      bridgeAdmin: l2Admin.address,
+      bridgeAdmin: l2AdminAddress,
       depositsEnabled: true,
       withdrawalsEnabled: true,
-      depositsEnablers: [l2Admin.address],
-      withdrawalsEnablers: [l2Admin.address],
+      depositsEnablers: [l2AdminAddress],
+      withdrawalsEnablers: [l2AdminAddress],
     });
 
     assert.isTrue(await l1ERC20TokenBridge.isDepositsEnabled());
@@ -54,19 +54,21 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
   })
 
   .step("Sender deposits tokens to himself via depositERC20()", async (ctx) => {
-    const { l1Token, l1ERC20TokenBridge } = ctx.l1;
-    const { l2Token } = ctx.l2;
-    const { sender } = ctx.l1.accounts;
+    const { l1Token, l1ERC20TokenBridge, l2Token } = ctx;
+    const { l1Sender } = ctx.accounts;
+    const { depositAmount } = ctx.common;
 
-    const depositAmount = wei`5 ether`;
     await l1Token
-      .connect(sender)
+      .connect(l1Sender)
       .approve(l1ERC20TokenBridge.address, depositAmount);
 
-    const senderBalanceBefore = await l1Token.balanceOf(sender.address);
+    const senderBalanceBefore = await l1Token.balanceOf(l1Sender.address);
+    const l1ERC20TokenBridgeBalanceBefore = await l1Token.balanceOf(
+      l1ERC20TokenBridge.address
+    );
 
     const tx = await l1ERC20TokenBridge
-      .connect(sender)
+      .connect(l1Sender)
       .depositERC20(
         l1Token.address,
         l2Token.address,
@@ -78,8 +80,8 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     await assert.emits(l1ERC20TokenBridge, tx, "ERC20DepositInitiated", [
       l1Token.address,
       l2Token.address,
-      sender.address,
-      sender.address,
+      l1Sender.address,
+      l1Sender.address,
       depositAmount,
       "0x",
     ]);
@@ -88,72 +90,87 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
 
     assert.equalBN(
       await l1Token.balanceOf(l1ERC20TokenBridge.address),
-      depositAmount
+      l1ERC20TokenBridgeBalanceBefore.add(depositAmount)
     );
 
     assert.equalBN(
-      await l1Token.balanceOf(sender.address),
+      await l1Token.balanceOf(l1Sender.address),
       senderBalanceBefore.sub(depositAmount)
     );
   })
 
   .step("Finalize deposit via finalizeDeposit() on L2", async (ctx) => {
-    const { sender } = ctx.l1.accounts;
-    const { l1Token, l1ERC20TokenBridge } = ctx.l1;
-    const { l2Token, l2CrossDomainMessenger, l2ERC20TokenBridge } = ctx.l2;
+    const {
+      l1Token,
+      l2Token,
+      l1ERC20TokenBridge,
+      l2CrossDomainMessenger,
+      l2ERC20TokenBridge,
+    } = ctx;
+    const { l2Sender, l1CrossDomainMessengerAliased } = ctx.accounts;
     const { depositAmount } = ctx.common;
 
-    const tx = await l2CrossDomainMessenger.relayMessage(
-      l2ERC20TokenBridge.address,
-      l1ERC20TokenBridge.address,
-      l2ERC20TokenBridge.interface.encodeFunctionData("finalizeDeposit", [
-        l1Token.address,
-        l2Token.address,
-        sender.address,
-        sender.address,
-        depositAmount,
-        "0x",
-      ]),
-      1
-    );
+    const senderBalanceBefore = await l2Token.balanceOf(l2Sender.address);
+    const l2TokenTotalSupplyBefore = await l2Token.totalSupply();
+
+    const tx = await l2CrossDomainMessenger
+      .connect(l1CrossDomainMessengerAliased)
+      .relayMessage(
+        l2ERC20TokenBridge.address,
+        l1ERC20TokenBridge.address,
+        l2ERC20TokenBridge.interface.encodeFunctionData("finalizeDeposit", [
+          l1Token.address,
+          l2Token.address,
+          l2Sender.address,
+          l2Sender.address,
+          depositAmount,
+          "0x",
+        ]),
+        1
+      );
 
     await assert.emits(l2ERC20TokenBridge, tx, "DepositFinalized", [
       l1Token.address,
       l2Token.address,
-      sender.address,
-      sender.address,
+      l2Sender.address,
+      l2Sender.address,
       depositAmount,
       "0x",
     ]);
 
-    assert.equalBN(await l2Token.totalSupply(), depositAmount);
-    assert.equalBN(await l2Token.balanceOf(sender.address), depositAmount);
+    assert.equalBN(
+      await l2Token.totalSupply(),
+      senderBalanceBefore.add(depositAmount)
+    );
+    assert.equalBN(
+      await l2Token.totalSupply(),
+      l2TokenTotalSupplyBefore.add(depositAmount)
+    );
   })
 
   .step("Sender withdraws tokens to himself via withdraw()", async (ctx) => {
-    const { l1Token } = ctx.l1;
-    const { l2ERC20TokenBridge, l2Token } = ctx.l2;
-    const { sender } = ctx.l2.accounts;
+    const { l1Token, l2Token, l2ERC20TokenBridge } = ctx;
+    const { l2Sender } = ctx.accounts;
+    const { withdrawalAmount } = ctx.common;
 
-    const withdrawalAmount = wei`2.5 ether`;
-    const senderBalanceBefore = await l2Token.balanceOf(sender.address);
+    const senderBalanceBefore = await l2Token.balanceOf(l2Sender.address);
     const l2TotalSupplyBefore = await l2Token.totalSupply();
 
     const tx = await l2ERC20TokenBridge
-      .connect(sender)
+      .connect(l2Sender)
       .withdraw(l2Token.address, withdrawalAmount, 0, "0x");
 
     await assert.emits(l2ERC20TokenBridge, tx, "WithdrawalInitiated", [
       l1Token.address,
       l2Token.address,
-      sender.address,
-      sender.address,
+      l2Sender.address,
+      l2Sender.address,
       withdrawalAmount,
       "0x",
     ]);
 
     assert.equalBN(
-      await l2Token.balanceOf(sender.address),
+      await l2Token.balanceOf(l2Sender.address),
       senderBalanceBefore.sub(withdrawalAmount)
     );
 
@@ -164,65 +181,87 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
   })
 
   .step("Finalize withdrawal via finalizeERC20Withdrawal()", async (ctx) => {
-    const { l1CrossDomainMessengerStub, l1ERC20TokenBridge, l1Token } = ctx.l1;
-    const { l2CrossDomainMessenger, l2Token, l2ERC20TokenBridge } = ctx.l2;
-    const { sender } = ctx.l2.accounts;
+    const {
+      l1Token,
+      l1CrossDomainMessenger,
+      l1ERC20TokenBridge,
+      l2CrossDomainMessenger,
+      l2Token,
+      l2ERC20TokenBridge,
+    } = ctx;
+    const { l1Sender } = ctx.accounts;
     const { withdrawalAmount } = ctx.common;
 
-    await l1CrossDomainMessengerStub.setXDomainMessageSender(
-      l2ERC20TokenBridge.address
+    const senderBalanceBefore = await l1Token.balanceOf(l1Sender.address);
+    const l1ERC20TokenBridgeBalanceBefore = await l1Token.balanceOf(
+      l1ERC20TokenBridge.address
     );
 
-    const tx = await l1CrossDomainMessengerStub.relayMessage(
-      l1ERC20TokenBridge.address,
-      l2CrossDomainMessenger.address,
-      l1ERC20TokenBridge.interface.encodeFunctionData(
-        "finalizeERC20Withdrawal",
-        [
-          l1Token.address,
-          l2Token.address,
-          sender.address,
-          sender.address,
-          withdrawalAmount,
-          "0x",
-        ]
-      ),
-      0
-    );
+    await l1CrossDomainMessenger
+      .connect(l1Sender)
+      .setXDomainMessageSender(l2ERC20TokenBridge.address);
+
+    const tx = await l1CrossDomainMessenger
+      .connect(l1Sender)
+      .relayMessage(
+        l1ERC20TokenBridge.address,
+        l2CrossDomainMessenger.address,
+        l1ERC20TokenBridge.interface.encodeFunctionData(
+          "finalizeERC20Withdrawal",
+          [
+            l1Token.address,
+            l2Token.address,
+            l1Sender.address,
+            l1Sender.address,
+            withdrawalAmount,
+            "0x",
+          ]
+        ),
+        0
+      );
 
     await assert.emits(l1ERC20TokenBridge, tx, "ERC20WithdrawalFinalized", [
       l1Token.address,
       l2Token.address,
-      sender.address,
-      sender.address,
+      l1Sender.address,
+      l1Sender.address,
       withdrawalAmount,
       "0x",
     ]);
+
+    assert.equalBN(
+      await l1Token.balanceOf(l1ERC20TokenBridge.address),
+      l1ERC20TokenBridgeBalanceBefore.sub(withdrawalAmount)
+    );
+
+    assert.equalBN(
+      await l1Token.balanceOf(l1Sender.address),
+      senderBalanceBefore.add(withdrawalAmount)
+    );
   })
 
   .step(
     "Sender deposits tokens to recipient via depositERC20To()",
     async (ctx) => {
-      const { l1Token, l1ERC20TokenBridge } = ctx.l1;
-      const { l2Token } = ctx.l2;
-      const { sender, recipient } = ctx.l1.accounts;
+      const { l1Token, l2Token, l1ERC20TokenBridge } = ctx;
+      const { l1Sender, l1Recipient } = ctx.accounts;
+      const { depositAmount } = ctx.common;
 
-      const depositAmount = wei`5 ether`;
       await l1Token
-        .connect(sender)
+        .connect(l1Sender)
         .approve(l1ERC20TokenBridge.address, depositAmount);
 
-      const senderBalanceBefore = await l1Token.balanceOf(sender.address);
+      const senderBalanceBefore = await l1Token.balanceOf(l1Sender.address);
       const l1ERC20TokenBridgeBalanceBefore = await l1Token.balanceOf(
         l1ERC20TokenBridge.address
       );
 
       const tx = await l1ERC20TokenBridge
-        .connect(sender)
+        .connect(l1Sender)
         .depositERC20To(
           l1Token.address,
           l2Token.address,
-          recipient.address,
+          l1Recipient.address,
           depositAmount,
           200_000,
           "0x"
@@ -231,8 +270,8 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       await assert.emits(l1ERC20TokenBridge, tx, "ERC20DepositInitiated", [
         l1Token.address,
         l2Token.address,
-        sender.address,
-        recipient.address,
+        l1Sender.address,
+        l1Recipient.address,
         depositAmount,
         "0x",
       ]);
@@ -245,39 +284,47 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       );
 
       assert.equalBN(
-        await l1Token.balanceOf(sender.address),
+        await l1Token.balanceOf(l1Sender.address),
         senderBalanceBefore.sub(depositAmount)
       );
     }
   )
   .step("Finalize deposit via finalizeDeposit()", async (ctx) => {
-    const { sender, recipient } = ctx.l1.accounts;
-    const { l1Token, l1ERC20TokenBridge } = ctx.l1;
-    const { l2Token, l2CrossDomainMessenger, l2ERC20TokenBridge } = ctx.l2;
+    const {
+      l1Token,
+      l1ERC20TokenBridge,
+      l2Token,
+      l2CrossDomainMessenger,
+      l2ERC20TokenBridge,
+    } = ctx;
+    const { l2Sender, l1Recipient, l1CrossDomainMessengerAliased } =
+      ctx.accounts;
     const { depositAmount } = ctx.common;
 
     const l2TokenTotalSupplyBefore = await l2Token.totalSupply();
-    const recipientBalanceBefore = await l2Token.balanceOf(recipient.address);
+    const recipientBalanceBefore = await l2Token.balanceOf(l1Recipient.address);
 
-    const tx = await l2CrossDomainMessenger.relayMessage(
-      l2ERC20TokenBridge.address,
-      l1ERC20TokenBridge.address,
-      l2ERC20TokenBridge.interface.encodeFunctionData("finalizeDeposit", [
-        l1Token.address,
-        l2Token.address,
-        sender.address,
-        recipient.address,
-        depositAmount,
-        "0x",
-      ]),
-      1
-    );
+    const tx = await l2CrossDomainMessenger
+      .connect(l1CrossDomainMessengerAliased)
+      .relayMessage(
+        l2ERC20TokenBridge.address,
+        l1ERC20TokenBridge.address,
+        l2ERC20TokenBridge.interface.encodeFunctionData("finalizeDeposit", [
+          l1Token.address,
+          l2Token.address,
+          l2Sender.address,
+          l1Recipient.address,
+          depositAmount,
+          "0x",
+        ]),
+        1
+      );
 
     await assert.emits(l2ERC20TokenBridge, tx, "DepositFinalized", [
       l1Token.address,
       l2Token.address,
-      sender.address,
-      recipient.address,
+      l2Sender.address,
+      l1Recipient.address,
       depositAmount,
       "0x",
     ]);
@@ -287,7 +334,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       l2TokenTotalSupplyBefore.add(depositAmount)
     );
     assert.equalBN(
-      await l2Token.balanceOf(recipient.address),
+      await l2Token.balanceOf(l1Recipient.address),
       recipientBalanceBefore.add(depositAmount)
     );
   })
@@ -295,29 +342,36 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
   .step(
     "Recipient withdraws tokens to sender via withdrawTo()",
     async (ctx) => {
-      const { l1Token } = ctx.l1;
-      const { l2ERC20TokenBridge, l2Token } = ctx.l2;
-      const { sender, recipient } = ctx.l2.accounts;
+      const { l1Token, l2Token, l2ERC20TokenBridge } = ctx;
+      const { l2Sender, l2Recipient } = ctx.accounts;
       const { withdrawalAmount } = ctx.common;
 
-      const recipientBalanceBefore = await l2Token.balanceOf(recipient.address);
+      const recipientBalanceBefore = await l2Token.balanceOf(
+        l2Recipient.address
+      );
       const l2TotalSupplyBefore = await l2Token.totalSupply();
 
       const tx = await l2ERC20TokenBridge
-        .connect(recipient)
-        .withdrawTo(l2Token.address, sender.address, withdrawalAmount, 0, "0x");
+        .connect(l2Recipient)
+        .withdrawTo(
+          l2Token.address,
+          l2Sender.address,
+          withdrawalAmount,
+          0,
+          "0x"
+        );
 
       await assert.emits(l2ERC20TokenBridge, tx, "WithdrawalInitiated", [
         l1Token.address,
         l2Token.address,
-        recipient.address,
-        sender.address,
+        l2Recipient.address,
+        l2Sender.address,
         withdrawalAmount,
         "0x",
       ]);
 
       assert.equalBN(
-        await l2Token.balanceOf(recipient.address),
+        await l2Token.balanceOf(l2Recipient.address),
         recipientBalanceBefore.sub(withdrawalAmount)
       );
 
@@ -329,154 +383,140 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
   )
 
   .step("Finalize withdrawal via finalizeERC20Withdrawal()", async (ctx) => {
-    const { l1CrossDomainMessengerStub, l1ERC20TokenBridge, l1Token } = ctx.l1;
-    const { l2CrossDomainMessenger, l2Token, l2ERC20TokenBridge } = ctx.l2;
-    const { sender, recipient } = ctx.l2.accounts;
+    const {
+      l1Token,
+      l1CrossDomainMessenger,
+      l1ERC20TokenBridge,
+      l2CrossDomainMessenger,
+      l2Token,
+      l2ERC20TokenBridge,
+    } = ctx;
+    const { l1Sender, l2Recipient } = ctx.accounts;
     const { withdrawalAmount } = ctx.common;
 
-    await l1CrossDomainMessengerStub.setXDomainMessageSender(
-      l2ERC20TokenBridge.address
+    const senderBalanceBefore = await l1Token.balanceOf(l1Sender.address);
+    const l1ERC20TokenBridgeBalanceBefore = await l1Token.balanceOf(
+      l1ERC20TokenBridge.address
     );
 
-    const tx = await l1CrossDomainMessengerStub.relayMessage(
-      l1ERC20TokenBridge.address,
-      l2CrossDomainMessenger.address,
-      l1ERC20TokenBridge.interface.encodeFunctionData(
-        "finalizeERC20Withdrawal",
-        [
-          l1Token.address,
-          l2Token.address,
-          recipient.address,
-          sender.address,
-          withdrawalAmount,
-          "0x",
-        ]
-      ),
-      0
-    );
+    await l1CrossDomainMessenger
+      .connect(l1Sender)
+      .setXDomainMessageSender(l2ERC20TokenBridge.address);
+
+    const tx = await l1CrossDomainMessenger
+      .connect(l1Sender)
+      .relayMessage(
+        l1ERC20TokenBridge.address,
+        l2CrossDomainMessenger.address,
+        l1ERC20TokenBridge.interface.encodeFunctionData(
+          "finalizeERC20Withdrawal",
+          [
+            l1Token.address,
+            l2Token.address,
+            l2Recipient.address,
+            l1Sender.address,
+            withdrawalAmount,
+            "0x",
+          ]
+        ),
+        0
+      );
 
     await assert.emits(l1ERC20TokenBridge, tx, "ERC20WithdrawalFinalized", [
       l1Token.address,
       l2Token.address,
-      recipient.address,
-      sender.address,
+      l2Recipient.address,
+      l1Sender.address,
       withdrawalAmount,
       "0x",
     ]);
+
+    assert.equalBN(
+      await l1Token.balanceOf(l1ERC20TokenBridge.address),
+      l1ERC20TokenBridgeBalanceBefore.sub(withdrawalAmount)
+    );
+
+    assert.equalBN(
+      await l1Token.balanceOf(l1Sender.address),
+      senderBalanceBefore.add(withdrawalAmount)
+    );
   })
 
   .run();
 
 async function ctxFactory() {
-  const privateKeys = {
-    deployer:
-      "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-    sender:
-      "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
-    recipient:
-      "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
-  };
+  const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
+
   const {
-    l1: { signer: l1Deployer, provider: l1Provider },
-    l2: { signer: l2Deployer, provider: l2Provider },
-  } = network.getMultichainNetwork("optimism", "local", privateKeys.deployer);
+    l1Provider,
+    l2Provider,
+    l1ERC20TokenBridgeAdmin,
+    l2ERC20TokenBridgeAdmin,
+    ...contracts
+  } = await optimism.testing(networkName).getIntegrationTestSetup();
 
-  const l1Token = await new ERC20BridgedStub__factory(l1Deployer).deploy(
-    "Test Token",
-    "TT"
-  );
+  const l1Snapshot = await l1Provider.send("evm_snapshot", []);
+  const l2Snapshot = await l2Provider.send("evm_snapshot", []);
 
-  const l1CrossDomainMessengerStub =
-    await new CrossDomainMessengerStub__factory(l1Deployer).deploy();
+  await optimism.testing(networkName).stubL1CrossChainMessengerContract();
 
-  const [l1DeployScript, l2DeployScript] =
-    await optimism.deployment.createOptimismBridgeDeployScripts(
-      l1Token.address,
-      {
-        deployer: l1Deployer,
-        admins: { proxy: l1Deployer.address, bridge: l1Deployer.address },
-      },
-      {
-        deployer: l2Deployer,
-        admins: { proxy: l2Deployer.address, bridge: l2Deployer.address },
-      },
-      {
-        dependencies: { l1: { messenger: l1CrossDomainMessengerStub.address } },
-      }
-    );
+  const l1Sender = testing.accounts.sender(l1Provider);
+  const l2Sender = testing.accounts.sender(l2Provider);
+  const l1Recipient = testing.accounts.recipient(l1Provider);
+  const l2Recipient = testing.accounts.recipient(l2Provider);
 
-  await l1DeployScript.run();
-  await l2DeployScript.run();
+  const depositAmount = wei`0.15 ether`;
+  const withdrawalAmount = wei`0.05 ether`;
 
-  const l2Token = ERC20Bridged__factory.connect(
-    l2DeployScript.getContractAddress(1),
-    l2Deployer
-  );
-  const l2ERC20TokenBridge = L2ERC20TokenBridge__factory.connect(
-    l2DeployScript.getContractAddress(3),
-    l2Deployer
-  );
-  const l1ERC20TokenBridge = L1ERC20TokenBridge__factory.connect(
-    l1DeployScript.getContractAddress(1),
-    l1Deployer
-  );
+  await l1Sender.sendTransaction({
+    to: await contracts.l1TokensHolder.getAddress(),
+    value: wei.toBigNumber(wei`1 ether`),
+  });
 
-  const l1CrossDomainMessenger =
-    await optimism.contracts.l1.L1CrossDomainMessenger(l1Deployer);
+  await l1Sender.sendTransaction({
+    to: await l1ERC20TokenBridgeAdmin.getAddress(),
+    value: wei.toBigNumber(wei`1 ether`),
+  });
+
+  await l2Sender.sendTransaction({
+    to: await l2ERC20TokenBridgeAdmin.getAddress(),
+    value: wei.toBigNumber(wei`1 ether`),
+  });
+
+  await contracts.l1Token
+    .connect(contracts.l1TokensHolder)
+    .transfer(l1Sender.address, wei.toBigNumber(depositAmount).mul(2));
 
   const l1CrossDomainMessengerAliased = await testing.impersonate(
-    applyL1ToL2Alias(l1CrossDomainMessenger.address),
+    testing.accounts.applyL1ToL2Alias(contracts.l1CrossDomainMessenger.address),
     l2Provider
   );
 
-  const l2CrossDomainMessenger =
-    await optimism.contracts.l2.L2CrossDomainMessenger(
-      l1CrossDomainMessengerAliased
-    );
-
-  await l2Deployer.sendTransaction({
+  await l2Sender.sendTransaction({
     to: await l1CrossDomainMessengerAliased.getAddress(),
-    value: wei`10 ether`,
+    value: wei.toBigNumber(wei`1 ether`),
   });
 
-  const l1Sender = new Wallet(privateKeys.sender, l1Provider);
-  await l1Token.transfer(l1Sender.address, wei`100 ether`);
-
   return {
-    l1: {
-      l1Token: l1Token.connect(l1Sender),
-      l1ERC20TokenBridge: l1ERC20TokenBridge,
-      l1CrossDomainMessengerStub,
-      canonicalTransactionChain:
-        await optimism.contracts.l1.CanonicalTransactionChain(l1Deployer),
-      accounts: {
-        admin: l1Deployer,
-        sender: l1Sender,
-        recipient: new Wallet(privateKeys.recipient, l1Provider),
-      },
-    },
-    l2: {
-      l2Token: l2Token,
-      l2ERC20TokenBridge,
-      l2CrossDomainMessenger,
-      accounts: {
-        admin: l2Deployer,
-        l1CrossDomainMessengerAliased,
-        sender: new Wallet(privateKeys.sender, l2Provider),
-        recipient: new Wallet(privateKeys.recipient, l2Provider),
-      },
+    l1Provider,
+    l2Provider,
+    ...contracts,
+    accounts: {
+      l1Sender,
+      l2Sender,
+      l1Recipient,
+      l2Recipient,
+      l1ERC20TokenBridgeAdmin,
+      l2ERC20TokenBridgeAdmin,
+      l1CrossDomainMessengerAliased,
     },
     common: {
-      depositAmount: wei`5 ether`,
-      withdrawalAmount: wei`2.5 ether`,
+      depositAmount,
+      withdrawalAmount,
+    },
+    snapshot: {
+      l1: l1Snapshot,
+      l2: l2Snapshot,
     },
   };
-}
-
-function applyL1ToL2Alias(address: string) {
-  const offset = "0x1111000000000000000000000000000000001111";
-  const mask = ethers.BigNumber.from(2).pow(160);
-  return hre.ethers.utils.getAddress(
-    hre.ethers.BigNumber.from(address).add(offset).mod(mask).toHexString()
-  );
 }

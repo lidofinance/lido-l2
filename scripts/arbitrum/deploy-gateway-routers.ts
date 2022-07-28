@@ -1,15 +1,18 @@
-import deployment from "../../utils/arbitrum/deployment";
+import arbitrum from "../../utils/arbitrum";
+import env from "../../utils/env";
 import network from "../../utils/network";
 import prompt from "../../utils/prompt";
 
 async function main() {
-  const networkConfig = network.getMultichainNetwork("arbitrum");
-  const [l1DeployScript, l2DeployScript] =
-    await deployment.createRoutersDeployScript(
-      networkConfig.l1.signer,
-      networkConfig.l2.signer,
-      { logger: console }
-    );
+  const networkName = env.network();
+
+  const [ethDeployer, arbDeployer] = network
+    .multichain(["eth", "arb"], networkName)
+    .getSigners(env.privateKey(), { forking: env.forking() });
+
+  const [l1DeployScript, l2DeployScript] = await arbitrum
+    .deployment(networkName, { logger: console })
+    .gatewayRouterDeployScript(ethDeployer, arbDeployer);
 
   l1DeployScript.print();
   l2DeployScript.print();

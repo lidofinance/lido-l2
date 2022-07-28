@@ -1,15 +1,12 @@
 import { assert } from "chai";
 import {
-  ERC20Bridged__factory,
   IERC20Metadata__factory,
-  L1ERC20TokenBridge__factory,
-  L2ERC20TokenBridge__factory,
   OssifiableProxy__factory,
 } from "../../typechain";
 import { BridgingManagerRole } from "../../utils/bridging-management";
 import deployment from "../../utils/deployment";
 import env from "../../utils/env";
-import network from "../../utils/network";
+import optimism from "../../utils/optimism";
 import { getRoleHolders, scenario } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 
@@ -77,10 +74,9 @@ scenario("Optimism Bridge :: deployment acceptance test", ctxFactory)
   .step("L1 Bridge :: deposits disablers", async (ctx) => {
     const actualDepositsDisablers = await getRoleHolders(
       ctx.l1ERC20TokenBridge,
-      BridgingManagerRole.DEPOSITS_ENABLER_ROLE.hash
+      BridgingManagerRole.DEPOSITS_DISABLER_ROLE.hash
     );
     const expectedDepositsDisablers = ctx.deployment.l1.depositsDisablers || [];
-
     assert.equal(
       actualDepositsDisablers.size,
       expectedDepositsDisablers.length
@@ -187,7 +183,7 @@ scenario("Optimism Bridge :: deployment acceptance test", ctxFactory)
   .step("L2 Bridge :: deposits disablers", async (ctx) => {
     const actualDepositsDisablers = await getRoleHolders(
       ctx.l2ERC20TokenBridge,
-      BridgingManagerRole.DEPOSITS_ENABLER_ROLE.hash
+      BridgingManagerRole.DEPOSITS_DISABLER_ROLE.hash
     );
     const expectedDepositsDisablers = ctx.deployment.l2.depositsDisablers || [];
 
@@ -237,7 +233,7 @@ scenario("Optimism Bridge :: deployment acceptance test", ctxFactory)
   .step("L2 Token :: proxy admin", async (ctx) => {
     assert.equal(
       await ctx.erc20BridgedProxy.proxy__getAdmin(),
-      ctx.deployment.l1.proxyAdmin
+      ctx.deployment.l2.proxyAdmin
     );
   })
   .step("L2 Token :: name", async (ctx) => {
@@ -262,16 +258,17 @@ scenario("Optimism Bridge :: deployment acceptance test", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const networkConfig = network.getMultichainNetwork("optimism");
+  const networkName = env.network();
   const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
+  const testingSetup = await optimism
+    .testing(networkName)
+    .getAcceptanceTestSetup();
 
-  const l1ERC20TokenBridge = env.address("L1_ERC20_TOKEN_BRIDGE");
-  const l2ERC20TokenBridge = env.address("L2_ERC20_TOKEN_BRIDGE");
-  const erc20Bridged = env.address("ERC20_BRIDGED");
   const l1Token = IERC20Metadata__factory.connect(
     deploymentConfig.token,
-    networkConfig.l1.provider
+    testingSetup.l1Provider
   );
+
   const [name, symbol, decimals] = await Promise.all([
     l1Token.name(),
     l1Token.symbol(),
@@ -279,36 +276,26 @@ async function ctxFactory() {
   ]);
 
   return {
-    network: networkConfig,
     deployment: deploymentConfig,
     l2TokenInfo: {
       name,
       symbol,
       decimals,
     },
-    l1ERC20TokenBridge: L1ERC20TokenBridge__factory.connect(
-      l1ERC20TokenBridge,
-      networkConfig.l1.provider
-    ),
+    l1ERC20TokenBridge: testingSetup.l1ERC20TokenBridge,
     l1ERC20TokenBridgeProxy: OssifiableProxy__factory.connect(
-      l1ERC20TokenBridge,
-      networkConfig.l1.provider
+      testingSetup.l1ERC20TokenBridge.address,
+      testingSetup.l1Provider
     ),
-    l2ERC20TokenBridge: L2ERC20TokenBridge__factory.connect(
-      l2ERC20TokenBridge,
-      networkConfig.l2.provider
-    ),
+    l2ERC20TokenBridge: testingSetup.l2ERC20TokenBridge,
     l2ERC20TokenBridgeProxy: OssifiableProxy__factory.connect(
-      l2ERC20TokenBridge,
-      networkConfig.l2.provider
+      testingSetup.l2ERC20TokenBridge.address,
+      testingSetup.l2Provider
     ),
-    erc20Bridged: ERC20Bridged__factory.connect(
-      erc20Bridged,
-      networkConfig.l2.provider
-    ),
+    erc20Bridged: testingSetup.l2Token,
     erc20BridgedProxy: OssifiableProxy__factory.connect(
-      erc20Bridged,
-      networkConfig.l2.provider
+      testingSetup.l2Token.address,
+      testingSetup.l2Provider
     ),
   };
 }

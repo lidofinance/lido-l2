@@ -1,10 +1,10 @@
-import accounts from "./accounts";
+import testing from "./testing";
 import addresses from "./addresses";
 import contracts from "./contracts";
 import deployment from "./deployment";
 
 export default {
-  accounts,
+  testing,
   addresses,
   contracts,
   deployment,

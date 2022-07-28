@@ -1,30 +1,16 @@
 import {
-  ERC20Bridged__factory,
-  ERC20Mintable__factory,
-  L1ERC20TokenBridge__factory,
-} from "../../typechain";
-import { wei } from "../../utils/wei";
-import {
   CrossChainMessenger,
   DAIBridgeAdapter,
   MessageStatus,
 } from "@eth-optimism/sdk";
 import { assert } from "chai";
 import { TransactionResponse } from "@ethersproject/providers";
-import network from "../../utils/network";
-import env from "../../utils/env";
-import { scenario } from "../../utils/testing";
 
-const E2E_TEST_CONTRACTS = {
-  l1: {
-    l1Token: "0xaF8a2F0aE374b03376155BF745A3421Dac711C12",
-    l1ERC20TokenBridge: "0x243b661276670bD17399C488E7287ea4D416115b",
-  },
-  l2: {
-    l2Token: "0xAED5F9aaF167923D34174b8E636aaF040A11f6F7",
-    l2ERC20TokenBridge: "0x447CD1794d209Ac4E6B4097B34658bc00C4d0a51",
-  },
-};
+import env from "../../utils/env";
+import { wei } from "../../utils/wei";
+import optimism from "../../utils/optimism";
+import { ERC20Mintable } from "../../typechain";
+import { scenario } from "../../utils/testing";
 
 let depositTokensTxResponse: TransactionResponse;
 let withdrawTokensTxResponse: TransactionResponse;
@@ -35,7 +21,17 @@ scenario("Optimism :: Bridging E2E test", ctxFactory)
     async ({ l1Token, l1Tester, depositAmount }) => {
       const balanceBefore = await l1Token.balanceOf(l1Tester.address);
       if (balanceBefore.lt(depositAmount)) {
-        await l1Token.mint(l1Tester.address, depositAmount);
+        try {
+          await (l1Token as ERC20Mintable).mint(
+            l1Tester.address,
+            depositAmount
+          );
+        } catch {}
+        const balanceAfter = await l1Token.balanceOf(l1Tester.address);
+        assert.isTrue(
+          balanceAfter.gte(depositAmount),
+          "Tester has not enough L1 token"
+        );
       }
     }
   )
@@ -129,38 +125,27 @@ scenario("Optimism :: Bridging E2E test", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const pk = env.string("E2E_TESTER_PRIVATE_KEY");
-  const {
-    l1: { signer: l1Tester },
-    l2: { signer: l2Tester },
-  } = network.getMultichainNetwork("optimism", "testnet", pk);
+  const networkName = env.network("TESTING_OPT_NETWORK", "kovan");
+  const testingSetup = await optimism.testing(networkName).getE2ETestSetup();
 
   return {
     depositAmount: wei`0.025 ether`,
     withdrawalAmount: wei`0.025 ether`,
-    l1Tester,
-    l1Token: ERC20Mintable__factory.connect(
-      E2E_TEST_CONTRACTS.l1.l1Token,
-      l1Tester
-    ),
-    l2Token: ERC20Bridged__factory.connect(
-      E2E_TEST_CONTRACTS.l2.l2Token,
-      l2Tester
-    ),
-    l1ERC20TokenBridge: L1ERC20TokenBridge__factory.connect(
-      E2E_TEST_CONTRACTS.l1.l1ERC20TokenBridge,
-      l1Tester
-    ),
+    l1Tester: testingSetup.l1Tester,
+    l1Token: testingSetup.l1Token,
+    l2Token: testingSetup.l2Token,
+    l1ERC20TokenBridge: testingSetup.l1ERC20TokenBridge,
     crossChainMessenger: new CrossChainMessenger({
-      l1ChainId: 42,
-      l2ChainId: 69,
-      l1SignerOrProvider: l1Tester,
-      l2SignerOrProvider: l2Tester,
+      l1ChainId: await testingSetup.l1Provider
+        .getNetwork()
+        .then((n) => n.chainId),
+      l1SignerOrProvider: testingSetup.l1Tester,
+      l2SignerOrProvider: testingSetup.l2Tester,
       bridges: {
         LidoBridge: {
           Adapter: DAIBridgeAdapter,
-          l1Bridge: E2E_TEST_CONTRACTS.l1.l1ERC20TokenBridge,
-          l2Bridge: E2E_TEST_CONTRACTS.l2.l2ERC20TokenBridge,
+          l1Bridge: testingSetup.l1ERC20TokenBridge.address,
+          l2Bridge: testingSetup.l2ERC20TokenBridge.address,
         },
       },
     }),

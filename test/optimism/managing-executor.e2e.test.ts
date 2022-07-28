@@ -114,15 +114,17 @@ scenario("Optimism :: AAVE governance crosschain bridge management", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const pk = env.string("E2E_TESTER_PRIVATE_KEY");
-  const {
-    l1: { signer: l1Tester },
-    l2: { signer: l2Tester },
-  } = network.getMultichainNetwork("optimism", "testnet", pk);
-  const ldoHolderPk = env.string("E2E_KOVAN_LDO_HOLDER_PRIVATE_KEY");
-  const {
-    l1: { signer: l1LDOHolder },
-  } = network.getMultichainNetwork("optimism", "testnet", ldoHolderPk);
+  const ethOptNetwork = network.multichain(["eth", "opt"], "kovan");
+
+  const [l1Tester, l2Tester] = ethOptNetwork.getSigners(
+    env.string("TESTING_PRIVATE_KEY"),
+    { forking: false }
+  );
+
+  const [l1LDOHolder] = ethOptNetwork.getSigners(
+    env.string("TESTING_KOVAN_LDO_HOLDER_PRIVATE_KEY"),
+    { forking: false }
+  );
 
   return {
     depositAmount: wei`0.025 ether`,

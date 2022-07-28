@@ -35,35 +35,76 @@ const config: HardhatUserConfig = {
     ],
   },
   networks: {
-    local: {
-      url: "http://localhost:8545",
-    },
-    local_arbitrum: {
-      url: "http://localhost:8546",
-    },
-    local_optimism: {
-      url: "http://localhost:9545",
-    },
-    kovan: {
-      url: env.string("RPC_ETH_KOVAN", ""),
-    },
-    kovan_optimism: {
-      url: env.string("RPC_OPT_KOVAN", ""),
-    },
-    rinkeby: {
-      url: env.string("RPC_ETH_RINKEBY", ""),
-    },
-    rinkeby_arbitrum: {
-      url: env.string("RPC_ARB_RINKEBY", ""),
-    },
-    mainnet: {
+    // Ethereum Public Chains
+    eth_mainnet: {
       url: env.string("RPC_ETH_MAINNET", ""),
     },
-    mainnet_arbitrum: {
+    eth_goerli: {
+      url: env.string("RPC_ETH_GOERLI", ""),
+    },
+    eth_kovan: {
+      url: env.string("RPC_ETH_KOVAN", ""),
+    },
+    eth_rinkeby: {
+      url: env.string("RPC_ETH_RINKEBY", ""),
+    },
+
+    // Ethereum Fork Chains
+    eth_mainnet_fork: {
+      url: "http://localhost:8545",
+    },
+    eth_goerli_fork: {
+      url: "http://localhost:8545",
+    },
+    eth_kovan_fork: {
+      url: "http://localhost:8545",
+    },
+    eth_rinkeby_fork: {
+      url: "http://localhost:8545",
+    },
+
+    // Arbitrum Public Chains
+    arb_mainnet: {
       url: env.string("RPC_ARB_MAINNET", ""),
     },
-    mainnet_optimism: {
+    arb_goerli: {
+      url: env.string("RPC_ARB_GOERLI", ""),
+    },
+    arb_rinkeby: {
+      url: env.string("RPC_ARB_RINKEBY", ""),
+    },
+
+    // Arbitrum Fork Chains
+    arb_mainnet_fork: {
+      url: "http://localhost:8546",
+    },
+    arb_goerli_fork: {
+      url: "http://localhost:8546",
+    },
+    arb_rinkeby_fork: {
+      url: "http://localhost:8546",
+    },
+
+    // Optimism Public Chains
+    opt_mainnet: {
       url: env.string("RPC_OPT_MAINNET", ""),
+    },
+    opt_goerli: {
+      url: env.string("RPC_OPT_GOERLI", ""),
+    },
+    opt_kovan: {
+      url: env.string("RPC_OPT_KOVAN", ""),
+    },
+
+    // Optimism Fork Chains
+    opt_mainnet_fork: {
+      url: "http://localhost:9545",
+    },
+    opt_goerli_fork: {
+      url: "http://localhost:9545",
+    },
+    opt_kovan_fork: {
+      url: "http://localhost:9545",
     },
   },
   gasReporter: {
@@ -75,6 +116,7 @@ const config: HardhatUserConfig = {
       kovan: env.string("ETHERSCAN_API_KEY_ETH", ""),
       rinkeby: env.string("ETHERSCAN_API_KEY_ETH", ""),
       mainnet: env.string("ETHERSCAN_API_KEY_ETH", ""),
+      goerli: env.string("ETHERSCAN_API_KEY_ETH", ""),
       arbitrumTestnet: env.string("ETHERSCAN_API_KEY_ARB", ""),
       arbitrumOne: env.string("ETHERSCAN_API_KEY_ARB", ""),
       optimisticKovan: env.string("ETHERSCAN_API_KEY_OPT", ""),

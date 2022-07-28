@@ -146,16 +146,20 @@ scenario(
   .run(2);
 
 async function ctxFactory() {
-  const pk = env.string("E2E_TESTER_PRIVATE_KEY");
+  const ethArbNetwork = network.multichain(["eth", "arb"], "rinkeby");
 
-  const {
-    l1: { provider: l1Provider, signer: l1Tester },
-    l2: { provider: l2Provider, signer: l2Tester },
-  } = network.getMultichainNetwork("arbitrum", "testnet", pk);
-  const ldoHolderPk = env.string("E2E_RINKEBY_LDO_HOLDER_PRIVATE_KEY");
-  const {
-    l1: { signer: l1LDOHolder },
-  } = network.getMultichainNetwork("arbitrum", "testnet", ldoHolderPk);
+  const [l1Provider, l2Provider] = ethArbNetwork.getProviders({
+    forking: false,
+  });
+  const [l1Tester, l2Tester] = ethArbNetwork.getSigners(
+    env.string("TESTING_PRIVATE_KEY"),
+    { forking: false }
+  );
+
+  const [l1LDOHolder] = ethArbNetwork.getSigners(
+    env.string("TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY"),
+    { forking: false }
+  );
 
   const l2Network = await getL2Network(l2Provider);
 

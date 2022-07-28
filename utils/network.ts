@@ -1,15 +1,58 @@
 import hre from "hardhat";
-import { providers, Wallet } from "ethers";
+import { providers, Signer, Wallet } from "ethers";
 import { getContractAddress } from "ethers/lib/utils";
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { Provider } from "@ethersproject/providers";
 import { HardhatRuntimeEnvironment, HttpNetworkConfig } from "hardhat/types";
 
 import env from "./env";
 
-export function getNetworkConfig(
-  networkName: string,
-  hre: HardhatRuntimeEnvironment
-) {
+type ChainNameShort = "arb" | "opt" | "eth";
+export type NetworkName = "goerli" | "mainnet" | "rinkeby" | "kovan";
+export type SignerOrProvider = Signer | Provider;
+
+const HARDHAT_NETWORK_NAMES = {
+  eth: {
+    goerli: "eth_goerli",
+    mainnet: "eth_mainnet",
+    kovan: "eth_kovan", // DEPRECATED
+    rinkeby: "eth_rinkeby", // DEPRECATED
+  },
+  arb: {
+    goerli: "arb_goerli",
+    mainnet: "arb_mainnet",
+    rinkeby: "arb_rinkeby", // DEPRECATED
+    kovan: "NOT_DEPLOYED", // DEPRECATED
+  },
+  opt: {
+    goerli: "opt_goerli",
+    mainnet: "opt_mainnet",
+    kovan: "opt_kovan", // DEPRECATED
+    rinkeby: "NOT_DEPLOYED", // DEPRECATED
+  },
+};
+
+const HARDHAT_NETWORK_NAMES_FORK = {
+  eth: {
+    goerli: "eth_goerli_fork",
+    mainnet: "eth_mainnet_fork",
+    kovan: "eth_kovan_fork", // DEPRECATED
+    rinkeby: "eth_rinkeby_fork", // DEPRECATED
+  },
+  arb: {
+    goerli: "arb_goerli_fork",
+    mainnet: "arb_mainnet_fork",
+    rinkeby: "arb_rinkeby_fork", // DEPRECATED
+    kovan: "NOT_DEPLOYED",
+  },
+  opt: {
+    kovan: "opt_kovan_fork", // DEPRECATED
+    goerli: "opt_goerli_fork",
+    mainnet: "opt_mainnet_fork",
+    rinkeby: "NOT_DEPLOYED",
+  },
+};
+
+export function getConfig(networkName: string, hre: HardhatRuntimeEnvironment) {
   const config = hre.config.networks[networkName];
   if (!config) {
     throw new Error(
@@ -49,64 +92,46 @@ function loadAccount(rpcURL: string, accountPrivateKeyName: string) {
   return new Wallet(privateKey, getProvider(rpcURL));
 }
 
-type L2Protocol = "arbitrum" | "optimism";
-export type Network = "local" | "testnet" | "mainnet";
-
-export interface ChainNetwork {
-  signer: Wallet;
-  networkName: string;
-  network: HttpNetworkConfig;
-  provider: JsonRpcProvider;
-}
-
-export interface MultiChainNetwork {
-  l1: ChainNetwork;
-  l2: ChainNetwork;
-}
-
-function getMultichainNetwork(
-  l2Protocol: L2Protocol,
-  network: Network = env.network(),
-  signerPK: string = env.privateKey()
-): MultiChainNetwork {
-  const networks = {
-    arbitrum: {
-      local: ["local", "local_arbitrum"],
-      testnet: ["rinkeby", "rinkeby_arbitrum"],
-      mainnet: ["mainnet", "mainnet_arbitrum"],
-    },
-    optimism: {
-      local: ["local", "local_optimism"],
-      testnet: ["kovan", "kovan_optimism"],
-      mainnet: ["mainnet", "mainnet_optimism"],
-    },
-  };
-
-  const [l1NetworkName, l2NetworkName] = networks[l2Protocol][network];
-  const l1Network = getNetworkConfig(l1NetworkName, hre);
-  const l2Network = getNetworkConfig(l2NetworkName, hre);
-  const l1Provider = getProvider(l1Network.url);
-  const l2Provider = getProvider(l2Network.url);
+export function multichain(
+  chainNames: ChainNameShort[],
+  networkName: NetworkName
+) {
   return {
-    l1: {
-      network: l1Network,
-      provider: l1Provider,
-      networkName: l1NetworkName,
-      signer: new Wallet(signerPK, l1Provider),
+    getNetworks(options: { forking: boolean }) {
+      const hardhatNetworkNames = options.forking
+        ? HARDHAT_NETWORK_NAMES_FORK
+        : HARDHAT_NETWORK_NAMES;
+
+      const res: HttpNetworkConfig[] = [];
+      for (const chainName of chainNames) {
+        const hardhatNetworkName = hardhatNetworkNames[chainName][networkName];
+        if (hardhatNetworkName === "NOT_DEPLOYED") {
+          throw new Error(
+            `Chain "${chainName}" doesn't support "${hardhatNetworkName}" network`
+          );
+        }
+        res.push(getConfig(hardhatNetworkName, hre));
+      }
+      return res;
     },
-    l2: {
-      network: l2Network,
-      provider: l2Provider,
-      networkName: l2NetworkName,
-      signer: new Wallet(signerPK, l2Provider),
+    getProviders(options: { forking: boolean }) {
+      return this.getNetworks(options).map((network) =>
+        getProvider(network.url)
+      );
+    },
+    getSigners(privateKey: string, options: { forking: boolean }) {
+      return this.getProviders(options).map(
+        (provider) => new Wallet(privateKey, provider)
+      );
     },
   };
 }
 
 export default {
+  multichain,
+  getConfig,
+  getProvider,
   loadAccount,
   getDeployer,
-  getConfig: getNetworkConfig,
-  getMultichainNetwork,
   predictAddresses,
 };

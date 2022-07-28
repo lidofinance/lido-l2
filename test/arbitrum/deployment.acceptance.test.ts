@@ -1,16 +1,12 @@
 import { assert } from "chai";
 import {
-  ERC20Bridged__factory,
   IERC20Metadata__factory,
-  L1ERC20TokenGateway__factory,
-  L2ERC20TokenGateway__factory,
   OssifiableProxy__factory,
 } from "../../typechain";
 import arbitrum from "../../utils/arbitrum";
 import { BridgingManagerRole } from "../../utils/bridging-management";
 import deployment from "../../utils/deployment";
 import env from "../../utils/env";
-import network from "../../utils/network";
 import { getRoleHolders, scenario } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 
@@ -21,6 +17,7 @@ scenario("Arbitrum Gateway :: deployment acceptance test", ctxFactory)
       ctx.deployment.l1.proxyAdmin
     );
   })
+
   .step("L1 Bridge :: bridge admin", async (ctx) => {
     const currentAdmins = await getRoleHolders(
       ctx.l1ERC20TokenGateway,
@@ -29,19 +26,22 @@ scenario("Arbitrum Gateway :: deployment acceptance test", ctxFactory)
     assert.equal(currentAdmins.size, 1);
     assert.isTrue(currentAdmins.has(ctx.deployment.l1.bridgeAdmin));
 
-    await assert.isTrue(
+    assert.isTrue(
       await ctx.l1ERC20TokenGateway.hasRole(
         BridgingManagerRole.DEFAULT_ADMIN_ROLE.hash,
         ctx.deployment.l1.bridgeAdmin
       )
     );
   })
+
   .step("L1 bridge :: router", async (ctx) => {
-    assert.equal(await ctx.l1ERC20TokenGateway.router(), ctx.l1Router);
+    assert.equal(await ctx.l1ERC20TokenGateway.router(), ctx.l1Router.address);
   })
+
   .step("L1 bridge :: L1 token", async (ctx) => {
     assert.equal(await ctx.l1ERC20TokenGateway.l1Token(), ctx.deployment.token);
   })
+
   .step("L1 bridge :: L2 token", async (ctx) => {
     assert.equal(
       await ctx.l1ERC20TokenGateway.l2Token(),
@@ -81,7 +81,7 @@ scenario("Arbitrum Gateway :: deployment acceptance test", ctxFactory)
   .step("L1 Bridge :: deposits disablers", async (ctx) => {
     const actualDepositsDisablers = await getRoleHolders(
       ctx.l1ERC20TokenGateway,
-      BridgingManagerRole.DEPOSITS_ENABLER_ROLE.hash
+      BridgingManagerRole.DEPOSITS_DISABLER_ROLE.hash
     );
     const expectedDepositsDisablers = ctx.deployment.l1.depositsDisablers || [];
 
@@ -150,7 +150,7 @@ scenario("Arbitrum Gateway :: deployment acceptance test", ctxFactory)
     );
   })
   .step("L2 bridge :: router", async (ctx) => {
-    assert.equal(await ctx.l2ERC20TokenGateway.router(), ctx.l2Router);
+    assert.equal(await ctx.l2ERC20TokenGateway.router(), ctx.l2Router.address);
   })
   .step("L2 bridge :: L1 token", async (ctx) => {
     assert.equal(await ctx.l2ERC20TokenGateway.l1Token(), ctx.deployment.token);
@@ -194,7 +194,7 @@ scenario("Arbitrum Gateway :: deployment acceptance test", ctxFactory)
   .step("L2 Bridge :: deposits disablers", async (ctx) => {
     const actualDepositsDisablers = await getRoleHolders(
       ctx.l2ERC20TokenGateway,
-      BridgingManagerRole.DEPOSITS_ENABLER_ROLE.hash
+      BridgingManagerRole.DEPOSITS_DISABLER_ROLE.hash
     );
     const expectedDepositsDisablers = ctx.deployment.l2.depositsDisablers || [];
 
@@ -244,7 +244,7 @@ scenario("Arbitrum Gateway :: deployment acceptance test", ctxFactory)
   .step("L2 Token :: proxy admin", async (ctx) => {
     assert.equal(
       await ctx.erc20BridgedProxy.proxy__getAdmin(),
-      ctx.deployment.l1.proxyAdmin
+      ctx.deployment.l2.proxyAdmin
     );
   })
   .step("L2 Token :: name", async (ctx) => {
@@ -269,62 +269,45 @@ scenario("Arbitrum Gateway :: deployment acceptance test", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const networkConfig = network.getMultichainNetwork("arbitrum");
+  const networkName = env.network();
   const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
+  const testingSetup = await arbitrum
+    .testing(networkName)
+    .getAcceptanceTestSetup();
 
-  const l1ERC20TokenBridge = env.address("L1_ERC20_TOKEN_BRIDGE");
-  const l2ERC20TokenBridge = env.address("L2_ERC20_TOKEN_BRIDGE");
-  const erc20Bridged = env.address("ERC20_BRIDGED");
-  const l1Token = IERC20Metadata__factory.connect(
+  const l1TokenMeta = IERC20Metadata__factory.connect(
     deploymentConfig.token,
-    networkConfig.l1.provider
+    testingSetup.l1Provider
   );
   const [name, symbol, decimals] = await Promise.all([
-    l1Token.name(),
-    l1Token.symbol(),
-    l1Token.decimals(),
+    l1TokenMeta.name(),
+    l1TokenMeta.symbol(),
+    l1TokenMeta.decimals(),
   ]);
 
-  const l1Router = arbitrum.addresses.getL1(
-    await networkConfig.l1.signer.getChainId()
-  ).l1GatewayRouter;
-  const l2Router = arbitrum.addresses.getL2(
-    await networkConfig.l2.signer.getChainId()
-  ).l2GatewayRouter;
-
   return {
-    network: networkConfig,
     deployment: deploymentConfig,
-    l1Router,
-    l2Router,
+    l1Router: testingSetup.l1GatewayRouter,
+    l2Router: testingSetup.l2GatewayRouter,
     l2TokenInfo: {
       name,
       symbol,
       decimals,
     },
-    l1ERC20TokenGateway: L1ERC20TokenGateway__factory.connect(
-      l1ERC20TokenBridge,
-      networkConfig.l1.provider
-    ),
+    l1ERC20TokenGateway: testingSetup.l1ERC20TokenGateway,
     l1ERC20TokenGatewayProxy: OssifiableProxy__factory.connect(
-      l1ERC20TokenBridge,
-      networkConfig.l1.provider
+      testingSetup.l1ERC20TokenGateway.address,
+      testingSetup.l1Provider
     ),
-    l2ERC20TokenGateway: L2ERC20TokenGateway__factory.connect(
-      l2ERC20TokenBridge,
-      networkConfig.l2.provider
-    ),
+    l2ERC20TokenGateway: testingSetup.l2ERC20TokenGateway,
     l2ERC20TokenGatewayProxy: OssifiableProxy__factory.connect(
-      l2ERC20TokenBridge,
-      networkConfig.l2.provider
+      testingSetup.l2ERC20TokenGateway.address,
+      testingSetup.l2Provider
     ),
-    erc20Bridged: ERC20Bridged__factory.connect(
-      erc20Bridged,
-      networkConfig.l2.provider
-    ),
+    erc20Bridged: testingSetup.l2Token,
     erc20BridgedProxy: OssifiableProxy__factory.connect(
-      erc20Bridged,
-      networkConfig.l2.provider
+      testingSetup.l2Token.address,
+      testingSetup.l2Provider
     ),
   };
 }

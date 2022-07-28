@@ -1,35 +1,43 @@
-import { Signer } from "ethers";
-import addresses from "./addresses";
 import {
   CanonicalTransactionChain__factory,
+  CrossDomainMessengerStub__factory,
   L1CrossDomainMessenger__factory,
   L2CrossDomainMessenger__factory,
 } from "../../typechain";
+import addresses from "./addresses";
+import { CommonOptions } from "./types";
+import network, { NetworkName } from "../network";
 
-export default {
-  l1: {
-    async L1CrossDomainMessenger(signer: Signer) {
-      const chainId = await signer.getChainId();
-      return L1CrossDomainMessenger__factory.connect(
-        addresses.getL1(chainId).messenger,
-        signer
-      );
-    },
-    async CanonicalTransactionChain(signer: Signer) {
-      const chainId = await signer.getChainId();
-      return CanonicalTransactionChain__factory.connect(
-        addresses.getL1(chainId).canonicalTransactionChain,
-        signer
-      );
-    },
-  },
-  l2: {
-    async L2CrossDomainMessenger(signer: Signer) {
-      const chainId = await signer.getChainId();
-      return L2CrossDomainMessenger__factory.connect(
-        addresses.getL2(chainId).messenger,
-        signer
-      );
-    },
-  },
-};
+interface ContractsOptions extends CommonOptions {
+  forking: boolean;
+}
+
+export default function contracts(
+  networkName: NetworkName,
+  options: ContractsOptions
+) {
+  const [l1Provider, l2Provider] = network
+    .multichain(["eth", "opt"], networkName)
+    .getProviders(options);
+
+  const optAddresses = addresses(networkName, options);
+
+  return {
+    L1CrossDomainMessenger: L1CrossDomainMessenger__factory.connect(
+      optAddresses.L1CrossDomainMessenger,
+      l1Provider
+    ),
+    L1CrossDomainMessengerStub: CrossDomainMessengerStub__factory.connect(
+      optAddresses.L1CrossDomainMessenger,
+      l1Provider
+    ),
+    L2CrossDomainMessenger: L2CrossDomainMessenger__factory.connect(
+      optAddresses.L2CrossDomainMessenger,
+      l2Provider
+    ),
+    CanonicalTransactionChain: CanonicalTransactionChain__factory.connect(
+      optAddresses.CanonicalTransactionChain,
+      l1Provider
+    ),
+  };
+}
