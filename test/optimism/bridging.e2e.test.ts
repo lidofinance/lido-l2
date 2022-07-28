@@ -125,7 +125,7 @@ scenario("Optimism :: Bridging E2E test", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const networkName = env.network("NETWORK", "kovan");
+  const networkName = env.network("TESTING_OPT_NETWORK", "kovan");
   const testingSetup = await optimism.testing(networkName).getE2ETestSetup();
 
   return {

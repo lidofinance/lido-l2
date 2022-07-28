@@ -150,7 +150,7 @@ scenario("Arbitrum :: Bridge Executor integration test", ctx)
   .run();
 
 async function ctx() {
-  const networkName = env.network("NETWORK", "mainnet");
+  const networkName = env.network("TESTING_ARB_NETWORK", "mainnet");
   const [l1Provider, l2Provider] = network
     .multichain(["eth", "arb"], networkName)
     .getProviders({ forking: true });

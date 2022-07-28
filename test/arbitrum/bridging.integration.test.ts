@@ -291,7 +291,7 @@ scenario("Arbitrum :: Bridging integration test", ctx)
   .run();
 
 async function ctx() {
-  const networkName = env.network("NETWORK", "mainnet");
+  const networkName = env.network("TESTING_ARB_NETWORK", "mainnet");
   const {
     l1Provider,
     l2Provider,

@@ -14,7 +14,7 @@ import { hexDataLength } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 
 async function ctxFactory() {
-  const networkName = env.network("NETWORK", "rinkeby");
+  const networkName = env.network("TESTING_ARB_NETWORK", "rinkeby");
   const testingSetup = await arbitrum.testing(networkName).getE2ETestSetup();
 
   const l2Network = await getL2Network(testingSetup.l2Provider);

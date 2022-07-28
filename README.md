@@ -102,7 +102,7 @@ npm run optimism:test:unit
 
 ### Integration tests
 
-Before running integration tests, run the hardhat forked nodes in the standalone tabs corresponding to `NETWORK` env variable or if it's not set use `mainnet` network. Example of the commands for the `mainnet` network:
+Before running integration tests, run the hardhat forked nodes in the standalone tabs corresponding to `TESTING_ARB_NETWORK` \ `TESTING_OPT_NETWORK` env variable or if it's not set use `mainnet` network. Example of the commands for the `mainnet` network:
 
 ```bash
 # Required to run both Arbitrum and Optimism integraton tests
@@ -137,6 +137,7 @@ TESTING_USE_DEPLOYED_CONTRACTS=true
 TESTING_L1_TOKENS_HOLDER=
 
 # Addresses of the Arbitrum gateway
+TESTING_ARB_NETWORK=
 TESTING_ARB_L1_TOKEN=
 TESTING_ARB_L2_TOKEN=
 TESTING_ARB_L1_ERC20_TOKEN_GATEWAY=
@@ -147,6 +148,7 @@ TESTING_ARB_L1_GATEWAY_ROUTER=
 TESTING_ARB_L2_GATEWAY_ROUTER=
 
 # Addresses of the Optimism bridge
+TESTING_OPT_NETWORK=
 TESTING_OPT_L1_TOKEN=
 TESTING_OPT_L2_TOKEN=
 TESTING_OPT_L1_ERC20_TOKEN_BRIDGE=
@@ -181,6 +183,7 @@ Additionally, tests might be run on the deployed contracts. To do it, set the fo
 TESTING_PRIVATE_KEY=
 
 # Addresses of the Arbitrum gateway
+TESTING_ARB_NETWORK=
 TESTING_ARB_L1_TOKEN=
 TESTING_ARB_L2_TOKEN=
 TESTING_ARB_L1_ERC20_TOKEN_GATEWAY=
@@ -191,6 +194,7 @@ TESTING_ARB_L1_GATEWAY_ROUTER=
 TESTING_ARB_L2_GATEWAY_ROUTER=
 
 # Addresses of the Optimism bridge
+TESTING_OPT_NETWORK=
 TESTING_OPT_L1_TOKEN=
 TESTING_OPT_L2_TOKEN=
 TESTING_OPT_L1_ERC20_TOKEN_BRIDGE=
@@ -445,6 +449,10 @@ The array of addresses to grant `WITHDRAWALS_DISABLER_ROLE` on L2 bridge/gateway
 
 The following variables are used in the process of the Integration & E2E testing.
 
+#### `TESTING_ARB_NETWORK`
+
+Name of the network environments used for Arbitrum Integration & E2E testing. Might be one of: `mainnet`, `goerli`, `rinkeby`, `kovan`.
+
 #### `TESTING_ARB_L1_TOKEN`
 
 Address of the token to use in the Acceptance Integration & E2E (when `TESTING_USE_DEPLOYED_CONTRACTS` is set to true) testing of the bridging between Ethereum and Arbitrum networks.
@@ -480,6 +488,10 @@ Address of the L1 gateway router used in the Acceptance Integration & E2E (when 
 Address of the L2 gateway router used in the Acceptance Integration & E2E (when `TESTING_USE_DEPLOYED_CONTRACTS` is set to true) testing of the bridging between Ethereum and Arbitrum networks. If not set, will be used default Arbitrum's L2 Gateway Router
 
 > Default value: `0x57f54f87C44d816f60b92864e23b8c0897D4d81D`
+
+#### `TESTING_OPT_NETWORK`
+
+Name of the network environments used for Optimism Integration & E2E testing. Might be one of: `mainnet`, `goerli`, `rinkeby`, `kovan`.
 
 #### `TESTING_OPT_L1_TOKEN`
 

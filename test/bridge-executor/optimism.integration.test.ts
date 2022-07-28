@@ -166,7 +166,7 @@ scenario("Optimism :: Bridge Executor integration test", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const networkName = env.network("NETWORK", "mainnet");
+  const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
   const [l1Provider, l2Provider] = network
     .multichain(["eth", "opt"], networkName)
     .getProviders({ forking: true });
