@@ -3,13 +3,15 @@ import {
   Agent__factory,
   TokenManager__factory,
   GovBridgeExecutor__factory,
-  Inbox__factory,
   Greeter__factory,
 } from "../../typechain";
-import { createOptimismVoting as createDAOVoting } from "../../utils/testing/e2e";
+import {
+  sleep,
+  createOptimismVoting as createDAOVoting,
+} from "../../utils/testing/e2e";
 import env from "../../utils/env";
 import network from "../../utils/network";
-import { scenario } from "../../utils/testing";
+import optimism from "../../utils/optimism";
 
 const CONTRACTS = {
   l1: {
@@ -24,46 +26,90 @@ const CONTRACTS = {
   },
 };
 
-scenario("Optimism :: Warm up", ctxFactory)
-  .step(`Starting DAO vote: Greeter`, async (ctx) => {
-    const calldata = ctx.greeter.interface.encodeFunctionData("setMessage", [
-      "Works !",
-    ]);
-    const executorCalldata =
-      await ctx.govBridgeExecutor.interface.encodeFunctionData("queue", [
-        [ctx.greeter.address],
-        [0],
-        ["setMessage(string)"],
-        ["0x" + calldata.substring(10)],
-        [false],
-      ]);
-
-    await createDAOVoting(ctx, executorCalldata);
-  })
-
-  .run();
-
-async function ctxFactory() {
+async function main() {
   const ethOptNetwork = network.multichain(["eth", "opt"], "mainnet");
 
-  const [l1LDOHolder, l2LDOHolder] = ethOptNetwork.getSigners(
-    env.string("TESTING_KOVAN_LDO_HOLDER_PRIVATE_KEY"),
-    { forking: false }
+  const [, arbProvider] = ethOptNetwork.getProviders({
+    forking: env.forking(),
+  });
+
+  const [l1LDOHolder] = ethOptNetwork.getSigners(
+    env.string("TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY"),
+    { forking: env.forking() }
   );
 
-  return {
-    l1LDOHolder,
-    inbox: Inbox__factory.connect(CONTRACTS.l1.inbox, l1LDOHolder),
-    voting: Voting__factory.connect(CONTRACTS.l1.aragonVoting, l1LDOHolder),
-    agent: Agent__factory.connect(CONTRACTS.l1.agent, l1LDOHolder),
-    tokenMnanager: TokenManager__factory.connect(
-      CONTRACTS.l1.tokenManager,
-      l1LDOHolder
-    ),
-    govBridgeExecutor: GovBridgeExecutor__factory.connect(
-      CONTRACTS.l2.govBridgeExecutor,
-      l2LDOHolder
-    ),
-    greeter: Greeter__factory.connect(CONTRACTS.l2.greeter, l1LDOHolder),
-  };
+  console.log(`Tester: ${l1LDOHolder.address}`);
+  console.log(
+    `Balance: ${await l1LDOHolder.getBalance().then((b) => b.toString())}`
+  );
+
+  const govBridgeExecutor = GovBridgeExecutor__factory.connect(
+    CONTRACTS.l2.govBridgeExecutor,
+    arbProvider
+  );
+
+  const voting = Voting__factory.connect(
+    CONTRACTS.l1.aragonVoting,
+    l1LDOHolder
+  );
+  const agent = Agent__factory.connect(CONTRACTS.l1.agent, l1LDOHolder);
+  const tokenMnanager = TokenManager__factory.connect(
+    CONTRACTS.l1.tokenManager,
+    l1LDOHolder
+  );
+
+  const greeter = Greeter__factory.connect(CONTRACTS.l2.greeter, arbProvider);
+
+  const calldata = greeter.interface.encodeFunctionData("setMessage", [
+    "Works !",
+  ]);
+  const executorCalldata = await govBridgeExecutor.interface.encodeFunctionData(
+    "queue",
+    [
+      [greeter.address],
+      [0],
+      ["setMessage(string)"],
+      ["0x" + calldata.substring(10)],
+      [false],
+    ]
+  );
+
+  const optContracts = optimism.contracts("mainnet", { forking: false });
+
+  await createDAOVoting(
+    {
+      agent,
+      voting,
+      tokenMnanager,
+      govBridgeExecutor,
+      l1CrossDomainMessenger: optContracts.L1CrossDomainMessenger,
+      l2CrossDomainMessenger: optContracts.L2CrossDomainMessenger,
+    },
+    executorCalldata
+  );
+
+  const votesLength = await voting.votesLength();
+  const targetVote = votesLength.toNumber() - 1;
+  console.log(`Vote ${targetVote} successfully created!`);
+
+  const voteTx = await voting.vote(targetVote, true, true);
+  await voteTx.wait();
+
+  console.log(`Successfully voted 'yay'!`);
+
+  console.log(await voting.getVote(targetVote));
+
+  while (!(await voting.canExecute(targetVote))) {
+    await sleep(5000);
+    console.log("Waiting vote ready to execute...");
+  }
+
+  const enactTx = await voting.executeVote(targetVote);
+  await enactTx.wait();
+  console.log("Done!");
 }
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

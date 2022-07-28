@@ -9,7 +9,11 @@ import {
 import { createArbitrumVoting as createDAOVoting } from "../../utils/testing/e2e";
 import env from "../../utils/env";
 import network from "../../utils/network";
-import { scenario } from "../../utils/testing";
+import { L1ToL2MessageGasEstimator } from "@arbitrum/sdk/dist/lib/message/L1ToL2MessageGasEstimator";
+import { ethers } from "hardhat";
+import { hexDataLength } from "ethers/lib/utils";
+import { BigNumber } from "ethers";
+import { wei } from "../../utils/wei";
 
 const CONTRACTS = {
   l1: {
@@ -24,46 +28,113 @@ const CONTRACTS = {
   },
 };
 
-scenario("Arbitrum :: Warm up", ctxFactory)
-  .step(`Starting DAO vote: Greeter`, async (ctx) => {
-    const calldata = ctx.greeter.interface.encodeFunctionData("setMessage", [
-      "Works !",
-    ]);
-    const executorCalldata =
-      await ctx.govBridgeExecutor.interface.encodeFunctionData("queue", [
-        [ctx.greeter.address],
-        [0],
-        ["setMessage(string)"],
-        ["0x" + calldata.substring(10)],
-        [false],
-      ]);
-
-    await createDAOVoting(ctx, executorCalldata);
-  })
-
-  .run();
-
-async function ctxFactory() {
+async function main() {
   const ethArbNetwork = network.multichain(["eth", "arb"], "mainnet");
+
+  const [ethProvider, arbProvider] = ethArbNetwork.getProviders({
+    forking: false,
+  });
+  const [, arbRunner] = ethArbNetwork.getSigners(env.privateKey(), {
+    forking: false,
+  });
 
   const [l1LDOHolder, l2LDOHolder] = ethArbNetwork.getSigners(
     env.string("TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY"),
     { forking: false }
   );
 
-  return {
-    l1LDOHolder,
-    inbox: Inbox__factory.connect(CONTRACTS.l1.inbox, l1LDOHolder),
-    voting: Voting__factory.connect(CONTRACTS.l1.aragonVoting, l1LDOHolder),
-    agent: Agent__factory.connect(CONTRACTS.l1.agent, l1LDOHolder),
-    tokenMnanager: TokenManager__factory.connect(
-      CONTRACTS.l1.tokenManager,
-      l1LDOHolder
-    ),
-    govBridgeExecutor: GovBridgeExecutor__factory.connect(
-      CONTRACTS.l2.govBridgeExecutor,
-      l2LDOHolder
-    ),
-    greeter: Greeter__factory.connect(CONTRACTS.l2.greeter, l1LDOHolder),
-  };
+  const govBridgeExecutor = GovBridgeExecutor__factory.connect(
+    CONTRACTS.l2.govBridgeExecutor,
+    arbProvider
+  );
+
+  const inbox = Inbox__factory.connect(CONTRACTS.l1.inbox, l1LDOHolder);
+  const voting = Voting__factory.connect(
+    CONTRACTS.l1.aragonVoting,
+    l1LDOHolder
+  );
+  const agent = Agent__factory.connect(CONTRACTS.l1.agent, l1LDOHolder);
+  const tokenMnanager = TokenManager__factory.connect(
+    CONTRACTS.l1.tokenManager,
+    l1LDOHolder
+  );
+
+  const greeter = Greeter__factory.connect(CONTRACTS.l2.greeter, arbProvider);
+
+  const calldata = greeter.interface.encodeFunctionData("setMessage", [
+    "Works !",
+  ]);
+
+  const l1ToL2MessageGasEstimator = new L1ToL2MessageGasEstimator(arbProvider);
+
+  const submissionPriceWeiExact =
+    await l1ToL2MessageGasEstimator.estimateSubmissionFee(
+      ethProvider,
+      await ethProvider.getGasPrice(),
+      hexDataLength(calldata)
+    );
+
+  console.log(calldata);
+  console.log(
+    `Current retryable base submission price: ${submissionPriceWeiExact.toString()}`
+  );
+  const submissionPriceWeiWithExtra = submissionPriceWeiExact.mul(5);
+
+  const gasPriceBid = await arbProvider.getGasPrice();
+  console.log(`L2 gas price: ${gasPriceBid.toString()}`);
+
+  const maxGas =
+    await l1ToL2MessageGasEstimator.estimateRetryableTicketGasLimit(
+      govBridgeExecutor.address,
+      greeter.address,
+      BigNumber.from(0),
+      arbRunner.address,
+      arbRunner.address,
+      calldata,
+      ethers.utils.parseEther("1"),
+      submissionPriceWeiWithExtra,
+      wei.toBigNumber(wei`1_000_000 wei`),
+      gasPriceBid
+    );
+
+  console.log(`Max gas: ${maxGas.toString()}`);
+
+  const executorCalldata = await govBridgeExecutor.interface.encodeFunctionData(
+    "queue",
+    [
+      [greeter.address],
+      [0],
+      ["setMessage(string)"],
+      ["0x" + calldata.substring(10)],
+      [false],
+    ]
+  );
+
+  const callValue = submissionPriceWeiWithExtra.add(gasPriceBid.mul(maxGas));
+  console.log(
+    `Sending greeting to L2 with ${callValue.toString()} callValue for L2 fees:`
+  );
+  await createDAOVoting(
+    {
+      l1Tester: l1LDOHolder,
+      l2Tester: l2LDOHolder,
+      govBridgeExecutor,
+      inbox,
+      agent,
+      tokenMnanager,
+      voting,
+    },
+    executorCalldata,
+    {
+      maxGas,
+      gasPriceBid,
+      maxSubmissionCost: submissionPriceWeiWithExtra,
+      callValue,
+    }
+  );
 }
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

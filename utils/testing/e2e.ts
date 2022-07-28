@@ -64,9 +64,7 @@ export const createOptimismVoting = async (
     abiCoder.encode(["bytes", "string"], [agentEvmScript, ""]).substring(2);
   const votingEvmScript = encodeEVMScript(ctx.voting.address, newVoteCalldata);
 
-  const newVotingTx = await ctx.tokenMnanager.forward(votingEvmScript, {
-    gasLimit: 5000000,
-  });
+  const newVotingTx = await ctx.tokenMnanager.forward(votingEvmScript);
 
   await newVotingTx.wait();
 };
@@ -88,25 +86,26 @@ export const encodeEVMScript = (
 
 export const createArbitrumVoting = async (
   ctx: any,
-  executorCalldata: string
+  executorCalldata: string,
+  options: Record<string, any> = {}
 ) => {
   const messageCalldata = await ctx.inbox.interface.encodeFunctionData(
     "createRetryableTicket",
     [
       ctx.govBridgeExecutor.address,
       0,
-      wei`0.01 ether`,
+      options.maxSubmissionCost || wei`0.01 ether`,
       ctx.l2Tester.address,
       ctx.l2Tester.address,
-      3000000,
-      5000000000,
+      options.maxGas || 3000000,
+      options.gasPriceBid || 5000000000,
       executorCalldata,
     ]
   );
 
   const agentCalldata = ctx.agent.interface.encodeFunctionData("execute", [
     ctx.inbox.address,
-    wei`0.01 ether`,
+    options.callValue || wei`0.01 ether`,
     messageCalldata,
   ]);
   const agentEvmScript = encodeEVMScript(ctx.agent.address, agentCalldata);
@@ -115,9 +114,7 @@ export const createArbitrumVoting = async (
     "0xd5db2c80" +
     abiCoder.encode(["bytes", "string"], [agentEvmScript, ""]).substring(2);
   const votingEvmScript = encodeEVMScript(ctx.voting.address, newVoteCalldata);
-  const newVotingTx = await ctx.tokenMnanager.forward(votingEvmScript, {
-    gasLimit: 5000000,
-  });
+  const newVotingTx = await ctx.tokenMnanager.forward(votingEvmScript);
 
   await newVotingTx.wait();
 };
