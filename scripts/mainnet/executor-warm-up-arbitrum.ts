@@ -6,6 +6,7 @@ import {
   Inbox__factory,
   Greeter__factory,
 } from "../../typechain";
+import { L1TransactionReceipt, L1ToL2MessageStatus } from "@arbitrum/sdk";
 import { createArbitrumVoting as createDAOVoting } from "../../utils/testing/e2e";
 import env from "../../utils/env";
 import network from "../../utils/network";
@@ -137,11 +138,18 @@ async function main() {
   console.log(`Vote ${targetVote} successfully created!`);
 
   const voteTx = await voting.vote(targetVote, true, true);
-  await voteTx.wait();
+  const ticketTx = await voteTx.wait();
 
   console.log(`Successfully voted 'yay'!`);
 
-  console.log(await voting.getVote(targetVote));
+  const l1TxReceipt = new L1TransactionReceipt(ticketTx);
+  const message = await l1TxReceipt.getL1ToL2Message(l2LDOHolder);
+
+  const { status } = await message.waitForStatus();
+  if (status === L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2) {
+    const response = await message.redeem();
+    await response.wait();
+  }
 
   console.log("Done!");
 }
