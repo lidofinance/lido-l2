@@ -16,7 +16,7 @@ async function main() {
   const ethOptNetwork = network.multichain(["eth", "opt"], networkName);
 
   const [l1LDOHolder] = ethOptNetwork.getSigners(
-    env.string("TESTING_KOVAN_LDO_HOLDER_PRIVATE_KEY"),
+    env.string("TESTING_OPT_LDO_HOLDER_PRIVATE_KEY"),
     { forking: isForking }
   );
   const [, optRunner] = ethOptNetwork.getSigners(env.privateKey(), {

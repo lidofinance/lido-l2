@@ -141,7 +141,7 @@ async function ctxFactory() {
   );
 
   const [l1LDOHolder] = ethOptNetwork.getSigners(
-    env.string("TESTING_KOVAN_LDO_HOLDER_PRIVATE_KEY"),
+    env.string("TESTING_OPT_LDO_HOLDER_PRIVATE_KEY"),
     { forking: false }
   );
 

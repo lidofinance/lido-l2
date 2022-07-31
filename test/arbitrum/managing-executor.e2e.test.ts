@@ -1,12 +1,7 @@
-import {
-  Erc20Bridger,
-  getL2Network,
-  L1TransactionReceipt,
-  L1ToL2MessageStatus,
-} from "@arbitrum/sdk";
 import { assert } from "chai";
 import { ContractReceipt } from "ethers";
 import { L2ERC20Gateway__factory } from "arb-ts";
+import { Erc20Bridger, getL2Network, L1ToL2MessageStatus } from "@arbitrum/sdk";
 
 import {
   ERC20Bridged__factory,
@@ -20,13 +15,14 @@ import {
 } from "../../typechain";
 import {
   E2E_TEST_CONTRACTS_ARBITRUM as E2E_TEST_CONTRACTS,
-  createArbitrumVoting as createDAOVoting,
   sleep,
 } from "../../utils/testing/e2e";
 import env from "../../utils/env";
 import network from "../../utils/network";
 import { wei } from "../../utils/wei";
 import { scenario } from "../../utils/testing";
+import aragon from "../../utils/aragon";
+import arbitrum from "../../utils/arbitrum";
 
 let oldGuardian: string;
 let newGuardian: string;
@@ -70,33 +66,50 @@ scenario("Arbitrum :: Update guardian", ctxFactory)
         [false],
       ]);
 
-    await createDAOVoting(ctx, executorCalldata);
+    const arbAddresses = arbitrum.addresses("rinkeby");
+
+    const { calldata, callvalue } =
+      await ctx.messaging.prepareRetryableTicketTx({
+        sender: ctx.lidoAragonDAO.agent.address,
+        recipient: ctx.govBridgeExecutor.address,
+        calldata: executorCalldata,
+        refundAddress: ctx.l2Tester.address,
+      });
+
+    const tx = await ctx.lidoAragonDAO.createVote(
+      ctx.l1LDOHolder,
+      "E2E Test Voting",
+      {
+        address: ctx.lidoAragonDAO.agent.address,
+        signature: "execute(address,uint256,bytes)",
+        decodedCallData: [arbAddresses.Inbox, callvalue, calldata],
+      }
+    );
+
+    await tx.wait();
   })
 
-  .step("Enacting Vote", async ({ voting }) => {
+  .step("Enacting Vote", async ({ l1LDOHolder, voting, lidoAragonDAO }) => {
     const votesLength = await voting.votesLength();
-    const targetVote = votesLength.toNumber() - 1;
 
-    const voteTx = await voting.vote(targetVote, true, true);
-    await voteTx.wait();
+    const tx = await lidoAragonDAO.voteAndExecute(
+      l1LDOHolder,
+      votesLength.toNumber() - 1
+    );
 
-    while ((await voting.getVotePhase(targetVote)) < 2) {
-      await sleep(5000);
-    }
-
-    const enactTx = await voting.executeVote(targetVote);
-    ticketTx = await enactTx.wait();
+    ticketTx = await tx.wait();
   })
 
-  .step("Waiting for L2 tx", async ({ l2Tester }) => {
-    const l1TxReceipt = new L1TransactionReceipt(ticketTx);
-    const message = await l1TxReceipt.getL1ToL2Message(l2Tester);
+  .step("Waiting for L2 tx", async ({ messaging }) => {
+    const { status } = await messaging.waitForL2Message(
+      ticketTx.transactionHash
+    );
 
-    const { status } = await message.waitForStatus();
-    if (status === L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2) {
-      const response = await message.redeem();
-      await response.wait();
-    }
+    assert.equal(
+      status,
+      L1ToL2MessageStatus.REDEEMED,
+      `L2 retryable txn failed with status ${L1ToL2MessageStatus[status]}`
+    );
   })
 
   .step("Execute queued task", async ({ govBridgeExecutor, l2Tester }) => {
@@ -139,7 +152,7 @@ async function ctxFactory() {
   );
 
   const [l1LDOHolder] = ethArbNetwork.getSigners(
-    env.string("TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY"),
+    env.string("TESTING_ARB_LDO_HOLDER_PRIVATE_KEY"),
     { forking: false }
   );
 
@@ -149,7 +162,18 @@ async function ctxFactory() {
   l2Network.tokenBridge.l1GatewayRouter = E2E_TEST_CONTRACTS.l1.l1GatewayRouter;
   l2Network.tokenBridge.l2GatewayRouter = E2E_TEST_CONTRACTS.l2.l2GatewayRouter;
 
+  const lidoAragonDAO = aragon(
+    {
+      agent: "0x12869c3349f993c5c20bab9482b7d16aff0ae2f9",
+      voting: "0x04F9590D3EEC8e619D7714ffeF664aD3fd53b880",
+      tokenManager: "0x1ee7e87486f9ae6e27a5e58310a5319394360cf0",
+    },
+    l1Provider
+  );
+
   return {
+    messaging: arbitrum.messaging("rinkeby", { forking: false }),
+    lidoAragonDAO,
     gasAmount: wei`0.1 ether`,
     l1Tester,
     l2Tester,

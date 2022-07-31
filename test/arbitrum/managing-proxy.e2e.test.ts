@@ -204,7 +204,7 @@ async function ctxFactory() {
   );
 
   const [l1LDOHolder] = ethArbNetwork.getSigners(
-    env.string("TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY"),
+    env.string("TESTING_ARB_LDO_HOLDER_PRIVATE_KEY"),
     { forking: false }
   );
 

@@ -40,7 +40,7 @@ async function main() {
   });
 
   const [l1LDOHolder, l2LDOHolder] = ethArbNetwork.getSigners(
-    env.string("TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY"),
+    env.string("TESTING_ARB_LDO_HOLDER_PRIVATE_KEY"),
     { forking: false }
   );
 

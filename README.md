@@ -160,8 +160,8 @@ TESTING_OPT_L2_ERC20_TOKEN_BRIDGE=
 E2E tests run on the real contracts deployed on the testnet networks. To run such tests next env variables must be set in the `.env` file.
 
 [`TESTING_PRIVATE_KEY`](#TESTING_PRIVATE_KEY)
-[`TESTING_KOVAN_LDO_HOLDER_PRIVATE_KEY`](#TESTING_KOVAN_LDO_HOLDER_PRIVATE_KEY)
-[`TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY`](#TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY)
+[`TESTING_OPT_LDO_HOLDER_PRIVATE_KEY`](#TESTING_OPT_LDO_HOLDER_PRIVATE_KEY)
+[`TESTING_ARB_LDO_HOLDER_PRIVATE_KEY`](#TESTING_ARB_LDO_HOLDER_PRIVATE_KEY)
 
 To run E2E tests use the following commands:
 
@@ -539,10 +539,10 @@ The private key from the address which holds:
 
 The test Ether might be retrived via [Paradigm Faucet](https://faucet.paradigm.xyz/).
 
-#### `TESTING_KOVAN_LDO_HOLDER_PRIVATE_KEY`
+#### `TESTING_OPT_LDO_HOLDER_PRIVATE_KEY`
 
 The private key from the address which holds 50+% TLDO
 
-#### `TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY`
+#### `TESTING_ARB_LDO_HOLDER_PRIVATE_KEY`
 
 The private key from the address which holds 50+% TLDO
