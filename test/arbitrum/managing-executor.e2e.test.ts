@@ -1,18 +1,8 @@
 import { assert } from "chai";
 import { ContractReceipt } from "ethers";
-import { L2ERC20Gateway__factory } from "arb-ts";
-import { Erc20Bridger, getL2Network, L1ToL2MessageStatus } from "@arbitrum/sdk";
+import { L1ToL2MessageStatus } from "@arbitrum/sdk";
 
-import {
-  ERC20Bridged__factory,
-  ERC20Mintable__factory,
-  L1ERC20TokenGateway__factory,
-  Voting__factory,
-  Agent__factory,
-  TokenManager__factory,
-  GovBridgeExecutor__factory,
-  Inbox__factory,
-} from "../../typechain";
+import { GovBridgeExecutor__factory } from "../../typechain";
 import {
   E2E_TEST_CONTRACTS_ARBITRUM as E2E_TEST_CONTRACTS,
   sleep,
@@ -21,8 +11,8 @@ import env from "../../utils/env";
 import network from "../../utils/network";
 import { wei } from "../../utils/wei";
 import { scenario } from "../../utils/testing";
-import aragon from "../../utils/aragon";
 import arbitrum from "../../utils/arbitrum";
+import lido from "../../utils/lido";
 
 let oldGuardian: string;
 let newGuardian: string;
@@ -39,8 +29,11 @@ scenario("Arbitrum :: Update guardian", ctxFactory)
 
   .step(
     "L2 Agent has enought ETH",
-    async ({ l1Provider, agent, gasAmount }) => {
-      assert.gte(await l1Provider.getBalance(agent.address), gasAmount);
+    async ({ l1Provider, lidoAragonDAO, gasAmount }) => {
+      assert.gte(
+        await l1Provider.getBalance(lidoAragonDAO.agent.address),
+        gasAmount
+      );
     }
   )
 
@@ -89,8 +82,8 @@ scenario("Arbitrum :: Update guardian", ctxFactory)
     await tx.wait();
   })
 
-  .step("Enacting Vote", async ({ l1LDOHolder, voting, lidoAragonDAO }) => {
-    const votesLength = await voting.votesLength();
+  .step("Enacting Vote", async ({ l1LDOHolder, lidoAragonDAO }) => {
+    const votesLength = await lidoAragonDAO.voting.votesLength();
 
     const tx = await lidoAragonDAO.voteAndExecute(
       l1LDOHolder,
@@ -143,10 +136,10 @@ scenario("Arbitrum :: Update guardian", ctxFactory)
 async function ctxFactory() {
   const ethArbNetwork = network.multichain(["eth", "arb"], "rinkeby");
 
-  const [l1Provider, l2Provider] = ethArbNetwork.getProviders({
+  const [l1Provider] = ethArbNetwork.getProviders({
     forking: false,
   });
-  const [l1Tester, l2Tester] = ethArbNetwork.getSigners(
+  const [, l2Tester] = ethArbNetwork.getSigners(
     env.string("TESTING_PRIVATE_KEY"),
     { forking: false }
   );
@@ -156,67 +149,16 @@ async function ctxFactory() {
     { forking: false }
   );
 
-  const l2Network = await getL2Network(l2Provider);
-
-  // replace gateway router addresses with test
-  l2Network.tokenBridge.l1GatewayRouter = E2E_TEST_CONTRACTS.l1.l1GatewayRouter;
-  l2Network.tokenBridge.l2GatewayRouter = E2E_TEST_CONTRACTS.l2.l2GatewayRouter;
-
-  const lidoAragonDAO = aragon(
-    {
-      agent: "0x12869c3349f993c5c20bab9482b7d16aff0ae2f9",
-      voting: "0x04F9590D3EEC8e619D7714ffeF664aD3fd53b880",
-      tokenManager: "0x1ee7e87486f9ae6e27a5e58310a5319394360cf0",
-    },
-    l1Provider
-  );
-
   return {
+    lidoAragonDAO: lido("rinkeby", l1Provider),
     messaging: arbitrum.messaging("rinkeby", { forking: false }),
-    lidoAragonDAO,
     gasAmount: wei`0.1 ether`,
-    l1Tester,
     l2Tester,
-    l1LDOHolder,
     l1Provider,
-    l2Provider,
-    l1Token: ERC20Mintable__factory.connect(
-      E2E_TEST_CONTRACTS.l1.l1Token,
-      l1Tester
-    ),
-    l2Token: ERC20Bridged__factory.connect(
-      E2E_TEST_CONTRACTS.l2.l2Token,
-      l2Tester
-    ),
-    l1ERC20TokenGateway: L1ERC20TokenGateway__factory.connect(
-      E2E_TEST_CONTRACTS.l1.l1ERC20TokenGateway,
-      l1Tester
-    ),
-    l2ERC20TokenGateway: L2ERC20Gateway__factory.connect(
-      E2E_TEST_CONTRACTS.l2.l2ERC20TokenGateway,
-      l2Tester
-    ),
-    inbox: Inbox__factory.connect(E2E_TEST_CONTRACTS.l1.inbox, l1Tester),
-    voting: Voting__factory.connect(
-      E2E_TEST_CONTRACTS.l1.aragonVoting,
-      l1LDOHolder
-    ),
-    agent: Agent__factory.connect(E2E_TEST_CONTRACTS.l1.agent, l1LDOHolder),
-    tokenMnanager: TokenManager__factory.connect(
-      E2E_TEST_CONTRACTS.l1.tokenManager,
-      l1LDOHolder
-    ),
+    l1LDOHolder,
     govBridgeExecutor: GovBridgeExecutor__factory.connect(
       E2E_TEST_CONTRACTS.l2.govBridgeExecutor,
       l2Tester
     ),
-    l1LDOToken: ERC20Mintable__factory.connect(
-      E2E_TEST_CONTRACTS.l1.l1LDOToken,
-      l1LDOHolder
-    ),
-    l2Network,
-    erc20Bridge: new Erc20Bridger(l2Network),
-    depositAmount: wei`0.025 ether`,
-    withdrawalAmount: wei`0.025 ether`,
   };
 }
