@@ -309,6 +309,14 @@ Address of the RPC node for **Mainnet** Optimism network.
 
 > Default value: `https://mainnet.optimism.io`
 
+#### `MAINNET_RPC`
+
+This variable is required for @arbitrum/sdk library when it works on Nitro
+
+#### `RINKEBY_RPC`
+
+This variable is required for @arbitrum/sdk library when it works on Nitro
+
 ### Etherscan
 
 Below variables are required for successfull verification of the contracts on block explorer for certain networks.
