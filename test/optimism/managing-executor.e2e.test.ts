@@ -1,27 +1,20 @@
 import { assert } from "chai";
 import { TransactionResponse } from "@ethersproject/providers";
-import { CrossChainMessenger, MessageStatus } from "@eth-optimism/sdk";
 
 import {
-  ERC20Bridged__factory,
-  ERC20Mintable__factory,
-  L1ERC20TokenBridge__factory,
   L2ERC20TokenBridge__factory,
   GovBridgeExecutor__factory,
-  Voting__factory,
-  Agent__factory,
-  TokenManager__factory,
-  CrossDomainMessanger__factory,
 } from "../../typechain";
 import {
   E2E_TEST_CONTRACTS_OPTIMISM as E2E_TEST_CONTRACTS,
-  createOptimismVoting as createDAOVoting,
   sleep,
 } from "../../utils/testing/e2e";
 import env from "../../utils/env";
 import { wei } from "../../utils/wei";
 import network from "../../utils/network";
 import { scenario } from "../../utils/testing";
+import lido from "../../utils/lido";
+import optimism from "../../utils/optimism";
 
 let messageTx: TransactionResponse;
 let oldGuardian: string;
@@ -54,35 +47,45 @@ scenario("Optimism :: AAVE governance crosschain bridge management", ctxFactory)
         [false],
       ]);
 
-    await createDAOVoting(ctx, executorCalldata);
+    const optAddresses = optimism.addresses("kovan");
+
+    const { calldata, callvalue } = await ctx.messaging.prepareL2Message({
+      sender: ctx.lidoAragonDAO.agent.address,
+      recipient: ctx.govBridgeExecutor.address,
+      calldata: executorCalldata,
+    });
+
+    const tx = await ctx.lidoAragonDAO.createVote(
+      ctx.l1LDOHolder,
+      "E2E Test Voting",
+      {
+        address: ctx.lidoAragonDAO.agent.address,
+        signature: "execute(address,uint256,bytes)",
+        decodedCallData: [
+          optAddresses.L1CrossDomainMessenger,
+          callvalue,
+          calldata,
+        ],
+      }
+    );
+
+    await tx.wait();
   })
 
-  .step("Enacting Vote", async ({ voting }) => {
-    const votesLength = await voting.votesLength();
-    const targetVote = votesLength.toNumber() - 1;
+  .step("Enacting Vote", async ({ lidoAragonDAO, l1LDOHolder }) => {
+    const votesLength = await lidoAragonDAO.voting.votesLength();
 
-    const voteTx = await voting.vote(targetVote, true, true);
-    await voteTx.wait();
+    messageTx = await lidoAragonDAO.voteAndExecute(
+      l1LDOHolder,
+      votesLength.toNumber() - 1
+    );
 
-    while ((await voting.getVotePhase(targetVote)) < 2) {
-      await sleep(5000);
-    }
-
-    const enactTx = await voting.executeVote(targetVote);
-    await enactTx.wait();
-
-    messageTx = enactTx;
+    await messageTx.wait();
   })
 
-  .step(
-    "Waiting for status to change to RELAYED",
-    async ({ crossChainMessenger }) => {
-      await crossChainMessenger.waitForMessageStatus(
-        messageTx.hash,
-        MessageStatus.RELAYED
-      );
-    }
-  )
+  .step("Waiting for status to change to RELAYED", async ({ messaging }) => {
+    await messaging.waitForL2Message(messageTx.hash);
+  })
 
   .step("Execute queued task", async ({ govBridgeExecutor, l2Tester }) => {
     const tasksCount = await govBridgeExecutor.getActionsSetCount();
@@ -101,9 +104,7 @@ scenario("Optimism :: AAVE governance crosschain bridge management", ctxFactory)
       chainTime = currentBlock.timestamp;
     } while (chainTime <= executionTime);
 
-    const tx = await govBridgeExecutor.execute(targetTask, {
-      gasLimit: 1000000,
-    });
+    const tx = await govBridgeExecutor.execute(targetTask);
     await tx.wait();
   })
 
@@ -116,7 +117,8 @@ scenario("Optimism :: AAVE governance crosschain bridge management", ctxFactory)
 async function ctxFactory() {
   const ethOptNetwork = network.multichain(["eth", "opt"], "kovan");
 
-  const [l1Tester, l2Tester] = ethOptNetwork.getSigners(
+  const [l1Provider] = ethOptNetwork.getProviders({ forking: false });
+  const [, l2Tester] = ethOptNetwork.getSigners(
     env.string("TESTING_PRIVATE_KEY"),
     { forking: false }
   );
@@ -127,53 +129,18 @@ async function ctxFactory() {
   );
 
   return {
-    depositAmount: wei`0.025 ether`,
-    withdrawalAmount: wei`0.025 ether`,
+    lidoAragonDAO: lido("kovan", l1Provider),
+    messaging: optimism.messaging("kovan", { forking: false }),
     gasAmount: wei`0.1 ether`,
-    l1Tester,
     l2Tester,
     l1LDOHolder,
-    l1Token: ERC20Mintable__factory.connect(
-      E2E_TEST_CONTRACTS.l1.l1Token,
-      l1Tester
-    ),
-    l2Token: ERC20Bridged__factory.connect(
-      E2E_TEST_CONTRACTS.l2.l2Token,
-      l2Tester
-    ),
-    l1ERC20TokenBridge: L1ERC20TokenBridge__factory.connect(
-      E2E_TEST_CONTRACTS.l1.l1ERC20TokenBridge,
-      l1Tester
-    ),
     l2ERC20TokenBridge: L2ERC20TokenBridge__factory.connect(
       E2E_TEST_CONTRACTS.l2.l2ERC20TokenBridge,
       l2Tester
     ),
-    crossChainMessenger: new CrossChainMessenger({
-      l1SignerOrProvider: l1Tester,
-      l2SignerOrProvider: l2Tester,
-      l1ChainId: 42,
-    }),
-    l1CrossDomainMessenger: CrossDomainMessanger__factory.connect(
-      E2E_TEST_CONTRACTS.l1.l1CrossDomainMessenger,
-      l1Tester
-    ),
-    voting: Voting__factory.connect(
-      E2E_TEST_CONTRACTS.l1.aragonVoting,
-      l1LDOHolder
-    ),
-    agent: Agent__factory.connect(E2E_TEST_CONTRACTS.l1.agent, l1LDOHolder),
-    tokenMnanager: TokenManager__factory.connect(
-      E2E_TEST_CONTRACTS.l1.tokenManager,
-      l1LDOHolder
-    ),
     govBridgeExecutor: GovBridgeExecutor__factory.connect(
       E2E_TEST_CONTRACTS.l2.govBridgeExecutor,
       l2Tester
-    ),
-    l1LDOToken: ERC20Mintable__factory.connect(
-      E2E_TEST_CONTRACTS.l1.l1LDOToken,
-      l1LDOHolder
     ),
   };
 }
