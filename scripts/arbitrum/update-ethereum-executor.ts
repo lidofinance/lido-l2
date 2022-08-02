@@ -88,6 +88,13 @@ async function main() {
       sender: oldEthExecutorLidoDAO.agent.address,
     });
 
+  const txTransfer = await l1LDOHolder.sendTransaction({
+    to: oldEthExecutorLidoDAO.agent.address,
+    value: callvalue,
+  });
+
+  await txTransfer.wait();
+
   const createVoteTx = await oldEthExecutorLidoDAO.createVote(
     l1LDOHolder,
     "Update ethereumGovernanceExecutor on Arbitrum Governance Bridge Executor",
