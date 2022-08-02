@@ -535,6 +535,14 @@ When set to `true` integration tests will use addresses of deployed contracts se
 
 When `TESTING_USE_DEPLOYED_CONTRACTS` is set to true, this address will be used as the holder of the tokens, bridged between L1 and L2.
 
+#### `TESTING_ARB_GOV_BRIDGE_EXECUTOR`
+
+Address of the deployed Governance Bridge Executor in the Arbitrum network. If set, this contract will be used for integration tests of Governance Bridge.
+
+#### `TESTING_OPT_GOV_BRIDGE_EXECUTOR`
+
+Address of the deployed Governance Bridge Executor in the Optimism network. If set, this contract will be used for integration tests of Governance Bridge.
+
 ### E2E Testing
 
 #### `TESTING_PRIVATE_KEY`

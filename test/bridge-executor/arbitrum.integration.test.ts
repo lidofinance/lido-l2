@@ -1,7 +1,6 @@
 import { assert } from "chai";
 import testing, { scenario } from "../../utils/testing";
 import {
-  ArbSysStub__factory,
   ERC20BridgedStub__factory,
   L2ERC20TokenGateway__factory,
   ArbitrumBridgeExecutor__factory,
@@ -66,7 +65,10 @@ scenario("Arbitrum :: Bridge Executor integration test", ctx)
       new Array(4).fill(false)
     );
 
-    await bridgeExecutor.execute(0, { value: 0 });
+    const actionsSetCount = await bridgeExecutor.getActionsSetCount();
+
+    // execute the last added actions set
+    await bridgeExecutor.execute(actionsSetCount.sub(1), { value: 0 });
 
     assert.isTrue(
       await l2ERC20TokenGateway.hasRole(
@@ -87,6 +89,9 @@ scenario("Arbitrum :: Bridge Executor integration test", ctx)
     const {
       l2: { l2Token, bridgeExecutor, l2ERC20TokenGatewayProxy },
     } = ctx;
+
+    const actionsSetCountBefore = await bridgeExecutor.getActionsSetCount();
+
     const proxyImplBefore =
       await l2ERC20TokenGatewayProxy.proxy__getImplementation();
 
@@ -105,9 +110,9 @@ scenario("Arbitrum :: Bridge Executor integration test", ctx)
 
     const actionSetCount = await bridgeExecutor.getActionsSetCount();
 
-    assert.equalBN(2, actionSetCount);
+    assert.equalBN(actionsSetCountBefore.add(1), actionSetCount);
 
-    await bridgeExecutor.execute(1, { value: 0 });
+    await bridgeExecutor.execute(actionsSetCountBefore, { value: 0 });
     const proxyImplAfter =
       await l2ERC20TokenGatewayProxy.proxy__getImplementation();
 
@@ -124,6 +129,8 @@ scenario("Arbitrum :: Bridge Executor integration test", ctx)
     } = ctx;
     const proxyAdminBefore = await l2ERC20TokenGatewayProxy.proxy__getAdmin();
 
+    const actionsSetCountBefore = await bridgeExecutor.getActionsSetCount();
+
     await bridgeExecutor.queue(
       [l2ERC20TokenGatewayProxy.address],
       [0],
@@ -138,9 +145,9 @@ scenario("Arbitrum :: Bridge Executor integration test", ctx)
     );
 
     const actionSetCount = await bridgeExecutor.getActionsSetCount();
-    assert.equalBN(3, actionSetCount);
+    assert.equalBN(actionsSetCountBefore.add(1), actionSetCount);
 
-    await bridgeExecutor.execute(2, { value: 0 });
+    await bridgeExecutor.execute(actionsSetCountBefore, { value: 0 });
     const proxyAdminAfter = await l2ERC20TokenGatewayProxy.proxy__getAdmin();
 
     assert.notEqual(proxyAdminBefore, proxyAdminAfter);
@@ -155,30 +162,33 @@ async function ctx() {
     .multichain(["eth", "arb"], networkName)
     .getProviders({ forking: true });
 
+  const testingOnDeployedContracts = testing.env.USE_DEPLOYED_CONTRACTS(false);
+
   const l1Deployer = testing.accounts.deployer(l1Provider);
   const l2Deployer = testing.accounts.deployer(l2Provider);
+
+  await arbitrum.testing(networkName).stubArbSysContract();
 
   const l1Token = await new ERC20BridgedStub__factory(l1Deployer).deploy(
     "Test Token",
     "TT"
   );
-  const arbSysStub = await new ArbSysStub__factory(l2Deployer).deploy();
-  const bridgeExecutorContract = await new ArbitrumBridgeExecutor__factory(
-    l2Deployer
-  ).deploy(
-    l1Deployer.address,
-    ...getBridgeExecutorParams(),
-    l2Deployer.address
-  );
+  const govBridgeExecutor = testingOnDeployedContracts
+    ? ArbitrumBridgeExecutor__factory.connect(
+        testing.env.ARB_GOV_BRIDGE_EXECUTOR(),
+        l2Provider
+      )
+    : await new ArbitrumBridgeExecutor__factory(l2Deployer).deploy(
+        l1Deployer.address,
+        ...getBridgeExecutorParams(),
+        l2Deployer.address
+      );
 
-  const arbAddresses = arbitrum.addresses(networkName, {
-    customAddresses: {
-      ArbSys: arbSysStub.address,
-    },
-  });
+  const l1EthGovExecutorAddress =
+    await govBridgeExecutor.getEthereumGovernanceExecutor();
 
   const [, l2DeployScript] = await arbitrum
-    .deployment(networkName, { customAddresses: arbAddresses })
+    .deployment(networkName)
     .erc20TokenGatewayDeployScript(
       l1Token.address,
       {
@@ -188,8 +198,8 @@ async function ctx() {
       {
         deployer: l2Deployer,
         admins: {
-          proxy: bridgeExecutorContract.address,
-          bridge: bridgeExecutorContract.address,
+          proxy: govBridgeExecutor.address,
+          bridge: govBridgeExecutor.address,
         },
       }
     );
@@ -209,26 +219,24 @@ async function ctx() {
     l2Deployer
   );
   const l1ExecutorAliased = await testing.impersonate(
-    testing.accounts.applyL1ToL2Alias(l1Deployer.address),
+    testing.accounts.applyL1ToL2Alias(l1EthGovExecutorAddress),
     l2Provider
   );
   await l2Deployer.sendTransaction({
     to: await l1ExecutorAliased.getAddress(),
     value: wei`1 ether`,
   });
-  const l2Executor = await testing.impersonate(
-    testing.accounts.applyL1ToL2Alias(l1Deployer.address),
-    l2Provider
-  );
-  const bridgeExecutor = ArbitrumBridgeExecutor__factory.connect(
-    bridgeExecutorContract.address,
-    l2Executor
-  );
+
+  if (testingOnDeployedContracts) {
+    console.log("Testing on deployed contracts");
+    console.log(`  Network name: ${networkName}`);
+    console.log(`  Gov Bridge Executor Address: ${govBridgeExecutor.address}`);
+  }
 
   return {
     l2: {
       l2Token,
-      bridgeExecutor,
+      bridgeExecutor: govBridgeExecutor.connect(l1ExecutorAliased),
       l2ERC20TokenGateway,
       l2ERC20TokenGatewayProxy,
       accounts: {
