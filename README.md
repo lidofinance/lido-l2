@@ -160,8 +160,8 @@ TESTING_OPT_L2_ERC20_TOKEN_BRIDGE=
 E2E tests run on the real contracts deployed on the testnet networks. To run such tests next env variables must be set in the `.env` file.
 
 [`TESTING_PRIVATE_KEY`](#TESTING_PRIVATE_KEY)
-[`TESTING_KOVAN_LDO_HOLDER_PRIVATE_KEY`](#TESTING_KOVAN_LDO_HOLDER_PRIVATE_KEY)
-[`TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY`](#TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY)
+[`TESTING_OPT_LDO_HOLDER_PRIVATE_KEY`](#TESTING_OPT_LDO_HOLDER_PRIVATE_KEY)
+[`TESTING_ARB_LDO_HOLDER_PRIVATE_KEY`](#TESTING_ARB_LDO_HOLDER_PRIVATE_KEY)
 
 To run E2E tests use the following commands:
 
@@ -308,6 +308,14 @@ Address of the RPC node for **Goerli** Optimism network.
 Address of the RPC node for **Mainnet** Optimism network.
 
 > Default value: `https://mainnet.optimism.io`
+
+#### `MAINNET_RPC`
+
+This variable is required for @arbitrum/sdk library when it works on Nitro
+
+#### `RINKEBY_RPC`
+
+This variable is required for @arbitrum/sdk library when it works on Nitro
 
 ### Etherscan
 
@@ -527,6 +535,14 @@ When set to `true` integration tests will use addresses of deployed contracts se
 
 When `TESTING_USE_DEPLOYED_CONTRACTS` is set to true, this address will be used as the holder of the tokens, bridged between L1 and L2.
 
+#### `TESTING_ARB_GOV_BRIDGE_EXECUTOR`
+
+Address of the deployed Governance Bridge Executor in the Arbitrum network. If set, this contract will be used for integration tests of Governance Bridge.
+
+#### `TESTING_OPT_GOV_BRIDGE_EXECUTOR`
+
+Address of the deployed Governance Bridge Executor in the Optimism network. If set, this contract will be used for integration tests of Governance Bridge.
+
 ### E2E Testing
 
 #### `TESTING_PRIVATE_KEY`
@@ -539,10 +555,10 @@ The private key from the address which holds:
 
 The test Ether might be retrived via [Paradigm Faucet](https://faucet.paradigm.xyz/).
 
-#### `TESTING_KOVAN_LDO_HOLDER_PRIVATE_KEY`
+#### `TESTING_OPT_LDO_HOLDER_PRIVATE_KEY`
 
 The private key from the address which holds 50+% TLDO
 
-#### `TESTING_RINKEBY_LDO_HOLDER_PRIVATE_KEY`
+#### `TESTING_ARB_LDO_HOLDER_PRIVATE_KEY`
 
 The private key from the address which holds 50+% TLDO

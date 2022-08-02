@@ -4,6 +4,7 @@ import {
   L1GatewayRouter__factory,
   L2GatewayRouter__factory,
   ArbSysStub__factory,
+  Inbox__factory,
 } from "../../typechain/";
 import addresses from "./addresses";
 import { CommonOptions } from "./types";
@@ -34,5 +35,6 @@ export default function contracts(
       arbAddresses.L2GatewayRouter,
       l2Provider
     ),
+    Inbox: Inbox__factory.connect(arbAddresses.Inbox, l1Provider),
   };
 }

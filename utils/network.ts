@@ -127,7 +127,21 @@ export function multichain(
   };
 }
 
+function getChainId(networkName: NetworkName) {
+  switch (networkName) {
+    case "mainnet":
+      return 1;
+    case "kovan":
+      return 42;
+    case "goerli":
+      return 5;
+    case "rinkeby":
+      return 4;
+  }
+}
+
 export default {
+  chainId: getChainId,
   multichain,
   getConfig,
   getProvider,

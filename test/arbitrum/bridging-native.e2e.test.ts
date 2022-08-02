@@ -5,12 +5,10 @@ import { wei } from "../../utils/wei";
 import {
   getL2Network,
   L1ToL2MessageStatus,
-  L1ToL2MessageGasEstimator,
   L1TransactionReceipt,
 } from "@arbitrum/sdk";
 import { scenario } from "../../utils/testing";
 import arbitrum from "../../utils/arbitrum";
-import { hexDataLength } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 
 async function ctxFactory() {
@@ -25,6 +23,13 @@ async function ctxFactory() {
 
   return {
     ...testingSetup,
+    messaging: arbitrum.messaging(networkName, {
+      forking: false,
+      customAddresses: {
+        L1GatewayRouter: testingSetup.l1GatewayRouter.address,
+        L2GatewayRouter: testingSetup.l2GatewayRouter.address,
+      },
+    }),
     l2Network,
     depositAmount: wei`0.025 ether`,
     withdrawalAmount: wei`0.025 ether`,
@@ -62,7 +67,7 @@ scenario("Arbitrum :: Bridging E2E test natively", ctxFactory)
     );
   })
 
-  .step("Deposit tokens to L2 via L1GatewayRouter", async (ctx) => {
+  .step("Deposit tokens to L2 via L1ERC20Gateway", async (ctx) => {
     const {
       l1Tester,
       l1Token,
@@ -70,8 +75,6 @@ scenario("Arbitrum :: Bridging E2E test natively", ctxFactory)
       l2Token,
       depositAmount,
       l1ERC20TokenGateway,
-      l2Provider,
-      l1Provider,
       l2ERC20TokenGateway,
     } = ctx;
     const l1ERC20TokenGatewayBalanceBefore = await l1Token.balanceOf(
@@ -95,39 +98,18 @@ scenario("Arbitrum :: Bridging E2E test natively", ctxFactory)
         "0x"
       );
 
-    const l1ToL2MessageGasEstimator = new L1ToL2MessageGasEstimator(l2Provider);
-    const submissionPriceWeiExact =
-      await l1ToL2MessageGasEstimator.estimateSubmissionFee(
-        l1Provider,
-        await l1Provider.getGasPrice(),
-        hexDataLength(finalizeInboundTransferCalldata)
-      );
-
-    const submissionPriceWeiWithExtra = submissionPriceWeiExact.mul(5);
-    const gasPriceBid = await l2Provider.getGasPrice();
-
-    let maxGas =
-      await l1ToL2MessageGasEstimator.estimateRetryableTicketGasLimit(
-        l1ERC20TokenGateway.address,
-        l2ERC20TokenGateway.address,
-        wei.toBigNumber("0"),
-        l2Tester.address,
-        l2Tester.address,
-        finalizeInboundTransferCalldata,
-        ethers.utils.parseEther("1"),
-        submissionPriceWeiWithExtra,
-        wei.toBigNumber(wei`500_000`),
-        gasPriceBid
-      );
-
-    // TODO: investigate why the value is underestimated
-    maxGas = maxGas.mul(3);
-
-    const callValue = submissionPriceWeiWithExtra.add(gasPriceBid.mul(maxGas));
+    const { callvalue, gasPriceBid, maxGas, maxSubmissionCost } =
+      await ctx.messaging.getRetryableTicketSendParams({
+        callvalue: 0,
+        sender: l1ERC20TokenGateway.address,
+        recipient: l2ERC20TokenGateway.address,
+        calldata: finalizeInboundTransferCalldata,
+        refundAddress: l2Tester.address,
+      });
 
     const maxSubmissionCostEncoded = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "bytes"],
-      [submissionPriceWeiWithExtra, "0x"]
+      [maxSubmissionCost, "0x"]
     );
 
     const depositTxResponse = await l1ERC20TokenGateway
@@ -139,7 +121,7 @@ scenario("Arbitrum :: Bridging E2E test natively", ctxFactory)
         maxGas,
         gasPriceBid,
         maxSubmissionCostEncoded,
-        { value: callValue }
+        { value: callvalue }
       );
 
     const depositL1Receipt = await depositTxResponse.wait();
@@ -171,7 +153,7 @@ scenario("Arbitrum :: Bridging E2E test natively", ctxFactory)
     );
   })
 
-  .step("Withdraw tokens from L2 via L2GatewayRouter", async (ctx) => {
+  .step("Withdraw tokens from L2 via L2ERC20Gateway", async (ctx) => {
     const {
       l2Token,
       l1Tester,

@@ -1,6 +1,5 @@
 import { assert } from "chai";
 import {
-  CrossDomainMessengerStub__factory,
   ERC20BridgedStub__factory,
   L2ERC20TokenBridge__factory,
   OssifiableProxy__factory,
@@ -18,16 +17,12 @@ import { getBridgeExecutorParams } from "../../utils/bridge-executor";
 
 scenario("Optimism :: Bridge Executor integration test", ctxFactory)
   .step("Activate L2 bridge", async (ctx) => {
-    const {
-      accounts: { admin },
-      l2ERC20TokenBridge,
-      bridgeExecutor,
-      l2CrossDomainMessenger,
-    } = ctx.l2;
+    const { l2ERC20TokenBridge, bridgeExecutor, l2CrossDomainMessenger } =
+      ctx.l2;
 
     await l2CrossDomainMessenger.relayMessage(
       bridgeExecutor.address,
-      admin.address,
+      ctx.l1.l1EthGovExecutorAddress,
       bridgeExecutor.interface.encodeFunctionData("queue", [
         new Array(4).fill(l2ERC20TokenBridge.address),
         new Array(4).fill(0),
@@ -66,7 +61,10 @@ scenario("Optimism :: Bridge Executor integration test", ctxFactory)
       0
     );
 
-    await bridgeExecutor.execute(0, { value: 0 });
+    const actionsSetCount = await bridgeExecutor.getActionsSetCount();
+
+    // execute the last added actions set
+    await bridgeExecutor.execute(actionsSetCount.sub(1), { value: 0 });
 
     assert.isTrue(
       await l2ERC20TokenBridge.hasRole(
@@ -83,22 +81,23 @@ scenario("Optimism :: Bridge Executor integration test", ctxFactory)
     assert.isTrue(await l2ERC20TokenBridge.isDepositsEnabled());
     assert.isTrue(await l2ERC20TokenBridge.isWithdrawalsEnabled());
   })
+
   .step("Change Proxy implementation", async (ctx) => {
-    const {
-      accounts: { admin },
-    } = ctx.l1;
     const {
       l2Token,
       l2CrossDomainMessenger,
       l2ERC20TokenBridgeProxy,
       bridgeExecutor,
     } = ctx.l2;
+
+    const actionsSetCountBefore = await bridgeExecutor.getActionsSetCount();
+
     const proxyImplBefore =
       await l2ERC20TokenBridgeProxy.proxy__getImplementation();
 
     await l2CrossDomainMessenger.relayMessage(
       bridgeExecutor.address,
-      admin.address,
+      ctx.l1.l1EthGovExecutorAddress,
       bridgeExecutor.interface.encodeFunctionData("queue", [
         [l2ERC20TokenBridgeProxy.address],
         [0],
@@ -115,30 +114,31 @@ scenario("Optimism :: Bridge Executor integration test", ctxFactory)
     );
     const actionSetCount = await bridgeExecutor.getActionsSetCount();
 
-    assert.equalBN(2, actionSetCount);
+    assert.equalBN(actionsSetCountBefore.add(1), actionSetCount);
 
-    await bridgeExecutor.execute(1, { value: 0 });
+    await bridgeExecutor.execute(actionsSetCountBefore, { value: 0 });
     const proxyImplAfter =
       await l2ERC20TokenBridgeProxy.proxy__getImplementation();
 
     assert.notEqual(proxyImplBefore, proxyImplAfter);
     assert.equal(proxyImplAfter, l2Token.address);
   })
+
   .step("Change proxy Admin", async (ctx) => {
-    const {
-      accounts: { admin },
-    } = ctx.l1;
     const {
       l2CrossDomainMessenger,
       l2ERC20TokenBridgeProxy,
       bridgeExecutor,
       accounts: { sender },
     } = ctx.l2;
+
+    const actionsSetCountBefore = await bridgeExecutor.getActionsSetCount();
+
     const proxyAdminBefore = await l2ERC20TokenBridgeProxy.proxy__getAdmin();
 
     await l2CrossDomainMessenger.relayMessage(
       bridgeExecutor.address,
-      admin.address,
+      ctx.l1.l1EthGovExecutorAddress,
       bridgeExecutor.interface.encodeFunctionData("queue", [
         [l2ERC20TokenBridgeProxy.address],
         [0],
@@ -155,14 +155,15 @@ scenario("Optimism :: Bridge Executor integration test", ctxFactory)
     );
     const actionSetCount = await bridgeExecutor.getActionsSetCount();
 
-    assert.equalBN(3, actionSetCount);
+    assert.equalBN(actionsSetCountBefore.add(1), actionSetCount);
 
-    await bridgeExecutor.execute(2, { value: 0 });
+    await bridgeExecutor.execute(actionsSetCountBefore, { value: 0 });
     const proxyAdminAfter = await l2ERC20TokenBridgeProxy.proxy__getAdmin();
 
     assert.notEqual(proxyAdminBefore, proxyAdminAfter);
     assert.equal(proxyAdminAfter, sender.address);
   })
+
   .run();
 
 async function ctxFactory() {
@@ -171,31 +172,34 @@ async function ctxFactory() {
     .multichain(["eth", "opt"], networkName)
     .getProviders({ forking: true });
 
+  const testingOnDeployedContracts = testing.env.USE_DEPLOYED_CONTRACTS(false);
+
   const l1Deployer = testing.accounts.deployer(l1Provider);
   const l2Deployer = testing.accounts.deployer(l2Provider);
+
+  await optimism.testing(networkName).stubL1CrossChainMessengerContract();
 
   const l1Token = await new ERC20BridgedStub__factory(l1Deployer).deploy(
     "Test Token",
     "TT"
   );
 
-  const l1CrossDomainMessengerStub =
-    await new CrossDomainMessengerStub__factory(l1Deployer).deploy();
+  const optAddresses = optimism.addresses(networkName);
 
-  const optAddresses = optimism.addresses(networkName, {
-    customAddresses: {
-      L1CrossDomainMessenger: l1CrossDomainMessengerStub.address,
-    },
-  });
+  const govBridgeExecutor = testingOnDeployedContracts
+    ? OptimismBridgeExecutor__factory.connect(
+        testing.env.OPT_GOV_BRIDGE_EXECUTOR(),
+        l2Provider
+      )
+    : await new OptimismBridgeExecutor__factory(l2Deployer).deploy(
+        optAddresses.L2CrossDomainMessenger,
+        l1Deployer.address,
+        ...getBridgeExecutorParams(),
+        l2Deployer.address
+      );
 
-  const bridgeExecutor = await new OptimismBridgeExecutor__factory(
-    l2Deployer
-  ).deploy(
-    optAddresses.L2CrossDomainMessenger,
-    l1Deployer.address,
-    ...getBridgeExecutorParams(),
-    l2Deployer.address
-  );
+  const l1EthGovExecutorAddress =
+    await govBridgeExecutor.getEthereumGovernanceExecutor();
 
   const [, l2DeployScript] = await optimism
     .deployment(networkName)
@@ -208,8 +212,8 @@ async function ctxFactory() {
       {
         deployer: l2Deployer,
         admins: {
-          proxy: bridgeExecutor.address,
-          bridge: bridgeExecutor.address,
+          proxy: govBridgeExecutor.address,
+          bridge: govBridgeExecutor.address,
         },
       }
     );
@@ -228,6 +232,11 @@ async function ctxFactory() {
     l2DeployScript.getContractAddress(3),
     l2Deployer
   );
+
+  // const l1ExecutorAliased = await testing.impersonate(
+  //   testing.accounts.applyL1ToL2Alias(l1EthGovExecutorAddress),
+  //   l2Provider
+  // );
 
   const optContracts = optimism.contracts(networkName, { forking: true });
 
@@ -253,10 +262,11 @@ async function ctxFactory() {
       accounts: {
         admin: l1Deployer,
       },
+      l1EthGovExecutorAddress,
     },
     l2: {
       l2Token,
-      bridgeExecutor,
+      bridgeExecutor: govBridgeExecutor.connect(l2Deployer),
       l2ERC20TokenBridge,
       l2CrossDomainMessenger,
       l2ERC20TokenBridgeProxy,

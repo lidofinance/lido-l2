@@ -23,6 +23,9 @@ export default {
   ARB_L2_GATEWAY_ROUTER(defaultValue?: string) {
     return env.address("TESTING_ARB_L2_GATEWAY_ROUTER", defaultValue);
   },
+  ARB_GOV_BRIDGE_EXECUTOR() {
+    return env.address("TESTING_ARB_GOV_BRIDGE_EXECUTOR");
+  },
 
   OPT_L1_TOKEN() {
     return env.address("TESTING_OPT_L1_TOKEN");
@@ -35,6 +38,9 @@ export default {
   },
   OPT_L2_ERC20_TOKEN_BRIDGE() {
     return env.address("TESTING_OPT_L2_ERC20_TOKEN_BRIDGE");
+  },
+  OPT_GOV_BRIDGE_EXECUTOR() {
+    return env.address("TESTING_OPT_GOV_BRIDGE_EXECUTOR");
   },
 
   L1_TOKENS_HOLDER() {
