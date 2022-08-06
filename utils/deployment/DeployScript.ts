@@ -1,5 +1,13 @@
 import chalk from "chalk";
-import { BigNumber, Contract, ContractFactory, Signer, Wallet } from "ethers";
+import {
+  BigNumber,
+  Contract,
+  ContractFactory,
+  ContractTransaction,
+  Signer,
+  Wallet,
+} from "ethers";
+import network from "../network";
 
 interface TypechainFactoryConstructor<
   T extends ContractFactory = ContractFactory
@@ -88,10 +96,13 @@ export class DeployScript {
     const factoryName = Factory.name.split("_")[0];
     const contract = await new Factory(deployer).deploy(...step.args);
     const deployTx = contract.deployTransaction;
-    this._log(`Waiting for tx: ${deployTx.hash}`);
+    this._log(`Waiting for tx: ${getBlockExplorerTxLinkByChainId(deployTx)}`);
     await deployTx.wait();
     this._log(
-      `Contract ${chalk.yellow(factoryName)} deployed at: ${chalk.underline(
+      `Contract ${chalk.yellow(
+        factoryName
+      )} deployed at: ${getBlockExplorerAddressLinkByChainId(
+        deployTx.chainId,
         contract.address
       )}`
     );
@@ -184,4 +195,17 @@ function formatValue(value: string | number) {
     return chalk.green(value);
   }
   return chalk.green(`"${value}"`);
+}
+
+function getBlockExplorerAddressLinkByChainId(
+  chainId: number,
+  address: string
+) {
+  const baseURL = network.blockExplorerBaseUrl(chainId);
+  return chalk.gray.underline(`${baseURL}/address/${address}`);
+}
+
+function getBlockExplorerTxLinkByChainId(tx: ContractTransaction) {
+  const baseURL = network.blockExplorerBaseUrl(tx.chainId);
+  return baseURL ? chalk.gray.underline(`${baseURL}/tx/${tx.hash}`) : tx.hash;
 }
