@@ -356,7 +356,7 @@ async function ctx() {
 
   // send ether to l1GatewayRouterAliased to run transactions from it
   // as from EOA
-  await l1Sender.sendTransaction({
+  await l2Sender.sendTransaction({
     to: await l1GatewayRouterAliased.getAddress(),
     value: wei`1 ether`,
   });
