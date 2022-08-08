@@ -173,38 +173,62 @@ async function deployTestBridge(
   ethProvider: JsonRpcProvider,
   optProvider: JsonRpcProvider
 ) {
-  const l1Deployer = testingUtils.accounts.deployer(ethProvider);
-  const l2Deployer = testingUtils.accounts.deployer(optProvider);
+  const ethDeployer = testingUtils.accounts.deployer(ethProvider);
+  const optDeployer = testingUtils.accounts.deployer(optProvider);
 
-  const l1Token = await new ERC20BridgedStub__factory(l1Deployer).deploy(
+  const l1Token = await new ERC20BridgedStub__factory(ethDeployer).deploy(
     "Test Token",
     "TT"
   );
 
-  const [l1DeployScript, l2DeployScript] = await deployment(
+  const [ethDeployScript, optDeployScript] = await deployment(
     networkName
   ).erc20TokenBridgeDeployScript(
     l1Token.address,
     {
-      deployer: l1Deployer,
-      admins: { proxy: l1Deployer.address, bridge: l1Deployer.address },
+      deployer: ethDeployer,
+      admins: { proxy: ethDeployer.address, bridge: ethDeployer.address },
     },
     {
-      deployer: l2Deployer,
-      admins: { proxy: l2Deployer.address, bridge: l2Deployer.address },
+      deployer: optDeployer,
+      admins: { proxy: optDeployer.address, bridge: optDeployer.address },
     }
   );
 
-  await l1DeployScript.run();
-  await l2DeployScript.run();
+  await ethDeployScript.run();
+  await optDeployScript.run();
+
+  const l1ERC20TokenBridgeProxyDeployStepIndex = 1;
+  const l1BridgingManagement = new BridgingManagement(
+    ethDeployScript.getContractAddress(l1ERC20TokenBridgeProxyDeployStepIndex),
+    ethDeployer
+  );
+
+  const l2ERC20TokenBridgeProxyDeployStepIndex = 3;
+  const l2BridgingManagement = new BridgingManagement(
+    optDeployScript.getContractAddress(l2ERC20TokenBridgeProxyDeployStepIndex),
+    optDeployer
+  );
+
+  await l1BridgingManagement.setup({
+    bridgeAdmin: ethDeployer.address,
+    depositsEnabled: true,
+    withdrawalsEnabled: true,
+  });
+
+  await l2BridgingManagement.setup({
+    bridgeAdmin: optDeployer.address,
+    depositsEnabled: true,
+    withdrawalsEnabled: true,
+  });
 
   return {
     l1Token: l1Token.connect(ethProvider),
     ...connectBridgeContracts(
       {
-        l2Token: l2DeployScript.getContractAddress(1),
-        l1ERC20TokenBridge: l1DeployScript.getContractAddress(1),
-        l2ERC20TokenBridge: l2DeployScript.getContractAddress(3),
+        l2Token: optDeployScript.getContractAddress(1),
+        l1ERC20TokenBridge: ethDeployScript.getContractAddress(1),
+        l2ERC20TokenBridge: optDeployScript.getContractAddress(3),
       },
       ethProvider,
       optProvider
