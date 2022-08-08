@@ -43,6 +43,9 @@ export default {
     return env.address("TESTING_OPT_GOV_BRIDGE_EXECUTOR");
   },
 
+  L1_DEV_MULTISIG() {
+    return env.address("L1_DEV_MULTISIG");
+  },
   L1_TOKENS_HOLDER() {
     return env.address("TESTING_L1_TOKENS_HOLDER");
   },
