@@ -45,7 +45,9 @@ The configuration of the deployment scripts happens via the ENV variables. The f
 - [`TOKEN`](#TOKEN) - address of the token to deploy a new bridge on the Ethereum chain.
 - [`NETWORK`](#NETWORK) - name of the network environments used by deployment scripts. Allowed values: `mainnet`, `goerli`, `rinkeby`, `kovan`.
 - [`FORKING`](#FORKING) - run deployment in the forking network instead of real ones
-- [`DEPLOYER_PRIVATE_KEY`](#DEPLOYER_PRIVATE_KEY) - Private key of the deployer account used during deployment process.
+- [`ETH_DEPLOYER_PRIVATE_KEY`](#ETH_DEPLOYER_PRIVATE_KEY) - The private key of the deployer account in the Ethereum network is used during the deployment process.
+- [`ARB_DEPLOYER_PRIVATE_KEY`](#ARB_DEPLOYER_PRIVATE_KEY) - The private key of the deployer account in the Arbitrum network is used during the deployment process.
+- [`OPT_DEPLOYER_PRIVATE_KEY`](#ARB_DEPLOYER_PRIVATE_KEY) - The private key of the deployer account in the Optimism network is used during the deployment process.
 - [`L1_PROXY_ADMIN`](#L1_PROXY_ADMIN) - The address to grant admin rights of the `OssifiableProxy` on the L1 bridge
 - [`L1_BRIDGE_ADMIN`](#L1_BRIDGE_ADMIN) - Address to grant the `DEFAULT_ADMIN_ROLE` on the L1 bridge
 - [`L2_PROXY_ADMIN`](#L2_PROXY_ADMIN) - The address to grant admin rights of the `OssifiableProxy` on the L2 bridge
@@ -353,9 +355,17 @@ Run deployment in the forking network instead of public ones
 
 > Default value: `true`
 
-#### `DEPLOYER_PRIVATE_KEY`
+#### `ETH_DEPLOYER_PRIVATE_KEY`
 
-Private key of the deployer account used during deployment process.
+The private key of the deployer account in the Ethereum network is used during the deployment process.
+
+#### `ARB_DEPLOYER_PRIVATE_KEY`
+
+The private key of the deployer account in the Arbitrum network is used during the deployment process.
+
+#### `OPT_DEPLOYER_PRIVATE_KEY`
+
+The private key of the deployer account in the Optimism network is used during the deployment process.
 
 #### `L1_PROXY_ADMIN`
 
