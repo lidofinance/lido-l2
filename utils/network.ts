@@ -140,7 +140,28 @@ function getChainId(networkName: NetworkName) {
   }
 }
 
+function getBlockExplorerBaseUrlByChainId(chainId: number) {
+  const baseUrlByChainId: Record<number, string> = {
+    // ethereum
+    1: "https://etherscan.io",
+    4: "https://rinkeby.etherscan.io",
+    5: "https://goerli.etherscan.io",
+    42: "https://kovan.etherscan.io",
+    // arbitrum
+    42161: "https://arbiscan.io",
+    421611: "https://testnet.arbiscan.io",
+    // optimism
+    10: "https://optimistic.etherscan.io",
+    420: "https://blockscout.com/optimism/goerli",
+    69: "https://kovan-optimistic.etherscan.io",
+    // forked node
+    31337: "https://etherscan.io",
+  };
+  return baseUrlByChainId[chainId];
+}
+
 export default {
+  blockExplorerBaseUrl: getBlockExplorerBaseUrlByChainId,
   chainId: getChainId,
   multichain,
   getConfig,

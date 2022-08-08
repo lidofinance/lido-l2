@@ -4,7 +4,6 @@ import env from "../../utils/env";
 import { wei } from "../../utils/wei";
 import optimism from "../../utils/optimism";
 import testing, { scenario } from "../../utils/testing";
-import { BridgingManagement } from "../../utils/bridging-management";
 
 scenario("Optimism :: Bridging integration test", ctxFactory)
   .after(async (ctx) => {
@@ -12,43 +11,52 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     await ctx.l2Provider.send("evm_revert", [ctx.snapshot.l2]);
   })
 
-  .step("Activate bridging", async (ctx) => {
-    const { l1ERC20TokenBridge, l2ERC20TokenBridge } = ctx;
-    const { l1ERC20TokenBridgeAdmin, l2ERC20TokenBridgeAdmin } = ctx.accounts;
+  .step("Activate bridging on L1", async (ctx) => {
+    const { l1ERC20TokenBridge } = ctx;
+    const { l1ERC20TokenBridgeAdmin } = ctx.accounts;
 
-    const l1BridgingManagement = new BridgingManagement(
-      l1ERC20TokenBridge.address,
-      l1ERC20TokenBridgeAdmin
-    );
+    const isDepositsEnabled = await l1ERC20TokenBridge.isDepositsEnabled();
 
-    const [l1AdminAddress, l2AdminAddress] = await Promise.all([
-      l1ERC20TokenBridgeAdmin.getAddress(),
-      l2ERC20TokenBridgeAdmin.getAddress(),
-    ]);
+    if (!isDepositsEnabled) {
+      await l1ERC20TokenBridge
+        .connect(l1ERC20TokenBridgeAdmin)
+        .enableDeposits();
+    }
 
-    await l1BridgingManagement.setup({
-      bridgeAdmin: l1AdminAddress,
-      depositsEnabled: true,
-      withdrawalsEnabled: true,
-      depositsEnablers: [l1AdminAddress],
-      withdrawalsEnablers: [l1AdminAddress],
-    });
+    const isWithdrawalsEnabled =
+      await l1ERC20TokenBridge.isWithdrawalsEnabled();
 
-    const l2BridgingManagement = new BridgingManagement(
-      l2ERC20TokenBridge.address,
-      l2ERC20TokenBridgeAdmin
-    );
-
-    await l2BridgingManagement.setup({
-      bridgeAdmin: l2AdminAddress,
-      depositsEnabled: true,
-      withdrawalsEnabled: true,
-      depositsEnablers: [l2AdminAddress],
-      withdrawalsEnablers: [l2AdminAddress],
-    });
+    if (!isWithdrawalsEnabled) {
+      await l1ERC20TokenBridge
+        .connect(l1ERC20TokenBridgeAdmin)
+        .enableWithdrawals();
+    }
 
     assert.isTrue(await l1ERC20TokenBridge.isDepositsEnabled());
     assert.isTrue(await l1ERC20TokenBridge.isWithdrawalsEnabled());
+  })
+
+  .step("Activate bridging on L2", async (ctx) => {
+    const { l2ERC20TokenBridge } = ctx;
+    const { l2ERC20TokenBridgeAdmin } = ctx.accounts;
+
+    const isDepositsEnabled = await l2ERC20TokenBridge.isDepositsEnabled();
+
+    if (!isDepositsEnabled) {
+      await l2ERC20TokenBridge
+        .connect(l2ERC20TokenBridgeAdmin)
+        .enableDeposits();
+    }
+
+    const isWithdrawalsEnabled =
+      await l2ERC20TokenBridge.isWithdrawalsEnabled();
+
+    if (!isWithdrawalsEnabled) {
+      await l2ERC20TokenBridge
+        .connect(l2ERC20TokenBridgeAdmin)
+        .enableWithdrawals();
+    }
+
     assert.isTrue(await l2ERC20TokenBridge.isDepositsEnabled());
     assert.isTrue(await l2ERC20TokenBridge.isWithdrawalsEnabled());
   })

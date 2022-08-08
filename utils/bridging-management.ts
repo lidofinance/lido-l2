@@ -1,8 +1,9 @@
 import hre from "hardhat";
 import chalk from "chalk";
-import { Signer, Wallet } from "ethers";
+import { ContractTransaction, Signer, Wallet } from "ethers";
 import { BridgingManager, BridgingManager__factory } from "../typechain";
 import { getRoleHolders } from "./testing";
+import network from "./network";
 
 interface Logger {
   log(message: string): void;
@@ -151,7 +152,7 @@ export class BridgingManagement {
     for (const account of accounts) {
       this.logger.logGrantRole(role, account);
       const tx = await this.bridgingManager.grantRole(role.hash, account);
-      this.logger.logTxWaiting(tx.hash);
+      this.logger.logTxWaiting(tx);
       await tx.wait();
       this.logger.logStepDone();
     }
@@ -161,7 +162,7 @@ export class BridgingManagement {
     const adminAddress = await this.admin.getAddress();
     this.logger.logRenounceRole(role, adminAddress);
     const tx = await this.bridgingManager.renounceRole(role.hash, adminAddress);
-    this.logger.logTxWaiting(tx.hash);
+    this.logger.logTxWaiting(tx);
     await tx.wait();
     this.logger.logStepDone();
   }
@@ -169,7 +170,7 @@ export class BridgingManagement {
   async enableDeposits() {
     this.logger.logEnableDeposits();
     const tx = await this.bridgingManager.enableDeposits();
-    this.logger.logTxWaiting(tx.hash);
+    this.logger.logTxWaiting(tx);
     await tx.wait();
     this.logger.logStepDone();
   }
@@ -177,7 +178,7 @@ export class BridgingManagement {
   async enableWithdrawals() {
     this.logger.logEnableWithdrawals();
     const tx = await this.bridgingManager.enableWithdrawals();
-    this.logger.logTxWaiting(tx.hash);
+    this.logger.logTxWaiting(tx);
     await tx.wait();
     this.logger.logStepDone();
   }
@@ -209,8 +210,8 @@ class BridgingManagementLogger {
     );
   }
 
-  logTxWaiting(txHash: string) {
-    this.logger?.log(`Waiting for tx: ${txHash}`);
+  logTxWaiting(tx: ContractTransaction) {
+    this.logger?.log(`Waiting for tx: ${getBlockExplorerTxLinkByChainId(tx)}`);
   }
 
   logStepDone() {
@@ -230,4 +231,9 @@ class BridgingManagementLogger {
   logEnableWithdrawals() {
     this.logger?.log(`Enable withdrawals`);
   }
+}
+
+function getBlockExplorerTxLinkByChainId(tx: ContractTransaction) {
+  const baseURL = network.blockExplorerBaseUrl(tx.chainId);
+  return baseURL ? chalk.gray.underline(`${baseURL}/tx/${tx.hash}`) : tx.hash;
 }

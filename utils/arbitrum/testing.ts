@@ -214,6 +214,30 @@ async function deployTestGateway(
   await ethDeployScript.run();
   await arbDeployScript.run();
 
+  const l1ERC20TokenBridgeProxyDeployStepIndex = 1;
+  const l1BridgingManagement = new BridgingManagement(
+    ethDeployScript.getContractAddress(l1ERC20TokenBridgeProxyDeployStepIndex),
+    ethDeployer
+  );
+
+  const l2ERC20TokenBridgeProxyDeployStepIndex = 3;
+  const l2BridgingManagement = new BridgingManagement(
+    arbDeployScript.getContractAddress(l2ERC20TokenBridgeProxyDeployStepIndex),
+    arbDeployer
+  );
+
+  await l1BridgingManagement.setup({
+    bridgeAdmin: ethDeployer.address,
+    depositsEnabled: true,
+    withdrawalsEnabled: true,
+  });
+
+  await l2BridgingManagement.setup({
+    bridgeAdmin: arbDeployer.address,
+    depositsEnabled: true,
+    withdrawalsEnabled: true,
+  });
+
   return {
     l1Token: l1Token.connect(ethProvider),
     ...connectGatewayContracts(

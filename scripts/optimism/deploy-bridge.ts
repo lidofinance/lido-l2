@@ -7,9 +7,17 @@ import { BridgingManagement } from "../../utils/bridging-management";
 
 async function main() {
   const networkName = env.network();
-  const [ethDeployer, arbDeployer] = network
-    .multichain(["eth", "opt"], networkName)
-    .getSigners(env.privateKey(), { forking: env.forking() });
+  const ethOptNetwork = network.multichain(["eth", "opt"], networkName);
+
+  const [ethDeployer] = ethOptNetwork.getSigners(env.privateKey(), {
+    forking: env.forking(),
+  });
+  const [, optDeployer] = ethOptNetwork.getSigners(
+    env.string("OPT_DEPLOYER_PRIVATE_KEY"),
+    {
+      forking: env.forking(),
+    }
+  );
 
   const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
 
@@ -25,10 +33,10 @@ async function main() {
         },
       },
       {
-        deployer: arbDeployer,
+        deployer: optDeployer,
         admins: {
           proxy: deploymentConfig.l2.proxyAdmin,
-          bridge: arbDeployer.address,
+          bridge: optDeployer.address,
         },
       }
     );
@@ -36,7 +44,7 @@ async function main() {
   await deployment.printMultiChainDeploymentConfig(
     "Deploy Optimism Bridge",
     ethDeployer,
-    arbDeployer,
+    optDeployer,
     deploymentConfig,
     l1DeployScript,
     l2DeployScript
@@ -57,7 +65,7 @@ async function main() {
   const l2ERC20TokenBridgeProxyDeployStepIndex = 3;
   const l2BridgingManagement = new BridgingManagement(
     l2DeployScript.getContractAddress(l2ERC20TokenBridgeProxyDeployStepIndex),
-    arbDeployer,
+    optDeployer,
     { logger: console }
   );
 

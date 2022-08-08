@@ -7,9 +7,15 @@ import { BridgingManagement } from "../../utils/bridging-management";
 
 async function main() {
   const networkName = env.network();
-  const [ethDeployer, arbDeployer] = network
+  const [ethDeployer] = network
     .multichain(["eth", "arb"], networkName)
     .getSigners(env.privateKey(), { forking: env.forking() });
+
+  const [, arbDeployer] = network
+    .multichain(["eth", "arb"], networkName)
+    .getSigners(env.string("ARB_DEPLOYER_PRIVATE_KEY"), {
+      forking: env.forking(),
+    });
 
   const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
 

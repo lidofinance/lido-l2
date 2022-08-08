@@ -6,7 +6,6 @@ import { wei } from "../../utils/wei";
 import arbitrum from "../../utils/arbitrum";
 import testing, { scenario } from "../../utils/testing";
 import { IMessageProvider__factory } from "../../typechain";
-import { BridgingManagement } from "../../utils/bridging-management";
 
 scenario("Arbitrum :: Bridging integration test", ctx)
   .after(async (ctx) => {
@@ -14,40 +13,44 @@ scenario("Arbitrum :: Bridging integration test", ctx)
     await ctx.l2Provider.send("evm_revert", [ctx.snapshot.l2]);
   })
 
-  .step("Activate Bridging", async (ctx) => {
-    const { l1ERC20TokenGateway, l2ERC20TokenGateway } = ctx;
-    const { l1BridgeAdmin, l2BridgeAdmin } = ctx.accounts;
+  .step("Activate Bridging on L1", async (ctx) => {
+    const { l1ERC20TokenGateway } = ctx;
+    const { l1BridgeAdmin } = ctx.accounts;
 
-    const l1BridgingManagement = new BridgingManagement(
-      l1ERC20TokenGateway.address,
-      l1BridgeAdmin
-    );
+    const isDepositsEnabled = await l1ERC20TokenGateway.isDepositsEnabled();
 
-    const adminAddress = await l1BridgeAdmin.getAddress();
+    if (!isDepositsEnabled) {
+      await l1ERC20TokenGateway.connect(l1BridgeAdmin).enableDeposits();
+    }
 
-    await l1BridgingManagement.setup({
-      bridgeAdmin: adminAddress,
-      depositsEnabled: true,
-      withdrawalsEnabled: true,
-      depositsEnablers: [adminAddress],
-      withdrawalsEnablers: [adminAddress],
-    });
+    const isWithdrawalsEnabled =
+      await l1ERC20TokenGateway.isWithdrawalsEnabled();
 
-    const l2BridgingManagement = new BridgingManagement(
-      l2ERC20TokenGateway.address,
-      l2BridgeAdmin
-    );
-
-    await l2BridgingManagement.setup({
-      bridgeAdmin: adminAddress,
-      depositsEnabled: true,
-      withdrawalsEnabled: true,
-      depositsEnablers: [adminAddress],
-      withdrawalsEnablers: [adminAddress],
-    });
+    if (!isWithdrawalsEnabled) {
+      await l1ERC20TokenGateway.connect(l1BridgeAdmin).enableWithdrawals();
+    }
 
     assert.isTrue(await l1ERC20TokenGateway.isDepositsEnabled());
     assert.isTrue(await l1ERC20TokenGateway.isWithdrawalsEnabled());
+  })
+
+  .step("Activate Bridging on L2", async (ctx) => {
+    const { l2ERC20TokenGateway } = ctx;
+    const { l2BridgeAdmin } = ctx.accounts;
+
+    const isDepositsEnabled = await l2ERC20TokenGateway.isDepositsEnabled();
+
+    if (!isDepositsEnabled) {
+      await l2ERC20TokenGateway.connect(l2BridgeAdmin).enableDeposits();
+    }
+
+    const isWithdrawalsEnabled =
+      await l2ERC20TokenGateway.isWithdrawalsEnabled();
+
+    if (!isWithdrawalsEnabled) {
+      await l2ERC20TokenGateway.connect(l2BridgeAdmin).enableWithdrawals();
+    }
+
     assert.isTrue(await l2ERC20TokenGateway.isDepositsEnabled());
     assert.isTrue(await l2ERC20TokenGateway.isWithdrawalsEnabled());
   })

@@ -56,7 +56,7 @@ function getNetwork(name: string = "NETWORK", defaultNetwork?: NetworkName) {
 }
 
 function getPrivateKey() {
-  return getString("DEPLOYER_PRIVATE_KEY");
+  return getString("ETH_DEPLOYER_PRIVATE_KEY");
 }
 
 function getForking() {
