@@ -29,6 +29,22 @@ scenario("Arbitrum :: Bridge Executor integration test", ctx)
       l2: { bridgeExecutor, l2ERC20TokenGateway },
     } = ctx;
 
+    assert.isFalse(
+      await l2ERC20TokenGateway.hasRole(
+        BridgingManagerRole.DEPOSITS_ENABLER_ROLE.hash,
+        bridgeExecutor.address
+      )
+    );
+    assert.isFalse(
+      await l2ERC20TokenGateway.hasRole(
+        BridgingManagerRole.WITHDRAWALS_ENABLER_ROLE.hash,
+        bridgeExecutor.address
+      )
+    );
+    assert.isFalse(await l2ERC20TokenGateway.isDepositsEnabled());
+    assert.isFalse(await l2ERC20TokenGateway.isWithdrawalsEnabled());
+
+    const actionsSetCountBefore = await bridgeExecutor.getActionsSetCount();
     await bridgeExecutor.queue(
       new Array(4).fill(l2ERC20TokenGateway.address),
       new Array(4).fill(0),
@@ -65,10 +81,11 @@ scenario("Arbitrum :: Bridge Executor integration test", ctx)
       new Array(4).fill(false)
     );
 
-    const actionsSetCount = await bridgeExecutor.getActionsSetCount();
+    const actionsSetCountAfter = await bridgeExecutor.getActionsSetCount();
 
+    assert.equalBN(actionsSetCountBefore.add(1), actionsSetCountAfter);
     // execute the last added actions set
-    await bridgeExecutor.execute(actionsSetCount.sub(1), { value: 0 });
+    await bridgeExecutor.execute(actionsSetCountAfter.sub(1), { value: 0 });
 
     assert.isTrue(
       await l2ERC20TokenGateway.hasRole(
