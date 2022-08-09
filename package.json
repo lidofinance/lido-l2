@@ -27,7 +27,7 @@
     "arbitrum:test:integration": "hardhat test ./test/arbitrum/*.integration.test.ts",
     "arbitrum:test:acceptance": "hardhat test ./test/arbitrum/*.acceptance.test.ts",
     "arbitrum:test:executor": "hardhat test ./test/bridge-executor/arbitrum.integration.test.ts",
-    "arbitrum:test:launch": "hardhat test ./test/arbitrum/launch.integration.test.ts",
+    "arbitrum:test:launch": "REVERT=false hardhat test ./test/arbitrum/{launch.integration.test.ts,bridging.integration.test.ts}",
     "optimism:deploy": "ts-node --files ./scripts/optimism/deploy-bridge.ts",
     "optimism:finalize-message": "ts-node --files ./scripts/optimism/finalize-message.ts",
     "optimism:test:e2e": "hardhat test ./test/optimism/*.e2e.test.ts",
@@ -35,7 +35,7 @@
     "optimism:test:integration": "hardhat test ./test/optimism/*.integration.test.ts",
     "optimism:test:acceptance": "hardhat test ./test/optimism/*.acceptance.test.ts",
     "optimism:test:executor": "hardhat test ./test/bridge-executor/optimism.integration.test.ts",
-    "optimism:test:launch": "hardhat test ./test/optimism/launch.integration.test.ts"
+    "optimism:test:launch": "REVERT=false hardhat test ./test/optimism/{launch.integration.test.ts,bridging.integration.test.ts}"
   },
   "keywords": [],
   "author": "",

@@ -21,6 +21,8 @@ scenario("Arbitrum :: Bridging integration test", ctx)
 
     if (!isDepositsEnabled) {
       await l1ERC20TokenGateway.connect(l1BridgeAdmin).enableDeposits();
+    } else {
+      console.log("L1 deposits already enabled");
     }
 
     const isWithdrawalsEnabled =
@@ -28,6 +30,8 @@ scenario("Arbitrum :: Bridging integration test", ctx)
 
     if (!isWithdrawalsEnabled) {
       await l1ERC20TokenGateway.connect(l1BridgeAdmin).enableWithdrawals();
+    } else {
+      console.log("L1 withdrawals already enabled");
     }
 
     assert.isTrue(await l1ERC20TokenGateway.isDepositsEnabled());
@@ -42,6 +46,8 @@ scenario("Arbitrum :: Bridging integration test", ctx)
 
     if (!isDepositsEnabled) {
       await l2ERC20TokenGateway.connect(l2BridgeAdmin).enableDeposits();
+    } else {
+      console.log("L2 deposits already enabled");
     }
 
     const isWithdrawalsEnabled =
@@ -49,6 +55,8 @@ scenario("Arbitrum :: Bridging integration test", ctx)
 
     if (!isWithdrawalsEnabled) {
       await l2ERC20TokenGateway.connect(l2BridgeAdmin).enableWithdrawals();
+    } else {
+      console.log("L2 withdrawals already enabled");
     }
 
     assert.isTrue(await l2ERC20TokenGateway.isDepositsEnabled());
@@ -183,6 +191,8 @@ scenario("Arbitrum :: Bridging integration test", ctx)
     async (ctx) => {
       const { depositAmount } = ctx.constants;
       const { l1Token, l2Token, l2ERC20TokenGateway } = ctx;
+      // TODO: l2Sender -> l2Recipient
+      // TODO: l2Sender l2Recipient - different addresses
       const { l2Sender, l1ERC20TokenGatewayAliased } = ctx.accounts;
 
       const finalizeDepositMessage =
@@ -198,8 +208,12 @@ scenario("Arbitrum :: Bridging integration test", ctx)
         );
 
       const l2TokenSupplyBefore = await l2Token.totalSupply();
-      const l2TokenSenderBefore = await l2Token.balanceOf(l2Sender.address);
+      const l2TokenSenderBalanceBefore = await l2Token.balanceOf(
+        l2Sender.address
+      );
 
+      // TODO: Add comment why it's raw call
+      // TODO: Aliased lives on L2 comment
       const tx = await l1ERC20TokenGatewayAliased.sendTransaction({
         to: l2ERC20TokenGateway.address,
         data: finalizeDepositMessage,
@@ -223,7 +237,7 @@ scenario("Arbitrum :: Bridging integration test", ctx)
       );
       assert.equalBN(
         await l2Token.balanceOf(l2Sender.address),
-        l2TokenSenderBefore.add(depositAmount)
+        l2TokenSenderBalanceBefore.add(depositAmount)
       );
     }
   )
@@ -288,6 +302,13 @@ scenario("Arbitrum :: Bridging integration test", ctx)
         await l2Token.balanceOf(l2Sender.address),
         l2TokenSenderBefore.sub(withdrawalAmount)
       );
+    }
+  )
+
+  .step(
+    "Finalize bridging via finalizeInboundTransfer() on L1",
+    async (ctx) => {
+      // TODO: Add finalizeInboundTransfer on L1
     }
   )
 

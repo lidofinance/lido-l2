@@ -21,6 +21,8 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       await l1ERC20TokenBridge
         .connect(l1ERC20TokenBridgeAdmin)
         .enableDeposits();
+    } else {
+      console.log("L1 deposits already enabled");
     }
 
     const isWithdrawalsEnabled =
@@ -30,6 +32,8 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       await l1ERC20TokenBridge
         .connect(l1ERC20TokenBridgeAdmin)
         .enableWithdrawals();
+    } else {
+      console.log("L1 withdrawals already enabled");
     }
 
     assert.isTrue(await l1ERC20TokenBridge.isDepositsEnabled());
@@ -46,6 +50,8 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       await l2ERC20TokenBridge
         .connect(l2ERC20TokenBridgeAdmin)
         .enableDeposits();
+    } else {
+      console.log("L2 deposits already enabled");
     }
 
     const isWithdrawalsEnabled =
@@ -55,6 +61,8 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       await l2ERC20TokenBridge
         .connect(l2ERC20TokenBridgeAdmin)
         .enableWithdrawals();
+    } else {
+      console.log("L2 withdrawals already enabled");
     }
 
     assert.isTrue(await l2ERC20TokenBridge.isDepositsEnabled());
@@ -205,6 +213,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       l1ERC20TokenBridge.address
     );
 
+    // TODO: use stranger instead of l1Sender
     await l1CrossDomainMessenger
       .connect(l1Sender)
       .setXDomainMessageSender(l2ERC20TokenBridge.address);
@@ -252,8 +261,10 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     "Sender deposits tokens to recipient via depositERC20To()",
     async (ctx) => {
       const { l1Token, l2Token, l1ERC20TokenBridge } = ctx;
-      const { l1Sender, l1Recipient } = ctx.accounts;
+      const { l1Sender, l2Recipient } = ctx.accounts;
       const { depositAmount } = ctx.common;
+
+      assert.notEqual(l1Sender.address, l2Recipient.address);
 
       await l1Token
         .connect(l1Sender)
@@ -269,7 +280,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         .depositERC20To(
           l1Token.address,
           l2Token.address,
-          l1Recipient.address,
+          l2Recipient.address,
           depositAmount,
           200_000,
           "0x"
@@ -279,7 +290,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         l1Token.address,
         l2Token.address,
         l1Sender.address,
-        l1Recipient.address,
+        l2Recipient.address,
         depositAmount,
         "0x",
       ]);
@@ -305,12 +316,12 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       l2CrossDomainMessenger,
       l2ERC20TokenBridge,
     } = ctx;
-    const { l2Sender, l1Recipient, l1CrossDomainMessengerAliased } =
+    const { l2Sender, l2Recipient, l1CrossDomainMessengerAliased } =
       ctx.accounts;
     const { depositAmount } = ctx.common;
 
     const l2TokenTotalSupplyBefore = await l2Token.totalSupply();
-    const recipientBalanceBefore = await l2Token.balanceOf(l1Recipient.address);
+    const recipientBalanceBefore = await l2Token.balanceOf(l2Recipient.address);
 
     const tx = await l2CrossDomainMessenger
       .connect(l1CrossDomainMessengerAliased)
@@ -321,7 +332,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
           l1Token.address,
           l2Token.address,
           l2Sender.address,
-          l1Recipient.address,
+          l2Recipient.address,
           depositAmount,
           "0x",
         ]),
@@ -332,7 +343,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       l1Token.address,
       l2Token.address,
       l2Sender.address,
-      l1Recipient.address,
+      l2Recipient.address,
       depositAmount,
       "0x",
     ]);
@@ -342,7 +353,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       l2TokenTotalSupplyBefore.add(depositAmount)
     );
     assert.equalBN(
-      await l2Token.balanceOf(l1Recipient.address),
+      await l2Token.balanceOf(l2Recipient.address),
       recipientBalanceBefore.add(depositAmount)
     );
   })
@@ -351,16 +362,17 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     "Recipient withdraws tokens to sender via withdrawTo()",
     async (ctx) => {
       const { l1Token, l2Token, l2ERC20TokenBridge } = ctx;
-      const { l2Sender, l2Recipient } = ctx.accounts;
+      // TODO: Think about naming (recipient/sender confusing there)
+      const { l2Sender, l1Recipient } = ctx.accounts;
       const { withdrawalAmount } = ctx.common;
 
       const recipientBalanceBefore = await l2Token.balanceOf(
-        l2Recipient.address
+        l1Recipient.address
       );
       const l2TotalSupplyBefore = await l2Token.totalSupply();
 
       const tx = await l2ERC20TokenBridge
-        .connect(l2Recipient)
+        .connect(l1Recipient)
         .withdrawTo(
           l2Token.address,
           l2Sender.address,
@@ -372,14 +384,14 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       await assert.emits(l2ERC20TokenBridge, tx, "WithdrawalInitiated", [
         l1Token.address,
         l2Token.address,
-        l2Recipient.address,
+        l1Recipient.address,
         l2Sender.address,
         withdrawalAmount,
         "0x",
       ]);
 
       assert.equalBN(
-        await l2Token.balanceOf(l2Recipient.address),
+        await l2Token.balanceOf(l1Recipient.address),
         recipientBalanceBefore.sub(withdrawalAmount)
       );
 
