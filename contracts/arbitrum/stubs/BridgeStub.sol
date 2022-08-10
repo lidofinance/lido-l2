@@ -12,13 +12,6 @@ contract BridgeStub is IBridge {
         activeOutbox = activeOutbox_;
     }
 
-    function finalizeInboundTransfer(
-        address target_,
-        bytes memory data // data_
-    ) external {
-        target_.call(data);
-    }
-
     function setOutbox(address outbox_) external {
         activeOutbox = outbox_;
     }

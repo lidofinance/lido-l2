@@ -117,7 +117,6 @@ scenario("Arbitrum :: Bridging integration test", ctx)
       maxGas,
       gasPriceBid,
       callValue,
-      finalizeInboundTransferCalldata,
     } = ctx.constants;
 
     await l1Token
@@ -162,7 +161,7 @@ scenario("Arbitrum :: Bridging integration test", ctx)
     // to parse all data of the event when we only need the last one
     assert.isTrue(
       messageDeliveredEvent.args.data.endsWith(
-        finalizeInboundTransferCalldata.slice(2)
+        ctx.constants.finalizeInboundTransferCalldata.deposit.slice(2)
       )
     );
 
@@ -178,7 +177,7 @@ scenario("Arbitrum :: Bridging integration test", ctx)
   })
 
   .step("Finalize deposit on L2", async (ctx) => {
-    const { depositAmount, finalizeInboundTransferCalldata } = ctx.constants;
+    const { depositAmount } = ctx.constants;
     const { l1Token, l2Token, l2ERC20TokenGateway } = ctx;
     const { accountA, accountB, l1ERC20TokenGatewayAliased } = ctx.accounts;
 
@@ -187,7 +186,7 @@ scenario("Arbitrum :: Bridging integration test", ctx)
 
     const tx = await l1ERC20TokenGatewayAliased.sendTransaction({
       to: l2ERC20TokenGateway.address,
-      data: finalizeInboundTransferCalldata,
+      data: ctx.constants.finalizeInboundTransferCalldata.deposit,
     });
 
     await assert.emits(l2Token, tx, "Transfer", [
@@ -237,21 +236,9 @@ scenario("Arbitrum :: Bridging integration test", ctx)
       withdrawalAmount,
     ]);
 
-    const finalizeDepositMessage =
-      l2ERC20TokenGateway.interface.encodeFunctionData(
-        "finalizeInboundTransfer",
-        [
-          l1Token.address,
-          accountB.address,
-          accountA.address,
-          withdrawalAmount,
-          "0x",
-        ]
-      );
-
     await assert.emits(arbSys, tx, "CreateL2ToL1Tx", [
       ctx.l1ERC20TokenGateway.address,
-      finalizeDepositMessage,
+      ctx.constants.finalizeInboundTransferCalldata.withdraw,
     ]);
 
     await assert.emits(l2ERC20TokenGateway, tx, "WithdrawalInitiated", [
@@ -285,14 +272,13 @@ scenario("Arbitrum :: Bridging integration test", ctx)
       l1BridgeStub,
     } = ctx;
 
-    const accountBalanceBefore = await l1Token.balanceOf(accountA.address);
+    const accountABalanceBefore = await l1Token.balanceOf(accountA.address);
 
-    const bridgeCodeBefore = await l1Provider.send("eth_getCode", [
-      l1Bridge.address,
+    const [bridgeCodeBefore, bridgeStubCode] = await Promise.all([
+      l1Provider.send("eth_getCode", [l1Bridge.address]),
+      l1Provider.send("eth_getCode", [l1BridgeStub.address]),
     ]);
-    const bridgeStubCode = await l1Provider.send("eth_getCode", [
-      l1BridgeStub.address,
-    ]);
+
     await l1Provider.send("hardhat_setCode", [
       l1Bridge.address,
       bridgeStubCode,
@@ -301,25 +287,17 @@ scenario("Arbitrum :: Bridging integration test", ctx)
       l1Bridge.address,
     ]);
 
+    const l1BridgeEOA = await testing.impersonate(l1Bridge.address, l1Provider);
+
     await l1Bridge.setOutbox(l1OutboxStub.address);
 
     assert.equal(bridgeStubCode, bridgeCodeAfter);
     assert.notEqual(bridgeCodeBefore, bridgeCodeAfter);
 
-    const tx = await l1Bridge.finalizeInboundTransfer(
-      l1ERC20TokenGateway.address,
-      l1ERC20TokenGateway.interface.encodeFunctionData(
-        "finalizeInboundTransfer",
-        [
-          l1Token.address,
-          accountB.address,
-          accountA.address,
-          withdrawalAmount,
-          "0x",
-        ]
-      ),
-      { gasLimit: 500000 }
-    );
+    const tx = await l1BridgeEOA.sendTransaction({
+      to: l1ERC20TokenGateway.address,
+      data: ctx.constants.finalizeInboundTransferCalldata.withdraw,
+    });
 
     await tx.wait();
 
@@ -332,7 +310,7 @@ scenario("Arbitrum :: Bridging integration test", ctx)
     ]);
 
     assert.equalBN(
-      accountBalanceBefore.add(withdrawalAmount),
+      accountABalanceBefore.add(withdrawalAmount),
       await l1Token.balanceOf(accountA.address)
     );
   })
@@ -476,8 +454,8 @@ async function ctx() {
         ["uint256", "bytes"],
         [maxSubmissionCost, "0x"]
       ),
-      finalizeInboundTransferCalldata:
-        contracts.l2ERC20TokenGateway.interface.encodeFunctionData(
+      finalizeInboundTransferCalldata: {
+        deposit: contracts.l2ERC20TokenGateway.interface.encodeFunctionData(
           "finalizeInboundTransfer",
           [
             contracts.l1Token.address,
@@ -487,6 +465,17 @@ async function ctx() {
             "0x",
           ]
         ),
+        withdraw: contracts.l2ERC20TokenGateway.interface.encodeFunctionData(
+          "finalizeInboundTransfer",
+          [
+            contracts.l1Token.address,
+            accountB.address,
+            accountA.address,
+            withdrawalAmount,
+            "0x",
+          ]
+        ),
+      },
     },
     snapshot: {
       l1: l1Snapshot,
