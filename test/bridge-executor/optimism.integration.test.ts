@@ -20,6 +20,22 @@ scenario("Optimism :: Bridge Executor integration test", ctxFactory)
     const { l2ERC20TokenBridge, bridgeExecutor, l2CrossDomainMessenger } =
       ctx.l2;
 
+    assert.isFalse(
+      await l2ERC20TokenBridge.hasRole(
+        BridgingManagerRole.DEPOSITS_ENABLER_ROLE.hash,
+        bridgeExecutor.address
+      )
+    );
+    assert.isFalse(
+      await l2ERC20TokenBridge.hasRole(
+        BridgingManagerRole.WITHDRAWALS_ENABLER_ROLE.hash,
+        bridgeExecutor.address
+      )
+    );
+    assert.isFalse(await l2ERC20TokenBridge.isDepositsEnabled());
+    assert.isFalse(await l2ERC20TokenBridge.isWithdrawalsEnabled());
+
+    const actionsSetCountBefore = await bridgeExecutor.getActionsSetCount();
     await l2CrossDomainMessenger.relayMessage(
       bridgeExecutor.address,
       ctx.l1.l1EthGovExecutorAddress,
@@ -61,10 +77,12 @@ scenario("Optimism :: Bridge Executor integration test", ctxFactory)
       0
     );
 
-    const actionsSetCount = await bridgeExecutor.getActionsSetCount();
+    const actionsSetCountAfter = await bridgeExecutor.getActionsSetCount();
+
+    assert.equalBN(actionsSetCountBefore.add(1), actionsSetCountAfter);
 
     // execute the last added actions set
-    await bridgeExecutor.execute(actionsSetCount.sub(1), { value: 0 });
+    await bridgeExecutor.execute(actionsSetCountAfter.sub(1), { value: 0 });
 
     assert.isTrue(
       await l2ERC20TokenBridge.hasRole(
