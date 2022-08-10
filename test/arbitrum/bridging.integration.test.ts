@@ -4,8 +4,10 @@ import { ethers } from "hardhat";
 import env from "../../utils/env";
 import { wei } from "../../utils/wei";
 import arbitrum from "../../utils/arbitrum";
+import arbitrumAddresses from "../../utils/arbitrum/addresses";
 import testing, { scenario } from "../../utils/testing";
 import { IMessageProvider__factory } from "../../typechain";
+import { OutboxStub__factory, BridgeStub__factory } from "../../typechain";
 
 scenario("Arbitrum :: Bridging integration test", ctx)
   .after(async (ctx) => {
@@ -272,7 +274,67 @@ scenario("Arbitrum :: Bridging integration test", ctx)
   })
 
   .step("Finalize withdrawal on L1", async (ctx) => {
-    // TODO: Add finalizeInboundTransfer on L1
+    const { accountA, accountB } = ctx.accounts;
+    const { withdrawalAmount } = ctx.constants;
+    const {
+      l1OutboxStub,
+      l1Provider,
+      l1Token,
+      l1ERC20TokenGateway,
+      l1Bridge,
+      l1BridgeStub,
+    } = ctx;
+
+    const accountBalanceBefore = await l1Token.balanceOf(accountA.address);
+
+    const bridgeCodeBefore = await l1Provider.send("eth_getCode", [
+      l1Bridge.address,
+    ]);
+    const bridgeStubCode = await l1Provider.send("eth_getCode", [
+      l1BridgeStub.address,
+    ]);
+    await l1Provider.send("hardhat_setCode", [
+      l1Bridge.address,
+      bridgeStubCode,
+    ]);
+    const bridgeCodeAfter = await l1Provider.send("eth_getCode", [
+      l1Bridge.address,
+    ]);
+
+    await l1Bridge.setOutbox(l1OutboxStub.address);
+
+    assert.equal(bridgeStubCode, bridgeCodeAfter);
+    assert.notEqual(bridgeCodeBefore, bridgeCodeAfter);
+
+    const tx = await l1Bridge.finalizeInboundTransfer(
+      l1ERC20TokenGateway.address,
+      l1ERC20TokenGateway.interface.encodeFunctionData(
+        "finalizeInboundTransfer",
+        [
+          l1Token.address,
+          accountB.address,
+          accountA.address,
+          withdrawalAmount,
+          "0x",
+        ]
+      ),
+      { gasLimit: 500000 }
+    );
+
+    await tx.wait();
+
+    await assert.emits(l1ERC20TokenGateway, tx, "WithdrawalFinalized", [
+      l1Token.address,
+      accountB.address,
+      accountA.address,
+      0,
+      withdrawalAmount,
+    ]);
+
+    assert.equalBN(
+      accountBalanceBefore.add(withdrawalAmount),
+      await l1Token.balanceOf(accountA.address)
+    );
   })
 
   .run();
@@ -364,9 +426,28 @@ async function ctx() {
     value: wei.toBigNumber(wei`1 ether`),
   });
 
+  const l1OutboxStub = await new OutboxStub__factory(
+    accountA.l1Signer
+  ).deploy();
+
+  await l1OutboxStub.setL2ToL1Sender(contracts.l2ERC20TokenGateway.address);
+
+  const l1BridgeStub = await new BridgeStub__factory(accountA.l1Signer).deploy(
+    l1OutboxStub.address
+  );
+
+  const { Bridge: l1BridgeAddress } = arbitrumAddresses(networkName);
+  const l1Bridge = BridgeStub__factory.connect(
+    l1BridgeAddress,
+    accountA.l1Signer
+  );
+
   return {
     l1Provider,
     l2Provider,
+    l1Bridge,
+    l1BridgeStub,
+    l1OutboxStub,
     l1Token: contracts.l1Token,
     l2Token: contracts.l2Token,
     l2GatewayRouter: contracts.l2GatewayRouter,
