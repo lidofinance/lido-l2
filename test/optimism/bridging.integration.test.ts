@@ -122,12 +122,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       ]
     );
 
-    const sentMessageEvent = (await tx.wait()).events?.filter((x) => {
-      return x.address === l1CrossDomainMessenger.address;
-    })[0]!;
-    const { messageNonce } = l1CrossDomainMessenger.interface.parseLog(
-      sentMessageEvent!
-    ).args;
+    const messageNonce = await l1CrossDomainMessenger.messageNonce();
 
     await assert.emits(l1CrossDomainMessenger, tx, "SentMessage", [
       l2ERC20TokenBridge.address,
@@ -349,12 +344,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       ]
     );
 
-    const sentMessageEvent = (await tx.wait()).events?.filter((x) => {
-      return x.address === l1CrossDomainMessenger.address;
-    })[0]!;
-    const { messageNonce } = l1CrossDomainMessenger.interface.parseLog(
-      sentMessageEvent!
-    ).args;
+    const messageNonce = await l1CrossDomainMessenger.messageNonce();
 
     await assert.emits(l1CrossDomainMessenger, tx, "SentMessage", [
       l2ERC20TokenBridge.address,
