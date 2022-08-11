@@ -70,7 +70,13 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
   })
 
   .step("L1 -> L2 deposit via depositERC20() method", async (ctx) => {
-    const { l1Token, l1ERC20TokenBridge, l2Token } = ctx;
+    const {
+      l1Token,
+      l1ERC20TokenBridge,
+      l2Token,
+      l1CrossDomainMessenger,
+      l2ERC20TokenBridge,
+    } = ctx;
     const { accountA: tokenHolderA } = ctx.accounts;
     const { depositAmount } = ctx.common;
 
@@ -104,7 +110,27 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       "0x",
     ]);
 
-    // TODO: Check event TransactionEnqueued emitted by the CanonicalTransactionChain
+    const l2DepositCalldata = l2ERC20TokenBridge.interface.encodeFunctionData(
+      "finalizeDeposit",
+      [
+        l1Token.address,
+        l2Token.address,
+        tokenHolderA.address,
+        tokenHolderA.address,
+        depositAmount,
+        "0x",
+      ]
+    );
+
+    const messageNonce = await l1CrossDomainMessenger.messageNonce();
+
+    await assert.emits(l1CrossDomainMessenger, tx, "SentMessage", [
+      l2ERC20TokenBridge.address,
+      l1ERC20TokenBridge.address,
+      l2DepositCalldata,
+      messageNonce,
+      200_000,
+    ]);
 
     assert.equalBN(
       await l1Token.balanceOf(l1ERC20TokenBridge.address),
@@ -263,7 +289,13 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
   })
 
   .step("L1 -> L2 deposit via depositERC20To()", async (ctx) => {
-    const { l1Token, l2Token, l1ERC20TokenBridge } = ctx;
+    const {
+      l1Token,
+      l2Token,
+      l1ERC20TokenBridge,
+      l2ERC20TokenBridge,
+      l1CrossDomainMessenger,
+    } = ctx;
     const { accountA: tokenHolderA, accountB: tokenHolderB } = ctx.accounts;
     const { depositAmount } = ctx.common;
 
@@ -300,7 +332,27 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       "0x",
     ]);
 
-    // TODO: Check event TransactionEnqueued emitted by the CanonicalTransactionChain
+    const l2DepositCalldata = l2ERC20TokenBridge.interface.encodeFunctionData(
+      "finalizeDeposit",
+      [
+        l1Token.address,
+        l2Token.address,
+        tokenHolderA.address,
+        tokenHolderB.address,
+        depositAmount,
+        "0x",
+      ]
+    );
+
+    const messageNonce = await l1CrossDomainMessenger.messageNonce();
+
+    await assert.emits(l1CrossDomainMessenger, tx, "SentMessage", [
+      l2ERC20TokenBridge.address,
+      l1ERC20TokenBridge.address,
+      l2DepositCalldata,
+      messageNonce,
+      200_000,
+    ]);
 
     assert.equalBN(
       await l1Token.balanceOf(l1ERC20TokenBridge.address),
