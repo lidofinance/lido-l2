@@ -273,6 +273,9 @@ scenario("Arbitrum :: Bridging integration test", ctx)
     } = ctx;
 
     const accountABalanceBefore = await l1Token.balanceOf(accountA.address);
+    const l1ERC20TokenGatewayBalanceBefore = await l1Token.balanceOf(
+      l1ERC20TokenGateway.address
+    );
 
     const [bridgeCodeBefore, bridgeStubCode] = await Promise.all([
       l1Provider.send("eth_getCode", [l1Bridge.address]),
@@ -312,6 +315,11 @@ scenario("Arbitrum :: Bridging integration test", ctx)
     assert.equalBN(
       accountABalanceBefore.add(withdrawalAmount),
       await l1Token.balanceOf(accountA.address)
+    );
+
+    assert.equalBN(
+      l1ERC20TokenGatewayBalanceBefore.sub(withdrawalAmount),
+      await l1Token.balanceOf(l1ERC20TokenGateway.address)
     );
   })
 
