@@ -185,7 +185,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       "0x",
     ]);
     assert.equalBN(
-      await l2Token.totalSupply(),
+      await l2Token.balanceOf(tokenHolderA.address),
       tokenHolderABalanceBefore.add(depositAmount)
     );
     assert.equalBN(
