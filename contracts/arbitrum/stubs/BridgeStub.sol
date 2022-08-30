@@ -11,4 +11,8 @@ contract BridgeStub is IBridge {
     constructor(address activeOutbox_) payable {
         activeOutbox = activeOutbox_;
     }
+
+    function setOutbox(address outbox_) external {
+        activeOutbox = outbox_;
+    }
 }

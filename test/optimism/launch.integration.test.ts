@@ -7,10 +7,18 @@ import testing, { scenario } from "../../utils/testing";
 import { BridgingManagerRole } from "../../utils/bridging-management";
 import { L1ERC20TokenBridge__factory } from "../../typechain";
 
+const REVERT = env.bool("REVERT", true);
+
 scenario("Optimism :: Launch integration test", ctxFactory)
   .after(async (ctx) => {
-    await ctx.l1Provider.send("evm_revert", [ctx.snapshot.l1]);
-    await ctx.l2Provider.send("evm_revert", [ctx.snapshot.l2]);
+    if (REVERT) {
+      await ctx.l1Provider.send("evm_revert", [ctx.snapshot.l1]);
+      await ctx.l2Provider.send("evm_revert", [ctx.snapshot.l2]);
+    } else {
+      console.warn(
+        "Revert is skipped! Forked node restart might be required for repeated launches!"
+      );
+    }
   })
 
   .step("Enable deposits", async (ctx) => {
