@@ -127,17 +127,32 @@ export function multichain(
   };
 }
 
-function getChainId(networkName: NetworkName) {
-  switch (networkName) {
-    case "mainnet":
-      return 1;
-    case "kovan":
-      return 42;
-    case "goerli":
-      return 5;
-    case "rinkeby":
-      return 4;
+function getChainId(protocol: ChainNameShort, networkName: NetworkName) {
+  const chainIds = {
+    eth: {
+      mainnet: 1,
+      kovan: 42,
+      goerli: 5,
+      rinkeby: 4,
+    },
+    opt: {
+      mainnet: 10,
+      kovan: 69,
+      goerli: 420,
+      rinkeby: undefined,
+    },
+    arb: {
+      mainnet: 42161,
+      kovan: undefined,
+      goerli: 421613,
+      rinkeby: 421611,
+    },
+  };
+  const chainId = chainIds[protocol][networkName];
+  if (!chainId) {
+    throw new Error(`Network for ${protocol} ${networkName} doesn't declared`);
   }
+  return chainId;
 }
 
 function getBlockExplorerBaseUrlByChainId(chainId: number) {

@@ -21,11 +21,13 @@ export default function messaging(
   const [ethProvider, optProvider] = network
     .multichain(["eth", "opt"], networkName)
     .getProviders(options);
+
   const optContracts = contracts(networkName, options);
   const crossChainMessenger = new CrossChainMessenger({
+    l2ChainId: network.chainId("opt", networkName),
     l1SignerOrProvider: ethProvider,
     l2SignerOrProvider: optProvider,
-    l1ChainId: network.chainId(networkName),
+    l1ChainId: network.chainId("eth", networkName),
   });
   return {
     prepareL2Message(msg: MessageData) {

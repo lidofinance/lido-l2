@@ -11,7 +11,8 @@ async function main() {
   const txHash = env.string("TX_HASH");
 
   const crossDomainMessenger = new CrossChainMessenger({
-    l1ChainId: await l1Signer.getChainId(),
+    l1ChainId: network.chainId("eth", networkName),
+    l2ChainId: network.chainId("opt", networkName),
     l1SignerOrProvider: l1Signer,
     l2SignerOrProvider: l2Signer,
   });

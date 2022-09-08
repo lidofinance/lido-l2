@@ -8,6 +8,7 @@ import { TransactionResponse } from "@ethersproject/providers";
 
 import env from "../../utils/env";
 import { wei } from "../../utils/wei";
+import network from "../../utils/network";
 import optimism from "../../utils/optimism";
 import { ERC20Mintable } from "../../typechain";
 import { scenario } from "../../utils/testing";
@@ -136,9 +137,8 @@ async function ctxFactory() {
     l2Token: testingSetup.l2Token,
     l1ERC20TokenBridge: testingSetup.l1ERC20TokenBridge,
     crossChainMessenger: new CrossChainMessenger({
-      l1ChainId: await testingSetup.l1Provider
-        .getNetwork()
-        .then((n) => n.chainId),
+      l2ChainId: network.chainId("opt", networkName),
+      l1ChainId: network.chainId("eth", networkName),
       l1SignerOrProvider: testingSetup.l1Tester,
       l2SignerOrProvider: testingSetup.l2Tester,
       bridges: {
