@@ -167,9 +167,11 @@ export class DeployScript {
     const networkNameByChainId: Record<number, string> = {
       1: "eth_mainnet",
       4: "eth_rinkeby",
+      5: "eth_goerli",
       10: "opt_mainnet",
       42: "eth_kovan",
       69: "opt_kovan",
+      420: "opt_goerli",
       31337: "hardhat",
       42161: "arb_mainnet",
       421611: "arb_rinkeby",

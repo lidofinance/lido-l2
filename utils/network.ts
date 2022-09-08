@@ -150,6 +150,7 @@ function getBlockExplorerBaseUrlByChainId(chainId: number) {
     // arbitrum
     42161: "https://arbiscan.io",
     421611: "https://testnet.arbiscan.io",
+    421613: "https://goerli-rollup-explorer.arbitrum.io",
     // optimism
     10: "https://optimistic.etherscan.io",
     420: "https://blockscout.com/optimism/goerli",
