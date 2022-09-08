@@ -4,7 +4,7 @@ import { ArbContractAddresses, CommonOptions } from "./types";
 const ArbitrumMainnetAddresses: ArbContractAddresses = {
   Inbox: "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f",
   ArbSys: "0x0000000000000000000000000000000000000064",
-  Bridge: "0x011b6e24ffb0b5f5fcc564cf4183c5bbbc96d515",
+  Bridge: "0x8315177ab297ba92a06054ce80a67ed4dbd7ed3a",
   Outbox: "0x760723CD2e632826c38Fef8CD438A4CC7E7E1A40",
   L1GatewayRouter: "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef",
   L2GatewayRouter: "0x5288c571Fd7aD117beA99bF60FE0846C4E84F933",
