@@ -121,7 +121,18 @@ const config: HardhatUserConfig = {
       arbitrumOne: env.string("ETHERSCAN_API_KEY_ARB", ""),
       optimisticKovan: env.string("ETHERSCAN_API_KEY_OPT", ""),
       optimisticEthereum: env.string("ETHERSCAN_API_KEY_OPT", ""),
+      optimisticGoerli: env.string("ETHERSCAN_API_KEY_ETH", ""),
     },
+    customChains: [
+      {
+        network: "optimisticGoerli",
+        chainId: 420,
+        urls: {
+          apiURL: "https://blockscout.com/optimism/goerli/api",
+          browserURL: "https://blockscout.com/optimism/goerli",
+        },
+      },
+    ],
   },
   typechain: {
     externalArtifacts: [
