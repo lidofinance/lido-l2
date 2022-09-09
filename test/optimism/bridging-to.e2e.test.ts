@@ -16,7 +16,7 @@ import { scenario } from "../../utils/testing";
 let depositTokensTxResponse: TransactionResponse;
 let withdrawTokensTxResponse: TransactionResponse;
 
-scenario("Optimism :: Bridging via deposit/withdraw E2E test", ctxFactory)
+scenario("Optimism :: Bridging via depositTo/withdrawTo E2E test", ctxFactory)
   .step(
     "Validate tester has required amount of L1 token",
     async ({ l1Token, l1Tester, depositAmount }) => {
@@ -56,11 +56,17 @@ scenario("Optimism :: Bridging via deposit/withdraw E2E test", ctxFactory)
   })
 
   .step("Bridge tokens to L2 via depositERC20()", async (ctx) => {
-    depositTokensTxResponse = await ctx.crossChainMessenger.depositERC20(
-      ctx.l1Token.address,
-      ctx.l2Token.address,
-      ctx.depositAmount
-    );
+    depositTokensTxResponse = await ctx.l1ERC20TokenBridge
+      .connect(ctx.l1Tester)
+      .depositERC20To(
+        ctx.l1Token.address,
+        ctx.l2Token.address,
+        ctx.l1Tester.address,
+        ctx.depositAmount,
+        2_000_000,
+        "0x"
+      );
+
     await depositTokensTxResponse.wait();
   })
 
@@ -72,11 +78,15 @@ scenario("Optimism :: Bridging via deposit/withdraw E2E test", ctxFactory)
   })
 
   .step("Withdraw tokens from L2 via withdrawERC20()", async (ctx) => {
-    withdrawTokensTxResponse = await ctx.crossChainMessenger.withdrawERC20(
-      ctx.l1Token.address,
-      ctx.l2Token.address,
-      ctx.withdrawalAmount
-    );
+    withdrawTokensTxResponse = await ctx.l2ERC20TokenBridge
+      .connect(ctx.l2Tester)
+      .withdrawTo(
+        ctx.l2Token.address,
+        ctx.l1Tester.address,
+        ctx.withdrawalAmount,
+        0,
+        "0x"
+      );
     await withdrawTokensTxResponse.wait();
   })
 
@@ -115,9 +125,11 @@ async function ctxFactory() {
     depositAmount: wei`0.025 ether`,
     withdrawalAmount: wei`0.025 ether`,
     l1Tester: testingSetup.l1Tester,
+    l2Tester: testingSetup.l2Tester,
     l1Token: testingSetup.l1Token,
     l2Token: testingSetup.l2Token,
     l1ERC20TokenBridge: testingSetup.l1ERC20TokenBridge,
+    l2ERC20TokenBridge: testingSetup.l2ERC20TokenBridge,
     crossChainMessenger: new CrossChainMessenger({
       l2ChainId: network.chainId("opt", networkName),
       l1ChainId: network.chainId("eth", networkName),
