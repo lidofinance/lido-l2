@@ -1,5 +1,5 @@
 import { BigNumberish, Wallet } from "ethers";
-import { EVMScriptDecoder } from "evm-script-decoder";
+import { EVMScriptDecoder } from "@lidofinance/evm-script-decoder";
 import {
   Agent__factory,
   TokenManager__factory,
