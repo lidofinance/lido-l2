@@ -25,12 +25,5 @@
     "name": "WstETH ERC20Bridged",
     "address": "0x92834c37dF982A13bb0f8C3F6608E26F0546538e",
     "txHash": "0x3632289e9e09f9f279b881bec30d31138a05b400e3a5dd7e2bf0173e8b8dc072"
-  },
-  {
-    "artifactPath": "utils/optimism/artifacts/OptimismBridgeExecutor.json",
-    "sourcePath": "contracts/bridges/OptimismBridgeExecutor.sol",
-    "name": "OptimismBridgeExecutor",
-    "address": "0xEfa0dB536d2c8089685630fafe88CF7805966FC3",
-    "txHash": "0xb2cac3cea80817ddf1e5ae042a0a3cd6e017e30e663f857ae1be6f171a39e49b"
   }
 ]

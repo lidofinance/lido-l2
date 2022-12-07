@@ -26,12 +26,6 @@
     "txHash": "0x517ea5c206473d2116324939ab42f93ca1079a6388c0db41684e926e36e1a411"
   },
   {
-    "artifactPath": "utils/arbitrum/artifacts/ArbitrumBridgeExecutor.json",
-    "sourcePath": "contracts/bridges/ArbitrumBridgeExecutor.sol",
-    "name": "ArbitrumBridgeExecutor",
-    "address": "0x1dcA41859Cd23b526CBe74dA8F48aC96e14B1A29"
-  },
-  {
     "artifactPath": "utils/arbitrum/artifacts/L2GatewayRouter.json",
     "sourcePath": "contracts/tokenbridge/arbitrum/gateway/L2GatewayRouter.sol",
     "name": "L2GatewayRouter",
