@@ -26,15 +26,5 @@
     "name": "L1ERC20TokenBridge",
     "address": "0x29C5c51A031165CE62F964966A6399b81165EFA4",
     "txHash": "0xfd7c2ee015321e1dcd9f0f0f6b2b15a1731087ba483190a1c8d616e3ffbf0323"
-  },
-  {
-    "artifactPath": "utils/arbitrum/artifacts/L1GatewayRouter.json",
-    "sourcePath": "contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol",
-    "name": "L1GatewayRouter",
-    "address": "0x2e8e3e55ce12f981ebf8e545cb263ab238e19715",
-    "_": [
-      "Artifact for the outdated implementation is in use, the current implementation is",
-      "0x52595021fa01b3e14ec6c88953afc8e35dff423c"
-    ]
   }
 ]
