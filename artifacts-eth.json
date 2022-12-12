@@ -1,0 +1,30 @@
+[
+  {
+    "artifactPath": "artifacts/contracts/proxy/OssifiableProxy.sol/OssifiableProxy.json",
+    "sourcePath": "contracts/proxy/OssifiableProxy.sol",
+    "name": "L1ERC20TokenGateway proxy",
+    "address": "0x0F25c1DC2a9922304f2eac71DCa9B07E310e8E5a",
+    "txHash": "0x912fc5992f5a24c2ffe5e230ac51fcc4724cb3e4a23535b04eec34f99f77e3a8"
+  },
+  {
+    "artifactPath": "artifacts/contracts/arbitrum/L1ERC20TokenGateway.sol/L1ERC20TokenGateway.json",
+    "sourcePath": "contracts/arbitrum/L1ERC20TokenGateway.sol",
+    "name": "L1ERC20TokenGateway",
+    "address": "0xc4E3ff0b5B106f88Fc64c43031BE8b076ee9F21C",
+    "txHash": "0xce43376cd317471806c6ac2a8efbd5dc6dcfb7201ba643e447f446e50354edcf"
+  },
+  {
+    "artifactPath": "artifacts/contracts/proxy/OssifiableProxy.sol/OssifiableProxy.json",
+    "sourcePath": "contracts/proxy/OssifiableProxy.sol",
+    "name": "L1ERC20TokenBridge proxy",
+    "address": "0x76943C0D61395d8F2edF9060e1533529cAe05dE6",
+    "txHash": "0x1bc90e7c6fe12e03691f7eccf025f3a244ea5a4888c7fb274f45f5e1004110ca"
+  },
+  {
+    "artifactPath": "artifacts/contracts/optimism/L1ERC20TokenBridge.sol/L1ERC20TokenBridge.json",
+    "sourcePath": "contracts/optimism/L1ERC20TokenBridge.sol",
+    "name": "L1ERC20TokenBridge",
+    "address": "0x29C5c51A031165CE62F964966A6399b81165EFA4",
+    "txHash": "0xfd7c2ee015321e1dcd9f0f0f6b2b15a1731087ba483190a1c8d616e3ffbf0323"
+  }
+]

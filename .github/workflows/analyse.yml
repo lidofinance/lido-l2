@@ -15,19 +15,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-      
+
       - name: Setup node.js version
         uses: actions/setup-node@v3
         with:
           node-version: 16.x
-          cache: 'yarn'
+          cache: "npm"
 
-      - name: Install yarn deps
-        run: yarn install --immutable
+      - name: Install node deps
+        run: npm ci
 
       - uses: actions/setup-python@v4
         with:
-          python-version: "3.10.1"
+          python-version: "3.10.6"
 
       - name: Install poetry requirements
         run: >
@@ -43,9 +43,9 @@ jobs:
         if: always()
         shell: bash
         run: >
-          test -f results.sarif && 
-          echo '::set-output name=value::present' || 
-          echo '::set-output name=value::not'
+          test -f results.sarif &&
+          echo 'value=present' >> $GITHUB_OUTPUT ||
+          echo 'value=not' >> $GITHUB_OUTPUT
 
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v2

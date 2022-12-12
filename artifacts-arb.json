@@ -1,0 +1,28 @@
+[
+  {
+    "artifactPath": "artifacts/contracts/proxy/OssifiableProxy.sol/OssifiableProxy.json",
+    "sourcePath": "contracts/proxy/OssifiableProxy.sol",
+    "name": "L2ERC20TokenGateway proxy",
+    "address": "0x07D4692291B9E30E326fd31706f686f83f331B82"
+  },
+  {
+    "artifactPath": "artifacts/contracts/arbitrum/L2ERC20TokenGateway.sol/L2ERC20TokenGateway.json",
+    "sourcePath": "contracts/arbitrum/L2ERC20TokenGateway.sol",
+    "name": "L2ERC20TokenGateway",
+    "address": "0xe75886DE20dF66827e321EfdB88726e6Baa4b0A7",
+    "txHash": "0xe99cd25baf61300dcf57466bead148dac28fd975076593a8874bbdc64973696d"
+  },
+  {
+    "artifactPath": "artifacts/contracts/proxy/OssifiableProxy.sol/OssifiableProxy.json",
+    "sourcePath": "contracts/proxy/OssifiableProxy.sol",
+    "name": "WstETH ERC20Bridged proxy",
+    "address": "0x5979D7b546E38E414F7E9822514be443A4800529"
+  },
+  {
+    "artifactPath": "artifacts/contracts/token/ERC20Bridged.sol/ERC20Bridged.json",
+    "sourcePath": "contracts/token/ERC20Bridged.sol",
+    "name": "WstETH ERC20Bridged",
+    "address": "0x0fBcbaEA96Ce0cF7Ee00A8c19c3ab6f5Dc8E1921",
+    "txHash": "0x517ea5c206473d2116324939ab42f93ca1079a6388c0db41684e926e36e1a411"
+  }
+]

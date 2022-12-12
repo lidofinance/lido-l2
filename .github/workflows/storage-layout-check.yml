@@ -9,7 +9,7 @@ on:
 jobs:
   assert:
     runs-on: ubuntu-latest
-    name: Assert storage layout 
+    name: Assert storage layout
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -18,11 +18,11 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16.x
-          cache: 'yarn'
+          cache: "npm"
 
-      - name: Install yarn deps
-        run: yarn install --immutable
-      
+      - name: Install node deps
+        run: npm ci
+
       - name: Check storage-layout
         uses: lidofinance/storage-layout-action@v1
         with:
