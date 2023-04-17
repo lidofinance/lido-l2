@@ -77,7 +77,7 @@
     "@eth-optimism/sdk": "^1.1.7",
     "@ethersproject/providers": "^5.6.8",
     "@lidofinance/evm-script-decoder": "^0.2.2",
-    "@openzeppelin/contracts": "^4.6.0",
+    "@openzeppelin/contracts": "^4.8.3",
     "arb-ts": "^1.0.2",
     "chalk": "4.1.2"
   }
