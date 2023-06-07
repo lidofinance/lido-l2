@@ -8,10 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-import {IL1BridgeLegacy} from "@matterlabs/zksync-contracts/l1/contracts/bridge/interfaces/IL1BridgeLegacy.sol";
-import {IL1Bridge} from "@matterlabs/zksync-contracts/l1/contracts/bridge/interfaces/IL1Bridge.sol";
 import {IL2Bridge} from "@matterlabs/zksync-contracts/l1/contracts/bridge/interfaces/IL2Bridge.sol";
-
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
 
 import {IL2ContractDeployer} from "@matterlabs/zksync-contracts/l1/contracts/common/interfaces/IL2ContractDeployer.sol";
@@ -20,12 +17,16 @@ import {L2ContractHelper} from "@matterlabs/zksync-contracts/l1/contracts/common
 import {ReentrancyGuard} from "@matterlabs/zksync-contracts/l1/contracts/common/ReentrancyGuard.sol";
 import {AddressAliasHelper} from "@matterlabs/zksync-contracts/l1/contracts/vendor/AddressAliasHelper.sol";
 import {BridgeInitializationHelper} from "./libraries/BridgeInitializationHelper.sol";
+import {IL1ERC20Bridge} from "./interfaces/IL1ERC20TokenBridge.sol";
 
-/// @author Matter Labs
+import {BridgeableTokens} from "../BridgeableTokens.sol";
+import {BridgingManager} from "../BridgingManager.sol";
+
+
 /// @notice Smart contract that allows depositing ERC20 tokens from Ethereum to zkSync v2.0
 /// @dev It is standard implementation of ERC20 Bridge that can be used as a reference
 /// for any other custom token bridges.
-contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, ReentrancyGuard {
+contract L1ERC20Bridge is IL1ERC20Bridge, BridgeableTokens, BridgingManager, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /// @dev zkSync smart contract that is used to operate with L2 via asynchronous L2 <-> L1 communication
@@ -40,7 +41,7 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, ReentrancyGuard {
     mapping(address => mapping(address => mapping(bytes32 => uint256)))
         public depositAmount;
 
-    /// @dev The address of deployed L2 bridge counterpart
+    /// @inheritdoc IL1ERC20Bridge
     address public l2Bridge;
 
     /// @dev The address of the factory that deploys proxy for L2 tokens
@@ -54,28 +55,29 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, ReentrancyGuard {
     mapping(address => mapping(address => uint256))
         public totalDepositedAmountPerUser;
 
+    /// @notice address of token on L1
+    address immutable public l1Token;
+
+    /// @notice address of token on L2
+    address immutable public l2Token;
+
+
     /// @dev Contract is expected to be used as proxy implementation.
     /// @dev Initialize the implementation to prevent Parity hack.
-    constructor(IZkSync _zkSync) reentrancyGuardInitializer {
-        zkSync = _zkSync;
+    constructor(IZkSync zkSync_, address l1Token_, address l2Token_) BridgeableTokens(l1Token_, l2Token_) reentrancyGuardInitializer {
+        l1Token = l1Token_;
+        l2Token = l2Token_;
+        zkSync = zkSync_;
     }
 
-    /// @dev Initializes a contract bridge for later use. Expected to be used in the proxy
-    /// @dev During initialization deploys L2 bridge counterpart as well as provides some factory deps for it
-    /// @param _factoryDeps A list of raw bytecodes that are needed for deployment of the L2 bridge
-    /// @notice _factoryDeps[0] == a raw bytecode of L2 bridge implementation
-    /// @notice _factoryDeps[1] == a raw bytecode of proxy that is used as L2 bridge
-    /// @notice _factoryDeps[2] == a raw bytecode of token proxy
-    /// @param _l2TokenBeacon Pre-calculated address of the L2 token upgradeable beacon
-    /// @notice At the time of the function call, it is not yet deployed in L2, but knowledge of its address
-    /// @notice is necessary for determining L2 token address by L1 address, see `l2TokenAddress(address)` function
-    /// @param _governor Address which can change L2 token implementation and upgrade the bridge
+    /// @inheritdoc IL1ERC20Bridge
     function initialize(
         bytes[] calldata _factoryDeps,
         address _l2TokenBeacon,
         address _governor,
         uint256 _deployBridgeImplementationFee,
         uint256 _deployBridgeProxyFee
+
     ) external payable reentrancyGuardInitializer {
         require(_l2TokenBeacon != address(0), "nf");
         require(_governor != address(0), "nh");
@@ -132,16 +134,7 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, ReentrancyGuard {
         );
     }
 
-    /// @notice Legacy deposit method with refunding the fee to the caller, use another `deposit` method instead.
-    /// @dev Initiates a deposit by locking funds on the contract and sending the request
-    /// of processing an L2 transaction where tokens would be minted
-    /// @param _l2Receiver The account address that should receive funds on L2
-    /// @param _l1Token The L1 token address which is deposited
-    /// @param _amount The total amount of tokens to be bridged
-    /// @param _l2TxGasLimit The L2 gas limit to be used in the corresponding L2 transaction
-    /// @param _l2TxGasPerPubdataByte The gasPerPubdataByteLimit to be used in the corresponding L2 transaction
-    /// @return l2TxHash The L2 transaction hash of deposit finalization
-    /// NOTE: the function doesn't use `nonreentrant` and `senderCanCallFunction` modifiers, because the inner method do.
+    /// @inheritdoc IL1ERC20Bridge
     function deposit(
         address _l2Receiver,
         address _l1Token,
@@ -159,16 +152,9 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, ReentrancyGuard {
         );
     }
 
-    /// @notice Initiates a deposit by locking funds on the contract and sending the request
-    /// of processing an L2 transaction where tokens would be minted
-    /// @param _l2Receiver The account address that should receive funds on L2
-    /// @param _l1Token The L1 token address which is deposited
-    /// @param _amount The total amount of tokens to be bridged
-    /// @param _l2TxGasLimit The L2 gas limit to be used in the corresponding L2 transaction
-    /// @param _l2TxGasPerPubdataByte The gasPerPubdataByteLimit to be used in the corresponding L2 transaction
+    /// @inheritdoc IL1ERC20Bridge
     /// @param _refundRecipient The address on L2 that will receive the refund for the transaction. If the transaction fails,
     /// it will also be the address to receive `_l2Value`. If zero, the refund will be sent to the sender of the transaction.
-    /// @return l2TxHash The L2 transaction hash of deposit finalization
     function deposit(
         address _l2Receiver,
         address _l1Token,
@@ -265,14 +251,7 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, ReentrancyGuard {
         data = abi.encode(data1, data2, data3);
     }
 
-    /// @dev Withdraw funds from the initiated deposit, that failed when finalizing on L2
-    /// @param _depositSender The address of the deposit initiator
-    /// @param _l1Token The address of the deposited L1 ERC20 token
-    /// @param _l2TxHash The L2 transaction hash of the failed deposit finalization
-    /// @param _l2BlockNumber The L2 block number where the deposit finalization was processed
-    /// @param _l2MessageIndex The position in the L2 logs Merkle tree of the l2Log that was sent with the message
-    /// @param _l2TxNumberInBlock The L2 transaction number in a block, in which the log was sent
-    /// @param _merkleProof The Merkle proof of the processing L1 -> L2 transaction with deposit finalization
+    /// @inheritdoc IL1ERC20Bridge
     function claimFailedDeposit(
         address _depositSender,
         address _l1Token,
@@ -305,12 +284,7 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, ReentrancyGuard {
         emit ClaimedFailedDeposit(_depositSender, _l1Token, amount);
     }
 
-    /// @notice Finalize the withdrawal and release funds
-    /// @param _l2BlockNumber The L2 block number where the withdrawal was processed
-    /// @param _l2MessageIndex The position in the L2 logs Merkle tree of the l2Log that was sent with the message
-    /// @param _l2TxNumberInBlock The L2 transaction number in a block, in which the log was sent
-    /// @param _message The L2 withdraw data, stored in an L2 -> L1 message
-    /// @param _merkleProof The Merkle proof of the inclusion L2 -> L1 message about withdrawal initialization
+    /// @inheritdoc IL1ERC20Bridge
     function finalizeWithdrawal(
         uint256 _l2BlockNumber,
         uint256 _l2MessageIndex,
@@ -413,4 +387,6 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, ReentrancyGuard {
                 constructorInputHash
             );
     }
+
+
 }
