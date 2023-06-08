@@ -297,7 +297,7 @@ contract L1ERC20Bridge is
         uint16 _l2TxNumberInBlock,
         bytes calldata _message,
         bytes32[] calldata _merkleProof
-    ) external nonReentrant {
+    ) external nonReentrant whenWithdrawalsEnabled {
         require(
             !isWithdrawalFinalized[_l2BlockNumber][_l2MessageIndex],
             "Withdrawal is already finalized"
