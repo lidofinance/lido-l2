@@ -22,11 +22,15 @@ import {IL1ERC20Bridge} from "./interfaces/IL1ERC20TokenBridge.sol";
 import {BridgeableTokens} from "../BridgeableTokens.sol";
 import {BridgingManager} from "../BridgingManager.sol";
 
-
-/// @notice Smart contract that allows depositing ERC20 tokens from Ethereum to zkSync v2.0
-/// @dev It is standard implementation of ERC20 Bridge that can be used as a reference
+/// @notice Smart contract that allows depositing wstETH tokens from Ethereum to zkSync v2.0
+/// @dev It is standard implementation of wstETH Bridge that can be used as a reference
 /// for any other custom token bridges.
-contract L1ERC20Bridge is IL1ERC20Bridge, BridgeableTokens, BridgingManager, ReentrancyGuard {
+contract L1ERC20Bridge is
+    IL1ERC20Bridge,
+    BridgeableTokens,
+    BridgingManager,
+    ReentrancyGuard
+{
     using SafeERC20 for IERC20;
 
     /// @dev zkSync smart contract that is used to operate with L2 via asynchronous L2 <-> L1 communication
@@ -44,59 +48,57 @@ contract L1ERC20Bridge is IL1ERC20Bridge, BridgeableTokens, BridgingManager, Ree
     /// @inheritdoc IL1ERC20Bridge
     address public l2Bridge;
 
-    /// @dev The address of the factory that deploys proxy for L2 tokens
-    address public l2TokenBeacon;
-
-    /// @dev The bytecode hash of the L2 token contract
-    bytes32 public l2TokenProxyBytecodeHash;
-
-    /// @dev The accumulated deposited amount per user.
-    /// @dev A mapping L1 token address => user address => the total deposited amount by the user
-    mapping(address => mapping(address => uint256))
-        public totalDepositedAmountPerUser;
-
-    /// @notice address of token on L1
-    address immutable public l1Token;
-
-    /// @notice address of token on L2
-    address immutable public l2Token;
-
+    /// @dev The address of L2 Proxy Contract Address on L2
+    address public l2ProxyContractAddress;
 
     /// @dev Contract is expected to be used as proxy implementation.
     /// @dev Initialize the implementation to prevent Parity hack.
-    constructor(IZkSync zkSync_, address l1Token_, address l2Token_) BridgeableTokens(l1Token_, l2Token_) reentrancyGuardInitializer {
-        l1Token = l1Token_;
-        l2Token = l2Token_;
+    constructor(
+        IZkSync zkSync_,
+        address l1Token_,
+        address l2Token_
+    ) BridgeableTokens(l1Token_, l2Token_) reentrancyGuardInitializer {
         zkSync = zkSync_;
     }
 
     /// @inheritdoc IL1ERC20Bridge
     function initialize(
         bytes[] calldata _factoryDeps,
-        address _l2TokenBeacon,
+        address _l2ProxyContractAddress,
         address _governor,
         uint256 _deployBridgeImplementationFee,
         uint256 _deployBridgeProxyFee
-
     ) external payable reentrancyGuardInitializer {
-        require(_l2TokenBeacon != address(0), "nf");
-        require(_governor != address(0), "nh");
-        // We are expecting to see the exact three bytecodes that are needed to initialize the bridge
-        require(_factoryDeps.length == 3, "mk");
-        // The caller miscalculated deploy transactions fees
+        require(
+            _l2ProxyContractAddress != address(0),
+            "L2 Token Proxy address can't be zero"
+        );
+        require(_governor != address(0), " Governor address can't be zero");
+        require(
+            _factoryDeps.length == 3,
+            "Invalid factory deps length provided"
+        );
         require(
             msg.value == _deployBridgeImplementationFee + _deployBridgeProxyFee,
-            "fee"
+            "The caller miscalculated deploy transactions fees"
         );
-        l2TokenProxyBytecodeHash = L2ContractHelper.hashL2Bytecode(
+        bytes32 l2TokenProxyBytecodeHash = L2ContractHelper.hashL2Bytecode(
             _factoryDeps[2]
         );
-        l2TokenBeacon = _l2TokenBeacon;
+
+        l2ProxyContractAddress = _l2ProxyContractAddress;
 
         bytes32 l2BridgeImplementationBytecodeHash = L2ContractHelper
             .hashL2Bytecode(_factoryDeps[0]);
+
         bytes32 l2BridgeProxyBytecodeHash = L2ContractHelper.hashL2Bytecode(
             _factoryDeps[1]
+        );
+
+        bytes32 l2bridgeContructorData = abi.encode(
+            address(this),
+            l1Token,
+            l2Token
         );
 
         // Deploy L2 bridge implementation contract
@@ -105,18 +107,20 @@ contract L1ERC20Bridge is IL1ERC20Bridge, BridgeableTokens, BridgingManager, Ree
                 zkSync,
                 _deployBridgeImplementationFee,
                 l2BridgeImplementationBytecodeHash,
-                "", // Empty constructor data
+                l2bridgeContructorData, // "", // Empty constructor data - l2bridgeContructorData
                 _factoryDeps // All factory deps are needed for L2 bridge
             );
 
         // Prepare the proxy constructor data
         bytes memory l2BridgeProxyConstructorData;
         {
+            // TODO: CHANGE ENCODED DATA
             // Data to be used in delegate call to initialize the proxy
             bytes memory proxyInitializationParams = abi.encodeCall(
                 IL2ERC20Bridge.initialize,
                 (address(this), l2TokenProxyBytecodeHash, _governor)
             );
+
             l2BridgeProxyConstructorData = abi.encode(
                 bridgeImplementationAddr,
                 _governor,
@@ -153,8 +157,6 @@ contract L1ERC20Bridge is IL1ERC20Bridge, BridgeableTokens, BridgingManager, Ree
     }
 
     /// @inheritdoc IL1ERC20Bridge
-    /// @param _refundRecipient The address on L2 that will receive the refund for the transaction. If the transaction fails,
-    /// it will also be the address to receive `_l2Value`. If zero, the refund will be sent to the sender of the transaction.
     function deposit(
         address _l2Receiver,
         address _l1Token,
@@ -162,12 +164,19 @@ contract L1ERC20Bridge is IL1ERC20Bridge, BridgeableTokens, BridgingManager, Ree
         uint256 _l2TxGasLimit,
         uint256 _l2TxGasPerPubdataByte,
         address _refundRecipient
-    ) public payable nonReentrant returns (bytes32 l2TxHash) {
-        require(_amount != 0, "2T"); // empty deposit amount
+    )
+        public
+        payable
+        nonReentrant
+        whenDepositsEnabled
+        onlySupportedL1Token(_l1Token)
+        returns (bytes32 l2TxHash)
+    {
+        require(_amount != 0, "The deposit amount can't be zero");
+
         uint256 amount = _depositFunds(msg.sender, IERC20(_l1Token), _amount);
-        require(amount == _amount, "1T"); // The token has non-standard transfer logic
-        // verify the deposit amount is allowed
-        // _verifyDepositLimit(_l1Token, msg.sender, _amount, false);
+
+        require(amount == _amount, "The token has non-standard transfer logic");
 
         bytes memory l2TxCalldata = _getDepositL2Calldata(
             msg.sender,
@@ -175,9 +184,10 @@ contract L1ERC20Bridge is IL1ERC20Bridge, BridgeableTokens, BridgingManager, Ree
             _l1Token,
             amount
         );
+
         // If the refund recipient is not specified, the refund will be sent to the sender of the transaction.
         // Otherwise, the refund will be sent to the specified address.
-        // Please note, if the recipient is a contract (the only exception is a contracting contract, but it is shooting in the leg).
+        // Please note, if the recipient is a contract (the only exception is a contracting contract, but it is a shot in the leg).
         address refundRecipient = _refundRecipient;
         if (_refundRecipient == address(0)) {
             refundRecipient = msg.sender != tx.origin
@@ -216,7 +226,6 @@ contract L1ERC20Bridge is IL1ERC20Bridge, BridgeableTokens, BridgingManager, Ree
         uint256 balanceBefore = _token.balanceOf(address(this));
         _token.safeTransferFrom(_from, address(this), _amount);
         uint256 balanceAfter = _token.balanceOf(address(this));
-
         return balanceAfter - balanceBefore;
     }
 
@@ -269,16 +278,13 @@ contract L1ERC20Bridge is IL1ERC20Bridge, BridgeableTokens, BridgingManager, Ree
             _merkleProof,
             TxStatus.Failure
         );
-        require(proofValid, "yn");
+        require(proofValid, "The proof is not valid");
 
         uint256 amount = depositAmount[_depositSender][_l1Token][_l2TxHash];
-        require(amount > 0, "y1");
-
-        // Change the total deposited amount by the user
-        // _verifyDepositLimit(_l1Token, _depositSender, amount, true);
+        require(amount > 0, "The claimed amount can't be zero");
 
         delete depositAmount[_depositSender][_l1Token][_l2TxHash];
-        // Withdraw funds
+
         IERC20(_l1Token).safeTransfer(_depositSender, amount);
 
         emit ClaimedFailedDeposit(_depositSender, _l1Token, amount);
@@ -292,7 +298,10 @@ contract L1ERC20Bridge is IL1ERC20Bridge, BridgeableTokens, BridgingManager, Ree
         bytes calldata _message,
         bytes32[] calldata _merkleProof
     ) external nonReentrant {
-        require(!isWithdrawalFinalized[_l2BlockNumber][_l2MessageIndex], "pw");
+        require(
+            !isWithdrawalFinalized[_l2BlockNumber][_l2MessageIndex],
+            "Withdrawal is already finalized"
+        );
 
         L2Message memory l2ToL1Message = L2Message({
             txNumberInBlock: _l2TxNumberInBlock,
@@ -305,19 +314,22 @@ contract L1ERC20Bridge is IL1ERC20Bridge, BridgeableTokens, BridgingManager, Ree
             address l1Token,
             uint256 amount
         ) = _parseL2WithdrawalMessage(l2ToL1Message.data);
+
         // Preventing the stack too deep error
         {
+            // prove that the message was sent to L1 and included in a zkSync block
             bool success = zkSync.proveL2MessageInclusion(
                 _l2BlockNumber,
                 _l2MessageIndex,
                 l2ToL1Message,
                 _merkleProof
             );
-            require(success, "nq");
+
+            require(success, "Proving message inclusion failed");
         }
 
         isWithdrawalFinalized[_l2BlockNumber][_l2MessageIndex] = true;
-        // Withdraw funds
+
         IERC20(l1Token).safeTransfer(l1Receiver, amount);
 
         emit WithdrawalFinalized(l1Receiver, l1Token, amount);
@@ -333,7 +345,7 @@ contract L1ERC20Bridge is IL1ERC20Bridge, BridgeableTokens, BridgingManager, Ree
     {
         // Check that the message length is correct.
         // It should be equal to the length of the function signature + address + address + uint256 = 4 + 20 + 20 + 32 = 76 (bytes).
-        require(_l2ToL1message.length == 76, "kk");
+        require(_l2ToL1message.length == 76, "Invalid length of the message");
 
         (uint32 functionSignature, uint256 offset) = UnsafeBytes.readUint32(
             _l2ToL1message,
@@ -341,7 +353,7 @@ contract L1ERC20Bridge is IL1ERC20Bridge, BridgeableTokens, BridgingManager, Ree
         );
         require(
             bytes4(functionSignature) == this.finalizeWithdrawal.selector,
-            "nt"
+            "Non-matching function signatures"
         );
 
         (l1Receiver, offset) = UnsafeBytes.readAddress(_l2ToL1message, offset);
@@ -349,44 +361,10 @@ contract L1ERC20Bridge is IL1ERC20Bridge, BridgeableTokens, BridgingManager, Ree
         (amount, offset) = UnsafeBytes.readUint256(_l2ToL1message, offset);
     }
 
-    /// @dev Verify the deposit limit is reached to its cap or not
-    // function _verifyDepositLimit(
-    //     address _l1Token,
-    //     address _depositor,
-    //     uint256 _amount,
-    //     bool _claiming
-    // ) internal {
-    //     IAllowList.Deposit memory limitData = IAllowList(allowList)
-    //         .getTokenDepositLimitData(_l1Token);
-    //     if (!limitData.depositLimitation) return; // no deposit limitation is placed for this token
-
-    //     if (_claiming) {
-    //         totalDepositedAmountPerUser[_l1Token][_depositor] -= _amount;
-    //     } else {
-    //         require(
-    //             totalDepositedAmountPerUser[_l1Token][_depositor] + _amount <=
-    //                 limitData.depositCap,
-    //             "d1"
-    //         );
-    //         totalDepositedAmountPerUser[_l1Token][_depositor] += _amount;
-    //     }
-    // }
-
     /// @return The L2 token address that would be minted for deposit of the given L1 token
-    function l2TokenAddress(address _l1Token) public view returns (address) {
-        bytes32 constructorInputHash = keccak256(
-            abi.encode(address(l2TokenBeacon), "")
-        );
-        bytes32 salt = bytes32(uint256(uint160(_l1Token)));
-
-        return
-            L2ContractHelper.computeCreate2Address(
-                l2Bridge,
-                salt,
-                l2TokenProxyBytecodeHash,
-                constructorInputHash
-            );
+    function l2TokenAddress(
+        address _l1Token
+    ) public view returns (address l2Token) {
+        l2Token = _l1Token == l1Token ? l2ProxyContractAddress : address(0);
     }
-
-
 }
