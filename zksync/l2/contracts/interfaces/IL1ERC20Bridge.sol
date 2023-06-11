@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-/// @author mpavlovic-txfusion
 interface IL1ERC20Bridge {
     function finalizeWithdrawal(
         uint256 _l2BlockNumber,

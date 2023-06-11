@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 import {IL2Messenger} from "./interfaces/IL2Messenger.sol";
 
-/// @author mpavlovic-txfusion
 /// @notice A helper contract to simplify zkSync to Ethereum communication process
 contract L2CrossDomainEnabled {
     uint160 private constant ADDRESS_OFFSET =

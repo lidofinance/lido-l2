@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 /**
- * @author mpavlovic-txfusion
  * @notice Smart contract for sending arbitrary length messages to L1
  * @dev by default ZkSync can send fixed length messages on L1.
  * A fixed length message has 4 parameters `senderAddress` `isService`, `key`, `value`,

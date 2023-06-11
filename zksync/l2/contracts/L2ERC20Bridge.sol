@@ -2,37 +2,49 @@
 
 pragma solidity ^0.8.0;
 
-// import {IL2Bridge} from "@matterlabs/zksync-contracts/l2/contracts/bridge/interfaces/IL2Bridge.sol";
-
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
-import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
+import {IERC20Bridged} from "../../../contracts/token/interfaces/IERC20Bridged.sol";
 
-import {BridgingManager} from "../BridgingManager.sol";
-import {BridgeableTokens} from "../BridgeableTokens.sol";
+import {BridgingManager} from "../../../contracts/BridgingManager.sol";
+import {BridgeableTokensUpgradable} from "./BridgeableTokensUpgradable.sol";
 import {L2CrossDomainEnabled} from "./L2CrossDomainEnabled.sol";
 
-/// @author mpavlovic-txfusion
 /// @notice The L2 token bridge works with the L1 token bridge to enable ERC20 token bridging
 ///     between L1 and L2. Mints tokens during deposits and burns tokens during withdrawals. 
 ///     Additionally, adds the methods for bridging management: enabling and disabling withdrawals/deposits
 contract L2ERC20Bridge is
     IL2ERC20Bridge,
     BridgingManager,
-    BridgeableTokens,
+    BridgeableTokensUpgradable,
     L2CrossDomainEnabled
 {
     /// @inheritdoc IL2ERC20Bridge
-    address public immutable l1Bridge;
+    address public override l1Bridge;
 
-    /// @param l1TokenBridge_  Address of the corresponding L1 bridge
+    /// @dev Contract is expected to be used as proxy implementation.
+    /// @dev Disable the initialization to prevent Parity hack.
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @notice Initializes the contract with parameters needed for its functionality.
+    /// @param l1TokenBridge_ Address of the corresponding L1 bridge
     /// @param l1Token_ Address of the bridged token in the L1 chain
     /// @param l2Token_ Address of the token minted on the L2 chain when token bridged
-    constructor(
+    /// @dev The function can only be called once during contract deployment due to the 'initializer' modifier.
+    function initialize(
         address l1TokenBridge_,
         address l1Token_,
         address l2Token_
-    ) BridgeableTokens(l1Token_, l2Token_) {
+    )
+        external
+        initializer
+        onlyNonZeroAccount(l1TokenBridge_)
+        onlySupportedL1Token(l1Token_)
+        onlySupportedL2Token(l2Token_)
+    {
+        __BridgeableTokens_init(l1Token_, l2Token_);
         l1Bridge = l1TokenBridge_;
     }
 

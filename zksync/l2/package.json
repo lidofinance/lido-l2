@@ -1,0 +1,11 @@
+{
+  "name": "l2-zksync-contracts",
+  "version": "0.1.0",
+  "scripts": {
+    "compile": "hardhat compile"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@matterlabs/hardhat-zksync-solc": "^0.3.17"
+  }
+}

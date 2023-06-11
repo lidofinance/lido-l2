@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-/// @author mpavlovic-txfusion
 /// @notice The L2 token bridge works with the L1 token bridge to enable ERC20 token bridging
 ///     between L1 and L2. Mints tokens during deposits and burns tokens during withdrawals.
 interface IL2ERC20Bridge {
