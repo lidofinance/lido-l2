@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
-import {IERC20Bridged} from "../../../contracts/token/interfaces/IERC20Bridged.sol";
+import {IERC20Bridged} from "../../common//token/interfaces/IERC20Bridged.sol";
 
-import {BridgingManager} from "../../../contracts/BridgingManager.sol";
-import {BridgeableTokensUpgradable} from "./BridgeableTokensUpgradable.sol";
+import {BridgingManager} from "../../common/BridgingManager.sol";
+import {BridgeableTokensUpgradable} from "../../common/BridgeableTokensUpgradable.sol";
 import {L2CrossDomainEnabled} from "./L2CrossDomainEnabled.sol";
 
 /// @notice The L2 token bridge works with the L1 token bridge to enable ERC20 token bridging

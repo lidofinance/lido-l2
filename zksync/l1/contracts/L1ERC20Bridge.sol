@@ -17,10 +17,10 @@ import {L2ContractHelper} from "@matterlabs/zksync-contracts/l1/contracts/common
 import {ReentrancyGuard} from "@matterlabs/zksync-contracts/l1/contracts/common/ReentrancyGuard.sol";
 import {AddressAliasHelper} from "@matterlabs/zksync-contracts/l1/contracts/vendor/AddressAliasHelper.sol";
 import {BridgeInitializationHelper} from "./libraries/BridgeInitializationHelper.sol";
-import {IL1ERC20Bridge} from "./interfaces/IL1ERC20TokenBridge.sol";
+import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 
-import {BridgeableTokens} from "../BridgeableTokens.sol";
-import {BridgingManager} from "../BridgingManager.sol";
+import {BridgeableTokens} from "../../common/BridgeableTokens.sol";
+import {BridgingManager} from "../../common/BridgingManager.sol";
 
 /// @notice Smart contract that allows depositing wstETH tokens from Ethereum to zkSync v2.0
 /// @dev It is standard implementation of wstETH Bridge that can be used as a reference
@@ -48,9 +48,6 @@ contract L1ERC20Bridge is
     /// @inheritdoc IL1ERC20Bridge
     address public l2Bridge;
 
-    /// @dev The address of L2 Proxy Contract Address on L2
-    address public l2ProxyContractAddress;
-
     /// @dev Contract is expected to be used as proxy implementation.
     /// @dev Initialize the implementation to prevent Parity hack.
     constructor(
@@ -64,29 +61,19 @@ contract L1ERC20Bridge is
     /// @inheritdoc IL1ERC20Bridge
     function initialize(
         bytes[] calldata _factoryDeps,
-        address _l2ProxyContractAddress,
         address _governor,
         uint256 _deployBridgeImplementationFee,
         uint256 _deployBridgeProxyFee
     ) external payable reentrancyGuardInitializer {
-        require(
-            _l2ProxyContractAddress != address(0),
-            "L2 Token Proxy address can't be zero"
-        );
         require(_governor != address(0), " Governor address can't be zero");
         require(
-            _factoryDeps.length == 3,
+            _factoryDeps.length == 2,
             "Invalid factory deps length provided"
         );
         require(
             msg.value == _deployBridgeImplementationFee + _deployBridgeProxyFee,
             "The caller miscalculated deploy transactions fees"
         );
-        bytes32 l2TokenProxyBytecodeHash = L2ContractHelper.hashL2Bytecode(
-            _factoryDeps[2]
-        );
-
-        l2ProxyContractAddress = _l2ProxyContractAddress;
 
         bytes32 l2BridgeImplementationBytecodeHash = L2ContractHelper
             .hashL2Bytecode(_factoryDeps[0]);
@@ -95,30 +82,23 @@ contract L1ERC20Bridge is
             _factoryDeps[1]
         );
 
-        bytes32 l2bridgeContructorData = abi.encode(
-            address(this),
-            l1Token,
-            l2Token
-        );
-
         // Deploy L2 bridge implementation contract
         address bridgeImplementationAddr = BridgeInitializationHelper
             .requestDeployTransaction(
                 zkSync,
                 _deployBridgeImplementationFee,
                 l2BridgeImplementationBytecodeHash,
-                l2bridgeContructorData, // "", // Empty constructor data - l2bridgeContructorData
+                "", // Empty constructor data
                 _factoryDeps // All factory deps are needed for L2 bridge
             );
 
         // Prepare the proxy constructor data
         bytes memory l2BridgeProxyConstructorData;
         {
-            // TODO: CHANGE ENCODED DATA
             // Data to be used in delegate call to initialize the proxy
             bytes memory proxyInitializationParams = abi.encodeCall(
                 IL2ERC20Bridge.initialize,
-                (address(this), l2TokenProxyBytecodeHash, _governor)
+                (address(this), l1Token, l2Token)
             );
 
             l2BridgeProxyConstructorData = abi.encode(
@@ -361,10 +341,10 @@ contract L1ERC20Bridge is
         (amount, offset) = UnsafeBytes.readUint256(_l2ToL1message, offset);
     }
 
-    /// @return The L2 token address that would be minted for deposit of the given L1 token
+    /// @inheritdoc IL1ERC20Bridge
     function l2TokenAddress(
         address _l1Token
-    ) public view returns (address l2Token) {
-        l2Token = _l1Token == l1Token ? l2ProxyContractAddress : address(0);
+    ) public view returns (address l2TokenAddr) {
+        l2TokenAddr = _l1Token == l1Token ? l2Token : address(0);
     }
 }

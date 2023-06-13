@@ -10,7 +10,7 @@ const config: HardhatUserConfig = {
     },
   },
   solidity: {
-    version: "0.8.10",
+    version: "0.8.13",
     settings: {
       optimizer: {
         enabled: true,
@@ -24,10 +24,10 @@ const config: HardhatUserConfig = {
     }
   },
   paths: {
-    root: "../../",
-    sources: "zksync/l2/contracts",
-    cache: "zksync/l2/cache-zk",
-    artifacts: "zksync/l2/artifacts-zk"
+    root: "../",
+    sources: "l2/contracts",
+    cache: "l2/cache-zk",
+    artifacts: "l2/artifacts-zk"
   }
 };
 
