@@ -56,12 +56,12 @@ interface IL1ERC20Bridge is IL1Bridge, IL1BridgeLegacy {
     /// @param _l2TxGasPerPubdataByte The gasPerPubdataByteLimit to be used in the corresponding L2 transaction
     /// @return l2TxHash The L2 transaction hash of deposit finalization
     function deposit(
-            address _l2Receiver,
-            address _l1Token,
-            uint256 _amount,
-            uint256 _l2TxGasLimit,
-            uint256 _l2TxGasPerPubdataByte
-        ) external payable returns (bytes32 l2TxHash);
+        address _l2Receiver,
+        address _l1Token,
+        uint256 _amount,
+        uint256 _l2TxGasLimit,
+        uint256 _l2TxGasPerPubdataByte
+    ) external payable returns (bytes32 l2TxHash);
 
     /// @dev Withdraw funds from the initiated deposit, that failed when finalizing on L2
     /// @param _depositSender The address of the deposit initiator

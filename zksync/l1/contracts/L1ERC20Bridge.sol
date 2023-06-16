@@ -49,12 +49,12 @@ contract L1ERC20Bridge is
     address public l2Bridge;
 
     /// @dev Contract is expected to be used as proxy implementation.
-    /// @dev Initialize the implementation to prevent Parity hack.
+    /// @dev Disable the initialization to prevent Parity hack.
     constructor(
         IZkSync zkSync_,
         address l1Token_,
         address l2Token_
-    ) BridgeableTokens(l1Token_, l2Token_) reentrancyGuardInitializer {
+    ) BridgeableTokens(l1Token_, l2Token_) {
         zkSync = zkSync_;
     }
 
@@ -65,7 +65,7 @@ contract L1ERC20Bridge is
         uint256 _deployBridgeImplementationFee,
         uint256 _deployBridgeProxyFee
     ) external payable reentrancyGuardInitializer {
-        require(_governor != address(0), " Governor address can't be zero");
+        require(_governor != address(0), "Governor address can't be zero");
         require(
             _factoryDeps.length == 2,
             "Invalid factory deps length provided"
@@ -283,17 +283,18 @@ contract L1ERC20Bridge is
             "Withdrawal is already finalized"
         );
 
+        (
+            address l1Receiver,
+            address l1Token,
+            uint256 amount
+        ) = _parseL2WithdrawalMessage(_message);
+
+        // @dev struct L2Message
         L2Message memory l2ToL1Message = L2Message({
             txNumberInBlock: _l2TxNumberInBlock,
             sender: l2Bridge,
             data: _message
         });
-
-        (
-            address l1Receiver,
-            address l1Token,
-            uint256 amount
-        ) = _parseL2WithdrawalMessage(l2ToL1Message.data);
 
         // Preventing the stack too deep error
         {
@@ -324,16 +325,16 @@ contract L1ERC20Bridge is
         returns (address l1Receiver, address l1Token, uint256 amount)
     {
         // Check that the message length is correct.
-        // It should be equal to the length of the function signature + address + address + uint256 = 4 + 20 + 20 + 32 = 76 (bytes).
+        // It should be equal to the length of the function selector + address + address + uint256 = 4 + 20 + 20 + 32 = 76 (bytes).
         require(_l2ToL1message.length == 76, "Invalid length of the message");
 
-        (uint32 functionSignature, uint256 offset) = UnsafeBytes.readUint32(
+        (uint32 functionSelector, uint256 offset) = UnsafeBytes.readUint32(
             _l2ToL1message,
             0
         );
         require(
-            bytes4(functionSignature) == this.finalizeWithdrawal.selector,
-            "Non-matching function signatures"
+            bytes4(functionSelector) == this.finalizeWithdrawal.selector,
+            "Non-matching function selectors"
         );
 
         (l1Receiver, offset) = UnsafeBytes.readAddress(_l2ToL1message, offset);
