@@ -2,11 +2,10 @@
 
 pragma solidity ^0.8.13;
 
-/// @author Matter Labs
 interface IL2ERC20Bridge {
     function initialize(
-        address _l1Bridge,
-        bytes32 _l2TokenProxyBytecodeHash,
-        address _governor
+        address l1TokenBridge_,
+        address l1Token_,
+        address l2Token_
     ) external;
 }

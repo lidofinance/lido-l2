@@ -2,13 +2,10 @@
 
 pragma solidity ^0.8.13;
 
-
 import {IL1Bridge} from "@matterlabs/zksync-contracts/l1/contracts/bridge/interfaces/IL1Bridge.sol";
 import {IL1BridgeLegacy} from "@matterlabs/zksync-contracts/l1/contracts/bridge/interfaces/IL1BridgeLegacy.sol";
 
 interface IL1ERC20Bridge is IL1Bridge, IL1BridgeLegacy {
-
-
     /// @notice A mapping L2 block number => message number => flag
     /// @notice Used to indicate that zkSync L2 -> L1 message was already processed
     function isWithdrawalFinalized(
@@ -16,26 +13,20 @@ interface IL1ERC20Bridge is IL1Bridge, IL1BridgeLegacy {
         uint256 _l2MessageIndex
     ) external view returns (bool);
 
-
     /// @dev Initializes a contract bridge for later use. Expected to be used in the proxy
     /// @dev During initialization deploys L2 bridge counterpart as well as provides some factory deps for it
     /// @param _factoryDeps A list of raw bytecodes that are needed for deployment of the L2 bridge
     /// @notice _factoryDeps[0] == a raw bytecode of L2 bridge implementation
     /// @notice _factoryDeps[1] == a raw bytecode of proxy that is used as L2 bridge
-    /// @notice _factoryDeps[2] == a raw bytecode of token proxy
-    /// @param _l2TokenBeacon Pre-calculated address of the L2 token upgradeable beacon
-    /// @notice At the time of the function call, it is not yet deployed in L2, but knowledge of its address
-    /// @notice is necessary for determining L2 token address by L1 address, see `l2TokenAddress(address)` function
     /// @param _governor Address which can change L2 token implementation and upgrade the bridge
-   function initialize(
+    /// @param _deployBridgeImplementationFee How much of the sent value should be allocated to deploying the L2 bridge implementation
+    /// @param _deployBridgeProxyFee How much of the sent value should be allocated to deploying the L2 bridge proxy
+    function initialize(
         bytes[] calldata _factoryDeps,
-        address _l2TokenBeacon,
         address _governor,
         uint256 _deployBridgeImplementationFee,
         uint256 _deployBridgeProxyFee
-
-    ) external;
-
+    ) external payable;
 
     /// @notice Initiates a deposit by locking funds on the contract and sending the request
     /// of processing an L2 transaction where tokens would be minted
@@ -56,7 +47,6 @@ interface IL1ERC20Bridge is IL1Bridge, IL1BridgeLegacy {
         address _refundRecipient
     ) external payable returns (bytes32 txHash);
 
-
     /// @notice Initiates a deposit by locking funds on the contract and sending the request
     /// of processing an L2 transaction where tokens would be minted
     /// @param _l2Receiver The account address that should receive funds on L2
@@ -66,13 +56,12 @@ interface IL1ERC20Bridge is IL1Bridge, IL1BridgeLegacy {
     /// @param _l2TxGasPerPubdataByte The gasPerPubdataByteLimit to be used in the corresponding L2 transaction
     /// @return l2TxHash The L2 transaction hash of deposit finalization
     function deposit(
-            address _l2Receiver,
-            address _l1Token,
-            uint256 _amount,
-            uint256 _l2TxGasLimit,
-            uint256 _l2TxGasPerPubdataByte
-        ) external payable returns (bytes32 l2TxHash);
-
+        address _l2Receiver,
+        address _l1Token,
+        uint256 _amount,
+        uint256 _l2TxGasLimit,
+        uint256 _l2TxGasPerPubdataByte
+    ) external payable returns (bytes32 l2TxHash);
 
     /// @dev Withdraw funds from the initiated deposit, that failed when finalizing on L2
     /// @param _depositSender The address of the deposit initiator
@@ -106,7 +95,7 @@ interface IL1ERC20Bridge is IL1Bridge, IL1BridgeLegacy {
         bytes32[] calldata _merkleProof
     ) external;
 
-    /// @notice Returns the address of the L2 token contract
+    /// @notice The L2 token address that will be minted for deposit of the given L1 token
     function l2TokenAddress(address _l1Token) external view returns (address);
 
     /// @notice The address of deployed L2 bridge counterpart

@@ -7,7 +7,9 @@ out
 
 #Hardhat files
 cache
-/artifacts
+artifacts
+cache-zk
+artifacts-zk
 
 .DS_Store
 .vscode
