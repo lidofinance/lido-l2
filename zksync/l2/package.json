@@ -2,10 +2,16 @@
   "name": "l2-zksync-contracts",
   "version": "0.1.0",
   "scripts": {
-    "compile": "hardhat compile"
+    "compile": "hardhat compile",
+    "deploy-governance-bridge": "hardhat run ./scripts/deploy-governance-bridge.ts"
   },
   "license": "ISC",
   "devDependencies": {
-    "@matterlabs/hardhat-zksync-solc": "^0.3.17"
+    "@matterlabs/hardhat-zksync-deploy": "^0.6.3",
+    "@matterlabs/hardhat-zksync-solc": "^0.3.17",
+    "@matterlabs/hardhat-zksync-upgradable": "^0.0.1-alpha.3"
+  },
+  "dependencies": {
+    "zksync-web3": "^0.14.3"
   }
 }

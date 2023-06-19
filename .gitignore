@@ -11,5 +11,8 @@ artifacts
 cache-zk
 artifacts-zk
 
+# hardhat-zksync-upgradable plugin manifest file for contracts deployed on zkSync's local-setup
+**/.upgradable/zkSync-local-setup.json
+
 .DS_Store
 .vscode

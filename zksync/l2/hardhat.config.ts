@@ -1,5 +1,12 @@
-import { HardhatUserConfig } from "hardhat/config";
+import * as dotenv from 'dotenv';
+
 import '@matterlabs/hardhat-zksync-solc';
+import '@matterlabs/hardhat-zksync-deploy';
+import '@matterlabs/hardhat-zksync-upgradable';
+
+import { HardhatUserConfig } from 'hardhat/config';
+
+dotenv.config();
 
 const config: HardhatUserConfig = {
   zksolc: {
@@ -10,7 +17,7 @@ const config: HardhatUserConfig = {
     },
   },
   solidity: {
-    version: "0.8.13",
+    version: '0.8.13',
     settings: {
       optimizer: {
         enabled: true,
@@ -18,16 +25,23 @@ const config: HardhatUserConfig = {
       },
     },
   },
+  defaultNetwork: 'zkSyncNetwork',
   networks: {
-    hardhat: {
-      zksync: true
-    }
+    goerli: {
+      zksync: false,
+      url: 'http://localhost:8545',
+    },
+    zkSyncNetwork: {
+      zksync: true,
+      ethNetwork: 'goerli',
+      url: 'http://localhost:3050',
+    },
   },
   paths: {
-    root: "../",
-    sources: "l2/contracts",
-    cache: "l2/cache-zk",
-    artifacts: "l2/artifacts-zk"
+    root: '../',
+    sources: 'l2/contracts',
+    cache: 'l2/cache-zk',
+    artifacts: 'l2/artifacts-zk'
   }
 };
 

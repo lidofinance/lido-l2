@@ -2,16 +2,16 @@
 
 pragma solidity ^0.8.10;
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IExecutorBase} from './interfaces/IExecutorBase.sol';
 
 /**
- * @title BridgeExecutorBase
- * @author Aave
- * @notice Abstract contract that implements basic executor functionality
+ * @title BridgeExecutorBaseUpgradable
+ * @notice Upgadeable variant of Aave abstract contract that implements basic executor functionality
  * @dev It does not implement an external `queue` function. This should instead be done in the inheriting
  * contract with proper access control
  */
-abstract contract BridgeExecutorBase is IExecutorBase {
+abstract contract BridgeExecutorBaseUpgradable is IExecutorBase, Initializable {
   // Minimum allowed grace period, which reduces the risk of having an actions set expire due to network congestion
   uint256 constant MINIMUM_GRACE_PERIOD = 10 minutes;
 
@@ -50,21 +50,35 @@ abstract contract BridgeExecutorBase is IExecutorBase {
   }
 
   /**
-   * @dev Constructor
-   *
    * @param delay The delay before which an actions set can be executed
    * @param gracePeriod The time period after a delay during which an actions set can be executed
    * @param minimumDelay The minimum bound a delay can be set to
    * @param maximumDelay The maximum bound a delay can be set to
    * @param guardian The address of the guardian, which can cancel queued proposals (can be zero)
    */
-  constructor(
+  function __BridgeExecutorBase_init(
     uint256 delay,
     uint256 gracePeriod,
     uint256 minimumDelay,
     uint256 maximumDelay,
     address guardian
-  ) {
+  ) internal onlyInitializing {
+    __BridgeExecutorBase_init_unchained(
+      delay,
+      gracePeriod,
+      minimumDelay,
+      maximumDelay,
+      guardian
+    );
+  }
+
+  function __BridgeExecutorBase_init_unchained(
+    uint256 delay,
+    uint256 gracePeriod,
+    uint256 minimumDelay,
+    uint256 maximumDelay,
+    address guardian
+  ) internal onlyInitializing {
     if (
       gracePeriod < MINIMUM_GRACE_PERIOD ||
       minimumDelay >= maximumDelay ||
