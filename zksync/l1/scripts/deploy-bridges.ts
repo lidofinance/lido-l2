@@ -60,7 +60,6 @@ async function main() {
 				verbose: true,
 			});
 
-			console.log('Deployer created');
 			await deployer.deployLidoBridgeContracts(create2Salt, gasPrice);
 		});
 	await program.parseAsync(process.argv);

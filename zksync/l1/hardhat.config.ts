@@ -1,23 +1,14 @@
 /* eslint-disable prettier/prettier */
 import { HardhatUserConfig } from 'hardhat/config';
-import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
-import '@typechain/hardhat';
+import '@nomicfoundation/hardhat-ethers';
+import '@nomicfoundation/hardhat-chai-matchers';
 
 require('dotenv').config();
 
 const ETH_NETWORK_URL = process.env.ETH_CLIENT_WEB3_URL as string;
 
-interface ITypechain {
-	typechain: {
-		outDir: string;
-		target: string;
-	};
-}
-
-interface UserConfig extends HardhatUserConfig, ITypechain {}
-
-const config: UserConfig = {
+const config: HardhatUserConfig = {
 	solidity: {
 		version: '0.8.15',
 		settings: {
@@ -35,10 +26,7 @@ const config: UserConfig = {
 			],
 		},
 	},
-	typechain: {
-		outDir: 'l1/typechain',
-		target: 'ethers-v6',
-	},
+
 	paths: {
 		root: '../',
 		sources: 'l1/contracts',

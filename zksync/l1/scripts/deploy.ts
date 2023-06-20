@@ -8,10 +8,11 @@ import {
 	Signer,
 	Wallet,
 	providers,
-	Contract,
 } from 'ethers';
-import SingletonFactory from '../artifacts/l1/contracts/SingletonFactory.sol/SingletonFactory.json';
 import { getAddressFromEnv } from './utils';
+import { IZkSyncFactory } from 'zksync-web3/build/typechain';
+import { SingletonFactory__factory } from '../typechain/factories/l1/contracts/SingletonFactory__factory';
+import { L1ERC20Bridge__factory } from '../typechain/factories/l1/contracts/L1ERC20Bridge__factory';
 
 export interface DeployedAddresses {
 	ZkSync: {
@@ -63,7 +64,7 @@ export function deployedAddressesFromEnv(): DeployedAddresses {
 		},
 		AllowList: getAddressFromEnv('CONTRACTS_L1_ALLOW_LIST_ADDR'),
 		Create2Factory: getAddressFromEnv('CONTRACTS_CREATE2_FACTORY_ADDR'),
-		LidoToken: getAddressFromEnv('CONTRACTS_L1_WETH_TOKEN_ADDR'),
+		LidoToken: getAddressFromEnv('CONTRACTS_L1_LIDO_TOKEN_ADDR'),
 	};
 }
 
@@ -121,7 +122,7 @@ export class Deployer {
 			console.log(`Deploying ${contractName}`);
 		}
 
-		const create2Factory = this.create2FactoryContract(this.deployWallet);
+		const create2Factory = await this.create2FactoryContract(this.deployWallet);
 		const contractFactory = await ethers.getContractFactory(contractName, {
 			signer: this.deployWallet,
 			libraries,
@@ -141,7 +142,7 @@ export class Deployer {
 		);
 		if (ethers.utils.hexDataLength(deployedBytecodeBefore) > 0) {
 			if (this.verbose) {
-				console.log(`Contract ${contractName} already deployed1`);
+				console.log(`Contract ${contractName} already deployed!`);
 			}
 			return;
 		}
@@ -249,10 +250,22 @@ export class Deployer {
 		this.addresses.Bridges.LidoBridgeProxy = contractAddress!;
 	}
 
-	public create2FactoryContract(signerOrProvider: Signer | providers.Provider) {
-		return new Contract(
-			this.addresses.Create2Factory,
-			SingletonFactory.abi,
+	public create2FactoryContract(signerOrProvider: Signer) {
+		return new SingletonFactory__factory()
+			.connect(signerOrProvider)
+			.attach(this.addresses.Create2Factory);
+	}
+
+	public zkSyncContract(signerOrProvider: Signer | providers.Provider) {
+		return IZkSyncFactory.connect(
+			this.addresses.ZkSync.DiamondProxy,
+			signerOrProvider
+		);
+	}
+
+	public defaultLidoBridge(signerOrProvider: Signer | providers.Provider) {
+		return L1ERC20Bridge__factory.connect(
+			this.addresses.Bridges.LidoBridgeProxy,
 			signerOrProvider
 		);
 	}
