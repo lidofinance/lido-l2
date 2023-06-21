@@ -62,7 +62,6 @@ export function getAddressFromEnv(envName: string): string {
 export function hashL2Bytecode(bytecode: ethers.BytesLike): Uint8Array {
 	// For getting the consistent length we first convert the bytecode to UInt8Array
 	const bytecodeAsArray = ethers.utils.arrayify(bytecode);
-
 	if (bytecodeAsArray.length % 32 != 0) {
 		throw new Error('The bytecode length in bytes must be divisible by 32');
 	}
