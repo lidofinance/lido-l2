@@ -4,7 +4,7 @@ pragma solidity ^0.8.10;
 
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
-import {IERC20Bridged} from "../../common//token/interfaces/IERC20Bridged.sol";
+import {IERC20BridgedUpgradeable} from "../../common/token/interfaces/IERC20BridgedUpgradeable.sol";
 
 import {BridgingManager} from "../../common/BridgingManager.sol";
 import {BridgeableTokensUpgradable} from "../../common/BridgeableTokensUpgradable.sol";
@@ -41,9 +41,10 @@ contract L2ERC20Bridge is
         external
         initializer
         onlyNonZeroAccount(l1TokenBridge_)
-        onlySupportedL1Token(l1Token_)
-        onlySupportedL2Token(l2Token_)
     {
+        require(l1Token_ != address(0), "L1 token address cannot be zero");
+        require(l2Token_ != address(0), "L1 token address cannot be zero");
+
         __BridgeableTokens_init(l1Token_, l2Token_);
         l1Bridge = l1TokenBridge_;
     }
@@ -65,7 +66,7 @@ contract L2ERC20Bridge is
     {
         require(msg.value == 0, "Value should be 0 for ERC20 bridge");
 
-        IERC20Bridged(l2Token).bridgeMint(l2Receiver_, amount_);
+        IERC20BridgedUpgradeable(l2Token).bridgeMint(l2Receiver_, amount_);
 
         emit FinalizeDeposit(l1Sender_, l2Receiver_, l2Token, amount_, data_);
     }
@@ -81,7 +82,7 @@ contract L2ERC20Bridge is
         whenWithdrawalsEnabled
         onlySupportedL2Token(l2Token_)
     {
-        IERC20Bridged(l2Token).bridgeBurn(msg.sender, amount_);
+        IERC20BridgedUpgradeable(l2Token).bridgeBurn(msg.sender, amount_);
 
         bytes memory message = _getL1WithdrawMessage(l1Receiver_, l1Token, amount_);
         sendCrossDomainMessage(message);

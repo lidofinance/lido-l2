@@ -19,7 +19,7 @@ import {AddressAliasHelper} from "@matterlabs/zksync-contracts/l1/contracts/vend
 import {BridgeInitializationHelper} from "./libraries/BridgeInitializationHelper.sol";
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 
-import {BridgeableTokens} from "../../common/BridgeableTokens.sol";
+import {BridgeableTokensUpgradable} from "../../common/BridgeableTokensUpgradable.sol";
 import {BridgingManager} from "../../common/BridgingManager.sol";
 
 /// @notice Smart contract that allows depositing wstETH tokens from Ethereum to zkSync v2.0
@@ -27,7 +27,7 @@ import {BridgingManager} from "../../common/BridgingManager.sol";
 /// for any other custom token bridges.
 contract L1ERC20Bridge is
     IL1ERC20Bridge,
-    BridgeableTokens,
+    BridgeableTokensUpgradable,
     BridgingManager,
     ReentrancyGuard
 {
@@ -50,21 +50,19 @@ contract L1ERC20Bridge is
 
     /// @dev Contract is expected to be used as proxy implementation.
     /// @dev Disable the initialization to prevent Parity hack.
-    constructor(
-        IZkSync zkSync_,
-        address l1Token_,
-        address l2Token_
-    ) BridgeableTokens(l1Token_, l2Token_) {
+    constructor(IZkSync zkSync_) {
         zkSync = zkSync_;
     }
 
     /// @inheritdoc IL1ERC20Bridge
     function initialize(
         bytes[] calldata _factoryDeps,
+        address l1Token_,
+        address l2Token_,
         address _governor,
         uint256 _deployBridgeImplementationFee,
         uint256 _deployBridgeProxyFee
-    ) external payable reentrancyGuardInitializer {
+    ) external payable initializer reentrancyGuardInitializer {
         require(_governor != address(0), "Governor address can't be zero");
         require(
             _factoryDeps.length == 2,
@@ -74,10 +72,10 @@ contract L1ERC20Bridge is
             msg.value == _deployBridgeImplementationFee + _deployBridgeProxyFee,
             "The caller miscalculated deploy transactions fees"
         );
+        __BridgeableTokens_init(l1Token_, l2Token_);
 
         bytes32 l2BridgeImplementationBytecodeHash = L2ContractHelper
             .hashL2Bytecode(_factoryDeps[0]);
-
         bytes32 l2BridgeProxyBytecodeHash = L2ContractHelper.hashL2Bytecode(
             _factoryDeps[1]
         );
@@ -100,14 +98,12 @@ contract L1ERC20Bridge is
                 IL2ERC20Bridge.initialize,
                 (address(this), l1Token, l2Token)
             );
-
             l2BridgeProxyConstructorData = abi.encode(
                 bridgeImplementationAddr,
                 _governor,
                 proxyInitializationParams
             );
         }
-
         // Deploy L2 bridge proxy contract
         l2Bridge = BridgeInitializationHelper.requestDeployTransaction(
             zkSync,
