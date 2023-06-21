@@ -2,7 +2,7 @@
 	"name": "l1-zksync-contracts",
 	"version": "0.1.0",
 	"scripts": {
-		"compile": "hardhat compile && ts-node utils/generateTypings.ts",
+		"compile": "hardhat clean && hardhat compile && ts-node utils/generateTypings.ts",
 		"deploy-erc20": "ts-node scripts/deploy-erc20.ts --token-name name --symbol=sym --decimals=18 --implementation=ERC20Token",
 		"deploy-bridges": "ts-node scripts/deploy-bridges.ts",
 		"initialize-bridges": "ts-node scripts/initialize-bridges.ts"
