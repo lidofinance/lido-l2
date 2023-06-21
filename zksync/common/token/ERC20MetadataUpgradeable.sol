@@ -4,12 +4,13 @@
 pragma solidity ^0.8.10;
 
 import {IERC20Metadata} from "./interfaces/IERC20Metadata.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @author psirex
-/// @notice Contains the optional metadata functions from the ERC20 standard
-/// @dev Uses the UnstructuredStorage pattern to store dynamic name and symbol data. Might be used
-///     with the upgradable proxies
-contract ERC20Metadata is IERC20Metadata {
+/// @notice Upgradable version of contract that contains the optional metadata functions from the ERC20 standard
+/// @dev Uses the UnstructuredStorage pattern to store dynamic name and symbol data.
+/// Might be used with the upgradable proxies
+contract ERC20MetadataUpgradeable is IERC20Metadata, Initializable {
     /// @dev Stores the dynamic metadata of the ERC20 token. Allows safely use of this
     ///     contract with upgradable proxies
     struct DynamicMetadata {
@@ -22,16 +23,24 @@ contract ERC20Metadata is IERC20Metadata {
         keccak256("ERC20Metdata.dynamicMetadata");
 
     /// @inheritdoc IERC20Metadata
-    uint8 public immutable decimals;
+    uint8 public decimals;
 
     /// @param name_ Name of the token
     /// @param symbol_ Symbol of the token
     /// @param decimals_ Decimals places of the token
-    constructor(
+    function __ERC20Metadata_init(
         string memory name_,
         string memory symbol_,
         uint8 decimals_
-    ) {
+    ) internal onlyInitializing {
+        __ERC20Metadata_init_unchained(name_, symbol_, decimals_);
+    }
+
+    function __ERC20Metadata_init_unchained(
+        string memory name_,
+        string memory symbol_,
+        uint8 decimals_
+    ) internal onlyInitializing {
         decimals = decimals_;
         _setERC20MetadataName(name_);
         _setERC20MetadataSymbol(symbol_);
