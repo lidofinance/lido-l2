@@ -211,11 +211,7 @@ export class Deployer {
 		ethTxOptions.gasLimit ??= 10_000_000;
 		const contractAddress = await this.deployViaCreate2(
 			'L1ERC20Bridge',
-			[
-				this.addresses.ZkSync.DiamondProxy,
-				this.addresses.LidoToken,
-				this.addresses.LidoToken,
-			], // change token 2 in the future
+			[this.addresses.ZkSync.DiamondProxy],
 			create2Salt,
 			ethTxOptions
 		);
