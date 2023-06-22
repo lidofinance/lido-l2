@@ -3,11 +3,10 @@
 
 pragma solidity ^0.8.10;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
-/// @author psirex
-/// @notice Extends the ERC20 functionality that allows the bridge to mint/burn tokens
-interface IERC20Bridged is IERC20 {
+/// @notice Extends the ERC20Upgradeable functionality that allows the bridge to mint/burn tokens
+interface IERC20BridgedUpgradeable is IERC20Upgradeable {
     /// @notice Returns bridge which can mint and burn tokens on L2
     function bridge() external view returns (address);
 
