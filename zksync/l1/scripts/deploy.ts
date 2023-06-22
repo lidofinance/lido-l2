@@ -13,6 +13,7 @@ import { getAddressFromEnv } from './utils';
 import { IZkSyncFactory } from 'zksync-web3/build/typechain';
 import { SingletonFactory__factory } from '../typechain/factories/l1/contracts/SingletonFactory__factory';
 import { L1ERC20Bridge__factory } from '../typechain/factories/l1/contracts/L1ERC20Bridge__factory';
+import { AragonAgentMock__factory } from '../typechain/factories/l1/contracts/governance/AragonAgentMock__factory';
 
 export interface DeployedAddresses {
 	ZkSync: {
@@ -29,10 +30,12 @@ export interface DeployedAddresses {
 	Bridges: {
 		LidoBridgeImplementation: string;
 		LidoBridgeProxy: string;
+		LidoL2BridgeProxy: string;
 	};
 	AllowList: string;
 	Create2Factory: string;
 	LidoToken: string;
+	GovernanceL1: string;
 }
 
 export interface DeployerConfig {
@@ -61,10 +64,14 @@ export function deployedAddressesFromEnv(): DeployedAddresses {
 				'CONTRACTS_L1_LIDO_BRIDGE_IMPL_ADDR'
 			),
 			LidoBridgeProxy: getAddressFromEnv('CONTRACTS_L1_LIDO_BRIDGE_PROXY_ADDR'),
+			LidoL2BridgeProxy: getAddressFromEnv(
+				'CONTRACTS_L2_LIDO_BRIDGE_PROXY_ADDR'
+			),
 		},
 		AllowList: getAddressFromEnv('CONTRACTS_L1_ALLOW_LIST_ADDR'),
 		Create2Factory: getAddressFromEnv('CONTRACTS_CREATE2_FACTORY_ADDR'),
 		LidoToken: getAddressFromEnv('CONTRACTS_L1_LIDO_TOKEN_ADDR'),
+		GovernanceL1: getAddressFromEnv('CONTRACTS_L1_GOVERNANCE_AGENT_ADDR'),
 	};
 }
 
@@ -246,6 +253,25 @@ export class Deployer {
 		this.addresses.Bridges.LidoBridgeProxy = contractAddress!;
 	}
 
+	public async deployGovernanceAgent(
+		create2Salt: string,
+		ethTxOptions: eth.providers.TransactionRequest
+	) {
+		ethTxOptions.gasLimit ??= 10_000_000;
+		const contractAddress = await this.deployViaCreate2(
+			'AragonAgentMock',
+			[],
+			create2Salt,
+			ethTxOptions
+		);
+
+		if (this.verbose) {
+			console.log(`CONTRACTS_L1_GOVERNANCE_AGENT_ADDR=${contractAddress}`);
+		}
+
+		this.addresses.GovernanceL1 = contractAddress!;
+	}
+
 	public create2FactoryContract(signerOrProvider: Signer) {
 		return new SingletonFactory__factory()
 			.connect(signerOrProvider)
@@ -264,5 +290,11 @@ export class Deployer {
 			this.addresses.Bridges.LidoBridgeProxy,
 			signerOrProvider
 		);
+	}
+
+	public defaultGovernanceAgent(signerOrProvider: Signer) {
+		return new AragonAgentMock__factory()
+			.connect(signerOrProvider)
+			.attach(this.addresses.GovernanceL1);
 	}
 }

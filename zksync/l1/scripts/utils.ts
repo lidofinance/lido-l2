@@ -1,6 +1,7 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable eqeqeq */
 import { BytesLike, ethers } from 'ethers';
+import * as fs from 'fs';
 
 const CREATE2_PREFIX = ethers.utils.solidityKeccak256(
 	['string'],
@@ -15,9 +16,12 @@ export const L1_TO_L2_ALIAS_OFFSET =
 export function web3Url() {
 	return process.env.ETH_CLIENT_WEB3_URL as string;
 }
+export function zkSyncUrl() {
+	return process.env.ZK_CLIENT_WEB3_URL as string;
+}
 
-export function web3Provider() {
-	const provider = new ethers.providers.JsonRpcProvider(web3Url());
+export function web3Provider(customUrl?: string) {
+	const provider = new ethers.providers.JsonRpcProvider(customUrl || web3Url());
 
 	// Check that `CHAIN_ETH_NETWORK` variable is set. If not, it's most likely because
 	// the variable was renamed. As this affects the time to deploy contracts in localhost
@@ -125,4 +129,21 @@ export function getNumberFromEnv(envName: string): string {
 		);
 	}
 	return number;
+}
+
+export function readBytecode(path: string, fileName: string) {
+	return JSON.parse(
+		fs.readFileSync(`${path}/${fileName}.sol/${fileName}.json`, {
+			encoding: 'utf-8',
+		})
+	).bytecode;
+}
+
+export function readInterface(path: string, fileName: string) {
+	const abi = JSON.parse(
+		fs.readFileSync(`${path}/${fileName}.sol/${fileName}.json`, {
+			encoding: 'utf-8',
+		})
+	).abi;
+	return new ethers.utils.Interface(abi);
 }

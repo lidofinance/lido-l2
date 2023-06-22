@@ -3,8 +3,6 @@ import { ethers } from 'hardhat';
 import '@nomiclabs/hardhat-ethers';
 import {
 	REQUIRED_L2_GAS_PRICE_PER_PUBDATA,
-	applyL1ToL2Alias,
-	computeL2Create2Address,
 	getNumberFromEnv,
 	web3Provider,
 } from './utils';
@@ -125,7 +123,7 @@ async function main() {
 			const governorAddress = await zkSync.getGovernor();
 			console.log('Governor:', governorAddress);
 
-			console.log('LIDO L1 token:', deployer.addresses.LidoToken);
+			console.log('wstETH L1 token:', deployer.addresses.LidoToken);
 
 			// const abiCoder = new ethers.utils.AbiCoder();
 			// const priorityTxMaxGasLimit = getNumberFromEnv(
@@ -225,9 +223,12 @@ async function main() {
 					}
 				);
 
-				const rec = await tx.wait();
-				console.log(`Lido bridge initialized, status: `, rec.status);
-				console.log(`Gas used: `, rec.gasUsed.toString());
+				const receipt = await tx.wait();
+				console.log(
+					`Lido bridge initialized, L2 Bridge Address: `,
+					await lidoBridge.l2Bridge()
+				);
+				console.log(`Gas used: `, receipt.gasUsed.toString());
 			} catch (err) {
 				console.log('Error', err);
 			}
