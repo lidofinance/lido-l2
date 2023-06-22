@@ -15,9 +15,12 @@ export const L1_TO_L2_ALIAS_OFFSET =
 export function web3Url() {
 	return process.env.ETH_CLIENT_WEB3_URL as string;
 }
+export function zkSyncUrl() {
+	return process.env.ZK_CLIENT_WEB3_URL as string;
+}
 
-export function web3Provider() {
-	const provider = new ethers.providers.JsonRpcProvider(web3Url());
+export function web3Provider(customUrl?: string) {
+	const provider = new ethers.providers.JsonRpcProvider(customUrl || web3Url());
 
 	// Check that `CHAIN_ETH_NETWORK` variable is set. If not, it's most likely because
 	// the variable was renamed. As this affects the time to deploy contracts in localhost
