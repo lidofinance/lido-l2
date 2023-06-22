@@ -1,6 +1,7 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable eqeqeq */
 import { BytesLike, ethers } from 'ethers';
+import * as fs from 'fs';
 
 const CREATE2_PREFIX = ethers.utils.solidityKeccak256(
 	['string'],
@@ -128,4 +129,21 @@ export function getNumberFromEnv(envName: string): string {
 		);
 	}
 	return number;
+}
+
+export function readBytecode(path: string, fileName: string) {
+	return JSON.parse(
+		fs.readFileSync(`${path}/${fileName}.sol/${fileName}.json`, {
+			encoding: 'utf-8',
+		})
+	).bytecode;
+}
+
+export function readInterface(path: string, fileName: string) {
+	const abi = JSON.parse(
+		fs.readFileSync(`${path}/${fileName}.sol/${fileName}.json`, {
+			encoding: 'utf-8',
+		})
+	).abi;
+	return new ethers.utils.Interface(abi);
 }

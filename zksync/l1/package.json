@@ -6,6 +6,7 @@
 		"deploy-erc20": "ts-node scripts/deploy-erc20.ts --token-name name --symbol=sym --decimals=18 --implementation=ERC20Token",
 		"deploy-mock-agent": "ts-node scripts/deploy-mock-agent.ts",
 		"deploy-bridges": "ts-node scripts/deploy-bridges.ts",
+		"enable-bridges": "ts-node scripts/enable-bridges.ts",
 		"initialize-bridges": "ts-node scripts/initialize-bridges.ts",
 		"init-bridge-roles": "ts-node scripts/initialize-bridge-roles.ts"
 	},

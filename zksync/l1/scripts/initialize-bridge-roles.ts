@@ -1,14 +1,29 @@
 /* eslint-disable prettier/prettier */
 import { ethers } from 'hardhat';
 import '@nomiclabs/hardhat-ethers';
-import { web3Provider, zkSyncUrl } from './utils';
+import {
+	REQUIRED_L2_GAS_PRICE_PER_PUBDATA,
+	getNumberFromEnv,
+	readInterface,
+	web3Provider,
+	zkSyncUrl,
+} from './utils';
 import { richWallet } from './rich_wallet';
 import { Wallet } from 'ethers';
 import { formatUnits, parseUnits } from 'ethers/lib/utils';
 import { Command } from 'commander';
 import { Deployer } from './deploy';
 import { L1ERC20Bridge__factory } from '../typechain/factories/l1/contracts/L1ERC20Bridge__factory';
-import { Wallet as ZkSyncWallet, Provider } from 'zksync-web3';
+import { Wallet as ZkSyncWallet, Provider, utils } from 'zksync-web3';
+
+import * as path from 'path';
+
+const l2Artifacts = path.join(
+	path.resolve(__dirname, '..', '..', 'l2'),
+	'artifacts-zk/l2/contracts'
+);
+
+const L2_LIDO_BRIDGE_INTERFACE = readInterface(l2Artifacts, 'L2ERC20Bridge');
 
 const provider = web3Provider();
 const zkProvider = new Provider(zkSyncUrl(), 270);
@@ -50,6 +65,12 @@ async function main() {
 				governorAddress: deployWallet.address,
 				verbose: true,
 			});
+			const priorityTxMaxGasLimit = getNumberFromEnv(
+				'CONTRACTS_PRIORITY_TX_MAX_GAS_LIMIT'
+			);
+
+			const zkSync = deployer.zkSyncContract(deployWallet);
+			const governorAddress = await zkSync.getGovernor();
 
 			const create2Salt = cmd.create2Salt
 				? cmd.create2Salt
@@ -114,11 +135,12 @@ async function main() {
 				console.log('GOVERNOR HAS DEPOSITS_ENABLER_ROLE');
 			}
 
-			const isDepositEnabled = await lidoBridge.isDepositsEnabled();
+			// get interfaces
+			const L1ERC20BridgeAbi = L1ERC20Bridge__factory.abi;
+			const IL1ERC20Bridge = new ethers.utils.Interface(L1ERC20BridgeAbi);
 
+			const isDepositEnabled = await lidoBridge.isDepositsEnabled();
 			if (!isDepositEnabled) {
-				const L1ERC20BridgeAbi = L1ERC20Bridge__factory.abi;
-				const IL1ERC20Bridge = new ethers.utils.Interface(L1ERC20BridgeAbi);
 				const data = IL1ERC20Bridge.encodeFunctionData('enableDeposits', []);
 
 				const govTx = await governorAgent.execute(lidoBridge.address, 0, data, {
@@ -131,6 +153,82 @@ async function main() {
 			} else {
 				console.log('DEPOSITS ARE ALREADY ENABLED');
 			}
+
+			// IL2BridgeExecutor
+			const ExecutorL2ABI = [
+				'function queue(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, bool[] memory withDelegatecalls)',
+			];
+			const IExecutorL2ABI = new ethers.utils.Interface(ExecutorL2ABI);
+
+			const enableDepositsFunction =
+				IL1ERC20Bridge.getFunction('enableDeposits');
+
+			// get signature for enableDeposits func
+			const sig = IExecutorL2ABI.getSighash(enableDepositsFunction);
+
+			// create fields to be encoded for queue function
+			const targets = [deployer.addresses.Bridges.LidoL2BridgeProxy];
+			const values = [0];
+			const signatures = [sig];
+			const calldatas = [] as any;
+			const withDelegatecalls = [false];
+
+			const data = IExecutorL2ABI.encodeFunctionData('queue', [
+				targets,
+				values,
+				signatures,
+				calldatas,
+				withDelegatecalls,
+			]);
+
+			console.log(IExecutorL2ABI.decodeFunctionData('queue', data));
+
+			const gasLimit = await zkProvider.estimateL1ToL2Execute({
+				contractAddress: deployer.addresses.Bridges.LidoL2BridgeProxy,
+				calldata: data,
+				caller: utils.applyL1ToL2Alias(governorAddress),
+			});
+
+			const baseCost = await zkSync.l2TransactionBaseCost(
+				gasPrice,
+				priorityTxMaxGasLimit,
+				utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT
+			);
+
+			// get target L2 contract address
+			const requestL2TransactionEncoded = zkSync.interface.encodeFunctionData(
+				'requestL2Transaction',
+				[
+					ethers.constants.AddressZero,
+					0,
+					data,
+					priorityTxMaxGasLimit,
+					REQUIRED_L2_GAS_PRICE_PER_PUBDATA,
+					[],
+					deployWallet.address,
+				]
+			);
+
+			await governorAgent.execute(
+				zkSync.address,
+				baseCost,
+				requestL2TransactionEncoded,
+				{
+					gasPrice,
+					gasLimit,
+				}
+			);
+
+			// zkSync.requestL2Transaction(
+			// 	ethers.constants.AddressZero,
+			// 	0,
+			// 	'0x',
+			// 	priorityTxMaxGasLimit,
+			// 	REQUIRED_L2_GAS_PRICE_PER_PUBDATA,
+			// 	[L2_WETH_PROXY_BYTECODE, L2_WETH_IMPLEMENTATION_BYTECODE],
+			// 	deployWallet.address,
+			// 	{ gasPrice, nonce, value: requiredValueToPublishBytecodes }
+			// ),
 		});
 
 	await program.parseAsync(process.argv);

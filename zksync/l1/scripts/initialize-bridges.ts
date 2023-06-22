@@ -3,8 +3,6 @@ import { ethers } from 'hardhat';
 import '@nomiclabs/hardhat-ethers';
 import {
 	REQUIRED_L2_GAS_PRICE_PER_PUBDATA,
-	applyL1ToL2Alias,
-	computeL2Create2Address,
 	getNumberFromEnv,
 	web3Provider,
 } from './utils';
