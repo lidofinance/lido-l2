@@ -56,10 +56,14 @@ async function main() {
 			const isManagerInitialized = await lidoBridge.isInitialized();
 
 			if (!isManagerInitialized) {
-				await lidoBridge['initialize(address)'](deployWallet.address, {
-					gasPrice,
-					gasLimit: 10_000_000,
-				});
+				const tx = await lidoBridge['initialize(address)'](
+					deployWallet.address,
+					{
+						gasPrice,
+						gasLimit: 10_000_000,
+					}
+				);
+				await tx.wait();
 			}
 
 			// get bytecode for DEPOSITS_ENABLER_ROLE
@@ -82,7 +86,7 @@ async function main() {
 				);
 
 				if (!isDeployerDepEnabler) {
-					await lidoBridge.grantRole(
+					const tx = await lidoBridge.grantRole(
 						DEPOSITS_ENABLER_ROLE,
 						deployWallet.address,
 						{
@@ -90,12 +94,16 @@ async function main() {
 							gasLimit: 10_000_000,
 						}
 					);
+
+					await tx.wait();
 				}
 
-				await lidoBridge.enableDeposits({
+				const tx = await lidoBridge.enableDeposits({
 					gasPrice,
 					gasLimit: 10_000_000,
 				});
+				await tx.wait();
+
 				console.log('DEPOSITS ON L1 ENABLED');
 			} else {
 				console.log('DEPOSITS ON L1 ALREADY ENABLED');
@@ -112,7 +120,7 @@ async function main() {
 				);
 
 				if (!isDeployerWithEnabler) {
-					await lidoBridge.grantRole(
+					const tx = await lidoBridge.grantRole(
 						WITHDRAWALS_ENABLER_ROLE,
 						deployWallet.address,
 						{
@@ -120,19 +128,22 @@ async function main() {
 							gasLimit: 10_000_000,
 						}
 					);
+					await tx.wait();
 				}
 
-				await lidoBridge.enableWithdrawals({
+				const tx = await lidoBridge.enableWithdrawals({
 					gasPrice,
 					gasLimit: 10_000_000,
 				});
+
+				await tx.wait();
+
 				console.log('WITHDRAWS ON L1 ENABLED');
 			} else {
 				console.log('WITHDRAWS ON L1 ALREADY ENABLED');
 			}
 
 			// L2 zkSync
-
 			const l2Bridge = new Contract(
 				deployer.addresses.Bridges.LidoL2BridgeProxy,
 				L2ERC20Bridge.abi,
@@ -147,10 +158,12 @@ async function main() {
 			const isL2ManagerInitialized = await l2Bridge.isInitialized();
 
 			if (!isL2ManagerInitialized) {
-				await l2Bridge['initialize(address)'](deployWallet.address, {
+				const tx = await l2Bridge['initialize(address)'](deployWallet.address, {
 					gasPrice: gasPriceL2,
 					gasLimit: 10_000_000,
 				});
+
+				await tx.wait();
 			}
 
 			if (!isDepositEnabledOnL2) {
@@ -164,7 +177,7 @@ async function main() {
 				);
 
 				if (!isDeployerDepEnabler) {
-					await l2Bridge.grantRole(
+					const tx = await l2Bridge.grantRole(
 						DEPOSITS_ENABLER_ROLE,
 						deployWallet.address,
 						{
@@ -172,9 +185,11 @@ async function main() {
 							gasLimit: 10_000_000,
 						}
 					);
+					await tx.wait();
 				}
 
-				await l2Bridge.enableDeposits();
+				const tx = await l2Bridge.enableDeposits();
+				await tx.wait();
 				console.log('DEPOSITS ON L2 ENABLED');
 			} else {
 				console.log('DEPOSITS ON L2 ALREADY ENABLED');
@@ -191,7 +206,7 @@ async function main() {
 				);
 
 				if (!isDeployerWithEnabler) {
-					await l2Bridge.grantRole(
+					const tx = await l2Bridge.grantRole(
 						WITHDRAWALS_ENABLER_ROLE,
 						deployWallet.address,
 						{
@@ -199,12 +214,15 @@ async function main() {
 							gasLimit: 10_000_000,
 						}
 					);
+					await tx.wait();
 				}
 
-				await l2Bridge.enableWithdrawals({
+				const tx = await l2Bridge.enableWithdrawals({
 					gasPrice: gasPriceL2,
 					gasLimit: 10_000_000,
 				});
+				await tx.wait();
+
 				console.log('WITHDRAWS ON L2 ENABLED');
 			} else {
 				console.log('WITHDRAWS ON L2 ALREADY ENABLED');
