@@ -3,22 +3,21 @@
 
 pragma solidity ^0.8.10;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
-/// @author psirex
-/// @notice Contains the required logic of the ERC20 standard as defined in the EIP. Additionally
-///     provides methods for direct allowance increasing/decreasing.
-contract ERC20Core is IERC20 {
-    /// @inheritdoc IERC20
+/// @notice Upgradable version of contract that contains the required logic of the ERC20 standard as defined in the EIP.
+/// Additionally provides methods for direct allowance increasing/decreasing.
+contract ERC20CoreUpgradeable is IERC20Upgradeable {
+    /// @inheritdoc IERC20Upgradeable
     uint256 public totalSupply;
 
-    /// @inheritdoc IERC20
+    /// @inheritdoc IERC20Upgradeable
     mapping(address => uint256) public balanceOf;
 
-    /// @inheritdoc IERC20
+    /// @inheritdoc IERC20Upgradeable
     mapping(address => mapping(address => uint256)) public allowance;
 
-    /// @inheritdoc IERC20
+    /// @inheritdoc IERC20Upgradeable
     function approve(address spender_, uint256 amount_)
         external
         returns (bool)
@@ -27,13 +26,13 @@ contract ERC20Core is IERC20 {
         return true;
     }
 
-    /// @inheritdoc IERC20
+    /// @inheritdoc IERC20Upgradeable
     function transfer(address to_, uint256 amount_) external returns (bool) {
         _transfer(msg.sender, to_, amount_);
         return true;
     }
 
-    /// @inheritdoc IERC20
+    /// @inheritdoc IERC20Upgradeable
     function transferFrom(
         address from_,
         address to_,

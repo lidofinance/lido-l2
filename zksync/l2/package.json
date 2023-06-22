@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "scripts": {
     "compile": "hardhat compile",
-    "deploy-governance-bridge": "hardhat run ./scripts/deploy-governance-bridge.ts"
+    "deploy-governance-bridge": "hardhat run ./scripts/deploy-governance-bridge.ts",
+    "deploy-wsteth-token": "hardhat run ./scripts/deploy-wsteth-token.ts",
+    "connect-token-to-bridge": "hardhat run ./scripts/connect-token-to-bridge.ts"
   },
   "license": "ISC",
   "devDependencies": {
