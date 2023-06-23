@@ -5,13 +5,17 @@
 		"compile": "hardhat clean && hardhat compile && ts-node utils/generateTypings.ts",
 		"deploy-erc20": "ts-node scripts/deploy-erc20.ts --token-name name --symbol=sym --decimals=18 --implementation=ERC20Token",
 		"deploy-mock-agent": "ts-node scripts/deploy-mock-agent.ts",
+		"deploy-l1-executor": "ts-node scripts/deploy-l1-executor.ts",
 		"deploy-bridges": "ts-node scripts/deploy-bridges.ts",
 		"enable-bridges": "ts-node scripts/enable-bridges.ts",
 		"initialize-bridges": "ts-node scripts/initialize-bridges.ts",
-		"init-bridge-roles": "ts-node scripts/initialize-bridge-roles.ts"
+		"init-bridge-roles": "ts-node scripts/initialize-bridge-roles.ts",
+		"inc-counter": "ts-node scripts/inc-counter.ts",
+		"inc-counter-l2": "ts-node scripts/inc-counter-l2.ts"
 	},
 	"license": "ISC",
 	"devDependencies": {
+		"@matterlabs/zksync-contracts": "^0.6.1",
 		"@nomicfoundation/hardhat-chai-matchers": "^2.0.1",
 		"@nomicfoundation/hardhat-ethers": "^3.0.2",
 		"@nomiclabs/hardhat-ethers": "^2.2.3",
