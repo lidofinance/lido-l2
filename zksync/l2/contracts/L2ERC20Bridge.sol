@@ -43,7 +43,7 @@ contract L2ERC20Bridge is
         onlyNonZeroAccount(l1TokenBridge_)
     {
         require(l1Token_ != address(0), "L1 token address cannot be zero");
-        require(l2Token_ != address(0), "L1 token address cannot be zero");
+        require(l2Token_ != address(0), "L2 token address cannot be zero");
 
         __BridgeableTokens_init(l1Token_, l2Token_);
         l1Bridge = l1TokenBridge_;
