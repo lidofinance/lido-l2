@@ -3,7 +3,6 @@ import * as dotenv from 'dotenv';
 import { Wallet, Provider, utils, Contract } from 'zksync-web3';
 import * as ethers from 'ethers';
 import * as path from 'path';
-// import { assert } from 'chai';
 import {
 	getAddressFromEnv,
 	web3Provider,
@@ -45,11 +44,11 @@ const zkProvider = new Provider(zkSyncUrl(), 270);
 const zkWallet = new Wallet(WALLET_PRIVATE_KEY, zkProvider, provider);
 
 async function main() {
-	console.log('Running script to bridge ERC20 to zkSync');
+	console.log('Running script to deposit ERC20 to zkSync');
 
 	const l1TokenContract = new ethers.Contract(L1_LIDO_TOKEN_ADDR, L1_LIDO_TOKEN_INTERFACE, wallet);
-	const l2TokenContract = new Contract(L2_LIDO_TOKEN_ADDR, L2_LIDO_TOKEN_INTERFACE, zkWallet);
 	const l1BridgeContract = new ethers.Contract(L1_LIDO_BRIDGE_PROXY_ADDR, L1_LIDO_BRIDGE_PROXY_INTERFACE, wallet);
+	const l2TokenContract = new Contract(L2_LIDO_TOKEN_ADDR, L2_LIDO_TOKEN_INTERFACE, zkWallet);
 
 	// Mint tokens to L1 account
 	const mintResponse = await l1TokenContract.mint(WALLET_ADDRESS, AMOUNT_TO_DEPOSIT);
@@ -99,7 +98,6 @@ async function main() {
 			value: baseCost
 		}
 	);
-
 	await depositResponse.wait();
 
 	const l2Response = await zkProvider.getL2TransactionFromPriorityOp(depositResponse);
