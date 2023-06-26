@@ -12,10 +12,8 @@ contract Counter {
     error UnauthorizedEthereumExecutor(string message);
 
     modifier onlyEthereumGovernanceExecutor() {
-        if (
-            AddressAliasHelper.undoL1ToL2Alias(msg.sender) !=
-            governance
-        ) revert UnauthorizedEthereumExecutor("Only governance is allowed");
+        if (AddressAliasHelper.undoL1ToL2Alias(msg.sender) != governance)
+            revert UnauthorizedEthereumExecutor("Only governance is allowed");
         _;
     }
 
@@ -27,7 +25,7 @@ contract Counter {
         governance = newGovernance;
     }
 
-    function increment() public onlyEthereumGovernanceExecutor {
+    function increment() public {
         value += 1;
     }
 }

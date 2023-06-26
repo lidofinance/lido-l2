@@ -87,33 +87,35 @@ async function main() {
 			console.log('GOV AGENT', governorAgent.address);
 
 			// // get L1 bridge
-			// const lidoBridge = cmd.lidoBridge
-			// 	? deployer.defaultLidoBridge(deployWallet).attach(cmd.lidoBridge)
-			// 	: deployer.defaultLidoBridge(deployWallet);
+			const lidoBridge = cmd.lidoBridge
+				? deployer.defaultLidoBridge(deployWallet).attach(cmd.lidoBridge)
+				: deployer.defaultLidoBridge(deployWallet);
 
 			// // get bytecode for DEFAULT_ADMIN_ROLE
-			// const DEFAULT_ADMIN_ROLE = await lidoBridge.DEFAULT_ADMIN_ROLE();
+			const DEFAULT_ADMIN_ROLE = await lidoBridge.DEFAULT_ADMIN_ROLE();
 
-			// // check if deployer is admin of L1 LIdo bridge
-			// const hasAdminRole = await lidoBridge.hasRole(
-			// 	DEFAULT_ADMIN_ROLE,
-			// 	deployWallet.address
-			// );
+			// check if deployer is admin of L1 LIdo bridge
+			const hasAdminRole = await lidoBridge.hasRole(
+				DEFAULT_ADMIN_ROLE,
+				deployWallet.address
+			);
 
 			// // if deployer is not an admin, initialize admin to be deployer
-			// if (!hasAdminRole) {
-			// 	console.log('Initialize Admin');
-			// 	await lidoBridge['initialize(address)'](deployWallet.address);
+			if (!hasAdminRole) {
+				console.log('Initialize Admin');
+				const tx = await lidoBridge['initialize(address)'](
+					deployWallet.address
+				);
+				await tx.wait();
+				console.log('DEFAULT_ADMIN_ROLE BELONGS TO', deployWallet.address);
+			} else {
+				console.log('DEPLOYER IS ALREADY AN ADMIN');
+			}
 
-			// 	console.log('DEFAULT_ADMIN_ROLE BELONGS TO', deployWallet.address);
-			// } else {
-			// 	console.log('DEPLOYER IS ALREADY AN ADMIN');
-			// }
-
-			// // get bytecode for DEPOSITS_ENABLER_ROLE
+			// get bytecode for DEPOSITS_ENABLER_ROLE
 			// const DEPOSITS_ENABLER_ROLE = await lidoBridge.DEPOSITS_ENABLER_ROLE();
 
-			// // check if governor has DEPOSITS_ENABLER_ROLE role
+			// check if governor has DEPOSITS_ENABLER_ROLE role
 			// const hasGovernorDepositEnablerRole = await lidoBridge.hasRole(
 			// 	DEPOSITS_ENABLER_ROLE,
 			// 	deployer.addresses.GovernanceL1
@@ -157,7 +159,7 @@ async function main() {
 			// 	console.log('DEPOSITS ARE ALREADY ENABLED');
 			// }
 
-			console.warn(
+			console.log(
 				'==========================L2======================================'
 			);
 
