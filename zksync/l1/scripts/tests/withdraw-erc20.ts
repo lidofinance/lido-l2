@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 
-import { Wallet, Provider, utils, Contract } from 'zksync-web3';
+import { Wallet, Provider, Contract } from 'zksync-web3';
 import * as ethers from 'ethers';
 import * as path from 'path';
 import {
