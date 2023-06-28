@@ -34,7 +34,8 @@ export interface DeployedAddresses {
 	};
 	AllowList: string;
 	Create2Factory: string;
-	LidoToken: string;
+	LidoTokenL1: string;
+	LidoTokenL2: string;
 	GovernanceL1: string;
 }
 
@@ -70,7 +71,8 @@ export function deployedAddressesFromEnv(): DeployedAddresses {
 		},
 		AllowList: getAddressFromEnv('CONTRACTS_L1_ALLOW_LIST_ADDR'),
 		Create2Factory: getAddressFromEnv('CONTRACTS_CREATE2_FACTORY_ADDR'),
-		LidoToken: getAddressFromEnv('CONTRACTS_L1_LIDO_TOKEN_ADDR'),
+		LidoTokenL1: getAddressFromEnv('CONTRACTS_L1_LIDO_TOKEN_ADDR'),
+		LidoTokenL2: getAddressFromEnv('CONTRACTS_L2_LIDO_TOKEN_ADDR'),
 		GovernanceL1: getAddressFromEnv('CONTRACTS_L1_GOVERNANCE_AGENT_ADDR'),
 	};
 }
@@ -199,7 +201,7 @@ export class Deployer {
 		ethTxOptions.gasLimit ??= 10_000_000;
 		const contractAddress = await this.deployViaCreate2(
 			'ERC20Token',
-			['ERC20Token', 'TKN', 18],
+			['ERC20Token', 'wstETH', 18],
 			create2Salt,
 			ethTxOptions
 		);
@@ -208,7 +210,7 @@ export class Deployer {
 			console.log(`CONTRACTS_L1_LIDO_TOKEN_ADDR=${contractAddress}`);
 		}
 
-		this.addresses.LidoToken = contractAddress!;
+		this.addresses.LidoTokenL1 = contractAddress!;
 	}
 
 	private async deployLidoBridgeImplementation(

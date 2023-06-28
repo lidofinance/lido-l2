@@ -5,6 +5,8 @@ import {
 	REQUIRED_L2_GAS_PRICE_PER_PUBDATA,
 	getNumberFromEnv,
 	web3Provider,
+	readBytecode,
+	// readInterface
 } from './utils';
 import { richWallet } from './rich_wallet';
 import { Wallet } from 'ethers';
@@ -20,27 +22,10 @@ const provider = web3Provider();
 // if using local setup for zkSync
 const wallet = new ethers.Wallet(richWallet[0].privateKey, provider);
 
-function readBytecode(path: string, fileName: string) {
-	return JSON.parse(
-		fs.readFileSync(`${path}/${fileName}.sol/${fileName}.json`, {
-			encoding: 'utf-8',
-		})
-	).bytecode;
-}
-
-function readInterface(path: string, fileName: string) {
-	const abi = JSON.parse(
-		fs.readFileSync(`${path}/${fileName}.sol/${fileName}.json`, {
-			encoding: 'utf-8',
-		})
-	).abi;
-	return new ethers.utils.Interface(abi);
-}
-
-const l1Artifacts = path.join(
-	path.dirname(__dirname),
-	'artifacts/l1/contracts'
-);
+// const l1Artifacts = path.join(
+// 	path.dirname(__dirname),
+// 	'artifacts/l1/contracts'
+// );
 
 // zksync/l2/artifacts-zk/l2/contracts
 const l2Artifacts = path.join(
@@ -50,7 +35,7 @@ const l2Artifacts = path.join(
 
 const l2ProxyArtifacts = path.join(l2Artifacts, 'proxy');
 
-const tokenL2Artifact = path.join(l2Artifacts, 'token');
+// const tokenL2Artifact = path.join(l2Artifacts, 'token');
 
 const L2_LIDO_BRIDGE_PROXY_BYTECODE = readBytecode(
 	l2ProxyArtifacts,
@@ -62,26 +47,26 @@ const L2_LIDO_BRIDGE_IMPLEMENTATION_BYTECODE = readBytecode(
 	'L2ERC20Bridge'
 );
 
-const L2_LIDO_BRIDGE_INTERFACE = readInterface(l2Artifacts, 'L2ERC20Bridge');
+// const L2_LIDO_BRIDGE_INTERFACE = readInterface(l2Artifacts, 'L2ERC20Bridge');
 
 const DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT = getNumberFromEnv(
 	'CONTRACTS_DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT'
 );
 
-const L2_STANDARD_ERC20_IMPLEMENTATION_BYTECODE = readBytecode(
-	tokenL2Artifact,
-	'ERC20Bridged'
-);
+// const L2_STANDARD_ERC20_IMPLEMENTATION_BYTECODE = readBytecode(
+// 	tokenL2Artifact,
+// 	'ERC20Bridged'
+// );
 
 const L2_STANDARD_ERC20_PROXY_BYTECODE = readBytecode(
 	l2ProxyArtifacts,
 	'OssifiableProxy'
 );
 
-const L2_STANDARD_ERC20_INTERFACE = readInterface(
-	tokenL2Artifact,
-	'ERC20Bridged'
-);
+// const L2_STANDARD_ERC20_INTERFACE = readInterface(
+// 	tokenL2Artifact,
+// 	'ERC20Bridged'
+// );
 
 async function main() {
 	const program = new Command();
@@ -123,7 +108,7 @@ async function main() {
 			const governorAddress = await zkSync.getGovernor();
 			console.log('Governor:', governorAddress);
 
-			console.log('wstETH L1 token:', deployer.addresses.LidoToken);
+			console.log('wstETH L1 token:', deployer.addresses.LidoTokenL1);
 
 			// const abiCoder = new ethers.utils.AbiCoder();
 			// const priorityTxMaxGasLimit = getNumberFromEnv(
@@ -145,8 +130,8 @@ async function main() {
 			// const l2BridgeProxyInitializationParams =
 			// 	L2_LIDO_BRIDGE_INTERFACE.encodeFunctionData(initFunction, [
 			// 		lidoBridge.address,
-			// 		deployer.addresses.LidoToken,
-			// 		deployer.addresses.LidoToken,
+			// 		deployer.addresses.LidoTokenL1,
+			// 		deployer.addresses.LidoTokenL1,
 			// 	]);
 
 			// Bridge Proxy ADDRESS
@@ -181,7 +166,7 @@ async function main() {
 			// 	ethers.utils.arrayify(
 			// 		abiCoder.encode(
 			// 			['address', 'address'],
-			// 			[deployer.addresses.LidoToken, l2StandardToken]
+			// 			[deployer.addresses.LidoTokenL1, l2StandardToken]
 			// 		)
 			// 	),
 			// 	ethers.constants.HashZero
@@ -210,8 +195,8 @@ async function main() {
 						L2_LIDO_BRIDGE_IMPLEMENTATION_BYTECODE,
 						L2_LIDO_BRIDGE_PROXY_BYTECODE,
 					],
-					deployer.addresses.LidoToken,
-					deployer.addresses.LidoToken,
+					deployer.addresses.LidoTokenL1,
+					deployer.addresses.LidoTokenL2,
 					governorAddress,
 					requiredValueToInitializeBridge,
 					requiredValueToInitializeBridge,
@@ -225,8 +210,7 @@ async function main() {
 
 				const receipt = await tx.wait();
 				console.log(
-					`Lido bridge initialized, L2 Bridge Address: `,
-					await lidoBridge.l2Bridge()
+					`CONTRACTS_L2_LIDO_BRIDGE_PROXY_ADDR=${await lidoBridge.l2Bridge()}`,
 				);
 				console.log(`Gas used: `, receipt.gasUsed.toString());
 			} catch (err) {
