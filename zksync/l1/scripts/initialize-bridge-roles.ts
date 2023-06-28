@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
-import { web3Provider } from './utils';
-import { richWallet } from './rich_wallet';
+import { web3Provider } from './utils/utils';
+import { richWallet } from './utils/rich_wallet';
 import { Wallet } from 'ethers';
 import { formatUnits, parseUnits } from 'ethers/lib/utils';
 import { Command } from 'commander';

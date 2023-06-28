@@ -6,7 +6,7 @@ import {
 	getNumberFromEnv,
 	readBytecode,
 	web3Provider,
-} from './utils';
+} from './utils/utils';
 import { Wallet } from 'ethers';
 import { formatUnits, parseUnits } from 'ethers/lib/utils';
 import { Command } from 'commander';

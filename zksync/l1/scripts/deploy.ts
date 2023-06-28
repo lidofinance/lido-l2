@@ -9,7 +9,7 @@ import {
 	Wallet,
 	providers,
 } from 'ethers';
-import { getAddressFromEnv } from './utils';
+import { getAddressFromEnv } from './utils/utils';
 import { IZkSyncFactory } from 'zksync-web3/build/typechain';
 import { SingletonFactory__factory } from '../typechain/factories/l1/contracts/SingletonFactory__factory';
 import { L1ERC20Bridge__factory } from '../typechain/factories/l1/contracts/L1ERC20Bridge__factory';
