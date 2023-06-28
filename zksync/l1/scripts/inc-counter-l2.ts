@@ -3,10 +3,8 @@ import { ethers } from 'hardhat';
 import '@nomiclabs/hardhat-ethers';
 import { Deployer } from './deploy';
 import { Wallet } from 'ethers';
-
 import { richWallet } from './rich_wallet';
 import { web3Provider, zkSyncUrl } from './utils';
-import { formatEther } from 'ethers/lib/utils';
 import { Provider, utils, Contract } from 'zksync-web3';
 import { L1Executor__factory } from '../typechain/factories/l1/contracts/governance/L1Executor__factory';
 import ZkSyncBridgeExecutorUpgradable from '../../l2/artifacts-zk/l2/contracts/governance/ZkSyncBridgeExecutorUpgradable.sol/ZkSyncBridgeExecutorUpgradable.json';
@@ -126,13 +124,13 @@ async function main() {
 	const l2Response2 = await zkProvider.getL2TransactionFromPriorityOp(govTx);
 	await l2Response2.wait();
 
-	const actionSetId = await ZkGovBridge.getActionsSetById(1);
+	const actionSetId = await ZkGovBridge.getActionsSetById(0);
 
 	console.log('Action set by id:', actionSetId);
 
 	console.log(ethers.utils.formatEther(baseCostForZk));
 
-	const executeAction = await ZkGovBridge.execute(1);
+	const executeAction = await ZkGovBridge.execute(2);
 	await executeAction.wait();
 
 	// console.log(

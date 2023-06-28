@@ -9,9 +9,7 @@ const provider = web3Provider();
 const wallet = new Wallet(richWallet[0].privateKey, provider);
 
 async function main() {
-	// We get the contract to deploy
 	const L1Executor = await ethers.getContractFactory('L1Executor', wallet);
-
 	const contract = await L1Executor.deploy();
 	await contract.deployed();
 
@@ -20,7 +18,6 @@ async function main() {
 	);
 }
 
-// We recommend always using this async/await pattern to properly handle errors.
 main().catch((error) => {
 	console.error(error);
 	process.exitCode = 1;

@@ -62,26 +62,26 @@ const L2_LIDO_BRIDGE_IMPLEMENTATION_BYTECODE = readBytecode(
 	'L2ERC20Bridge'
 );
 
-const L2_LIDO_BRIDGE_INTERFACE = readInterface(l2Artifacts, 'L2ERC20Bridge');
+// const L2_LIDO_BRIDGE_INTERFACE = readInterface(l2Artifacts, 'L2ERC20Bridge');
 
 const DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT = getNumberFromEnv(
 	'CONTRACTS_DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT'
 );
 
-const L2_STANDARD_ERC20_IMPLEMENTATION_BYTECODE = readBytecode(
-	tokenL2Artifact,
-	'ERC20Bridged'
-);
+// const L2_STANDARD_ERC20_IMPLEMENTATION_BYTECODE = readBytecode(
+// 	tokenL2Artifact,
+// 	'ERC20Bridged'
+// );
 
-const L2_STANDARD_ERC20_PROXY_BYTECODE = readBytecode(
-	l2ProxyArtifacts,
-	'OssifiableProxy'
-);
+// const L2_STANDARD_ERC20_PROXY_BYTECODE = readBytecode(
+// 	l2ProxyArtifacts,
+// 	'OssifiableProxy'
+// );
 
-const L2_STANDARD_ERC20_INTERFACE = readInterface(
-	tokenL2Artifact,
-	'ERC20Bridged'
-);
+// const L2_STANDARD_ERC20_INTERFACE = readInterface(
+// 	tokenL2Artifact,
+// 	'ERC20Bridged'
+// );
 
 async function main() {
 	const program = new Command();

@@ -1,35 +1,30 @@
 /* eslint-disable prettier/prettier */
 import { ethers } from 'hardhat';
 import '@nomiclabs/hardhat-ethers';
-import {
-	REQUIRED_L2_GAS_PRICE_PER_PUBDATA,
-	getNumberFromEnv,
-	readInterface,
-	web3Provider,
-	zkSyncUrl,
-} from './utils';
+import { web3Provider } from './utils';
 import { richWallet } from './rich_wallet';
 import { Wallet } from 'ethers';
-import { formatUnits, parseEther, parseUnits } from 'ethers/lib/utils';
+import { formatUnits, parseUnits } from 'ethers/lib/utils';
 import { Command } from 'commander';
 import { Deployer } from './deploy';
+
+// typechain
 import { L1ERC20Bridge__factory } from '../typechain/factories/l1/contracts/L1ERC20Bridge__factory';
+import { L1Executor__factory } from '../typechain/factories/l1/contracts/governance/L1Executor__factory';
+
+// L2
 import { Wallet as ZkSyncWallet, Provider, utils, Contract } from 'zksync-web3';
 import ZkSyncBridgeExecutorUpgradable from '../../l2/artifacts-zk/l2/contracts/governance/ZkSyncBridgeExecutorUpgradable.sol/ZkSyncBridgeExecutorUpgradable.json';
+import L2ERC20Bridge from '../../l2/artifacts-zk/l2/contracts/L2ERC20Bridge.sol/L2ERC20Bridge.json';
 
-// import * as path from 'path';
+const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
+const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL || '';
 
-// const l2Artifacts = path.join(
-// 	path.resolve(__dirname, '..', '..', 'l2'),
-// 	'artifacts-zk/l2/contracts'
-// );
-
-// const L2_LIDO_BRIDGE_INTERFACE = readInterface(l2Artifacts, 'L2ERC20Bridge');
+const L1_EXECUTOR_ADDR = '0x52281EE6681AbAbeBc680A006114B4Dd72a9C7A3';
+const L2_EXECUTOR = '0x3ccA24e1A0e49654bc3482ab70199b7400eb7A3a';
 
 const provider = web3Provider();
-const zkProvider = new Provider(zkSyncUrl(), 270);
-
-const wallet = new Wallet(richWallet[0].privateKey, provider);
+const zkProvider = new Provider(ZK_CLIENT_WEB3_URL, 270);
 
 async function main() {
 	const program = new Command();
@@ -44,7 +39,7 @@ async function main() {
 		.action(async (cmd) => {
 			const deployWallet = cmd.privateKey
 				? new Wallet(cmd.privateKey, provider)
-				: wallet;
+				: new Wallet(PRIVATE_KEY, provider);
 
 			const zkWallet = cmd.privateKey
 				? new ZkSyncWallet(cmd.privateKey, zkProvider)
@@ -58,239 +53,259 @@ async function main() {
 
 			console.log(`Using gas price: ${formatUnits(gasPrice, 'gwei')} gwei`);
 
-			const nonce = cmd.nonce
-				? parseInt(cmd.nonce)
-				: await deployWallet.getTransactionCount();
-
 			const deployer = new Deployer({
 				deployWallet,
 				governorAddress: deployWallet.address,
 				verbose: true,
 			});
-			const priorityTxMaxGasLimit = getNumberFromEnv(
-				'CONTRACTS_PRIORITY_TX_MAX_GAS_LIMIT'
-			);
 
-			const zkSync = deployer.zkSyncContract(deployWallet);
-
-			// const create2Salt = cmd.create2Salt
-			// 	? cmd.create2Salt
-			// 	: ethers.utils.hexlify(ethers.utils.randomBytes(32));
-
-			// await deployer.deployGovernanceAgent(create2Salt, {
-			// 	gasPrice,
-			// 	nonce,
-			// });
-
-			// get governor agent
-			const governorAgent = deployer.defaultGovernanceAgent(wallet);
-			console.log('GOV AGENT', governorAgent.address);
-
-			// // get L1 bridge
+			// get L1 bridge
 			const lidoBridge = cmd.lidoBridge
 				? deployer.defaultLidoBridge(deployWallet).attach(cmd.lidoBridge)
 				: deployer.defaultLidoBridge(deployWallet);
 
-			// // get bytecode for DEFAULT_ADMIN_ROLE
-			const DEFAULT_ADMIN_ROLE = await lidoBridge.DEFAULT_ADMIN_ROLE();
+			// get governor agent
+			const L1GovernorAgent = deployer.defaultGovernanceAgent(deployWallet);
+			console.log('L1 Governor Agent address:', L1GovernorAgent.address);
 
-			// check if deployer is admin of L1 LIdo bridge
-			const hasAdminRole = await lidoBridge.hasRole(
-				DEFAULT_ADMIN_ROLE,
-				deployWallet.address
+			const zkSync = deployer.zkSyncContract(deployWallet);
+
+			const L1Executor = L1Executor__factory.connect(
+				L1_EXECUTOR_ADDR,
+				deployWallet
 			);
 
-			// // if deployer is not an admin, initialize admin to be deployer
-			if (!hasAdminRole) {
-				console.log('Initialize Admin');
-				const tx = await lidoBridge['initialize(address)'](
-					deployWallet.address
-				);
-				await tx.wait();
-				console.log('DEFAULT_ADMIN_ROLE BELONGS TO', deployWallet.address);
-			} else {
-				console.log('DEPLOYER IS ALREADY AN ADMIN');
-			}
-
-			// get bytecode for DEPOSITS_ENABLER_ROLE
-			// const DEPOSITS_ENABLER_ROLE = await lidoBridge.DEPOSITS_ENABLER_ROLE();
-
-			// check if governor has DEPOSITS_ENABLER_ROLE role
-			// const hasGovernorDepositEnablerRole = await lidoBridge.hasRole(
-			// 	DEPOSITS_ENABLER_ROLE,
-			// 	deployer.addresses.GovernanceL1
-			// );
-
-			// if (!hasGovernorDepositEnablerRole) {
-			// 	console.log('GRANT DEPOSITS_ENABLER_ROLE TO THE GOVERNOR');
-			// 	// grant DEPOSITS_ENABLER_ROLE role to the deployer
-			// 	const tx = await lidoBridge.grantRole(
-			// 		DEPOSITS_ENABLER_ROLE,
-			// 		deployer.addresses.GovernanceL1,
-			// 		{ gasPrice, gasLimit: 10_000_000 }
-			// 	);
-			// 	await tx.wait();
-
-			// 	await lidoBridge.hasRole(
-			// 		DEPOSITS_ENABLER_ROLE,
-			// 		deployer.addresses.GovernanceL1
-			// 	);
-			// 	console.log('GOVERNOR GOT DEPOSITS_ENABLER_ROLE');
-			// } else {
-			// 	console.log('GOVERNOR HAS DEPOSITS_ENABLER_ROLE');
-			// }
-
-			// get interfaces
 			const L1ERC20BridgeAbi = L1ERC20Bridge__factory.abi;
 
 			const IL1ERC20Bridge = new ethers.utils.Interface(L1ERC20BridgeAbi);
 
-			// const isDepositEnabled = await lidoBridge.isDepositsEnabled();
-			// if (!isDepositEnabled) {
-			// 	const data = IL1ERC20Bridge.encodeFunctionData('enableDeposits', []);
+			const L2Bridge = new Contract(
+				deployer.addresses.Bridges.LidoL2BridgeProxy,
+				L2ERC20Bridge.abi,
+				zkWallet
+			);
 
-			// 	const govTx = await governorAgent.execute(lidoBridge.address, 0, data, {
-			// 		gasLimit: 10_000_000,
-			// 	});
+			const ZkGovBridge = new Contract(
+				L2_EXECUTOR,
+				ZkSyncBridgeExecutorUpgradable.abi,
+				zkWallet
+			);
 
-			// 	await govTx.wait();
-			// 	console.log('Is deposit enable', await lidoBridge.isDepositsEnabled());
-			// } else {
-			// 	console.log('DEPOSITS ARE ALREADY ENABLED');
-			// }
+			const IZkSyncBridgeExecutorUpgradable = new ethers.utils.Interface(
+				ZkSyncBridgeExecutorUpgradable.abi
+			);
 
 			console.log(
-				'==========================L2======================================'
+				'\n======================================L1======================================'
 			);
 
-			const counterInterface = new ethers.utils.Interface([
-				'function increment()',
+			// get bytecode for roles
+			const DEPOSITS_ENABLER_ROLE = await lidoBridge.DEPOSITS_ENABLER_ROLE();
+			const DEPOSITS_DISABLER_ROLE = await lidoBridge.DEPOSITS_DISABLER_ROLE();
+			const WITHDRAWALS_ENABLER_ROLE =
+				await lidoBridge.WITHDRAWALS_ENABLER_ROLE();
+			const WITHDRAWALS_DISABLER_ROLE =
+				await lidoBridge.WITHDRAWALS_DISABLER_ROLE();
+
+			// ===========INITIALIZE ROLE==============
+
+			await initializeBridgingManager(
+				lidoBridge,
+				'DEFAULT_ADMIN_ROLE',
+				deployWallet.address
+			);
+			await grantRole(
+				lidoBridge,
+				DEPOSITS_ENABLER_ROLE,
+				'DEPOSITS_ENABLER_ROLE',
+				deployer.addresses.GovernanceL1
+			);
+			await grantRole(
+				lidoBridge,
+				DEPOSITS_DISABLER_ROLE,
+				'DEPOSITS_DISABLER_ROLE',
+				deployer.addresses.GovernanceL1
+			);
+			await grantRole(
+				lidoBridge,
+				WITHDRAWALS_ENABLER_ROLE,
+				'WITHDRAWALS_ENABLER_ROLE',
+				deployer.addresses.GovernanceL1
+			);
+			await grantRole(
+				lidoBridge,
+				WITHDRAWALS_DISABLER_ROLE,
+				'WITHDRAWALS_DISABLER_ROLE',
+				deployer.addresses.GovernanceL1
+			);
+
+			const isDepositEnabledOnL1 = await lidoBridge.isDepositsEnabled();
+
+			if (!isDepositEnabledOnL1) {
+				const data = IL1ERC20Bridge.encodeFunctionData('enableDeposits', []);
+				const enableDepositsTx = await L1GovernorAgent.execute(
+					lidoBridge.address,
+					0,
+					data,
+					{
+						gasLimit: 10_000_000,
+					}
+				);
+
+				await enableDepositsTx.wait();
+			}
+			console.log(
+				'\nDEPOSITS ENABLED ON L1 BRIDGE:',
+				await lidoBridge.isDepositsEnabled()
+			);
+
+			console.log(
+				'\n======================================L2======================================'
+			);
+
+			// ==========================INITIALIZE ROLE==========================
+
+			await initializeBridgingManager(
+				L2Bridge,
+				'DEFAULT_ADMIN_ROLE',
+				zkWallet.address
+			);
+			await grantRole(
+				L2Bridge,
+				DEPOSITS_ENABLER_ROLE,
+				'DEPOSITS_ENABLER_ROLE',
+				L2_EXECUTOR
+			);
+			await grantRole(
+				L2Bridge,
+				DEPOSITS_DISABLER_ROLE,
+				'DEPOSITS_DISABLER_ROLE',
+				L2_EXECUTOR
+			);
+			await grantRole(
+				L2Bridge,
+				WITHDRAWALS_ENABLER_ROLE,
+				'WITHDRAWALS_ENABLER_ROLE',
+				L2_EXECUTOR
+			);
+			await grantRole(
+				L2Bridge,
+				WITHDRAWALS_DISABLER_ROLE,
+				'WITHDRAWALS_DISABLER_ROLE',
+				L2_EXECUTOR
+			);
+
+			// ==========================BRIDGE DEPOSIT STATUS==========
+
+			const isDepositEnableL2 = await L2Bridge.isDepositsEnabled();
+
+			console.log('\nDEPOSITS ENABLED ON L2 BRIDGE:', isDepositEnableL2);
+
+			// ==========================QUEUE==========================
+
+			const data = IZkSyncBridgeExecutorUpgradable.encodeFunctionData('queue', [
+				['0x237d956D141719b0Ef110785cf1c3C117F866716'],
+				[ethers.utils.parseEther('0')],
+				['enableDeposits()'],
+				[new Uint8Array()],
+				[false],
 			]);
 
-			const dataToIncrement = counterInterface.encodeFunctionData(
-				'increment',
-				[]
-			);
-
-			const gasLimitToIncrement = await zkProvider.estimateL1ToL2Execute({
-				contractAddress: '0xf2E854A9ffA62D95eE2fdB103dF89df69FD598b0',
-				calldata: dataToIncrement,
-				caller: utils.applyL1ToL2Alias(governorAgent.address),
+			const gasLimit = await zkProvider.estimateL1ToL2Execute({
+				contractAddress: L2_EXECUTOR,
+				calldata: data,
+				caller: utils.applyL1ToL2Alias(L1Executor.address),
 			});
 
-			const baseCostToIncrement = await zkSync.l2TransactionBaseCost(
+			const baseCost = await zkSync.l2TransactionBaseCost(
 				gasPrice,
-				gasLimitToIncrement,
+				gasLimit,
 				utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT
 			);
 
-			console.log('BASE COST');
-
-			// get target L2 contract address
-			const requestL2TransactionEncodedToIncrement =
-				zkSync.interface.encodeFunctionData('requestL2Transaction', [
-					'0xf2E854A9ffA62D95eE2fdB103dF89df69FD598b0',
-					0,
-					dataToIncrement,
-					gasLimitToIncrement,
-					utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
-					[new Uint8Array()],
-					deployWallet.address,
-				]);
-
-			const txToInc = await governorAgent.execute(
-				zkSync.address,
-				baseCostToIncrement,
-				requestL2TransactionEncodedToIncrement,
-				{
-					gasPrice,
-					gasLimit: gasLimitToIncrement,
-				}
+			const encodedDataQueue = L1Executor.interface.encodeFunctionData(
+				'callZkSync',
+				[
+					zkSync.address,
+					L2_EXECUTOR,
+					data,
+					gasLimit,
+					utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT,
+				]
 			);
 
-			await txToInc.wait();
+			// ==========================GOVERNOR EXECUTE==========================
 
-			// const IZkSyncBridgeExecutorUpgradable = new ethers.utils.Interface(
-			// 	ZkSyncBridgeExecutorUpgradable.abi
-			// );
+			// send via governor agent
+			const govTx = await L1GovernorAgent.execute(
+				L1_EXECUTOR_ADDR,
+				baseCost,
+				encodedDataQueue,
+				{ gasPrice, gasLimit: 10_000_000 }
+			);
 
-			// const data = IZkSyncBridgeExecutorUpgradable.encodeFunctionData('queue', [
-			// 	[deployer.addresses.Bridges.LidoL2BridgeProxy],
-			// 	[ethers.utils.parseEther('0')],
-			// 	['enableDeposits()'],
-			// 	[new Uint8Array()],
-			// 	[false],
-			// ]);
+			await govTx.wait();
 
-			// const gasLimit = await zkProvider.estimateL1ToL2Execute({
-			// 	contractAddress: deployer.addresses.ZkGovernanceExecutor,
-			// 	calldata: data,
-			// 	caller: utils.applyL1ToL2Alias(governorAgent.address),
+			const l2Response2 = await zkProvider.getL2TransactionFromPriorityOp(
+				govTx
+			);
+			await l2Response2.wait();
+
+			console.log('Action Set Queued on L2');
+			// ==========================ACTION SET EXECUTE==========================
+
+			// const actionSetId = await ZkGovBridge.getActionsSetById(actionSetIdValue);
+
+			// console.log('Action set by id:', actionSetId);
+
+			// const executeAction = await ZkGovBridge.execute(actionSetIdValue, {
+			// 	gasLimit: 10_000_000,
 			// });
 
-			// const baseCost = await zkSync.l2TransactionBaseCost(
-			// 	gasPrice,
-			// 	gasLimit,
-			// 	utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT
-			// );
-
-			// console.log(ethers.utils.formatEther(baseCost));
-
-			// // get target L2 contract address
-			// const requestL2TransactionEncoded = zkSync.interface.encodeFunctionData(
-			// 	'requestL2Transaction',
-			// 	[
-			// 		deployer.addresses.ZkGovernanceExecutor,
-			// 		0,
-			// 		data,
-			// 		gasLimit,
-			// 		utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
-			// 		[new Uint8Array()],
-			// 		deployWallet.address,
-			// 	]
-			// );
-
-			// const govBalance = await provider.getBalance(governorAgent.address);
-
-			// if (govBalance < baseCost) {
-			// 	const txSend = await deployWallet.sendTransaction({
-			// 		to: governorAgent.address,
-			// 		value: baseCost,
-			// 		gasLimit: 10_000_000,
-			// 		gasPrice,
-			// 	});
-			// 	await txSend.wait();
-			// 	console.log(
-			// 		'L1 GOV BALANCE',
-			// 		(await provider.getBalance(governorAgent.address)).toString()
-			// 	);
-			// }
-
-			// const tx = await governorAgent.execute(
-			// 	zkSync.address,
-			// 	baseCost,
-			// 	requestL2TransactionEncoded,
-			// 	{
-			// 		gasPrice,
-			// 		gasLimit,
-			// 	}
-			// );
-
-			// await tx.wait();
-
-			// zkSync.requestL2Transaction(
-			// 	ethers.constants.AddressZero,
-			// 	0,
-			// 	'0x',
-			// 	priorityTxMaxGasLimit,
-			// 	REQUIRED_L2_GAS_PRICE_PER_PUBDATA,
-			// 	[L2_WETH_PROXY_BYTECODE, L2_WETH_IMPLEMENTATION_BYTECODE],
-			// 	deployWallet.address,
-			// 	{ gasPrice, nonce, value: requiredValueToPublishBytecodes }
-			// ),
+			// await executeAction.wait();
 		});
 
 	await program.parseAsync(process.argv);
+}
+
+async function grantRole(
+	contract: Contract,
+	roleBytecode: string,
+	roleName: string,
+	target: string
+) {
+	const hasL2ExecutorDepositDisablerRoleL2 = await contract.hasRole(
+		roleBytecode,
+		target
+	);
+
+	if (!hasL2ExecutorDepositDisablerRoleL2) {
+		const tx = await contract.grantRole(roleBytecode, target, {
+			gasLimit: 10_000_000,
+		});
+		await tx.wait();
+
+		const isRoleGranted = await contract.hasRole(roleBytecode, target);
+		if (!isRoleGranted) {
+			console.warn(`Error granting ${roleName} to ${target}`);
+		}
+	}
+	console.log(`${roleName}:${target}`);
+}
+
+async function initializeBridgingManager(
+	contract: Contract,
+	roleName: string,
+	target: string
+) {
+	const isInitiated = await contract.isInitialized();
+
+	if (!isInitiated) {
+		console.log('Initializing L1 Bridge Default Admin...');
+		const tx = await contract['initialize(address)'](target);
+		await tx.wait();
+	}
+	console.log(`${roleName}:${target}`);
 }
 
 main().catch((error) => {
