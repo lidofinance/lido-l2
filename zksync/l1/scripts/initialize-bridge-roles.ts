@@ -1,6 +1,5 @@
 /* eslint-disable prettier/prettier */
 import { web3Provider } from './utils/utils';
-import { richWallet } from './utils/rich_wallet';
 import { Wallet } from 'ethers';
 import { formatUnits, parseUnits } from 'ethers/lib/utils';
 import { Command } from 'commander';
@@ -35,7 +34,7 @@ async function main() {
 
 			const zkWallet = cmd.privateKey
 				? new ZkSyncWallet(cmd.privateKey, zkProvider)
-				: new ZkSyncWallet(richWallet[0].privateKey, zkProvider);
+				: new ZkSyncWallet(PRIVATE_KEY, zkProvider);
 
 			console.log(`Using deployer wallet: ${deployWallet.address}`);
 

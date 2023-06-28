@@ -1,8 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { ethers } from 'hardhat';
-import '@nomiclabs/hardhat-ethers';
-import { web3Provider, zkSyncUrl } from './utils';
-import { richWallet } from './rich_wallet';
+import { web3Provider } from './utils/utils';
 import { Wallet } from 'ethers';
 import { formatUnits, parseUnits } from 'ethers/lib/utils';
 import { Command } from 'commander';
@@ -10,10 +7,11 @@ import { Deployer } from './deploy';
 import { Wallet as ZkSyncWallet, Provider, Contract } from 'zksync-web3';
 import L2ERC20Bridge from '../../l2/artifacts-zk/l2/contracts/L2ERC20Bridge.sol/L2ERC20Bridge.json';
 
-const provider = web3Provider();
-const zkProvider = new Provider(zkSyncUrl(), 270);
+const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
+const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL || '';
 
-const wallet = new ethers.Wallet(richWallet[0].privateKey, provider);
+const provider = web3Provider();
+const zkProvider = new Provider(ZK_CLIENT_WEB3_URL, 270);
 
 async function main() {
 	const program = new Command();
@@ -29,11 +27,11 @@ async function main() {
 		.action(async (cmd) => {
 			const deployWallet = cmd.privateKey
 				? new Wallet(cmd.privateKey, provider)
-				: wallet;
+				: new Wallet(PRIVATE_KEY, provider);
 
 			const zkWallet = cmd.privateKey
 				? new ZkSyncWallet(cmd.privateKeyZk, zkProvider)
-				: new ZkSyncWallet(richWallet[0].privateKey, zkProvider);
+				: new ZkSyncWallet(PRIVATE_KEY, zkProvider);
 
 			console.log(`Using deployer wallet: ${deployWallet.address}`);
 

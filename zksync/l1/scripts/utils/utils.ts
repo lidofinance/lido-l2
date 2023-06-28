@@ -22,7 +22,7 @@ export function zkSyncUrl() {
 }
 
 export function web3Provider(customUrl?: string) {
-	const provider = new ethers.providers.JsonRpcProvider(customUrl || web3Url());
+	const provider = new ethers.providers.JsonRpcProvider(web3Url());
 
 	// Check that `CHAIN_ETH_NETWORK` variable is set. If not, it's most likely because
 	// the variable was renamed. As this affects the time to deploy contracts in localhost

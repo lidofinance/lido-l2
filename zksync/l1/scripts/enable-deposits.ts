@@ -1,8 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { ethers } from 'hardhat';
 import '@nomiclabs/hardhat-ethers';
-import { web3Provider } from './utils';
-import { richWallet } from './rich_wallet';
+import { web3Provider } from './utils/utils';
 import { Wallet } from 'ethers';
 import { formatUnits, parseUnits } from 'ethers/lib/utils';
 import { Command } from 'commander';
@@ -43,7 +42,7 @@ async function main() {
 
 			const zkWallet = cmd.privateKey
 				? new ZkSyncWallet(cmd.privateKey, zkProvider)
-				: new ZkSyncWallet(richWallet[0].privateKey, zkProvider);
+				: new ZkSyncWallet(PRIVATE_KEY, zkProvider);
 
 			console.log(`Using deployer wallet: ${deployWallet.address}`);
 
@@ -139,7 +138,7 @@ async function main() {
 			const gasLimit = await zkProvider.estimateL1ToL2Execute({
 				contractAddress: L2_BRIDGE_EXECUTOR_ADDR,
 				calldata: data,
-				caller: utils.applyL1ToL2Alias(L1Executor.address),
+				caller: utils.applyL1ToL2Alias(L1_EXECUTOR_ADDR),
 			});
 
 			// estimate cons of L1 to L2 execution

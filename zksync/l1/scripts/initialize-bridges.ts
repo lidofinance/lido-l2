@@ -1,6 +1,4 @@
 /* eslint-disable prettier/prettier */
-import { ethers } from 'hardhat';
-import '@nomiclabs/hardhat-ethers';
 import {
 	REQUIRED_L2_GAS_PRICE_PER_PUBDATA,
 	getNumberFromEnv,
@@ -58,6 +56,7 @@ async function main() {
 			const gasPrice = cmd.gasPrice
 				? parseUnits(cmd.gasPrice, 'gwei')
 				: await provider.getGasPrice();
+
 			console.log(`Using gas price: ${formatUnits(gasPrice, 'gwei')} gwei`);
 
 			const nonce = cmd.nonce

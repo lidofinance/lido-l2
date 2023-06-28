@@ -2,7 +2,7 @@
 import { ethers } from 'hardhat';
 import '@nomiclabs/hardhat-ethers';
 import { Command } from 'commander';
-import { web3Provider } from './utils';
+import { web3Provider } from './utils/utils';
 
 import { Wallet } from 'ethers';
 import { formatUnits, parseUnits } from 'ethers/lib/utils';
