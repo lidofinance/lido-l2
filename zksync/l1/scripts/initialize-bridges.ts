@@ -4,53 +4,25 @@ import '@nomiclabs/hardhat-ethers';
 import {
 	REQUIRED_L2_GAS_PRICE_PER_PUBDATA,
 	getNumberFromEnv,
+	readBytecode,
 	web3Provider,
 } from './utils';
-import { richWallet } from './rich_wallet';
 import { Wallet } from 'ethers';
 import { formatUnits, parseUnits } from 'ethers/lib/utils';
 import { Command } from 'commander';
 import { Deployer } from './deploy';
 
-import * as fs from 'fs';
 import * as path from 'path';
 
 const provider = web3Provider();
+const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 
-// if using local setup for zkSync
-const wallet = new ethers.Wallet(richWallet[0].privateKey, provider);
-
-function readBytecode(path: string, fileName: string) {
-	return JSON.parse(
-		fs.readFileSync(`${path}/${fileName}.sol/${fileName}.json`, {
-			encoding: 'utf-8',
-		})
-	).bytecode;
-}
-
-function readInterface(path: string, fileName: string) {
-	const abi = JSON.parse(
-		fs.readFileSync(`${path}/${fileName}.sol/${fileName}.json`, {
-			encoding: 'utf-8',
-		})
-	).abi;
-	return new ethers.utils.Interface(abi);
-}
-
-const l1Artifacts = path.join(
-	path.dirname(__dirname),
-	'artifacts/l1/contracts'
-);
-
-// zksync/l2/artifacts-zk/l2/contracts
 const l2Artifacts = path.join(
 	path.resolve(__dirname, '..', '..', 'l2'),
 	'artifacts-zk/l2/contracts'
 );
 
 const l2ProxyArtifacts = path.join(l2Artifacts, 'proxy');
-
-const tokenL2Artifact = path.join(l2Artifacts, 'token');
 
 const L2_LIDO_BRIDGE_PROXY_BYTECODE = readBytecode(
 	l2ProxyArtifacts,
@@ -62,26 +34,9 @@ const L2_LIDO_BRIDGE_IMPLEMENTATION_BYTECODE = readBytecode(
 	'L2ERC20Bridge'
 );
 
-// const L2_LIDO_BRIDGE_INTERFACE = readInterface(l2Artifacts, 'L2ERC20Bridge');
-
 const DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT = getNumberFromEnv(
 	'CONTRACTS_DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT'
 );
-
-// const L2_STANDARD_ERC20_IMPLEMENTATION_BYTECODE = readBytecode(
-// 	tokenL2Artifact,
-// 	'ERC20Bridged'
-// );
-
-// const L2_STANDARD_ERC20_PROXY_BYTECODE = readBytecode(
-// 	l2ProxyArtifacts,
-// 	'OssifiableProxy'
-// );
-
-// const L2_STANDARD_ERC20_INTERFACE = readInterface(
-// 	tokenL2Artifact,
-// 	'ERC20Bridged'
-// );
 
 async function main() {
 	const program = new Command();
@@ -96,7 +51,7 @@ async function main() {
 		.action(async (cmd) => {
 			const deployWallet = cmd.privateKey
 				? new Wallet(cmd.privateKey, provider)
-				: wallet;
+				: new Wallet(PRIVATE_KEY, provider);
 
 			console.log(`Using deployer wallet: ${deployWallet.address}`);
 
@@ -194,13 +149,6 @@ async function main() {
 					REQUIRED_L2_GAS_PRICE_PER_PUBDATA
 				);
 
-			// const requiredValueToPublishBytecodes =
-			// 	await zkSync.l2TransactionBaseCost(
-			// 		gasPrice,
-			// 		priorityTxMaxGasLimit,
-			// 		REQUIRED_L2_GAS_PRICE_PER_PUBDATA
-			// 	);
-
 			try {
 				console.log('Initializing bridges');
 				const tx = await lidoBridge[
@@ -238,5 +186,5 @@ async function main() {
 }
 
 main().catch((err) => {
-	throw new Error('Error:' + err);
+	throw err;
 });

@@ -3,14 +3,14 @@ import { ethers } from 'hardhat';
 import '@nomiclabs/hardhat-ethers';
 import { Command } from 'commander';
 import { web3Provider } from './utils';
-import { richWallet } from './rich_wallet';
 
 import { Wallet } from 'ethers';
 import { formatUnits, parseUnits } from 'ethers/lib/utils';
 import { Deployer } from './deploy';
 
 const provider = web3Provider();
-const wallet = new ethers.Wallet(richWallet[0].privateKey, provider);
+
+const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 
 async function main() {
 	const program = new Command();
@@ -28,7 +28,7 @@ async function main() {
 		.action(async (cmd) => {
 			const deployWallet = cmd.privateKey
 				? new Wallet(cmd.privateKey, provider)
-				: wallet;
+				: new Wallet(PRIVATE_KEY, provider);
 
 			console.log(`Using deployer wallet: ${deployWallet.address}`);
 

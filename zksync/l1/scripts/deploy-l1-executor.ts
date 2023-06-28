@@ -3,12 +3,13 @@ import { ethers } from 'hardhat';
 import '@nomiclabs/hardhat-ethers';
 import { Wallet } from 'ethers';
 import { web3Provider } from './utils';
-import { richWallet } from './rich_wallet';
 
 const provider = web3Provider();
-const wallet = new Wallet(richWallet[0].privateKey, provider);
+
+const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 
 async function main() {
+	const wallet = new Wallet(PRIVATE_KEY, provider);
 	const L1Executor = await ethers.getContractFactory('L1Executor', wallet);
 	const contract = await L1Executor.deploy();
 	await contract.deployed();

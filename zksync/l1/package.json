@@ -10,8 +10,8 @@
 		"enable-bridges": "ts-node scripts/enable-bridges.ts",
 		"initialize-bridges": "ts-node scripts/initialize-bridges.ts",
 		"init-bridge-roles": "ts-node scripts/initialize-bridge-roles.ts",
-		"inc-counter": "ts-node scripts/inc-counter.ts",
-		"inc-counter-l2": "ts-node scripts/inc-counter-l2.ts"
+		"enable-deposits": "ts-node scripts/enable-deposits.ts",
+		"disable-deposits": "ts-node scripts/disable-deposits.ts"
 	},
 	"license": "ISC",
 	"devDependencies": {

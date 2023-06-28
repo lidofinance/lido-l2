@@ -73,7 +73,7 @@ export function deployedAddressesFromEnv(): DeployedAddresses {
 		Create2Factory: getAddressFromEnv('CONTRACTS_CREATE2_FACTORY_ADDR'),
 		LidoToken: getAddressFromEnv('CONTRACTS_L1_LIDO_TOKEN_ADDR'),
 		GovernanceL1: getAddressFromEnv('CONTRACTS_L1_GOVERNANCE_AGENT_ADDR'),
-		ZkGovernanceExecutor: getAddressFromEnv('ZK_GOVERNANCE_EXECUTOR'),
+		ZkGovernanceExecutor: getAddressFromEnv('L2_BRIDGE_EXECUTOR_ADDR'),
 	};
 }
 
