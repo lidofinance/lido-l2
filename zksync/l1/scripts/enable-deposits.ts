@@ -19,8 +19,8 @@ import L2ERC20Bridge from '../../l2/artifacts-zk/l2/contracts/L2ERC20Bridge.sol/
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL || '';
 
-const L1_EXECUTOR_ADDR = '0x52281EE6681AbAbeBc680A006114B4Dd72a9C7A3';
-const L2_BRIDGE_EXECUTOR_ADDR = '0x3ccA24e1A0e49654bc3482ab70199b7400eb7A3a';
+const L1_EXECUTOR_ADDR = '0xba2523C3e5dE2F6b468CAD13384A48Cdb26A1AB6';
+const L2_BRIDGE_EXECUTOR_ADDR = '0x9035E63C5Ac74dE843F176BE6B9869cA2385C61d';
 
 const provider = web3Provider();
 const zkProvider = new Provider(ZK_CLIENT_WEB3_URL, 270);
@@ -97,7 +97,7 @@ async function main() {
 
 			if (isDepositEnabledOnL1 && isDepositEnabledOnL2) {
 				console.log('\n================================');
-				console.log('\nDeposits on L1 and L2 bridges are already disabled!');
+				console.log('\nDeposits on L1 and L2 bridges are already enabled!');
 				console.log('\n================================');
 				return;
 			}
@@ -186,6 +186,7 @@ async function main() {
 			});
 
 			const actionSetId = await actionSetQueuedPromise.then((res) => res);
+
 			console.log('New Action Set Id :', actionSetId);
 
 			const l2Response2 = await zkProvider.getL2TransactionFromPriorityOp(

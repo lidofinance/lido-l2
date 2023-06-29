@@ -19,8 +19,8 @@ import L2ERC20Bridge from '../../l2/artifacts-zk/l2/contracts/L2ERC20Bridge.sol/
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL || '';
 
-const L1_EXECUTOR_ADDR = '0x52281EE6681AbAbeBc680A006114B4Dd72a9C7A3';
-const L2_BRIDGE_EXECUTOR_ADDR = '0x3ccA24e1A0e49654bc3482ab70199b7400eb7A3a';
+const L1_EXECUTOR_ADDR = '0xba2523C3e5dE2F6b468CAD13384A48Cdb26A1AB6';
+const L2_BRIDGE_EXECUTOR_ADDR = '0x9035E63C5Ac74dE843F176BE6B9869cA2385C61d';
 
 const provider = web3Provider();
 const zkProvider = new Provider(ZK_CLIENT_WEB3_URL, 270);
