@@ -36,4 +36,6 @@ contract AragonAgentMock {
             }
         }
     }
+
+    receive() external payable {}
 }

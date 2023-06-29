@@ -2,17 +2,15 @@
 
 import { ethers } from 'hardhat';
 import '@nomiclabs/hardhat-ethers';
-import { web3Provider } from './utils';
-import { richWallet } from './rich_wallet';
+import { web3Provider } from './utils/utils';
 import { Command } from 'commander';
 import { Wallet } from 'ethers';
 import { formatUnits, parseUnits } from 'ethers/lib/utils';
 import { Deployer } from './deploy';
 
-const provider = web3Provider();
+const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 
-// if using local setup for zkSync
-const wallet = new ethers.Wallet(richWallet[0].privateKey, provider);
+const provider = web3Provider();
 
 async function main() {
 	const program = new Command();
@@ -31,7 +29,7 @@ async function main() {
 		.action(async (cmd) => {
 			const deployWallet = cmd.privateKey
 				? new Wallet(cmd.privateKey, provider)
-				: wallet;
+				: new Wallet(PRIVATE_KEY, provider);
 
 			console.log(`Using deployer wallet: ${deployWallet.address}`);
 
@@ -65,6 +63,6 @@ async function main() {
 	await program.parseAsync(process.argv);
 }
 
-main().catch((err) => {
-	throw new Error('Error:' + err);
+main().catch((error) => {
+	throw error;
 });
