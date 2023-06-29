@@ -36,6 +36,7 @@ const DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT = getNumberFromEnv(
 	'CONTRACTS_DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT'
 );
 
+
 async function main() {
 	const program = new Command();
 
@@ -77,7 +78,7 @@ async function main() {
 			const governorAddress = await zkSync.getGovernor();
 			console.log('Governor:', governorAddress);
 
-			console.log('wstETH L1 token:', deployer.addresses.LidoToken);
+			console.log('wstETH L1 token:', deployer.addresses.LidoTokenL1);
 
 			const requiredValueToInitializeBridge =
 				await zkSync.l2TransactionBaseCost(
@@ -95,8 +96,8 @@ async function main() {
 						L2_LIDO_BRIDGE_IMPLEMENTATION_BYTECODE,
 						L2_LIDO_BRIDGE_PROXY_BYTECODE,
 					],
-					deployer.addresses.LidoToken,
-					deployer.addresses.LidoToken,
+					deployer.addresses.LidoTokenL1,
+					deployer.addresses.LidoTokenL2,
 					governorAddress,
 					requiredValueToInitializeBridge,
 					requiredValueToInitializeBridge,
@@ -110,8 +111,7 @@ async function main() {
 
 				const receipt = await tx.wait();
 				console.log(
-					`Lido bridge initialized, L2 Bridge Address: `,
-					await lidoBridge.l2Bridge()
+					`CONTRACTS_L2_LIDO_BRIDGE_PROXY_ADDR=${await lidoBridge.l2Bridge()}`,
 				);
 				console.log(`Gas used: `, receipt.gasUsed.toString());
 			} catch (err) {
