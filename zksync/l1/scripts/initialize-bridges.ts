@@ -79,68 +79,6 @@ async function main() {
 
 			console.log('wstETH L1 token:', deployer.addresses.LidoToken);
 
-			// const abiCoder = new ethers.utils.AbiCoder();
-			// const priorityTxMaxGasLimit = getNumberFromEnv(
-			// 	'CONTRACTS_PRIORITY_TX_MAX_GAS_LIMIT'
-			// );
-
-			// Bridge Proxy IMPL ADDRESS
-			// const l2ERC20BridgeImplAddr = computeL2Create2Address(
-			// 	applyL1ToL2Alias(lidoBridge.address),
-			// 	L2_LIDO_BRIDGE_IMPLEMENTATION_BYTECODE,
-			// 	'0x',
-			// 	ethers.constants.HashZero
-			// );
-
-			// const initFunction = L2_LIDO_BRIDGE_INTERFACE.getFunction(
-			// 	'initialize(address,address,address)'
-			// );
-			// Bridge Proxy PARAMS
-			// const l2BridgeProxyInitializationParams =
-			// 	L2_LIDO_BRIDGE_INTERFACE.encodeFunctionData(initFunction, [
-			// 		lidoBridge.address,
-			// 		deployer.addresses.LidoToken,
-			// 		deployer.addresses.LidoToken,
-			// 	]);
-
-			// Bridge Proxy ADDRESS
-			// const l2ERC20BridgeProxyAddr = computeL2Create2Address(
-			// 	applyL1ToL2Alias(lidoBridge.address),
-			// 	L2_LIDO_BRIDGE_PROXY_BYTECODE,
-			// 	ethers.utils.arrayify(
-			// 		abiCoder.encode(
-			// 			['address', 'address', 'bytes'],
-			// 			[
-			// 				l2ERC20BridgeImplAddr,
-			// 				governorAddress,
-			// 				l2BridgeProxyInitializationParams,
-			// 			]
-			// 		)
-			// 	),
-			// 	ethers.constants.HashZero
-			// );
-
-			// L2 TOKEN Implementation ADDRESS
-			// const l2StandardToken = computeL2Create2Address(
-			// 	l2ERC20BridgeProxyAddr,
-			// 	L2_STANDARD_ERC20_IMPLEMENTATION_BYTECODE,
-			// 	'0x',
-			// 	ethers.constants.HashZero
-			// );
-
-			// L2 TOKEN PROXY ADDRESS
-			// const l2TokenAddr = computeL2Create2Address(
-			// 	l2ERC20BridgeProxyAddr,
-			// 	L2_STANDARD_ERC20_PROXY_BYTECODE,
-			// 	ethers.utils.arrayify(
-			// 		abiCoder.encode(
-			// 			['address', 'address'],
-			// 			[deployer.addresses.LidoToken, l2StandardToken]
-			// 		)
-			// 	),
-			// 	ethers.constants.HashZero
-			// );
-
 			const requiredValueToInitializeBridge =
 				await zkSync.l2TransactionBaseCost(
 					gasPrice,

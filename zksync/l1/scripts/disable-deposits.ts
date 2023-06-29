@@ -1,6 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { ethers } from 'hardhat';
-import '@nomiclabs/hardhat-ethers';
+import * as hre from 'hardhat';
 import { web3Provider } from './utils/utils';
 import { Wallet } from 'ethers';
 import { formatUnits, parseUnits } from 'ethers/lib/utils';
@@ -85,12 +84,11 @@ async function main() {
 				ZkSyncBridgeExecutorUpgradable.abi,
 				zkWallet
 			);
-
 			// Contract Abis and Interfaces
 			const L1ERC20BridgeAbi = L1ERC20Bridge__factory.abi;
-			const IL1ERC20Bridge = new ethers.utils.Interface(L1ERC20BridgeAbi);
+			const IL1ERC20Bridge = new hre.ethers.utils.Interface(L1ERC20BridgeAbi);
 
-			const IZkSyncBridgeExecutorUpgradable = new ethers.utils.Interface(
+			const IZkSyncBridgeExecutorUpgradable = new hre.ethers.utils.Interface(
 				ZkSyncBridgeExecutorUpgradable.abi
 			);
 
@@ -129,7 +127,7 @@ async function main() {
 			// encode data to be queued by ZkBridgeExecutor on L2
 			const data = IZkSyncBridgeExecutorUpgradable.encodeFunctionData('queue', [
 				[deployer.addresses.Bridges.LidoL2BridgeProxy],
-				[ethers.utils.parseEther('0')],
+				[hre.ethers.utils.parseEther('0')],
 				['disableDeposits()'],
 				[new Uint8Array()],
 				[false],

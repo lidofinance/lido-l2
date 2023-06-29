@@ -3,15 +3,15 @@
 	"version": "0.1.0",
 	"scripts": {
 		"compile": "hardhat clean && hardhat compile && ts-node utils/generateTypings.ts",
-		"deploy-erc20": "ts-node scripts/deploy-erc20.ts --token-name name --symbol=sym --decimals=18 --implementation=ERC20Token",
-		"deploy-mock-agent": "ts-node scripts/deploy-mock-agent.ts",
-		"deploy-l1-executor": "ts-node scripts/deploy-l1-executor.ts",
-		"deploy-bridges": "ts-node scripts/deploy-bridges.ts",
-		"enable-bridges": "ts-node scripts/enable-bridges.ts",
-		"initialize-bridges": "ts-node scripts/initialize-bridges.ts",
-		"init-bridge-roles": "ts-node scripts/initialize-bridge-roles.ts",
-		"enable-deposits": "ts-node scripts/enable-deposits.ts",
-		"disable-deposits": "ts-node scripts/disable-deposits.ts"
+		"deploy-erc20": "hardhat run scripts/deploy-erc20.ts --token-name name --symbol=sym --decimals=18 --implementation=ERC20Token",
+		"deploy-mock-agent": "hardhat run scripts/deploy-mock-agent.ts",
+		"deploy-l1-executor": "hardhat run scripts/deploy-l1-executor.ts",
+		"deploy-bridges": "hardhat run scripts/deploy-bridges.ts",
+		"enable-bridges": "hardhat run scripts/enable-bridges.ts",
+		"initialize-bridges": "hardhat run scripts/initialize-bridges.ts",
+		"init-bridge-roles": "hardhat run scripts/initialize-bridge-roles.ts",
+		"enable-deposits": "hardhat run scripts/enable-deposits.ts",
+		"disable-deposits": "hardhat run scripts/disable-deposits.ts"
 	},
 	"license": "ISC",
 	"devDependencies": {

@@ -1,9 +1,8 @@
 /* eslint-disable prettier/prettier */
-import { ethers } from 'hardhat';
-import '@nomiclabs/hardhat-ethers';
 import { web3Provider } from './utils/utils';
 import { OssifiableProxy__factory } from '../typechain/index';
 import { L1Executor__factory } from '../typechain/index';
+import { Wallet } from 'ethers';
 
 const provider = web3Provider();
 
@@ -11,7 +10,7 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 
 async function main() {
 	// without ethers.Wallet -> HardhatError: HH5: HardhatContext is not created.
-	const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+	const wallet = new Wallet(PRIVATE_KEY, provider);
 
 	const L1ExecutorContractImpl = await new L1Executor__factory(wallet).deploy();
 
