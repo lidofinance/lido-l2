@@ -1,8 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { HardhatUserConfig } from 'hardhat/config';
 import '@nomiclabs/hardhat-ethers';
-import '@nomicfoundation/hardhat-ethers';
-import '@nomicfoundation/hardhat-chai-matchers';
 
 require('dotenv').config();
 

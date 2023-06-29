@@ -9,7 +9,7 @@ import {
 	Wallet,
 	providers,
 } from 'ethers';
-import { getAddressFromEnv } from './utils';
+import { getAddressFromEnv } from './utils/utils';
 import { IZkSyncFactory } from 'zksync-web3/build/typechain';
 import { SingletonFactory__factory } from '../typechain/factories/l1/contracts/SingletonFactory__factory';
 import { L1ERC20Bridge__factory } from '../typechain/factories/l1/contracts/L1ERC20Bridge__factory';
@@ -37,6 +37,7 @@ export interface DeployedAddresses {
 	LidoTokenL1: string;
 	LidoTokenL2: string;
 	GovernanceL1: string;
+	ZkGovernanceExecutor: string;
 }
 
 export interface DeployerConfig {
@@ -74,6 +75,7 @@ export function deployedAddressesFromEnv(): DeployedAddresses {
 		LidoTokenL1: getAddressFromEnv('CONTRACTS_L1_LIDO_TOKEN_ADDR'),
 		LidoTokenL2: getAddressFromEnv('CONTRACTS_L2_LIDO_TOKEN_ADDR'),
 		GovernanceL1: getAddressFromEnv('CONTRACTS_L1_GOVERNANCE_AGENT_ADDR'),
+		ZkGovernanceExecutor: getAddressFromEnv('L2_BRIDGE_EXECUTOR_ADDR'),
 	};
 }
 
