@@ -79,7 +79,7 @@ unit('ZkSync :: L1ERC20Bridge', ctxFactory)
         assert.equal(actualL2TokenAddress, hre.ethers.constants.AddressZero);
     })
 
-    .test('deposit() :: deposits are disabled', async (ctx) => {
+    .test('deposit() :: deposits disabled', async (ctx) => {
         // validate deposits are disabled
         assert.isFalse(await ctx.l1Erc20Bridge.isDepositsEnabled());
 
@@ -181,7 +181,7 @@ unit('ZkSync :: L1ERC20Bridge', ctxFactory)
         );
     })
 
-    .test('deposit() :: called by sender', async (ctx) => {
+    .test('deposit() :: works as expected', async (ctx) => {
         const {
             accounts: { deployer, sender, recipient },
             stubs: { zkSync, l2Erc20Bridge, l1Token },
@@ -195,6 +195,7 @@ unit('ZkSync :: L1ERC20Bridge', ctxFactory)
         await enableDepositsWithAssertions(l1Erc20Bridge, deployer.address, deployer.address);
 
         const senderBalanceBefore = await l1Token.balanceOf(sender.address);
+        const bridgeBalanceBefore = await l1Token.balanceOf(l1Erc20Bridge.address);
 
         // set allowance to L1 bridge
         await l1Token.connect(sender)['approve'](l1Erc20Bridge.address, amount);
@@ -282,7 +283,146 @@ unit('ZkSync :: L1ERC20Bridge', ctxFactory)
         // validate balance of the L1 bridge increased
         assert.equalBN(
             await l1Token.balanceOf(l1Erc20Bridge.address),
+            bridgeBalanceBefore.add(amount)
+        );
+    })
+
+    .test("finalizeWithdrawal() :: withdrawals disabled", async (ctx) => {
+        const { l1Erc20Bridge } = ctx;
+
+        // validate withdrawals are disabled
+        assert.isFalse(await l1Erc20Bridge.isWithdrawalsEnabled());
+
+        const l2BlockNumber = ethers.BigNumber.from('1');
+        const l2MessageIndex = ethers.BigNumber.from('1');
+        const l2TxNumberInBlock = 1;
+        const withdrawMessage = ethers.utils.defaultAbiCoder.encode(['string'], ['message']);
+        const merkleProof = [
+            ethers.utils.formatBytes32String('proof1'),
+            ethers.utils.formatBytes32String('proof2')
+        ];
+
+        await assert.revertsWith(
+            l1Erc20Bridge.finalizeWithdrawal(
+                l2BlockNumber,
+                l2MessageIndex,
+                l2TxNumberInBlock,
+                withdrawMessage,
+                merkleProof
+            ),
+            'ErrorWithdrawalsDisabled'
+        );
+    })
+
+    .test("finalizeWithdrawal() :: not enough ETH locked on L1 bridge", async (ctx) => {
+        const {
+            accounts: { deployer, recipient },
+            stubs: { l1Token },
+            l1Erc20Bridge
+        } = ctx;
+
+        await enableWithdrawalsWithAssertions(l1Erc20Bridge, deployer.address, deployer.address);
+
+        const amount = wei`1 ether`;
+
+        const l2BlockNumber = ethers.BigNumber.from('1');
+        const l2MessageIndex = ethers.BigNumber.from('1');
+        const l2TxNumberInBlock = 1;
+        const merkleProof = [
+            ethers.utils.formatBytes32String('proof1'),
+            ethers.utils.formatBytes32String('proof2')
+        ];
+
+        const l1Erc20BridgeInterface = l1Erc20Bridge.interface;
+        const withdrawMessage = ethers.utils.solidityPack(
+            ['bytes4', 'address', 'address', 'uint256'],
+            [
+                l1Erc20BridgeInterface.getSighash(l1Erc20BridgeInterface.getFunction('finalizeWithdrawal')),
+                recipient.address,
+                l1Token.address,
+                amount
+            ]
+        );
+
+        await assert.revertsWith(
+            l1Erc20Bridge.finalizeWithdrawal(
+                l2BlockNumber,
+                l2MessageIndex,
+                l2TxNumberInBlock,
+                withdrawMessage,
+                merkleProof
+            ),
+            'ERC20: transfer amount exceeds balance'
+        );
+    })
+
+    .test("finalizeWithdrawal() :: works as expected (called by stranger)", async (ctx) => {
+        const {
+            accounts: { deployer, recipient, stranger },
+            stubs: { l1Token },
+            l1Erc20Bridge
+        } = ctx;
+
+        await enableWithdrawalsWithAssertions(l1Erc20Bridge, deployer.address, deployer.address);
+
+        const amount = wei`1 ether`;
+
+        const recipientBalanceBefore = await l1Token.balanceOf(recipient.address);
+        // transfer tokens to L1 bridge to simulate locked funds
+        await l1Token.transfer(l1Erc20Bridge.address, amount);
+        const bridgeBalanceBefore = await l1Token.balanceOf(l1Erc20Bridge.address);
+
+        const l2BlockNumber = ethers.BigNumber.from('1');
+        const l2MessageIndex = ethers.BigNumber.from('1');
+        const l2TxNumberInBlock = 1;
+        const merkleProof = [
+            ethers.utils.formatBytes32String('proof1'),
+            ethers.utils.formatBytes32String('proof2')
+        ];
+
+        const l1Erc20BridgeInterface = l1Erc20Bridge.interface;
+        const withdrawMessage = ethers.utils.solidityPack(
+            ['bytes4', 'address', 'address', 'uint256'],
+            [
+                l1Erc20BridgeInterface.getSighash(l1Erc20BridgeInterface.getFunction('finalizeWithdrawal')),
+                recipient.address,
+                l1Token.address,
+                amount
+            ]
+        );
+
+        const finalizeWithdrawalTx = await l1Erc20Bridge
+            .connect(stranger)
+            .finalizeWithdrawal(
+                l2BlockNumber,
+                l2MessageIndex,
+                l2TxNumberInBlock,
+                withdrawMessage,
+                merkleProof
+            );
+        
+        // validate withdrawal marked as finalized
+        assert.isTrue(
+            await l1Erc20Bridge.isWithdrawalFinalized(l2BlockNumber, l2MessageIndex)
+        );
+
+        // validate WithdrawalFinalized event is emitted with the expected data
+        await assert.emits(l1Erc20Bridge, finalizeWithdrawalTx, 'WithdrawalFinalized', [
+            recipient.address,
+            l1Token.address,
             amount
+        ]);
+
+        // validate balance of the recipient increased
+        assert.equalBN(
+            await l1Token.balanceOf(recipient.address),
+            recipientBalanceBefore.add(amount)
+        );
+
+        // validate balance of the L1 bridge decreased
+        assert.equalBN(
+            await l1Token.balanceOf(l1Erc20Bridge.address),
+            bridgeBalanceBefore.sub(amount)
         );
     })
 
@@ -311,6 +451,31 @@ async function enableDepositsWithAssertions(
     await l1Erc20Bridge.enableDeposits();
 
     assert.isTrue(await l1Erc20Bridge.isDepositsEnabled());
+}
+
+async function enableWithdrawalsWithAssertions(
+    l1Erc20Bridge: L1ERC20Bridge,
+    defaultAdminAddress: string,
+    withdrawalEnablerAddress: string
+) {
+    // validate that contract is not initialized and withdrawals are disabled
+    assert.isFalse(await l1Erc20Bridge.isInitialized());
+    assert.isFalse(await l1Erc20Bridge.isWithdrawalsEnabled());
+
+    // grant DEFAULT_ADMIN_ROLE role
+    await l1Erc20Bridge['initialize(address)'](defaultAdminAddress);
+
+    assert.isTrue(await l1Erc20Bridge.isInitialized());
+
+    // grant WITHDRAWALS_ENABLER_ROLE role
+    await l1Erc20Bridge.grantRole(
+        await l1Erc20Bridge.WITHDRAWALS_ENABLER_ROLE(),
+        withdrawalEnablerAddress
+    );
+
+    await l1Erc20Bridge.enableWithdrawals();
+
+    assert.isTrue(await l1Erc20Bridge.isWithdrawalsEnabled());
 }
 
 async function ctxFactory() {
