@@ -41,7 +41,7 @@ contract BridgingManager is AccessControl {
         }
         _setupRole(DEFAULT_ADMIN_ROLE, admin_);
         s.isInitialized = true;
-        emit Initialized(admin_);
+        emit InitializedBridgingManager(admin_);
     }
 
     /// @notice Returns whether the contract is initialized or not
@@ -125,7 +125,7 @@ contract BridgingManager is AccessControl {
     event DepositsDisabled(address indexed disabler);
     event WithdrawalsEnabled(address indexed enabler);
     event WithdrawalsDisabled(address indexed disabler);
-    event Initialized(address indexed admin);
+    event InitializedBridgingManager(address indexed admin);
 
     error ErrorDepositsEnabled();
     error ErrorDepositsDisabled();
