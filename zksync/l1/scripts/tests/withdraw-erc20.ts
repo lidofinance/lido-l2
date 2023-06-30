@@ -8,8 +8,8 @@ import {
     web3Provider,
     zkSyncUrl,
     readInterface
-} from '../utils';
-import { richWallet } from '../rich_wallet';
+} from '../utils/utils';
+import { richWallet } from '../utils/rich_wallet';
 
 dotenv.config();
 

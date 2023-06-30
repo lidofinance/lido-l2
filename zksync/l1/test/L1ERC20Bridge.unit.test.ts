@@ -5,6 +5,7 @@ import { assert } from 'chai';
 import * as path from 'path';
 import {
     L1ERC20Bridge__factory,
+    L1ERC20Bridge,
     ZkSyncStub__factory
 } from '../typechain';
 import {
@@ -13,7 +14,7 @@ import {
     OssifiableProxy__factory,
 } from '../../../typechain';
 import { L2ERC20BridgeStub__factory } from '../../l2/typechain';
-import { readBytecode } from '../scripts/utils';
+import { readBytecode } from '../scripts/utils/utils';
 
 // zksync/l2/artifacts-zk/l2/contracts
 const l2Artifacts = path.join(
@@ -30,6 +31,10 @@ const L2_LIDO_BRIDGE_STUB_BYTECODE = readBytecode(
     path.join(l2Artifacts, 'stubs'),
     'L2ERC20BridgeStub'
 );
+
+const L1_TOKEN_STUB_NAME = 'ERC20 Mock';
+const L1_TOKEN_STUB_SYMBOL = 'ERC20';
+const L1_TOKEN_STUB_DECIMALS = '18';
 
 unit('ZkSync :: L1ERC20Bridge', ctxFactory)
     .test('zkSync()', async (ctx) => {
@@ -60,21 +65,253 @@ unit('ZkSync :: L1ERC20Bridge', ctxFactory)
         );
     })
 
-    .test("l2TokenAddress() :: correct l1Token", async (ctx) => {
+    .test('l2TokenAddress() :: correct l1Token', async (ctx) => {
         const actualL2TokenAddress =
             await ctx.l1Erc20Bridge.l2TokenAddress(ctx.stubs.l1Token.address);
 
         assert.equal(actualL2TokenAddress, ctx.stubs.l2Token.address);
     })
 
-    .test("l2TokenAddress() :: incorrect l1Token", async (ctx) => {
+    .test('l2TokenAddress() :: incorrect l1Token', async (ctx) => {
         const actualL2TokenAddress =
             await ctx.l1Erc20Bridge.l2TokenAddress(ctx.accounts.stranger.address);
 
-        assert.equal(actualL2TokenAddress, ethers.constants.AddressZero);
+        assert.equal(actualL2TokenAddress, hre.ethers.constants.AddressZero);
+    })
+
+    .test('deposit() :: deposits are disabled', async (ctx) => {
+        // validate deposits are disabled
+        assert.isFalse(await ctx.l1Erc20Bridge.isDepositsEnabled());
+
+        const { sender, recipient } = ctx.accounts;
+        const amount = wei`1 ether`;
+        const l2TxGasLimit = wei`1000 gwei`;
+        const l2TxGasPerPubdataByte = wei`800 wei`;
+
+        await assert.revertsWith(
+            ctx.l1Erc20Bridge[
+                'deposit(address,address,uint256,uint256,uint256,address)'
+            ](
+                recipient.address,
+                ctx.stubs.l1Token.address,
+                amount,
+                l2TxGasLimit,
+                l2TxGasPerPubdataByte,
+                sender.address
+            ),
+            'ErrorDepositsDisabled'
+        );
+    })
+
+    .test('deposit() :: wrong l1Token address', async (ctx) => {
+        const {
+            accounts: { deployer, sender, recipient, stranger: wrongL1Token },
+            l1Erc20Bridge
+        } = ctx;
+        const amount = wei`1 ether`;
+        const l2TxGasLimit = wei`1000 gwei`;
+        const l2TxGasPerPubdataByte = wei`800 wei`;
+
+        await enableDepositsWithAssertions(l1Erc20Bridge, deployer.address, deployer.address);
+
+        await assert.revertsWith(
+            l1Erc20Bridge[
+                'deposit(address,address,uint256,uint256,uint256,address)'
+            ](
+                recipient.address,
+                wrongL1Token.address,
+                amount,
+                l2TxGasLimit,
+                l2TxGasPerPubdataByte,
+                sender.address
+            ),
+            'ErrorUnsupportedL1Token'
+        );
+    })
+
+    .test('deposit() :: wrong (zero) deposit amount', async (ctx) => {
+        const {
+            accounts: { deployer, sender, recipient },
+            l1Erc20Bridge
+        } = ctx;
+        const wrongAmount = '0';
+        const l2TxGasLimit = wei`1000 gwei`;
+        const l2TxGasPerPubdataByte = wei`800 wei`;
+
+        await enableDepositsWithAssertions(l1Erc20Bridge, deployer.address, deployer.address);
+
+        await assert.revertsWith(
+            l1Erc20Bridge[
+                'deposit(address,address,uint256,uint256,uint256,address)'
+            ](
+                recipient.address,
+                ctx.stubs.l1Token.address,
+                wrongAmount,
+                l2TxGasLimit,
+                l2TxGasPerPubdataByte,
+                sender.address
+            ),
+            'The deposit amount can\'t be zero'
+        );
+    })
+
+    .test('deposit() :: insufficient token allowance for bridge', async (ctx) => {
+        const {
+            accounts: { deployer, sender, recipient },
+            l1Erc20Bridge
+        } = ctx;
+        const amount = wei`1 ether`;
+        const l2TxGasLimit = wei`1000 gwei`;
+        const l2TxGasPerPubdataByte = wei`800 wei`;
+
+        await enableDepositsWithAssertions(l1Erc20Bridge, deployer.address, deployer.address);
+
+        await assert.revertsWith(
+            l1Erc20Bridge[
+                'deposit(address,address,uint256,uint256,uint256,address)'
+            ](
+                recipient.address,
+                ctx.stubs.l1Token.address,
+                amount,
+                l2TxGasLimit,
+                l2TxGasPerPubdataByte,
+                sender.address
+            ),
+            'ERC20: insufficient allowance'
+        );
+    })
+
+    .test('deposit() :: called by sender', async (ctx) => {
+        const {
+            accounts: { deployer, sender, recipient },
+            stubs: { zkSync, l2Erc20Bridge, l1Token },
+            l1Erc20Bridge
+        } = ctx;
+        const amount = wei`1 ether`;
+        const l2TxGasLimit = wei`1000 gwei`;
+        const l2TxGasPerPubdataByte = wei`800 wei`;
+        const value = wei`250_000 gwei`;
+
+        await enableDepositsWithAssertions(l1Erc20Bridge, deployer.address, deployer.address);
+
+        const senderBalanceBefore = await l1Token.balanceOf(sender.address);
+
+        // set allowance to L1 bridge
+        await l1Token.connect(sender)['approve'](l1Erc20Bridge.address, amount);
+
+        // validate token allowance for bridge
+        assert.equalBN(
+            await l1Token.allowance(sender.address, l1Erc20Bridge.address),
+            amount
+        );
+
+        // set canonicalTxHash
+        const canonicalTxHash = ethers.utils.formatBytes32String('canonicalTxHash');
+        await zkSync.setCanonicalTxHash(canonicalTxHash);
+
+        assert.equal(await zkSync.canonicalTxHash(), canonicalTxHash);
+
+        const depositTx = await l1Erc20Bridge
+            .connect(sender)
+        [
+            'deposit(address,address,uint256,uint256,uint256,address)'
+        ](
+            recipient.address,
+            l1Token.address,
+            amount,
+            l2TxGasLimit,
+            l2TxGasPerPubdataByte,
+            sender.address,
+            { value }
+        );
+
+        const abiCoder = ethers.utils.defaultAbiCoder;
+
+        const gettersData = abiCoder.encode(
+            ['bytes', 'bytes', 'bytes'],
+            [
+                abiCoder.encode(['string'], [L1_TOKEN_STUB_NAME]),
+                abiCoder.encode(['string'], [L1_TOKEN_STUB_SYMBOL]),
+                abiCoder.encode(['uint8'], [L1_TOKEN_STUB_DECIMALS])
+            ]
+        );
+        const txCalldata = l2Erc20Bridge.interface.encodeFunctionData(
+            'finalizeDeposit',
+            [
+                sender.address,
+                recipient.address,
+                l1Token.address,
+                amount,
+                gettersData
+            ]
+        );
+
+        // validate depositAmount used to claim funds in case the deposit transaction will fail
+        assert.equalBN(
+            await l1Erc20Bridge.depositAmount(sender.address, l1Token.address, canonicalTxHash),
+            amount
+        );
+
+        // validate DepositInitiated event is emitted with the expected data
+        await assert.emits(l1Erc20Bridge, depositTx, 'DepositInitiated', [
+            canonicalTxHash,
+            sender.address,
+            recipient.address,
+            l1Token.address,
+            amount
+        ]);
+
+        // validate RequestL2TransactionCalled event is emitted with the expected data
+        await assert.emits(zkSync, depositTx, 'RequestL2TransactionCalled', [
+            value,
+            l2Erc20Bridge.address,
+            0,
+            txCalldata,
+            l2TxGasLimit,
+            l2TxGasPerPubdataByte,
+            [],
+            sender.address
+        ]);
+
+        // validate balance of the sender decreased
+        assert.equalBN(
+            await l1Token.balanceOf(sender.address),
+            senderBalanceBefore.sub(amount)
+        );
+
+        // validate balance of the L1 bridge increased
+        assert.equalBN(
+            await l1Token.balanceOf(l1Erc20Bridge.address),
+            amount
+        );
     })
 
     .run();
+
+async function enableDepositsWithAssertions(
+    l1Erc20Bridge: L1ERC20Bridge,
+    defaultAdminAddress: string,
+    depositEnablerAddress: string
+) {
+    // validate that contract is not initialized and deposits are disabled
+    assert.isFalse(await l1Erc20Bridge.isInitialized());
+    assert.isFalse(await l1Erc20Bridge.isDepositsEnabled());
+
+    // grant DEFAULT_ADMIN_ROLE role
+    await l1Erc20Bridge['initialize(address)'](defaultAdminAddress);
+
+    assert.isTrue(await l1Erc20Bridge.isInitialized());
+
+    // grant DEPOSITS_ENABLER_ROLE role
+    await l1Erc20Bridge.grantRole(
+        await l1Erc20Bridge.DEPOSITS_ENABLER_ROLE(),
+        depositEnablerAddress
+    );
+
+    await l1Erc20Bridge.enableDeposits();
+
+    assert.isTrue(await l1Erc20Bridge.isDepositsEnabled());
+}
 
 async function ctxFactory() {
     const [deployer, governor, sender, recipient, stranger] = await hre.ethers.getSigners();
@@ -83,8 +320,8 @@ async function ctxFactory() {
 
     const l2TokenStub = await new EmptyContractStub__factory(deployer).deploy();
     const l1TokenStub = await new ERC20BridgedStub__factory(deployer).deploy(
-        'ERC20 Mock',
-        'ERC20'
+        L1_TOKEN_STUB_NAME,
+        L1_TOKEN_STUB_SYMBOL
     );
     await l1TokenStub.transfer(sender.address, wei`100 ether`);
 
@@ -101,7 +338,7 @@ async function ctxFactory() {
         deployer
     );
 
-    const tx = await l1Erc20Bridge[
+    const initTx = await l1Erc20Bridge[
         'initialize(bytes[],address,address,address,uint256,uint256)'
     ](
         [
@@ -115,7 +352,7 @@ async function ctxFactory() {
         requiredValueToInitializeBridge,
     );
 
-    await tx.wait();
+    await initTx.wait();
 
     return {
         accounts: {

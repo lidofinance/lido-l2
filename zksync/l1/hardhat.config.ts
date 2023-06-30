@@ -1,6 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { HardhatUserConfig } from 'hardhat/config';
 import '@nomiclabs/hardhat-ethers';
+import "@nomiclabs/hardhat-waffle";
 
 require('dotenv').config();
 
