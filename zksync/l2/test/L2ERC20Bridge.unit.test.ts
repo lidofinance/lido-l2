@@ -103,6 +103,7 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
       l2Erc20Bridge,
       l1Erc20Bridge: l1Bridge,
       l1Erc20BridgeWrong: l1BridgeWrong,
+      gasLimit: 10_000_000,
     };
   }
 
@@ -115,14 +116,17 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
     const { l2Erc20Bridge, stubs } = context;
     assert.equal(await l2Erc20Bridge.l1Bridge(), stubs.l1Bridge);
   });
+
   it("l1Token()", async () => {
     const { l2Erc20Bridge, stubs } = context;
     assert.equal(await l2Erc20Bridge.l1Token(), stubs.l1Token.address);
   });
+
   it("l2Token()", async () => {
     const { l2Erc20Bridge, stubs } = context;
     assert.equal(await l2Erc20Bridge.l2Token(), stubs.l2Token.address);
   });
+
   it("l1TokenAddress() :: correct L1 token", async () => {
     const { l2Erc20Bridge, stubs } = context;
     const fetchedL1TokenAddress = await l2Erc20Bridge.l1TokenAddress(
@@ -130,13 +134,17 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
     );
     assert.equal(fetchedL1TokenAddress, stubs.l1Token.address);
   });
+
   it("l1TokenAddress() :: incorrect L1 Token", async () => {
-    const { l2Erc20Bridge, stubs } = context;
+    const { l2Erc20Bridge, accounts } = context;
+    const wrongTokenAddress = accounts.stranger.address;
+
     const fetchedL1TokenAddress = await l2Erc20Bridge.l1TokenAddress(
-      stubs.l2Token.address
+      wrongTokenAddress
     );
-    assert.equal(fetchedL1TokenAddress, stubs.l1Token.address);
+    assert.equal(fetchedL1TokenAddress, ethers.constants.AddressZero);
   });
+
   it("l2TokenAddress() :: correct L2 Token", async () => {
     const { l2Erc20Bridge, stubs } = context;
 
@@ -145,17 +153,20 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
     );
     assert.equal(fetchedL2TokenAddress, stubs.l2Token.address);
   });
+
   it("l2TokenAddress() :: incorrect L2 Token", async () => {
     const { l2Erc20Bridge, accounts } = context;
+    const wrongTokenAddress = accounts.stranger.address;
 
     const fetchedL2TokenAddress = await l2Erc20Bridge.l2TokenAddress(
-      accounts.stranger.address
+      wrongTokenAddress
     );
     assert.equal(fetchedL2TokenAddress, ethers.constants.AddressZero);
   });
+
   it("deposit() :: deposits are disabled", async () => {
-    const { l2Erc20Bridge, accounts, stubs, l1Erc20Bridge } = context;
-    const { deployerWallet, sender, recipient } = accounts;
+    const { l2Erc20Bridge, accounts, stubs, l1Erc20Bridge, gasLimit } = context;
+    const { sender, recipient } = accounts;
 
     assert.isFalse(await l2Erc20Bridge.isDepositsEnabled());
 
@@ -173,18 +184,13 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
         sender.address,
         l2Erc20Bridge.address,
         "0x",
-        { gasLimit: 10_000_000 }
+        { gasLimit }
       )
     ).to.be.revertedWith("ErrorDepositsDisabled");
-
-    await enableDepositsWithAssertions(
-      l2Erc20Bridge,
-      deployerWallet.address,
-      deployerWallet.address
-    );
   });
+
   it("deposit() :: wrong l1Token address", async () => {
-    const { l2Erc20Bridge, accounts, l1Erc20Bridge } = context;
+    const { l2Erc20Bridge, accounts, l1Erc20Bridge, gasLimit } = context;
     const { deployerWallet, sender, recipient } = accounts;
 
     await enableDepositsWithAssertions(
@@ -208,12 +214,14 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
         sender.address,
         l2Erc20Bridge.address,
         "0x",
-        { gasLimit: 10_000_000 }
+        { gasLimit }
       )
     ).to.be.revertedWith("ErrorUnsupportedL1Token");
   });
+
   it("deposit() :: wrong domain sender", async () => {
-    const { l2Erc20Bridge, accounts, stubs, l1Erc20BridgeWrong } = context;
+    const { l2Erc20Bridge, accounts, stubs, l1Erc20BridgeWrong, gasLimit } =
+      context;
     const { deployerWallet, sender, recipient } = accounts;
 
     await enableDepositsWithAssertions(
@@ -235,12 +243,13 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
         sender.address,
         l2Erc20Bridge.address,
         "0x",
-        { gasLimit: 10_000_000 }
+        { gasLimit }
       )
     ).to.be.revertedWith("ErrorWrongCrossDomainSender");
   });
+
   it("deposit() :: wrong (zero) value", async () => {
-    const { l2Erc20Bridge, accounts, stubs, l1Erc20Bridge } = context;
+    const { l2Erc20Bridge, accounts, stubs, l1Erc20Bridge, gasLimit } = context;
     const { deployerWallet, sender, recipient } = accounts;
 
     await enableDepositsWithAssertions(
@@ -251,6 +260,7 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
     const amount = wei`1 ether`;
     const l2TxGasLimit = wei`1000 gwei`;
     const l2TxGasPerPubdataByte = wei`800 wei`;
+    const ethValue = ethers.utils.parseEther("1.0");
 
     await expect(
       l1Erc20Bridge.deposit(
@@ -262,12 +272,13 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
         sender.address,
         l2Erc20Bridge.address,
         "0x",
-        { gasLimit: 10_000_000, value: ethers.utils.parseEther("1.0") }
+        { gasLimit, value: ethValue }
       )
     ).to.be.reverted;
   });
+
   it("deposit() :: works as expected", async () => {
-    const { l2Erc20Bridge, accounts, stubs, l1Erc20Bridge } = context;
+    const { l2Erc20Bridge, accounts, stubs, l1Erc20Bridge, gasLimit } = context;
     const { deployerWallet, sender, recipient } = accounts;
 
     await enableDepositsWithAssertions(
@@ -279,6 +290,9 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
     const amount = wei`1 ether`;
     const l2TxGasLimit = wei`1000 gwei`;
     const l2TxGasPerPubdataByte = wei`800 wei`;
+    // changes in token supply between two transactions
+    let deltaL2TokenSupply;
+    const l2TotalSupplyBefore = await stubs.l2Token.totalSupply();
 
     await expect(
       l1Erc20Bridge.deposit(
@@ -290,7 +304,7 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
         sender.address,
         l2Erc20Bridge.address,
         "0x",
-        { gasLimit: 10_000_000 }
+        { gasLimit }
       )
     )
       .to.emit(l2Erc20Bridge, "FinalizeDeposit")
@@ -301,9 +315,52 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
         amount,
         "0x"
       );
+
+    const l2TotalSupplyAfterFirstTx = await stubs.l2Token.totalSupply();
+
+    deltaL2TokenSupply = l2TotalSupplyAfterFirstTx.sub(l2TotalSupplyBefore);
+
+    expect(deltaL2TokenSupply).to.eq(
+      amount,
+      "Total supply of l2Token should increase"
+    );
+
+    await expect(
+      l1Erc20Bridge.deposit(
+        recipient.address,
+        stubs.l1Token.address,
+        amount,
+        l2TxGasLimit,
+        l2TxGasPerPubdataByte,
+        sender.address,
+        l2Erc20Bridge.address,
+        "0x",
+        { gasLimit }
+      )
+    )
+      .to.emit(l2Erc20Bridge, "FinalizeDeposit")
+      .withArgs(
+        deployerWallet.address,
+        recipient.address,
+        stubs.l2Token.address,
+        amount,
+        "0x"
+      );
+
+    const l2TotalSupplyAfterSecondTx = await stubs.l2Token.totalSupply();
+
+    deltaL2TokenSupply = l2TotalSupplyAfterSecondTx.sub(
+      l2TotalSupplyAfterFirstTx
+    );
+
+    expect(deltaL2TokenSupply).to.eq(
+      amount,
+      "Total supply of l2Token should increase"
+    );
   });
+
   it("withdraw() :: withdrawals are disabled", async () => {
-    const { l2Erc20Bridge, accounts, stubs } = context;
+    const { l2Erc20Bridge, accounts, stubs, gasLimit } = context;
 
     const { recipient } = accounts;
 
@@ -313,12 +370,13 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
 
     await expect(
       l2Erc20Bridge.withdraw(recipient.address, stubs.l2Token.address, amount, {
-        gasLimit: 10_000_000,
+        gasLimit,
       })
     ).to.be.reverted;
   });
+
   it("withdraw() :: wrong L2 token", async () => {
-    const { l2Erc20Bridge, accounts, stubs } = context;
+    const { l2Erc20Bridge, accounts, stubs, gasLimit } = context;
 
     const { deployerWallet, recipient } = accounts;
 
@@ -328,16 +386,17 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
       deployerWallet.address
     );
     const amount = wei`1 ether`;
+    const wrongTokenAddress = stubs.l1Token.address;
 
     await expect(
-      l2Erc20Bridge.withdraw(recipient.address, stubs.l1Token.address, amount, {
-        gasLimit: 10_000_000,
+      l2Erc20Bridge.withdraw(recipient.address, wrongTokenAddress, amount, {
+        gasLimit,
       })
     ).to.be.reverted;
   });
-  it("withdraw() :: works as expected", async () => {
-    const { l2Erc20Bridge, accounts, stubs } = context;
 
+  it("withdraw() :: works as expected", async () => {
+    const { l2Erc20Bridge, accounts, stubs, gasLimit } = context;
     const { deployerWallet } = accounts;
 
     await enableWithdrawalsWithAssertions(
@@ -346,18 +405,23 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
       deployerWallet.address
     );
 
-    const recipientBalanceBeforeWith = await stubs.l2Token.balanceOf(
+    const l2TotalSupplyBeforeWith = await stubs.l2Token.totalSupply();
+
+    const deployerBalanceBeforeWith = await stubs.l2Token.balanceOf(
       deployerWallet.address
     );
 
     const amount = wei`0.5 ether`;
 
+    // changes in token supply between two transactions
+    let deltaL2TokenSupply;
+
     await expect(
       l2Erc20Bridge.withdraw(
         deployerWallet.address,
         stubs.l2Token.address,
         amount,
-        { gasLimit: 10_000_000 }
+        { gasLimit }
       )
     )
       .to.emit(l2Erc20Bridge, "WithdrawalInitiated")
@@ -368,21 +432,30 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
         amount
       );
 
-    const recipientBalanceAfterWith = await stubs.l2Token.balanceOf(
+    const deployerBalanceAfterWith = await stubs.l2Token.balanceOf(
       deployerWallet.address
     );
 
-    expect(recipientBalanceBeforeWith.sub(recipientBalanceAfterWith)).to.eq(
+    expect(deployerBalanceBeforeWith.sub(deployerBalanceAfterWith)).to.eq(
       amount,
       "Change of the recipient balance of L2 token after withdrawal must match withdraw amount"
     );
 
+    const l2TotalSupplyAfterFirstTx = await stubs.l2Token.totalSupply();
+
+    deltaL2TokenSupply = l2TotalSupplyBeforeWith.sub(l2TotalSupplyAfterFirstTx);
+
+    expect(deltaL2TokenSupply).to.eq(
+      amount,
+      "Total supply of l2Token should decrease"
+    );
+
     await expect(
       l2Erc20Bridge.withdraw(
         deployerWallet.address,
         stubs.l2Token.address,
         amount,
-        { gasLimit: 10_000_000 }
+        { gasLimit }
       )
     )
       .to.emit(l2Erc20Bridge, "WithdrawalInitiated")
@@ -392,9 +465,25 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
         stubs.l2Token.address,
         amount
       );
+
+    const l2TotalSupplyAfterSecondTx = await stubs.l2Token.totalSupply();
+
+    deltaL2TokenSupply = l2TotalSupplyAfterFirstTx.sub(
+      l2TotalSupplyAfterSecondTx
+    );
+
+    expect(deltaL2TokenSupply).to.eq(
+      amount,
+      "Total supply of l2Token should decrease"
+    );
   });
 });
 
+/**
+ * initializeBridgesWithAssertion
+ * @param bridge Bridge Contract
+ * @param defaultAdminAddress Address of the contract/account that admins the bridge
+ */
 async function initializeBridgesWithAssertion(
   bridge: Contract,
   defaultAdminAddress: string
@@ -411,6 +500,12 @@ async function initializeBridgesWithAssertion(
   assert.isTrue(await bridge.isInitialized());
 }
 
+/**
+ * enableDepositsWithAssertions
+ * @param l2Erc20Bridge L2 ERC20 Bridge
+ * @param defaultAdminAddress Address of the contract/account that admins the bridge
+ * @param depositEnablerAddress Address of the contract/account that can enable deposits
+ */
 async function enableDepositsWithAssertions(
   l2Erc20Bridge: Contract,
   defaultAdminAddress: string,
@@ -437,6 +532,12 @@ async function enableDepositsWithAssertions(
   assert.isTrue(await l2Erc20Bridge.isDepositsEnabled());
 }
 
+/**
+ * enableWithdrawalsWithAssertions
+ * @param l2Erc20Bridge L2 ERC20 Bridge
+ * @param defaultAdminAddress Address of the contract/account that admins the bridge
+ * @param withdrawalEnablerAddress Address of the contract/account that can enable withdrawals
+ */
 async function enableWithdrawalsWithAssertions(
   l2Erc20Bridge: Contract,
   defaultAdminAddress: string,
