@@ -287,7 +287,7 @@ unit('ZkSync :: L1ERC20Bridge', ctxFactory)
         );
     })
 
-    .test("finalizeWithdrawal() :: withdrawals disabled", async (ctx) => {
+    .test('finalizeWithdrawal() :: withdrawals disabled', async (ctx) => {
         const { l1Erc20Bridge } = ctx;
 
         // validate withdrawals are disabled
@@ -314,7 +314,7 @@ unit('ZkSync :: L1ERC20Bridge', ctxFactory)
         );
     })
 
-    .test("finalizeWithdrawal() :: not enough ETH locked on L1 bridge", async (ctx) => {
+    .test('finalizeWithdrawal() :: not enough ETH locked on L1 bridge', async (ctx) => {
         const {
             accounts: { deployer, recipient },
             stubs: { l1Token },
@@ -356,7 +356,7 @@ unit('ZkSync :: L1ERC20Bridge', ctxFactory)
         );
     })
 
-    .test("finalizeWithdrawal() :: works as expected (called by stranger)", async (ctx) => {
+    .test('finalizeWithdrawal() :: works as expected (called by stranger)', async (ctx) => {
         const {
             accounts: { deployer, recipient, stranger },
             stubs: { l1Token },
@@ -423,6 +423,127 @@ unit('ZkSync :: L1ERC20Bridge', ctxFactory)
         assert.equalBN(
             await l1Token.balanceOf(l1Erc20Bridge.address),
             bridgeBalanceBefore.sub(amount)
+        );
+    })
+
+    .test('claimFailedDeposit() :: nothing to claim', async (ctx) => {
+        const {
+            accounts: { sender },
+            stubs: { l1Token },
+            l1Erc20Bridge
+        } = ctx;
+
+        const txHash = ethers.utils.formatBytes32String('txHash');
+        const l2BlockNumber = ethers.BigNumber.from('1');
+        const l2MessageIndex = ethers.BigNumber.from('1');
+        const l2TxNumberInBlock = 1;
+        const merkleProof = [
+            ethers.utils.formatBytes32String('proof1'),
+            ethers.utils.formatBytes32String('proof2')
+        ];
+
+        await assert.revertsWith(
+            l1Erc20Bridge.claimFailedDeposit(
+                sender.address,
+                l1Token.address,
+                txHash,
+                l2BlockNumber,
+                l2MessageIndex,
+                l2TxNumberInBlock,
+                merkleProof
+            ),
+            'The claimed amount can\'t be zero'
+        );
+    })
+
+    .test('claimFailedDeposit() :: works us expected', async (ctx) => {
+        const {
+            accounts: { deployer, sender, recipient },
+            stubs: { zkSync, l1Token },
+            l1Erc20Bridge
+        } = ctx;
+        const amount = wei`1 ether`;
+        const l2TxGasLimit = wei`1000 gwei`;
+        const l2TxGasPerPubdataByte = wei`800 wei`;
+        const value = wei`250_000 gwei`;
+
+        await enableDepositsWithAssertions(l1Erc20Bridge, deployer.address, deployer.address);
+
+        await l1Token.connect(sender)['approve'](l1Erc20Bridge.address, amount);
+
+        const canonicalTxHash = ethers.utils.formatBytes32String('canonicalTxHash');
+        await zkSync.setCanonicalTxHash(canonicalTxHash);
+
+        const l2BlockNumber = ethers.BigNumber.from('1');
+        const l2MessageIndex = ethers.BigNumber.from('1');
+        const l2TxNumberInBlock = 1;
+        const merkleProof = [
+            ethers.utils.formatBytes32String('proof1'),
+            ethers.utils.formatBytes32String('proof2')
+        ];
+
+        const senderBalanceBeforeDeposit = await l1Token.balanceOf(sender.address);
+        const bridgeBalanceBeforeDeposit = await l1Token.balanceOf(l1Erc20Bridge.address);
+
+        const depositTx = await l1Erc20Bridge
+            .connect(sender)
+        [
+            'deposit(address,address,uint256,uint256,uint256,address)'
+        ](
+            recipient.address,
+            l1Token.address,
+            amount,
+            l2TxGasLimit,
+            l2TxGasPerPubdataByte,
+            sender.address,
+            { value }
+        );
+        await depositTx.wait();
+
+        const senderBalanceAfterDeposit = await l1Token.balanceOf(sender.address);
+        const bridgeBalanceAfterDeposit = await l1Token.balanceOf(l1Erc20Bridge.address);
+
+        // validate balance of the sender decreased after deposit
+        assert.equalBN(
+            senderBalanceAfterDeposit,
+            senderBalanceBeforeDeposit.sub(amount)
+        );
+
+        // validate balance of the bridge increased after deposit
+        assert.equalBN(
+            bridgeBalanceAfterDeposit,
+            bridgeBalanceBeforeDeposit.add(amount)
+        );
+
+        const claimFailedDepositTx = await l1Erc20Bridge.claimFailedDeposit(
+            sender.address,
+            l1Token.address,
+            canonicalTxHash,
+            l2BlockNumber,
+            l2MessageIndex,
+            l2TxNumberInBlock,
+            merkleProof
+        );
+
+        await assert.emits(l1Erc20Bridge, claimFailedDepositTx, 'ClaimedFailedDeposit', [
+            sender.address,
+            l1Token.address,
+            amount
+        ]);
+
+        const senderBalanceAfterClaimFailedDeposit = await l1Token.balanceOf(sender.address);
+        const bridgeBalanceAfterClaimFailedDeposit = await l1Token.balanceOf(l1Erc20Bridge.address);
+
+        // validate balance of the sender increased after claiming failed deposit
+        assert.equalBN(
+            senderBalanceAfterClaimFailedDeposit,
+            senderBalanceAfterDeposit.add(amount)
+        );
+
+        // validate balance of the bridge decreased after claiming failed deposit
+        assert.equalBN(
+            bridgeBalanceAfterClaimFailedDeposit,
+            bridgeBalanceAfterDeposit.sub(amount)
         );
     })
 
