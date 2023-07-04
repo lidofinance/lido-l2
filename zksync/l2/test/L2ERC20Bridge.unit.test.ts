@@ -266,6 +266,42 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
       )
     ).to.be.reverted;
   });
+  it("deposit() :: works as expected", async () => {
+    const { l2Erc20Bridge, accounts, stubs, l1Erc20Bridge } = context;
+    const { deployerWallet, sender, recipient } = accounts;
+
+    await enableDepositsWithAssertions(
+      l2Erc20Bridge,
+      deployerWallet.address,
+      deployerWallet.address
+    );
+
+    const amount = wei`1 ether`;
+    const l2TxGasLimit = wei`1000 gwei`;
+    const l2TxGasPerPubdataByte = wei`800 wei`;
+
+    await expect(
+      l1Erc20Bridge.deposit(
+        recipient.address,
+        stubs.l1Token.address,
+        amount,
+        l2TxGasLimit,
+        l2TxGasPerPubdataByte,
+        sender.address,
+        l2Erc20Bridge.address,
+        "0x",
+        { gasLimit: 10_000_000 }
+      )
+    )
+      .to.emit(l2Erc20Bridge, "FinalizeDeposit")
+      .withArgs(
+        deployerWallet.address,
+        recipient.address,
+        stubs.l2Token.address,
+        amount,
+        "0x"
+      );
+  });
   it("withdraw() :: withdrawals are disabled", async () => {
     const { l2Erc20Bridge, accounts, stubs } = context;
 
@@ -299,7 +335,7 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
       })
     ).to.be.reverted;
   });
-  it("withdraw() :: working", async () => {
+  it("withdraw() :: works as expected", async () => {
     const { l2Erc20Bridge, accounts, stubs } = context;
 
     const { deployerWallet } = accounts;
@@ -340,6 +376,22 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
       amount,
       "Change of the recipient balance of L2 token after withdrawal must match withdraw amount"
     );
+
+    await expect(
+      l2Erc20Bridge.withdraw(
+        deployerWallet.address,
+        stubs.l2Token.address,
+        amount,
+        { gasLimit: 10_000_000 }
+      )
+    )
+      .to.emit(l2Erc20Bridge, "WithdrawalInitiated")
+      .withArgs(
+        deployerWallet.address,
+        deployerWallet.address,
+        stubs.l2Token.address,
+        amount
+      );
   });
 });
 
