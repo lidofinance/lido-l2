@@ -29,7 +29,7 @@ const zkProvider = new Provider(ZK_CLIENT_WEB3_URL, 270);
 async function main() {
   const program = new Command();
 
-  program.version("0.1.0").name("enable-bridging-deposits");
+  program.version("0.1.0").name("enable-bridging-sithdrawals");
 
   program
     .option("--private-key <private-key>")
@@ -93,21 +93,21 @@ async function main() {
         ZkSyncBridgeExecutorUpgradable.abi
       );
 
-      const isDepositEnabledOnL1 = await lidoBridge.isDepositsEnabled();
-      const isDepositEnabledOnL2 = await L2Bridge.isDepositsEnabled();
+      const isWithdrawalsEnabledL1 = await lidoBridge.isWithdrawalsEnabled();
+      const isWithdrawalsEnabledL2 = await L2Bridge.isWithdrawalsEnabled();
 
-      if (isDepositEnabledOnL1 && isDepositEnabledOnL2) {
+      if (isWithdrawalsEnabledL1 && isWithdrawalsEnabledL2) {
         console.log("\n================================");
-        console.log("\nDeposits on L1 and L2 bridges are already enabled!");
+        console.log("\nWithdrawals on L1 and L2 bridges are already enabled!");
         console.log("\n================================");
         return;
       }
 
       console.log("\n===============L1===============");
 
-      if (!isDepositEnabledOnL1) {
-        const data = IL1ERC20Bridge.encodeFunctionData("enableDeposits", []);
-        const enableDepositsTx = await L1GovernorAgent.execute(
+      if (!isWithdrawalsEnabledL1) {
+        const data = IL1ERC20Bridge.encodeFunctionData("enableWithdrawals", []);
+        const enableWithdrawalsTx = await L1GovernorAgent.execute(
           lidoBridge.address,
           0,
           data,
@@ -116,12 +116,12 @@ async function main() {
           }
         );
 
-        await enableDepositsTx.wait();
+        await enableWithdrawalsTx.wait();
       }
 
       console.log(
-        "\nDEPOSITS ENABLED ON L1 BRIDGE:",
-        await lidoBridge.isDepositsEnabled()
+        "\nWITHDRAWALS ENABLED ON L1 BRIDGE:",
+        await lidoBridge.isWithdrawalsEnabled()
       );
 
       console.log("\n===============L2===============");
@@ -130,7 +130,7 @@ async function main() {
       const data = IZkSyncBridgeExecutorUpgradable.encodeFunctionData("queue", [
         [deployer.addresses.Bridges.LidoL2BridgeProxy],
         [hre.ethers.utils.parseEther("0")],
-        ["enableDeposits()"],
+        ["enableWithdrawals()"],
         [new Uint8Array()],
         [false],
       ]);
@@ -149,12 +149,12 @@ async function main() {
         utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT
       );
 
-      //   // if call exception change value
-      //   const ethTransferResponse = await deployWallet.sendTransaction({
-      //     to: L1GovernorAgent.address,
-      //     value: baseCost,
-      //   });
-      //   await ethTransferResponse.wait();
+      // if call exception change value
+      const ethTransferResponse = await deployWallet.sendTransaction({
+        to: L1GovernorAgent.address,
+        value: baseCost,
+      });
+      await ethTransferResponse.wait();
 
       /**
        * Encode data which is sent to L1 Executor
@@ -207,7 +207,7 @@ async function main() {
       /**
        * Execute Action Set
        */
-      if (!isDepositEnabledOnL2) {
+      if (!isWithdrawalsEnabledL2) {
         const executeAction = await ZkSyncBridgeExecutor.execute(actionSetId, {
           gasLimit: 10_000_000,
         });
@@ -216,8 +216,8 @@ async function main() {
       }
 
       console.log(
-        "\nDEPOSITS ENABLED ON L2 BRIDGE:",
-        await L2Bridge.isDepositsEnabled()
+        "\nWITHDRAWALS ENABLED ON L2 BRIDGE:",
+        await L2Bridge.isWithdrawalsEnabled()
       );
     });
 
