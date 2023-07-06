@@ -1,13 +1,13 @@
 export const ZKSYNC_ADDRESSES = {
   l1: {
-    l1Token: "0x5d0499F29901D2A01638A9F2746907672a4689CF",
-    l1Bridge: "0x4EA0815e6898078Af61572bA990FF8590ec9AD3A",
-    l1Executor: "0x234Ec1f6850671D5c2AC61DEa5d97C2aA61F6A09",
-    agent: "0xdBB9063a92e68eB28db3A8C45D5F4895b1680A39",
+    l1Token: process.env.CONTRACTS_L1_LIDO_TOKEN_ADDR || "",
+    l1Bridge: process.env.CONTRACTS_L1_LIDO_BRIDGE_PROXY_ADDR || "",
+    l1Executor: process.env.CONTRACTS_L1_GOVERNANCE_EXECUTOR_ADDR,
+    agent: process.env.CONTRACTS_L1_GOVERNANCE_AGENT_ADDR || "",
   },
   l2: {
-    l2Token: "0xeE256e1391bc49347950dFe2c8add0c486e1bc8f",
-    l2Bridge: "0x89Ac4ea5B4Bf3Bce756dac77dcFff81cddAD397b",
-    govExecutor: "0x0A40Ecde17dc16c4001Bf0E4f5D5Ff1818219b3b",
+    l2Token: process.env.CONTRACTS_L2_LIDO_TOKEN_ADDR || "",
+    l2Bridge: process.env.CONTRACTS_L2_LIDO_BRIDGE_PROXY_ADDR || "",
+    govExecutor: process.env.L2_BRIDGE_EXECUTOR_ADDR || "",
   },
 };
