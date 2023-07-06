@@ -149,12 +149,12 @@ async function main() {
         utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT
       );
 
-      //   // if call exception change value
-      //   const ethTransferResponse = await deployWallet.sendTransaction({
-      //     to: L1GovernorAgent.address,
-      //     value: baseCost,
-      //   });
-      //   await ethTransferResponse.wait();
+      // send eth to the agent to cover base cost for L1 to L2 bridging
+      const ethTransferResponse = await deployWallet.sendTransaction({
+        to: L1GovernorAgent.address,
+        value: baseCost,
+      });
+      await ethTransferResponse.wait();
 
       /**
        * Encode data which is sent to L1 Executor

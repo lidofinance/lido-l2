@@ -1,7 +1,7 @@
 import * as hre from "hardhat";
 import { scenario } from "../../../../utils/testing";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { Wallet, ethers } from "ethers";
+import { Wallet, Contract, BigNumberish } from "ethers";
 import { Provider, Wallet as ZkWallet, utils } from "zksync-web3";
 import { assert } from "chai";
 import {
@@ -18,6 +18,7 @@ import {
 import { ZKSYNC_ADDRESSES } from "./e2e";
 import { richWallet } from "../../scripts/utils/rich_wallet";
 import { parseEther } from "ethers/lib/utils";
+import { IZkSyncFactory } from "zksync-web3/build/typechain";
 
 const ETH_CLIENT_WEB3_URL = process.env.ETH_CLIENT_WEB3_URL || "";
 const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL || "";
@@ -38,26 +39,6 @@ scenario("Bridge E2E Testing", ctxFactory)
       assert((await l2Bridge.l2Token()) === l2Token.address);
       assert((await l2Bridge.l1Bridge()) === l1Bridge.address);
       assert.isTrue(await l2Bridge.isInitialized());
-    }
-  )
-  .step(
-    "Set allowance for L1ERC20Bridge to deposit",
-    async ({ l1, depositAmount }) => {
-      const { l1Token, accounts, l1Bridge } = l1;
-
-      const allowanceTxResponse = await l1Token.approve(
-        l1Bridge.address,
-        depositAmount.mul(2)
-      );
-
-      await allowanceTxResponse.wait();
-
-      const l1BridgeAllowanceAfter = await l1Token.allowance(
-        accounts.deployer.address,
-        l1Bridge.address
-      );
-
-      assert.equalBN(l1BridgeAllowanceAfter, depositAmount.mul(2));
     }
   )
   .step(
@@ -83,6 +64,27 @@ scenario("Bridge E2E Testing", ctxFactory)
   )
 
   .step(
+    "Set allowance for L1ERC20Bridge to deposit",
+    async ({ l1, depositAmount }) => {
+      const { l1Token, accounts, l1Bridge } = l1;
+
+      const allowanceTxResponse = await l1Token.approve(
+        l1Bridge.address,
+        depositAmount.mul(2)
+      );
+
+      await allowanceTxResponse.wait();
+
+      const l1BridgeAllowanceAfter = await l1Token.allowance(
+        accounts.deployer.address,
+        l1Bridge.address
+      );
+
+      assert.equalBN(l1BridgeAllowanceAfter, depositAmount.mul(2));
+    }
+  )
+
+  .step(
     "Deposit tokens to L2 via L1ERC20Bridge",
     async ({ l1, l2, depositAmount, zkProvider, ethProvider, gasLimit }) => {
       const { l1Token, l1Bridge, accounts } = l1;
@@ -96,8 +98,14 @@ scenario("Bridge E2E Testing", ctxFactory)
         ethProvider
       );
 
-      assert.isTrue(await l1Bridge.isDepositsEnabled());
-      assert.isTrue(await l2Bridge.isDepositsEnabled());
+      assert.isTrue(
+        await l1Bridge.isDepositsEnabled(),
+        "L1 Deposits should be enabled"
+      );
+      assert.isTrue(
+        await l2Bridge.isDepositsEnabled(),
+        "L2 Deposits should be enabled"
+      );
 
       const l2TokenTotalSupplyBefore = await l2Token.totalSupply();
       const l1ERC20BridgeTokenBalanceBefore = await l1Token.balanceOf(
@@ -188,8 +196,14 @@ scenario("Bridge E2E Testing", ctxFactory)
       const walletAddress = accounts.deployer.address;
       const IL1Bridge = L1ERC20Bridge__factory.createInterface();
 
-      assert.isTrue(await l1Bridge.isWithdrawalsEnabled());
-      assert.isTrue(await l2Bridge.isWithdrawalsEnabled());
+      assert.isTrue(
+        await l1Bridge.isWithdrawalsEnabled(),
+        "L1 Withdrawals should be enabled"
+      );
+      assert.isTrue(
+        await l2Bridge.isWithdrawalsEnabled(),
+        "L2 Withdrawals should be enabled"
+      );
 
       const l1ERC20BridgeTokenBalanceBefore = await l1Token.balanceOf(
         l1Bridge.address
@@ -204,6 +218,7 @@ scenario("Bridge E2E Testing", ctxFactory)
         withdrawalAmount,
         { gasLimit }
       );
+
       await withdrawResponse.wait();
       const { blockNumber, l1BatchNumber, l1BatchTxIndex } =
         await withdrawResponse.waitFinalize();
@@ -267,6 +282,131 @@ scenario("Bridge E2E Testing", ctxFactory)
       );
     }
   )
+
+  .step(
+    "L1 Agent can disable/enable deposits on L1 & L2 bridges",
+    async (ctx) => {
+      const {
+        l1: { l1Bridge, agent },
+        l2: { l2Bridge },
+      } = ctx;
+
+      /**
+       * L1
+       */
+      if (await l1Bridge.isDepositsEnabled()) {
+        await executeGovOnL1Bridge(
+          l1Bridge,
+          agent,
+          BRIDGE_ACTIONS.disableDeposits
+        );
+        assert.isFalse(await l1Bridge.isDepositsEnabled());
+      }
+
+      if (!(await l1Bridge.isDepositsEnabled())) {
+        await executeGovOnL1Bridge(
+          l1Bridge,
+          agent,
+          BRIDGE_ACTIONS.enableDeposits
+        );
+        assert.isTrue(await l1Bridge.isDepositsEnabled());
+      }
+      /**
+       * L2
+       */
+      if (await l2Bridge.isDepositsEnabled()) {
+        await executeGovOnL2Bridge(
+          l2Bridge,
+          agent,
+          BRIDGE_ACTIONS.disableDeposits,
+          ctx
+        );
+        assert.isFalse(
+          await l2Bridge.isDepositsEnabled(),
+          "Deposits should be disabled"
+        );
+      }
+      if (!(await l2Bridge.isDepositsEnabled())) {
+        await executeGovOnL2Bridge(
+          l2Bridge,
+          agent,
+          BRIDGE_ACTIONS.enableDeposits,
+          ctx
+        );
+        assert.isTrue(
+          await l2Bridge.isDepositsEnabled(),
+          "Deposits should be enabled"
+        );
+      }
+    }
+  )
+  .step(
+    "L1 Agent can disable/enable withdrawals on L1 & L2 bridges",
+    async (ctx) => {
+      const {
+        l1: { l1Bridge, agent },
+        l2: { l2Bridge },
+      } = ctx;
+
+      /**
+       * L1
+       */
+
+      if (await l1Bridge.isWithdrawalsEnabled()) {
+        await executeGovOnL1Bridge(
+          l1Bridge,
+          agent,
+          BRIDGE_ACTIONS.disableWithdrawals
+        );
+
+        assert.isFalse(
+          await l1Bridge.isWithdrawalsEnabled(),
+          "L1 Withdrawals should be disabled"
+        );
+      }
+
+      if (!(await l1Bridge.isWithdrawalsEnabled())) {
+        await executeGovOnL1Bridge(
+          l1Bridge,
+          agent,
+          BRIDGE_ACTIONS.enableWithdrawals
+        );
+        assert.isTrue(
+          await l1Bridge.isWithdrawalsEnabled(),
+          "L1 Withdrawals should be enabled"
+        );
+      }
+
+      /**
+       * L2
+       */
+      if (await l2Bridge.isWithdrawalsEnabled()) {
+        await executeGovOnL2Bridge(
+          l2Bridge,
+          agent,
+          BRIDGE_ACTIONS.disableWithdrawals,
+          ctx
+        );
+        assert.isFalse(
+          await l2Bridge.isWithdrawalsEnabled(),
+          "Withdrawals should be disabled"
+        );
+      }
+
+      if (!(await l2Bridge.isWithdrawalsEnabled())) {
+        await executeGovOnL2Bridge(
+          l2Bridge,
+          agent,
+          BRIDGE_ACTIONS.enableWithdrawals,
+          ctx
+        );
+        assert.isTrue(
+          await l2Bridge.isWithdrawalsEnabled(),
+          "Withdrawals should be enabled"
+        );
+      }
+    }
+  )
   .run();
 
 async function ctxFactory() {
@@ -311,4 +451,143 @@ async function ctxFactory() {
     withdrawalAmount: parseEther("0.025"),
     gasLimit: 10_000_000,
   };
+}
+
+const BRIDGE_ACTIONS = {
+  disableDeposits: "disableDeposits",
+  enableDeposits: "enableDeposits",
+  enableWithdrawals: "enableWithdrawals",
+  disableWithdrawals: "disableWithdrawals",
+} as const;
+
+/**
+ * executeGovOnL1Bridge
+ * @param bridge
+ * @param agent
+ * @param type
+ */
+async function executeGovOnL1Bridge(
+  bridge: Contract,
+  agent: Contract,
+  type: typeof BRIDGE_ACTIONS[keyof typeof BRIDGE_ACTIONS]
+) {
+  const IL1Bridge = L1ERC20Bridge__factory.createInterface();
+
+  const data = IL1Bridge.encodeFunctionData(BRIDGE_ACTIONS[type] as string, []);
+  const txResponse = await agent.execute(bridge.address, 0, data, {
+    gasLimit: 10_000_000,
+  });
+
+  await txResponse.wait();
+}
+
+/**
+ * executeGovOnL2Bridge
+ * @param bridge
+ * @param agent
+ * @param type
+ * @param ctx
+ */
+async function executeGovOnL2Bridge(
+  bridge: Contract,
+  agent: Contract,
+  type: typeof BRIDGE_ACTIONS[keyof typeof BRIDGE_ACTIONS],
+  ctx: Awaited<ReturnType<typeof ctxFactory>>
+) {
+  const { l1, l2, zkProvider, ethProvider } = ctx;
+
+  const wallet = l1.accounts.deployer;
+  const gasPrice = await ethProvider.getGasPrice();
+
+  const ZkSyncBridgeExecutor = new ZkSyncBridgeExecutorUpgradable__factory(
+    l2.accounts.deployer
+  ).attach(l2.govExecutor.address);
+
+  const IZkSyncBridgeExecutorUpgradable = ZkSyncBridgeExecutor.interface;
+
+  const zkSync = IZkSyncFactory.connect(
+    "0xBC3833148619e097af186B3A56348191aa8B5ed5",
+    l1.accounts.deployer
+  );
+
+  // encode data to be queued by ZkBridgeExecutor on L2
+  const data = IZkSyncBridgeExecutorUpgradable.encodeFunctionData("queue", [
+    [bridge.address],
+    [hre.ethers.utils.parseEther("0")],
+    [`${BRIDGE_ACTIONS[type]}()`],
+    [new Uint8Array()],
+    [false],
+  ]);
+
+  // estimate gas to to bridge encoded from L1 to L2
+  const gasLimit = await zkProvider.estimateL1ToL2Execute({
+    contractAddress: l2.govExecutor.address,
+    calldata: data,
+    caller: utils.applyL1ToL2Alias(l1.l1Executor.address),
+  });
+  // estimate cons of L1 to L2 execution
+  const baseCost = await zkSync.l2TransactionBaseCost(
+    gasPrice,
+    gasLimit,
+    utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT
+  );
+
+  // if call exception change value
+  const ethTransferResponse = await wallet.sendTransaction({
+    to: l1.agent.address,
+    value: baseCost,
+  });
+  await ethTransferResponse.wait();
+
+  /**
+   * Encode data which is sent to L1 Executor
+   * * This data contains previously encoded queue data
+   */
+  const encodedDataQueue =
+    L1Executor__factory.createInterface().encodeFunctionData("callZkSync", [
+      zkSync.address,
+      l2.govExecutor.address,
+      data,
+      gasLimit,
+      utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT,
+    ]);
+
+  /**
+   *  Sends Action set from L1 Executor to L2 Bridge Executor
+   */
+  const executeTx = await agent.execute(
+    l1.l1Executor.address,
+    baseCost,
+    encodedDataQueue,
+    { gasPrice, gasLimit: 10_000_000 }
+  );
+
+  await executeTx.wait();
+
+  const actionSetQueuedPromise = new Promise((resolve) => {
+    ZkSyncBridgeExecutor.on("ActionsSetQueued", (actionSetId) => {
+      resolve(actionSetId.toString());
+      ZkSyncBridgeExecutor.removeAllListeners();
+    });
+  });
+
+  const actionSetId = await actionSetQueuedPromise.then((res) => res);
+
+  const l2Response2 = await zkProvider.getL2TransactionFromPriorityOp(
+    executeTx
+  );
+  await l2Response2.wait();
+
+  /**
+   * Execute Action Set
+   */
+
+  const executeAction = await ZkSyncBridgeExecutor.execute(
+    actionSetId as BigNumberish,
+    {
+      gasLimit: 10_000_000,
+    }
+  );
+
+  await executeAction.wait();
 }
