@@ -39,9 +39,7 @@ async function main() {
   await transferOwnerResponseTx.wait();
 
   console.log("Owner of the L1 Executor:", await L1Executor.owner());
-  console.log(
-    `CONTRACTS_L1_GOVERNANCE_EXECUTOR_ADDR=${L1ExecutorContractProxy.address}`
-  );
+  console.log(`L1_EXECUTOR_ADDR=${L1ExecutorContractProxy.address}`);
 }
 
 main().catch((error) => {

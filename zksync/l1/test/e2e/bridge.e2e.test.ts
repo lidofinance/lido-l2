@@ -22,7 +22,8 @@ import { IZkSyncFactory } from "zksync-web3/build/typechain";
 
 const ETH_CLIENT_WEB3_URL = process.env.ETH_CLIENT_WEB3_URL as string;
 const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL as string;
-const CONTRACTS_DIAMOND_PROXY_ADDR = process.env.CONTRACTS_DIAMOND_PROXY_ADDR as string;
+const CONTRACTS_DIAMOND_PROXY_ADDR = process.env
+  .CONTRACTS_DIAMOND_PROXY_ADDR as string;
 
 scenario("Bridge E2E Testing", ctxFactory)
   .step(
@@ -82,6 +83,131 @@ scenario("Bridge E2E Testing", ctxFactory)
       );
 
       assert.equalBN(l1BridgeAllowanceAfter, depositAmount.mul(2));
+    }
+  )
+
+  .step(
+    "L1 Agent can disable/enable deposits on L1 & L2 bridges",
+    async (ctx) => {
+      const {
+        l1: { l1Bridge, agent },
+        l2: { l2Bridge },
+      } = ctx;
+
+      /**
+       * L1
+       */
+      if (await l1Bridge.isDepositsEnabled()) {
+        await executeGovOnL1Bridge(
+          l1Bridge,
+          agent,
+          BRIDGE_ACTIONS.disableDeposits
+        );
+        assert.isFalse(await l1Bridge.isDepositsEnabled());
+      }
+
+      if (!(await l1Bridge.isDepositsEnabled())) {
+        await executeGovOnL1Bridge(
+          l1Bridge,
+          agent,
+          BRIDGE_ACTIONS.enableDeposits
+        );
+        assert.isTrue(await l1Bridge.isDepositsEnabled());
+      }
+      /**
+       * L2
+       */
+      if (await l2Bridge.isDepositsEnabled()) {
+        await executeGovOnL2Bridge(
+          l2Bridge,
+          agent,
+          BRIDGE_ACTIONS.disableDeposits,
+          ctx
+        );
+        assert.isFalse(
+          await l2Bridge.isDepositsEnabled(),
+          "Deposits should be disabled"
+        );
+      }
+      if (!(await l2Bridge.isDepositsEnabled())) {
+        await executeGovOnL2Bridge(
+          l2Bridge,
+          agent,
+          BRIDGE_ACTIONS.enableDeposits,
+          ctx
+        );
+        assert.isTrue(
+          await l2Bridge.isDepositsEnabled(),
+          "Deposits should be enabled"
+        );
+      }
+    }
+  )
+  .step(
+    "L1 Agent can disable/enable withdrawals on L1 & L2 bridges",
+    async (ctx) => {
+      const {
+        l1: { l1Bridge, agent },
+        l2: { l2Bridge },
+      } = ctx;
+
+      /**
+       * L1
+       */
+
+      if (await l1Bridge.isWithdrawalsEnabled()) {
+        await executeGovOnL1Bridge(
+          l1Bridge,
+          agent,
+          BRIDGE_ACTIONS.disableWithdrawals
+        );
+
+        assert.isFalse(
+          await l1Bridge.isWithdrawalsEnabled(),
+          "L1 Withdrawals should be disabled"
+        );
+      }
+
+      if (!(await l1Bridge.isWithdrawalsEnabled())) {
+        await executeGovOnL1Bridge(
+          l1Bridge,
+          agent,
+          BRIDGE_ACTIONS.enableWithdrawals
+        );
+        assert.isTrue(
+          await l1Bridge.isWithdrawalsEnabled(),
+          "L1 Withdrawals should be enabled"
+        );
+      }
+
+      /**
+       * L2
+       */
+      if (await l2Bridge.isWithdrawalsEnabled()) {
+        await executeGovOnL2Bridge(
+          l2Bridge,
+          agent,
+          BRIDGE_ACTIONS.disableWithdrawals,
+          ctx
+        );
+        assert.isFalse(
+          await l2Bridge.isWithdrawalsEnabled(),
+          "Withdrawals should be disabled"
+        );
+      }
+
+      if (!(await l2Bridge.isWithdrawalsEnabled())) {
+        await executeGovOnL2Bridge(
+          l2Bridge,
+          agent,
+          BRIDGE_ACTIONS.enableWithdrawals,
+          ctx
+        );
+        assert.isTrue(
+          await l2Bridge.isWithdrawalsEnabled(),
+          "Withdrawals should be enabled"
+        );
+      }
     }
   )
 
@@ -284,130 +410,6 @@ scenario("Bridge E2E Testing", ctxFactory)
     }
   )
 
-  .step(
-    "L1 Agent can disable/enable deposits on L1 & L2 bridges",
-    async (ctx) => {
-      const {
-        l1: { l1Bridge, agent },
-        l2: { l2Bridge },
-      } = ctx;
-
-      /**
-       * L1
-       */
-      if (await l1Bridge.isDepositsEnabled()) {
-        await executeGovOnL1Bridge(
-          l1Bridge,
-          agent,
-          BRIDGE_ACTIONS.disableDeposits
-        );
-        assert.isFalse(await l1Bridge.isDepositsEnabled());
-      }
-
-      if (!(await l1Bridge.isDepositsEnabled())) {
-        await executeGovOnL1Bridge(
-          l1Bridge,
-          agent,
-          BRIDGE_ACTIONS.enableDeposits
-        );
-        assert.isTrue(await l1Bridge.isDepositsEnabled());
-      }
-      /**
-       * L2
-       */
-      if (await l2Bridge.isDepositsEnabled()) {
-        await executeGovOnL2Bridge(
-          l2Bridge,
-          agent,
-          BRIDGE_ACTIONS.disableDeposits,
-          ctx
-        );
-        assert.isFalse(
-          await l2Bridge.isDepositsEnabled(),
-          "Deposits should be disabled"
-        );
-      }
-      if (!(await l2Bridge.isDepositsEnabled())) {
-        await executeGovOnL2Bridge(
-          l2Bridge,
-          agent,
-          BRIDGE_ACTIONS.enableDeposits,
-          ctx
-        );
-        assert.isTrue(
-          await l2Bridge.isDepositsEnabled(),
-          "Deposits should be enabled"
-        );
-      }
-    }
-  )
-  .step(
-    "L1 Agent can disable/enable withdrawals on L1 & L2 bridges",
-    async (ctx) => {
-      const {
-        l1: { l1Bridge, agent },
-        l2: { l2Bridge },
-      } = ctx;
-
-      /**
-       * L1
-       */
-
-      if (await l1Bridge.isWithdrawalsEnabled()) {
-        await executeGovOnL1Bridge(
-          l1Bridge,
-          agent,
-          BRIDGE_ACTIONS.disableWithdrawals
-        );
-
-        assert.isFalse(
-          await l1Bridge.isWithdrawalsEnabled(),
-          "L1 Withdrawals should be disabled"
-        );
-      }
-
-      if (!(await l1Bridge.isWithdrawalsEnabled())) {
-        await executeGovOnL1Bridge(
-          l1Bridge,
-          agent,
-          BRIDGE_ACTIONS.enableWithdrawals
-        );
-        assert.isTrue(
-          await l1Bridge.isWithdrawalsEnabled(),
-          "L1 Withdrawals should be enabled"
-        );
-      }
-
-      /**
-       * L2
-       */
-      if (await l2Bridge.isWithdrawalsEnabled()) {
-        await executeGovOnL2Bridge(
-          l2Bridge,
-          agent,
-          BRIDGE_ACTIONS.disableWithdrawals,
-          ctx
-        );
-        assert.isFalse(
-          await l2Bridge.isWithdrawalsEnabled(),
-          "Withdrawals should be disabled"
-        );
-      }
-
-      if (!(await l2Bridge.isWithdrawalsEnabled())) {
-        await executeGovOnL2Bridge(
-          l2Bridge,
-          agent,
-          BRIDGE_ACTIONS.enableWithdrawals,
-          ctx
-        );
-        assert.isTrue(
-          await l2Bridge.isWithdrawalsEnabled(),
-          "Withdrawals should be enabled"
-        );
-      }
-    }
-  )
   .run();
 
 async function ctxFactory() {
@@ -564,8 +566,6 @@ async function executeGovOnL2Bridge(
     { gasPrice, gasLimit: 10_000_000 }
   );
 
-  await executeTx.wait();
-
   const actionSetQueuedPromise = new Promise((resolve) => {
     ZkSyncBridgeExecutor.on("ActionsSetQueued", (actionSetId) => {
       resolve(actionSetId.toString());
@@ -573,8 +573,9 @@ async function executeGovOnL2Bridge(
     });
   });
 
-  const actionSetId = await actionSetQueuedPromise.then((res) => res);
+  await executeTx.wait();
 
+  const actionSetId = await actionSetQueuedPromise.then((res) => res);
   const l2Response2 = await zkProvider.getL2TransactionFromPriorityOp(
     executeTx
   );
