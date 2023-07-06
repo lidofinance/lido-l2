@@ -20,8 +20,9 @@ import { richWallet } from "../../scripts/utils/rich_wallet";
 import { parseEther } from "ethers/lib/utils";
 import { IZkSyncFactory } from "zksync-web3/build/typechain";
 
-const ETH_CLIENT_WEB3_URL = process.env.ETH_CLIENT_WEB3_URL || "";
-const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL || "";
+const ETH_CLIENT_WEB3_URL = process.env.ETH_CLIENT_WEB3_URL as string;
+const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL as string;
+const CONTRACTS_DIAMOND_PROXY_ADDR = process.env.CONTRACTS_DIAMOND_PROXY_ADDR as string;
 
 scenario("Bridge E2E Testing", ctxFactory)
   .step(
@@ -427,6 +428,7 @@ async function ctxFactory() {
       l1Bridge: new L1ERC20Bridge__factory(ethDeployer).attach(l1.l1Bridge),
       l1Executor: new L1Executor__factory(ethDeployer).attach(l1.l1Executor),
       agent: new AragonAgentMock__factory(ethDeployer).attach(l1.agent),
+      zkSync: IZkSyncFactory.connect(CONTRACTS_DIAMOND_PROXY_ADDR, ethDeployer),
       accounts: {
         deployer: ethDeployer,
         governor: ethGovernor,
@@ -505,10 +507,10 @@ async function executeGovOnL2Bridge(
 
   const IZkSyncBridgeExecutorUpgradable = ZkSyncBridgeExecutor.interface;
 
-  const zkSync = IZkSyncFactory.connect(
-    "0xBC3833148619e097af186B3A56348191aa8B5ed5",
-    l1.accounts.deployer
-  );
+  // const zkSync = IZkSyncFactory.connect(
+  //   CONTRACTS_DIAMOND_PROXY_ADDR,
+  //   l1.accounts.deployer
+  // );
 
   // encode data to be queued by ZkBridgeExecutor on L2
   const data = IZkSyncBridgeExecutorUpgradable.encodeFunctionData("queue", [
@@ -526,7 +528,7 @@ async function executeGovOnL2Bridge(
     caller: utils.applyL1ToL2Alias(l1.l1Executor.address),
   });
   // estimate cons of L1 to L2 execution
-  const baseCost = await zkSync.l2TransactionBaseCost(
+  const baseCost = await l1.zkSync.l2TransactionBaseCost(
     gasPrice,
     gasLimit,
     utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT
@@ -545,7 +547,7 @@ async function executeGovOnL2Bridge(
    */
   const encodedDataQueue =
     L1Executor__factory.createInterface().encodeFunctionData("callZkSync", [
-      zkSync.address,
+      l1.zkSync.address,
       l2.govExecutor.address,
       data,
       gasLimit,
