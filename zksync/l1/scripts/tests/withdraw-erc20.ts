@@ -63,7 +63,8 @@ async function main() {
     const withdrawResponse = await l2BridgeContract.withdraw(
         WALLET_ADDRESS,
         l2TokenContract.address,
-        AMOUNT_TO_WITHDRAW
+        AMOUNT_TO_WITHDRAW,
+        { gasLimit: 10_000_000 }
     );
     await withdrawResponse.wait();
 
@@ -96,7 +97,8 @@ async function main() {
         messageProof?.id,
         l1BatchTxIndex,
         message,
-        messageProof?.proof
+        messageProof?.proof,
+        { gasLimit: 10_000_000 }
     );
     await finalizeWithdrawResponse.wait();
 

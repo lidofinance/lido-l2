@@ -24,12 +24,14 @@ async function main() {
             GOVERNANCE_CONSTANTS.GRACE_PERIOD,
             GOVERNANCE_CONSTANTS.MIN_DELAY,
             GOVERNANCE_CONSTANTS.MAX_DELAY,
-            ADDRESSES.GUARDIAN
+            ADDRESSES.GUARDIAN || hre.ethers.constants.AddressZero
         ],
         { initializer: '__ZkSyncBridgeExecutor_init' }
     );
 
     await contract.deployed();
+
+    console.log(`L2_BRIDGE_EXECUTOR_ADDR=${contract.address}`);
 }
 
 main().catch((error) => {

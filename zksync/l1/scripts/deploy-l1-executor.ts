@@ -22,7 +22,7 @@ async function main() {
 		gasLimit: 10_000_000,
 	});
 
-	console.log(`L1Executor proxy:${L1ExecutorContractProxy.address}`);
+	console.log(`L1_EXECUTOR_ADDR=${L1ExecutorContractProxy.address}`);
 }
 
 main().catch((error) => {

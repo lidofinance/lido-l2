@@ -71,7 +71,7 @@ async function main() {
 		l1TokenContract.address,
 		AMOUNT_TO_DEPOSIT,
 		ethers.BigNumber.from(10_000_000),
-		ethers.BigNumber.from(utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT),
+		utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT,
 		WALLET_ADDRESS,
 	);
 
@@ -92,10 +92,11 @@ async function main() {
 		l1TokenContract.address,
 		AMOUNT_TO_DEPOSIT,
 		l2GasLimit,
-		ethers.BigNumber.from(utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT),
+		utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT,
 		WALLET_ADDRESS,
 		{
-			value: baseCost
+			value: baseCost,
+			gasLimit: 10_000_000
 		}
 	);
 	await depositResponse.wait();

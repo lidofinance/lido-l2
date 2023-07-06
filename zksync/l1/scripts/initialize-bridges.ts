@@ -79,6 +79,7 @@ async function main() {
 			console.log('Governor:', governorAddress);
 
 			console.log('wstETH L1 token:', deployer.addresses.LidoTokenL1);
+			console.log('wstETH L2 token:', deployer.addresses.LidoTokenL2);
 
 			const requiredValueToInitializeBridge =
 				await zkSync.l2TransactionBaseCost(

@@ -2,7 +2,7 @@
 import * as hre from "hardhat";
 import { web3Provider } from "./utils/utils";
 import { Wallet } from "ethers";
-import { formatUnits, parseEther, parseUnits } from "ethers/lib/utils";
+import { formatUnits, parseUnits } from "ethers/lib/utils";
 import { Command } from "commander";
 import { Deployer } from "./deploy";
 
@@ -18,10 +18,8 @@ import L2ERC20Bridge from "../../l2/artifacts-zk/l2/contracts/L2ERC20Bridge.sol/
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL || "";
 
-const L1_EXECUTOR_ADDR =
-  process.env.CONTRACTS_L1_GOVERNANCE_EXECUTOR_ADDR || "";
-
-const L2_BRIDGE_EXECUTOR_ADDR = process.env.L2_BRIDGE_EXECUTOR_ADDR || "";
+const L1_EXECUTOR_ADDR = process.env.L1_EXECUTOR_ADDR as string;
+const L2_BRIDGE_EXECUTOR_ADDR = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
 
 const provider = web3Provider();
 const zkProvider = new Provider(ZK_CLIENT_WEB3_URL, 270);

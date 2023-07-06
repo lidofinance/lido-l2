@@ -22,7 +22,7 @@ async function main() {
     const tokenContract = getToken(hre, wallet);
 
     const connectedBridgeAddress = await tokenContract.bridge();
-    if (connectedBridgeAddress !== ADDRESSES.ZERO) {
+    if (connectedBridgeAddress !== hre.ethers.constants.AddressZero) {
         throw new Error('Token is already connected to the bridge');
     };
 

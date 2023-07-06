@@ -27,6 +27,8 @@ async function main() {
     );
 
     await contract.deployed();
+
+    console.log(`CONTRACTS_L2_LIDO_TOKEN_ADDR=${contract.address}`);
 }
 
 main().catch((error) => {
