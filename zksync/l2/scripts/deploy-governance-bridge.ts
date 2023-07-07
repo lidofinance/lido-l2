@@ -31,6 +31,7 @@ async function main() {
     ],
     {
       initializer: "__ZkSyncBridgeExecutor_init",
+      // Possible security risk according to Openzeppelin - needs feedback
       unsafeAllow: ["delegatecall"],
     }
   );
