@@ -8,6 +8,7 @@
     "deploy-bridges": "hardhat run scripts/deploy-bridges.ts",
     "initialize-bridges": "hardhat run scripts/initialize-bridges.ts",
     "init-bridge-roles": "hardhat run scripts/initialize-bridge-roles.ts",
+    "upgrade-token": "hardhat run scripts/upgrade-wsteth-token.ts",
     "enable-deposits": "hardhat run scripts/enable-deposits.ts",
     "disable-deposits": "hardhat run scripts/disable-deposits.ts",
     "enable-withdrawals": "hardhat run scripts/enable-withdrawals.ts",
