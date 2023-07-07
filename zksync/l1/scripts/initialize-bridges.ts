@@ -1,128 +1,127 @@
 /* eslint-disable prettier/prettier */
 import {
-	REQUIRED_L2_GAS_PRICE_PER_PUBDATA,
-	getNumberFromEnv,
-	readBytecode,
-	web3Provider,
-} from './utils/utils';
-import { Wallet } from 'ethers';
-import { formatUnits, parseUnits } from 'ethers/lib/utils';
-import { Command } from 'commander';
-import { Deployer } from './deploy';
+  REQUIRED_L2_GAS_PRICE_PER_PUBDATA,
+  getNumberFromEnv,
+  readBytecode,
+  web3Provider,
+} from "./utils/utils";
+import { Wallet } from "ethers";
+import { formatUnits, parseUnits } from "ethers/lib/utils";
+import { Command } from "commander";
+import { Deployer } from "./deploy";
 
-import * as path from 'path';
+import * as path from "path";
 
 const provider = web3Provider();
 const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 const L2_GOVERNOR_ADDRESS = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
 
 const l2Artifacts = path.join(
-	path.resolve(__dirname, '..', '..', 'l2'),
-	'artifacts-zk/l2/contracts'
+  path.resolve(__dirname, "..", "..", "l2"),
+  "artifacts-zk/l2/contracts"
 );
 
-const l2ProxyArtifacts = path.join(l2Artifacts, 'proxy');
+const l2ProxyArtifacts = path.join(l2Artifacts, "proxy");
 
 const L2_LIDO_BRIDGE_PROXY_BYTECODE = readBytecode(
-	l2ProxyArtifacts,
-	'OssifiableProxy'
+  l2ProxyArtifacts,
+  "OssifiableProxy"
 );
 
 const L2_LIDO_BRIDGE_IMPLEMENTATION_BYTECODE = readBytecode(
-	l2Artifacts,
-	'L2ERC20Bridge'
+  l2Artifacts,
+  "L2ERC20Bridge"
 );
 
 const DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT = getNumberFromEnv(
-	'CONTRACTS_DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT'
+  "CONTRACTS_DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT"
 );
 
-
 async function main() {
-	const program = new Command();
+  const program = new Command();
 
-	program.version('0.1.0').name('initialize-lido-bridges');
+  program.version("0.1.0").name("initialize-lido-bridges");
 
-	program
-		.option('--private-key <private-key>')
-		.option('--gas-price <gas-price>')
-		.option('--nonce <nonce>')
-		.option('--lido-bridge <lido-bridge>')
-		.action(async (cmd) => {
-			const deployWallet = cmd.privateKey
-				? new Wallet(cmd.privateKey, provider)
-				: new Wallet(PRIVATE_KEY, provider);
+  program
+    .option("--private-key <private-key>")
+    .option("--gas-price <gas-price>")
+    .option("--nonce <nonce>")
+    .option("--lido-bridge <lido-bridge>")
+    .action(async (cmd) => {
+      const deployWallet = cmd.privateKey
+        ? new Wallet(cmd.privateKey, provider)
+        : new Wallet(PRIVATE_KEY, provider);
 
-			console.log(`Using deployer wallet: ${deployWallet.address}`);
+      console.log(`Using deployer wallet: ${deployWallet.address}`);
 
-			const gasPrice = cmd.gasPrice
-				? parseUnits(cmd.gasPrice, 'gwei')
-				: await provider.getGasPrice();
+      const gasPrice = cmd.gasPrice
+        ? parseUnits(cmd.gasPrice, "gwei")
+        : await provider.getGasPrice();
 
-			console.log(`Using gas price: ${formatUnits(gasPrice, 'gwei')} gwei`);
+      console.log(`Using gas price: ${formatUnits(gasPrice, "gwei")} gwei`);
 
-			const nonce = cmd.nonce
-				? parseInt(cmd.nonce)
-				: await deployWallet.getTransactionCount();
+      const nonce = cmd.nonce
+        ? parseInt(cmd.nonce)
+        : await deployWallet.getTransactionCount();
 
-			const deployer = new Deployer({
-				deployWallet,
-				governorAddress: deployWallet.address,
-				verbose: true,
-			});
+      const deployer = new Deployer({
+        deployWallet,
+        governorAddress: deployWallet.address,
+        verbose: true,
+      });
 
-			const lidoBridge = cmd.lidoBridge
-				? deployer.defaultLidoBridge(deployWallet).attach(cmd.lidoBridge)
-				: deployer.defaultLidoBridge(deployWallet);
+      const lidoBridge = cmd.lidoBridge
+        ? deployer.defaultLidoBridge(deployWallet).attach(cmd.lidoBridge)
+        : deployer.defaultLidoBridge(deployWallet);
 
-			const zkSync = deployer.zkSyncContract(deployWallet);
-			console.log('Governor:', L2_GOVERNOR_ADDRESS);
+      const zkSync = deployer.zkSyncContract(deployWallet);
+      console.log("Governor:", L2_GOVERNOR_ADDRESS);
 
-			console.log('wstETH L1 token:', deployer.addresses.LidoTokenL1);
-			console.log('wstETH L2 token:', deployer.addresses.LidoTokenL2);
+      console.log("wstETH L1 token:", deployer.addresses.LidoTokenL1);
+      console.log("wstETH L2 token:", deployer.addresses.LidoTokenL2);
 
-			const requiredValueToInitializeBridge =
-				await zkSync.l2TransactionBaseCost(
-					gasPrice,
-					DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT,
-					REQUIRED_L2_GAS_PRICE_PER_PUBDATA
-				);
+      const requiredValueToInitializeBridge =
+        await zkSync.l2TransactionBaseCost(
+          gasPrice,
+          DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT,
+          REQUIRED_L2_GAS_PRICE_PER_PUBDATA
+        );
 
-			try {
-				console.log('Initializing bridges');
-				const tx = await lidoBridge[
-					'initialize(bytes[],address,address,address,uint256,uint256)'
-				](
-					[
-						L2_LIDO_BRIDGE_IMPLEMENTATION_BYTECODE,
-						L2_LIDO_BRIDGE_PROXY_BYTECODE,
-					],
-					deployer.addresses.LidoTokenL1,
-					deployer.addresses.LidoTokenL2,
-					L2_GOVERNOR_ADDRESS,
-					requiredValueToInitializeBridge,
-					requiredValueToInitializeBridge,
-					{
-						gasPrice,
-						nonce: nonce,
-						value: requiredValueToInitializeBridge.mul(2),
-						gasLimit: 10000000,
-					}
-				);
+      try {
+        console.log("Initializing bridges");
+        const tx = await lidoBridge[
+          "initialize(bytes[],address,address,address,uint256,uint256)"
+        ](
+          [
+            L2_LIDO_BRIDGE_IMPLEMENTATION_BYTECODE,
+            L2_LIDO_BRIDGE_PROXY_BYTECODE,
+          ],
+          deployer.addresses.LidoTokenL1,
+          deployer.addresses.LidoTokenL2,
+          L2_GOVERNOR_ADDRESS,
+          requiredValueToInitializeBridge,
+          requiredValueToInitializeBridge,
+          {
+            gasPrice,
+            nonce: nonce,
+            value: requiredValueToInitializeBridge.mul(2),
+            gasLimit: 10000000,
+          }
+        );
 
-				const receipt = await tx.wait();
-				console.log(
-					`CONTRACTS_L2_LIDO_BRIDGE_PROXY_ADDR=${await lidoBridge.l2Bridge()}`,
-				);
-				console.log(`Gas used: `, receipt.gasUsed.toString());
-			} catch (err) {
-				console.log('Error', err);
-			}
-		});
+        const receipt = await tx.wait();
+        console.log(
+          `CONTRACTS_L2_LIDO_BRIDGE_PROXY_ADDR=${await lidoBridge.l2Bridge()}`
+        );
+        console.log(`Gas used: `, receipt.gasUsed.toString());
+      } catch (err) {
+        console.log("Error", err);
+      }
+    });
 
-	await program.parseAsync(process.argv);
+  await program.parseAsync(process.argv);
 }
 
 main().catch((err) => {
-	throw err;
+  throw err;
 });

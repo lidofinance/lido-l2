@@ -1,41 +1,41 @@
 {
-	"name": "l1-zksync-contracts",
-	"version": "0.1.0",
-	"scripts": {
-		"compile": "hardhat clean && hardhat compile && ts-node utils/generateTypings.ts",
-		"deploy-mock-agent": "hardhat run scripts/deploy-mock-agent.ts",
-		"deploy-l1-executor": "hardhat run scripts/deploy-l1-executor.ts",
-		"deploy-bridges": "hardhat run scripts/deploy-bridges.ts",
-		"initialize-bridges": "hardhat run scripts/initialize-bridges.ts",
-		"init-bridge-roles": "hardhat run scripts/initialize-bridge-roles.ts",
-		"enable-deposits": "hardhat run scripts/enable-deposits.ts",
-		"disable-deposits": "hardhat run scripts/disable-deposits.ts",
-		"enable-withdrawals": "hardhat run scripts/enable-withdrawals.ts",
-		"test-deposit": "ts-node scripts/tests/deposit-erc20.ts",
-		"test-withdraw": "ts-node scripts/tests/withdraw-erc20.ts",
-		"zksync:test:unit": "hardhat test ./test/*.unit.test.ts",
-		"zksync:test:e2e": "hardhat test ./test/e2e/*.e2e.test.ts"
-	},
-	"license": "ISC",
-	"devDependencies": {
-		"@matterlabs/zksync-contracts": "^0.6.1",
-		"@nomiclabs/hardhat-ethers": "^2.2.3",
-		"@nomiclabs/hardhat-waffle": "^2.0.6",
-		"@openzeppelin/contracts-upgradeable": "^4.9.2",
-		"@typechain/ethers-v5": "^11.0.0",
-		"@typechain/hardhat": "^8.0.0",
-		"argparse": "^2.0.1",
-		"commander": "^11.0.0",
-		"ethers": "^5.7.2",
-		"fs": "^0.0.1-security",
-		"hardhat": "^2.15.0",
-		"path": "^0.12.7",
-		"ts-node": "^10.9.1",
-		"typechain": "^8.2.0",
-		"typescript": "^5.1.3",
-		"zksync-web3": "^0.14.3"
-	},
-	"dependencies": {
-		"dotenv": "^16.2.0"
-	}
+  "name": "l1-zksync-contracts",
+  "version": "0.1.0",
+  "scripts": {
+    "compile": "hardhat clean && hardhat compile && ts-node utils/generateTypings.ts",
+    "deploy-mock-agent": "hardhat run scripts/deploy-mock-agent.ts",
+    "deploy-l1-executor": "hardhat run scripts/deploy-l1-executor.ts",
+    "deploy-bridges": "hardhat run scripts/deploy-bridges.ts",
+    "initialize-bridges": "hardhat run scripts/initialize-bridges.ts",
+    "init-bridge-roles": "hardhat run scripts/initialize-bridge-roles.ts",
+    "enable-deposits": "hardhat run scripts/enable-deposits.ts",
+    "disable-deposits": "hardhat run scripts/disable-deposits.ts",
+    "enable-withdrawals": "hardhat run scripts/enable-withdrawals.ts",
+    "test-deposit": "ts-node scripts/tests/deposit-erc20.ts",
+    "test-withdraw": "ts-node scripts/tests/withdraw-erc20.ts",
+    "zksync:test:unit": "hardhat test ./test/*.unit.test.ts",
+    "zksync:test:e2e": "hardhat test ./test/e2e/*.e2e.test.ts"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@matterlabs/zksync-contracts": "^0.6.1",
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@nomiclabs/hardhat-waffle": "^2.0.6",
+    "@openzeppelin/contracts-upgradeable": "^4.9.2",
+    "@typechain/ethers-v5": "^11.0.0",
+    "@typechain/hardhat": "^8.0.0",
+    "argparse": "^2.0.1",
+    "commander": "^11.0.0",
+    "ethers": "^5.7.2",
+    "fs": "^0.0.1-security",
+    "hardhat": "^2.15.0",
+    "path": "^0.12.7",
+    "ts-node": "^10.9.1",
+    "typechain": "^8.2.0",
+    "typescript": "^5.1.3",
+    "zksync-web3": "^0.14.3"
+  },
+  "dependencies": {
+    "dotenv": "^16.2.0"
+  }
 }
