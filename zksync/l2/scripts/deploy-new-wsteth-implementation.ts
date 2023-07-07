@@ -2,14 +2,14 @@ import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
 import { Wallet } from "zksync-web3";
 import * as hre from "hardhat";
 
-import { DEPLOYER_WALLET_PRIVATE_KEY } from "./utils/constants";
+import { PRIVATE_KEY } from "./utils/constants";
 
 const ERC20_BRIDGED_TOKEN_CONTRACT_NAME = "ERC20BridgedUpgradeable";
 
 export async function main() {
   console.info("Deploying " + ERC20_BRIDGED_TOKEN_CONTRACT_NAME + "...");
 
-  const zkWallet = new Wallet(DEPLOYER_WALLET_PRIVATE_KEY);
+  const zkWallet = new Wallet(PRIVATE_KEY);
   const deployer = new Deployer(hre, zkWallet);
 
   const artifact = await deployer.loadArtifact(

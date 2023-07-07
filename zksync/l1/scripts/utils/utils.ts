@@ -1,5 +1,3 @@
-/* eslint-disable prettier/prettier */
-/* eslint-disable eqeqeq */
 import { BytesLike, ethers } from "ethers";
 import * as fs from "fs";
 import { SYSTEM_CONFIG_CONSTANTS } from "./constants";

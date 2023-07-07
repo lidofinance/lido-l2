@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { web3Provider } from "./utils/utils";
 import { Wallet } from "ethers";
 import { formatUnits, parseUnits } from "ethers/lib/utils";
@@ -7,7 +6,7 @@ import { Deployer } from "./deploy";
 
 // L2
 import { Wallet as ZkSyncWallet, Provider, Contract } from "zksync-web3";
-import L2ERC20Bridge from "../../l2/artifacts-zk/l2/contracts/L2ERC20Bridge.sol/L2ERC20Bridge.json";
+import { L2ERC20Bridge__factory } from "../../l2/typechain";
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL || "";
@@ -60,9 +59,8 @@ async function main() {
 
       console.log("Using L1 Governor Agent: ", L1GovernorAgent.address);
 
-      const L2Bridge = new Contract(
+      const l2Bridge = L2ERC20Bridge__factory.connect(
         deployer.addresses.Bridges.LidoL2BridgeProxy,
-        L2ERC20Bridge.abi,
         zkWallet
       );
 
@@ -126,38 +124,38 @@ async function main() {
 
       console.log("\n===============L2===============");
 
-      await initializeBridgingManager(L2Bridge, zkWallet.address);
+      await initializeBridgingManager(l2Bridge, zkWallet.address);
 
       await grantRole(
-        L2Bridge,
+        l2Bridge,
         DEFAULT_ADMIN_ROLE,
         "DEFAULT_ADMIN_ROLE",
         L2_BRIDGE_EXECUTOR_ADDR
       );
 
       await grantRole(
-        L2Bridge,
+        l2Bridge,
         DEPOSITS_ENABLER_ROLE,
         "DEPOSITS_ENABLER_ROLE",
         L2_BRIDGE_EXECUTOR_ADDR
       );
 
       await grantRole(
-        L2Bridge,
+        l2Bridge,
         DEPOSITS_DISABLER_ROLE,
         "DEPOSITS_DISABLER_ROLE",
         L2_BRIDGE_EXECUTOR_ADDR
       );
 
       await grantRole(
-        L2Bridge,
+        l2Bridge,
         WITHDRAWALS_ENABLER_ROLE,
         "WITHDRAWALS_ENABLER_ROLE",
         L2_BRIDGE_EXECUTOR_ADDR
       );
 
       await grantRole(
-        L2Bridge,
+        l2Bridge,
         WITHDRAWALS_DISABLER_ROLE,
         "WITHDRAWALS_DISABLER_ROLE",
         L2_BRIDGE_EXECUTOR_ADDR
@@ -167,7 +165,7 @@ async function main() {
        * Revokes deployer's DEFAULT_ADMIN_ROLE on L2
        */
       await revokeRole(
-        L2Bridge,
+        l2Bridge,
         DEFAULT_ADMIN_ROLE,
         "DEFAULT_ADMIN_ROLE",
         zkWallet.address
@@ -225,7 +223,7 @@ async function revokeRole(
 
     const hadRole = await contract.hasRole(roleBytecode, target);
     if (!hadRole) {
-      console.log(`Revoked ${roleName}:${target}`);
+      console.log(`Revoked ${roleName}: ${target}`);
     }
   }
   console.log(`${target} doesn't possess ${roleName}`);

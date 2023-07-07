@@ -1,5 +1,3 @@
-/* eslint-disable prettier/prettier */
-
 import { runTypeChain, glob } from "typechain";
 
 async function main() {

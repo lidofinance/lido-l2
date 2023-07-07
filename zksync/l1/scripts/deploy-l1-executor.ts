@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { web3Provider } from "./utils/utils";
 import { OssifiableProxy__factory } from "../typechain/index";
 import { L1Executor__factory } from "../typechain";

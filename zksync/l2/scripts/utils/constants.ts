@@ -7,8 +7,9 @@ export const ADDRESSES = {
   L2_LIDO_TOKEN_ADDR: process.env.CONTRACTS_L2_LIDO_TOKEN_ADDR as string,
 };
 
-export const DEPLOYER_WALLET_PRIVATE_KEY = process.env
-  .DEPLOYER_WALLET_PRIVATE_KEY as string;
+export const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
+
+export const ZKSYNC_PROVIDER_URL = process.env.ZKSYNC_PROVIDER_URL as string;
 
 export const GOVERNANCE_CONSTANTS = {
   DELAY: process.env.EXECUTION_DELAY as string,

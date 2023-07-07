@@ -5,7 +5,7 @@ import * as hre from "hardhat";
 import {
   GOVERNANCE_CONSTANTS,
   ADDRESSES,
-  DEPLOYER_WALLET_PRIVATE_KEY,
+  PRIVATE_KEY,
 } from "./utils/constants";
 
 const BRIDGE_EXECUTOR_CONTRACT_NAME = "ZkSyncBridgeExecutorUpgradable";
@@ -13,7 +13,7 @@ const BRIDGE_EXECUTOR_CONTRACT_NAME = "ZkSyncBridgeExecutorUpgradable";
 async function main() {
   console.info("Deploying " + BRIDGE_EXECUTOR_CONTRACT_NAME + "...");
 
-  const zkWallet = new Wallet(DEPLOYER_WALLET_PRIVATE_KEY);
+  const zkWallet = new Wallet(PRIVATE_KEY);
   const deployer = new Deployer(hre, zkWallet);
 
   const artifact = await deployer.loadArtifact(BRIDGE_EXECUTOR_CONTRACT_NAME);

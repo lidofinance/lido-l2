@@ -1,24 +1,28 @@
-/* eslint-disable prettier/prettier */
-import * as hre from "hardhat";
-import { web3Provider } from "./utils/utils";
+import { web3Provider } from "../utils/utils";
 import { Wallet } from "ethers";
-import { Interface, formatUnits, parseUnits } from "ethers/lib/utils";
+import { formatUnits, parseUnits } from "ethers/lib/utils";
 import { Command } from "commander";
-import { Deployer } from "./deploy";
+import { Deployer } from "../deploy";
 
 // typechain
-import { L1Executor__factory } from "../typechain/factories/l1/contracts/governance/L1Executor__factory";
+import { L1Executor__factory } from "../../typechain";
 
 // L2
-import { Wallet as ZkSyncWallet, Provider, utils, Contract } from "zksync-web3";
+import { Wallet as ZkSyncWallet, Provider, utils } from "zksync-web3";
+import {
+  ProxyAdmin__factory,
+  TransparentUpgradeableProxy__factory,
+} from "../../../l2/typechain";
+
 const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL as string;
 
 const L1_EXECUTOR_ADDR = process.env.L1_EXECUTOR_ADDR as string;
 
-const L2_WSTETH_ADMIN = "0x23357735Dc5529ca0ae9de94ce2edD7eA905B635";
-const L2_WSTETH_PROXY = "0x219C645ba345C8d1D8e2549407b0b211436Dc7E0";
-const NEW_TOKEN_IMPL = "0x1955D8fa2B0FA5CC100609eE35231634942A7442";
+const L2_TOKEN_PROXY_ADMIN = "0x1F0151386fB0AbBF0273238dF5E9bc519DE5e20B";
+const CONTRACTS_L2_LIDO_TOKEN_ADDR = process.env
+  .CONTRACTS_L2_LIDO_TOKEN_ADDR as string;
+const NEW_L2_TOKEN_IMPL = "0xcFDE18a0f130bBAfe0037072407F83899D49414f";
 
 const provider = web3Provider();
 const zkProvider = new Provider(ZK_CLIENT_WEB3_URL, 270);
@@ -66,28 +70,17 @@ async function main() {
         deployWallet
       );
 
-      const ITokenProxy = new Interface([
-        "event Upgraded(address indexed implementation)",
-      ]);
-
-      const IProxyAdmin = new Interface([
-        "function upgrade(address proxy, address implementation)",
-        "function owner() public view virtual returns (address)",
-      ]);
-
-      const tokenProxyContract = new Contract(
-        L2_WSTETH_PROXY,
-        ITokenProxy,
+      const tokenProxy = TransparentUpgradeableProxy__factory.connect(
+        CONTRACTS_L2_LIDO_TOKEN_ADDR,
         zkWallet
       );
 
-      const proxyAdminContract = new Contract(
-        L2_WSTETH_ADMIN,
-        IProxyAdmin,
+      const proxyAdmin = ProxyAdmin__factory.connect(
+        L2_TOKEN_PROXY_ADMIN,
         zkWallet
       );
 
-      const proxyAdminOwner = await proxyAdminContract.owner();
+      const proxyAdminOwner = await proxyAdmin.owner();
 
       console.log("ADMIN OWNER L2 address:", proxyAdminOwner);
 
@@ -97,14 +90,14 @@ async function main() {
       );
 
       // encode data to be executed by ProxyAdmin
-      const data = IProxyAdmin.encodeFunctionData("upgrade", [
-        L2_WSTETH_PROXY,
-        NEW_TOKEN_IMPL,
+      const data = proxyAdmin.interface.encodeFunctionData("upgrade", [
+        CONTRACTS_L2_LIDO_TOKEN_ADDR,
+        NEW_L2_TOKEN_IMPL,
       ]);
 
-      // estimate gas to to bridge encoded from L1 to L2
+      // estimate gas to bridge encoded from L1 to L2
       const gasLimit = await zkProvider.estimateL1ToL2Execute({
-        contractAddress: L2_WSTETH_ADMIN,
+        contractAddress: L2_TOKEN_PROXY_ADMIN,
         calldata: data,
         caller: utils.applyL1ToL2Alias(L1_EXECUTOR_ADDR),
       });
@@ -131,7 +124,7 @@ async function main() {
         "callZkSync",
         [
           zkSync.address,
-          L2_WSTETH_ADMIN,
+          L2_TOKEN_PROXY_ADMIN,
           data,
           gasLimit,
           utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT,
@@ -146,9 +139,9 @@ async function main() {
       );
 
       const upgradedPromise = new Promise((resolve) => {
-        tokenProxyContract.on("Upgraded", (address) => {
+        tokenProxy.on("Upgraded", (address) => {
           resolve(address);
-          tokenProxyContract.removeAllListeners();
+          tokenProxy.removeAllListeners();
         });
       });
 

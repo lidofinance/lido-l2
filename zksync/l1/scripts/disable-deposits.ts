@@ -1,19 +1,19 @@
-/* eslint-disable prettier/prettier */
 import * as hre from "hardhat";
 import { web3Provider } from "./utils/utils";
-import { Wallet } from "ethers";
+import { BigNumberish, Wallet } from "ethers";
 import { formatUnits, parseUnits } from "ethers/lib/utils";
 import { Command } from "commander";
 import { Deployer } from "./deploy";
 
 // typechain
-import { L1ERC20Bridge__factory } from "../typechain/factories/l1/contracts/L1ERC20Bridge__factory";
-import { L1Executor__factory } from "../typechain/factories/l1/contracts/governance/L1Executor__factory";
+import { L1ERC20Bridge__factory, L1Executor__factory } from "../typechain";
 
 // L2
-import { Wallet as ZkSyncWallet, Provider, utils, Contract } from "zksync-web3";
-import ZkSyncBridgeExecutorUpgradable from "../../l2/artifacts-zk/l2/contracts/governance/ZkSyncBridgeExecutorUpgradable.sol/ZkSyncBridgeExecutorUpgradable.json";
-import L2ERC20Bridge from "../../l2/artifacts-zk/l2/contracts/L2ERC20Bridge.sol/L2ERC20Bridge.json";
+import { Wallet as ZkSyncWallet, Provider, utils } from "zksync-web3";
+import {
+  ZkSyncBridgeExecutorUpgradable__factory,
+  L2ERC20Bridge__factory,
+} from "../../l2/typechain";
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL as string;
@@ -73,27 +73,23 @@ async function main() {
         deployWallet
       );
 
-      const L2Bridge = new Contract(
+      const l2Bridge = L2ERC20Bridge__factory.connect(
         deployer.addresses.Bridges.LidoL2BridgeProxy,
-        L2ERC20Bridge.abi,
         zkWallet
       );
 
-      const ZkSyncBridgeExecutor = new Contract(
-        L2_BRIDGE_EXECUTOR_ADDR,
-        ZkSyncBridgeExecutorUpgradable.abi,
-        zkWallet
-      );
+      const zkSyncBridgeExecutor =
+        ZkSyncBridgeExecutorUpgradable__factory.connect(
+          L2_BRIDGE_EXECUTOR_ADDR,
+          zkWallet
+        );
+
       // Contract Abis and Interfaces
       const L1ERC20BridgeAbi = L1ERC20Bridge__factory.abi;
       const IL1ERC20Bridge = new hre.ethers.utils.Interface(L1ERC20BridgeAbi);
 
-      const IZkSyncBridgeExecutorUpgradable = new hre.ethers.utils.Interface(
-        ZkSyncBridgeExecutorUpgradable.abi
-      );
-
       const isDepositEnabledOnL1 = await lidoBridge.isDepositsEnabled();
-      const isDepositEnabledOnL2 = await L2Bridge.isDepositsEnabled();
+      const isDepositEnabledOnL2 = await l2Bridge.isDepositsEnabled();
 
       if (!isDepositEnabledOnL1 && !isDepositEnabledOnL2) {
         console.log("\n================================");
@@ -125,7 +121,7 @@ async function main() {
       console.log("\n===============L2===============");
 
       // encode data to be queued by ZkBridgeExecutor on L2
-      const data = IZkSyncBridgeExecutorUpgradable.encodeFunctionData("queue", [
+      const data = zkSyncBridgeExecutor.interface.encodeFunctionData("queue", [
         [deployer.addresses.Bridges.LidoL2BridgeProxy],
         [hre.ethers.utils.parseEther("0")],
         ["disableDeposits()"],
@@ -176,9 +172,9 @@ async function main() {
 
       // maybe filtering by block number would be a better idea
       const actionSetQueuedPromise = new Promise((resolve) => {
-        ZkSyncBridgeExecutor.on("ActionsSetQueued", (actionSetId) => {
+        zkSyncBridgeExecutor.on("ActionsSetQueued", (actionSetId) => {
           resolve(actionSetId.toString());
-          ZkSyncBridgeExecutor.removeAllListeners();
+          zkSyncBridgeExecutor.removeAllListeners();
         });
       });
 
@@ -195,16 +191,19 @@ async function main() {
        */
 
       if (isDepositEnabledOnL2) {
-        const executeAction = await ZkSyncBridgeExecutor.execute(actionSetId, {
-          gasLimit: 10_000_000,
-        });
+        const executeAction = await zkSyncBridgeExecutor.execute(
+          actionSetId as BigNumberish,
+          {
+            gasLimit: 10_000_000,
+          }
+        );
 
         await executeAction.wait();
       }
 
       console.log(
         "\nDEPOSITS DISABLED ON L2 BRIDGE:",
-        !(await L2Bridge.isDepositsEnabled())
+        !(await l2Bridge.isDepositsEnabled())
       );
     });
 

@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { ethers } from "hardhat";
 import "@nomiclabs/hardhat-ethers";
 import { Command } from "commander";

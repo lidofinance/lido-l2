@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import {
   REQUIRED_L2_GAS_PRICE_PER_PUBDATA,
   getNumberFromEnv,

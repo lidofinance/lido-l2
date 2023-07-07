@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { ethers } from "hardhat";
 import "@nomiclabs/hardhat-ethers";
 import {
@@ -17,14 +16,6 @@ import { AragonAgentMock__factory } from "../typechain/factories/l1/contracts/go
 
 export interface DeployedAddresses {
   ZkSync: {
-    MailboxFacet: string;
-    GovernanceFacet: string;
-    ExecutorFacet: string;
-    DiamondCutFacet: string;
-    GettersFacet: string;
-    Verifier: string;
-    DiamondInit: string;
-    DiamondUpgradeInit: string;
     DiamondProxy: string;
   };
   Bridges: {
@@ -32,7 +23,6 @@ export interface DeployedAddresses {
     LidoBridgeProxy: string;
     LidoL2BridgeProxy: string;
   };
-  AllowList: string;
   Create2Factory: string;
   LidoTokenL1: string;
   LidoTokenL2: string;
@@ -49,17 +39,7 @@ export interface DeployerConfig {
 export function deployedAddressesFromEnv(): DeployedAddresses {
   return {
     ZkSync: {
-      MailboxFacet: getAddressFromEnv("CONTRACTS_MAILBOX_FACET_ADDR"),
-      GovernanceFacet: getAddressFromEnv("CONTRACTS_GOVERNANCE_FACET_ADDR"),
-      DiamondCutFacet: getAddressFromEnv("CONTRACTS_DIAMOND_CUT_FACET_ADDR"),
-      ExecutorFacet: getAddressFromEnv("CONTRACTS_EXECUTOR_FACET_ADDR"),
-      GettersFacet: getAddressFromEnv("CONTRACTS_GETTERS_FACET_ADDR"),
-      DiamondInit: getAddressFromEnv("CONTRACTS_DIAMOND_INIT_ADDR"),
-      DiamondUpgradeInit: getAddressFromEnv(
-        "CONTRACTS_DIAMOND_UPGRADE_INIT_ADDR"
-      ),
       DiamondProxy: getAddressFromEnv("CONTRACTS_DIAMOND_PROXY_ADDR"),
-      Verifier: getAddressFromEnv("CONTRACTS_VERIFIER_ADDR"),
     },
     Bridges: {
       LidoBridgeImplementation: getAddressFromEnv(
@@ -70,7 +50,6 @@ export function deployedAddressesFromEnv(): DeployedAddresses {
         "CONTRACTS_L2_LIDO_BRIDGE_PROXY_ADDR"
       ),
     },
-    AllowList: getAddressFromEnv("CONTRACTS_L1_ALLOW_LIST_ADDR"),
     Create2Factory: getAddressFromEnv("CONTRACTS_CREATE2_FACTORY_ADDR"),
     LidoTokenL1: getAddressFromEnv("CONTRACTS_L1_LIDO_TOKEN_ADDR"),
     LidoTokenL2: getAddressFromEnv("CONTRACTS_L2_LIDO_TOKEN_ADDR"),
@@ -170,7 +149,7 @@ export class Deployer {
     const deployedBytecodeAfter = await this.deployWallet.provider.getCode(
       expectedAddress
     );
-    // eslint-disable-next-line eqeqeq
+
     if (ethers.utils.hexDataLength(deployedBytecodeAfter) == 0) {
       throw new Error("Failed to deploy bytecode via create2 factory");
     }

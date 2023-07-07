@@ -3,10 +3,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import * as hre from "hardhat";
 
-import { ADDRESSES } from "./utils/constants";
-
-const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY || "";
-const ZKSYNC_PROVIDER_URL = process.env.ZKSYNC_PROVIDER_URL || "";
+import { ADDRESSES, PRIVATE_KEY, ZKSYNC_PROVIDER_URL } from "./utils/constants";
 
 const ERC20_BRIDGED_TOKEN_CONTRACT_NAME = "ERC20BridgedUpgradeable";
 
@@ -19,7 +16,7 @@ function getToken(hre: HardhatRuntimeEnvironment, wallet: Wallet): Contract {
 
 async function main() {
   const provider = new Provider(ZKSYNC_PROVIDER_URL);
-  const wallet = new Wallet(WALLET_PRIVATE_KEY, provider);
+  const wallet = new Wallet(PRIVATE_KEY, provider);
 
   const tokenContract = getToken(hre, wallet);
 

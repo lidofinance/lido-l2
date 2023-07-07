@@ -1,5 +1,3 @@
-/* eslint-disable prettier/prettier */
-
 import { ethers } from "hardhat";
 import "@nomiclabs/hardhat-ethers";
 import { web3Provider } from "./utils/utils";
