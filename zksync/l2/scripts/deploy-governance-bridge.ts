@@ -29,7 +29,10 @@ async function main() {
       GOVERNANCE_CONSTANTS.MAX_DELAY,
       ADDRESSES.GUARDIAN || hre.ethers.constants.AddressZero,
     ],
-    { initializer: "__ZkSyncBridgeExecutor_init" }
+    {
+      initializer: "__ZkSyncBridgeExecutor_init",
+      unsafeAllow: ["delegatecall"],
+    }
   );
 
   await contract.deployed();
