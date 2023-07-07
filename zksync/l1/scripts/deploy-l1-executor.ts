@@ -6,8 +6,8 @@ import { Wallet } from "ethers";
 
 const provider = web3Provider();
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
-const AGENT_ADDRESS = process.env.CONTRACTS_L1_GOVERNANCE_AGENT_ADDR || "";
+const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
+const AGENT_ADDRESS = process.env.CONTRACTS_L1_GOVERNANCE_AGENT_ADDR as string;
 
 async function main() {
   // without ethers.Wallet -> HardhatError: HH5: HardhatContext is not created.

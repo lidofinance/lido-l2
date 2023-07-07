@@ -19,7 +19,7 @@ contract L1Executor is OwnableUpgradeable {
         bytes memory data,
         uint256 gasLimit,
         uint256 gasPerPubdataByteLimit
-    ) external payable {
+    ) external payable onlyOwner {
         IZkSync zksync = IZkSync(zkSyncAddress);
         zksync.requestL2Transaction{value: msg.value}(
             contractAddr,

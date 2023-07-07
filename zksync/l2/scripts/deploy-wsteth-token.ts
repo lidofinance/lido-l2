@@ -2,9 +2,8 @@ import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import { Wallet } from 'zksync-web3';
 import * as hre from 'hardhat';
 
-import { ERC20_BRIDGED_CONSTANTS } from './utils/constants';
+import { ERC20_BRIDGED_CONSTANTS, DEPLOYER_WALLET_PRIVATE_KEY } from './utils/constants';
 
-const DEPLOYER_WALLET_PRIVATE_KEY = process.env.DEPLOYER_WALLET_PRIVATE_KEY || '';
 const ERC20_BRIDGED_TOKEN_CONTRACT_NAME = 'ERC20BridgedUpgradeable';
 
 async function main() {

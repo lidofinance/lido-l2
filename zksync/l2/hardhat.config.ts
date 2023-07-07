@@ -12,7 +12,7 @@ dotenv.config();
 
 const config: HardhatUserConfig = {
   zksolc: {
-    version: "1.3.10",
+    version: "1.3.13",
     compilerSource: "binary",
     settings: {
       isSystem: true,

@@ -8,7 +8,8 @@ import { Wallet } from 'ethers';
 import { formatUnits, parseUnits } from 'ethers/lib/utils';
 import { Deployer } from './deploy';
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
+const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
+const L1_GOVERNOR_ADDRESS = process.env.CONTRACTS_L1_GOVERNANCE_AGENT_ADDR as string;
 
 const provider = web3Provider();
 
@@ -35,7 +36,7 @@ async function main() {
 
 			const governorAddress = cmd.governorAddress
 				? cmd.governorAddress
-				: deployWallet.address;
+				: L1_GOVERNOR_ADDRESS;
 			console.log(`Using governor address: ${governorAddress}`);
 
 			const gasPrice = cmd.gasPrice

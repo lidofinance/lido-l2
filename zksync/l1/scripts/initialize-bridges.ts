@@ -13,7 +13,8 @@ import { Deployer } from './deploy';
 import * as path from 'path';
 
 const provider = web3Provider();
-const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
+const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
+const L2_GOVERNOR_ADDRESS = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
 
 const l2Artifacts = path.join(
 	path.resolve(__dirname, '..', '..', 'l2'),
@@ -75,8 +76,7 @@ async function main() {
 				: deployer.defaultLidoBridge(deployWallet);
 
 			const zkSync = deployer.zkSyncContract(deployWallet);
-			const governorAddress = await zkSync.getGovernor();
-			console.log('Governor:', governorAddress);
+			console.log('Governor:', L2_GOVERNOR_ADDRESS);
 
 			console.log('wstETH L1 token:', deployer.addresses.LidoTokenL1);
 			console.log('wstETH L2 token:', deployer.addresses.LidoTokenL2);
@@ -99,7 +99,7 @@ async function main() {
 					],
 					deployer.addresses.LidoTokenL1,
 					deployer.addresses.LidoTokenL2,
-					governorAddress,
+					L2_GOVERNOR_ADDRESS,
 					requiredValueToInitializeBridge,
 					requiredValueToInitializeBridge,
 					{

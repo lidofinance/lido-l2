@@ -1,9 +1,12 @@
 export const ADDRESSES = {
-    ETHEREUM_GOVERNANCE_EXECUTOR: process.env.L1_EXECUTOR_ADDR as string,
+    L1_EXECUTOR_ADDR: process.env.L1_EXECUTOR_ADDR as string,
+    L2_BRIDGE_EXECUTOR_ADDR: process.env.L2_BRIDGE_EXECUTOR_ADDR as string,
     GUARDIAN: process.env.GUARDIAN_ADDRESS as string,
     L2_LIDO_BRIDGE_PROXY_ADDR: process.env.CONTRACTS_L2_LIDO_BRIDGE_PROXY_ADDR as string,
     L2_LIDO_TOKEN_ADDR: process.env.CONTRACTS_L2_LIDO_TOKEN_ADDR as string
 };
+
+export const DEPLOYER_WALLET_PRIVATE_KEY = process.env.DEPLOYER_WALLET_PRIVATE_KEY as string;
 
 export const GOVERNANCE_CONSTANTS = {
     DELAY: process.env.EXECUTION_DELAY as string,

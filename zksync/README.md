@@ -1,4 +1,29 @@
-# Deployment
+# Deployment plan
+
+l1:
+```bash
+npm run deploy-mock-agent (local-setup)
+```
+- copy to l1/.env:
+    - CONTRACTS_L1_GOVERNANCE_AGENT_ADDR=
+
+```bash
+npm run deploy-l1-executor
+```
+- copy to l1/.env:
+    - L1_EXECUTOR_ADDR=
+- copy to l2/.env:
+    - L1_EXECUTOR_ADDR=
+
+
+l2:
+```bash
+npm run deploy-governance-bridge
+```
+- copy to l1/.env:
+    - L2_BRIDGE_EXECUTOR_ADDR=
+- copy to l2/.env:
+    - L2_BRIDGE_EXECUTOR_ADDR=
 
 l1:
 ```bash
@@ -31,29 +56,6 @@ l2:
 ```bash
 npm run connect-token-to-bridge
 ```
-
-l1:
-```bash
-npm run deploy-mock-agent (local-setup)
-```
-- copy to l1/.env:
-    - CONTRACTS_L1_GOVERNANCE_AGENT_ADDR=
-
-```bash
-npm run deploy-l1-executor
-```
-- copy to l1/.env:
-    - L1_EXECUTOR_ADDR=
-- copy to l2/.env:
-    - L1_EXECUTOR_ADDR=
-
-
-l2:
-```bash
-npm run deploy-governance-bridge
-```
-- copy to l1/.env:
-    - L2_BRIDGE_EXECUTOR_ADDR=
 
 l1:
 ```bash

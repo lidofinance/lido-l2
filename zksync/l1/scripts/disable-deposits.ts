@@ -15,8 +15,8 @@ import { Wallet as ZkSyncWallet, Provider, utils, Contract } from "zksync-web3";
 import ZkSyncBridgeExecutorUpgradable from "../../l2/artifacts-zk/l2/contracts/governance/ZkSyncBridgeExecutorUpgradable.sol/ZkSyncBridgeExecutorUpgradable.json";
 import L2ERC20Bridge from "../../l2/artifacts-zk/l2/contracts/L2ERC20Bridge.sol/L2ERC20Bridge.json";
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
-const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL || "";
+const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
+const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL as string;
 
 const L1_EXECUTOR_ADDR = process.env.L1_EXECUTOR_ADDR as string;
 const L2_BRIDGE_EXECUTOR_ADDR = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
