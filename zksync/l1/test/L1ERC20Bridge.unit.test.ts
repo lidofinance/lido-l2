@@ -17,18 +17,18 @@ import { L2ERC20BridgeStub__factory } from "../../l2/typechain";
 import { readBytecode } from "../scripts/utils/utils";
 
 // zksync/l2/artifacts-zk/l2/contracts
-const l2Artifacts = path.join(
+const l2ArtifactsPath = path.join(
   path.resolve(__dirname, "../..", "l2"),
   "artifacts-zk/l2/contracts"
 );
 
 const L2_LIDO_BRIDGE_PROXY_BYTECODE = readBytecode(
-  path.join(l2Artifacts, "proxy"),
+  path.join(l2ArtifactsPath, "proxy"),
   "OssifiableProxy"
 );
 
 const L2_LIDO_BRIDGE_STUB_BYTECODE = readBytecode(
-  path.join(l2Artifacts, "stubs"),
+  path.join(l2ArtifactsPath, "stubs"),
   "L2ERC20BridgeStub"
 );
 

@@ -9,12 +9,12 @@ import {
 } from "../utils/utils";
 import { richWallet } from "../utils/rich_wallet";
 
-const l1Artifacts = path.join(
+const l1ArtifactsPath = path.join(
   path.resolve(__dirname, "../.."),
   "artifacts/l1/contracts"
 );
 
-const l2Artifacts = path.join(
+const l2ArtifactsPath = path.join(
   path.resolve(__dirname, "../../..", "l2"),
   "artifacts-zk/l2/contracts"
 );
@@ -23,12 +23,12 @@ const L1_LIDO_BRIDGE_PROXY_ADDR = getAddressFromEnv(
   "CONTRACTS_L1_LIDO_BRIDGE_PROXY_ADDR"
 );
 const L1_LIDO_BRIDGE_PROXY_INTERFACE = readInterface(
-  l1Artifacts,
+  l1ArtifactsPath,
   "L1ERC20Bridge"
 );
 const L1_LIDO_TOKEN_ADDR = getAddressFromEnv("CONTRACTS_L1_LIDO_TOKEN_ADDR");
 const L1_LIDO_TOKEN_INTERFACE = readInterface(
-  path.join(l1Artifacts, "token"),
+  path.join(l1ArtifactsPath, "token"),
   "ERC20Token"
 );
 
@@ -36,12 +36,12 @@ const L2_LIDO_BRIDGE_PROXY_ADDR = getAddressFromEnv(
   "CONTRACTS_L2_LIDO_BRIDGE_PROXY_ADDR"
 );
 const L2_LIDO_BRIDGE_PROXY_INTERFACE = readInterface(
-  l2Artifacts,
+  l2ArtifactsPath,
   "L2ERC20Bridge"
 );
 const L2_LIDO_TOKEN_ADDR = getAddressFromEnv("CONTRACTS_L2_LIDO_TOKEN_ADDR");
 const L2_LIDO_TOKEN_INTERFACE = readInterface(
-  path.join(l2Artifacts, "token"),
+  path.join(l2ArtifactsPath, "token"),
   "ERC20BridgedUpgradeable"
 );
 
