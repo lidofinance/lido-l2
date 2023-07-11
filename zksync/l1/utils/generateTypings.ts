@@ -2,6 +2,7 @@ import { runTypeChain, glob } from "typechain";
 
 async function main() {
   const cwd = process.cwd();
+  console.log(cwd);
   // find all files matching the glob
   const allFiles = glob(cwd, [
     `!./artifacts/!(build-info)/**/*.dbg.json`,

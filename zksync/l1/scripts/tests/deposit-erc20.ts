@@ -1,5 +1,3 @@
-import * as dotenv from "dotenv";
-
 import { Wallet, Provider, utils, Contract } from "zksync-web3";
 import * as ethers from "ethers";
 import * as path from "path";
@@ -10,8 +8,6 @@ import {
   readInterface,
 } from "../utils/utils";
 import { richWallet } from "../utils/rich_wallet";
-
-dotenv.config();
 
 const l1Artifacts = path.join(
   path.resolve(__dirname, "../.."),

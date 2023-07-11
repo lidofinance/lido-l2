@@ -16,8 +16,8 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 const L2_GOVERNOR_ADDRESS = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
 
 const l2Artifacts = path.join(
-  path.resolve(__dirname, "..", "..", "l2"),
-  "artifacts-zk/l2/contracts"
+  path.resolve(__dirname, "../.."),
+  "l2/artifacts-zk/l2/contracts"
 );
 
 const l2ProxyArtifacts = path.join(l2Artifacts, "proxy");
