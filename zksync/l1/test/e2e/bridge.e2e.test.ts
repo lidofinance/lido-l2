@@ -21,7 +21,7 @@ import { parseEther } from "ethers/lib/utils";
 import { IZkSyncFactory } from "zksync-web3/build/typechain";
 
 const ETH_CLIENT_WEB3_URL = process.env.ETH_CLIENT_WEB3_URL as string;
-const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL as string;
+const ZKSYNC_PROVIDER_URL = process.env.ZKSYNC_PROVIDER_URL as string;
 const CONTRACTS_DIAMOND_PROXY_ADDR = process.env
   .CONTRACTS_DIAMOND_PROXY_ADDR as string;
 
@@ -415,7 +415,7 @@ scenario("Bridge E2E Testing", ctxFactory)
 async function ctxFactory() {
   const { l1, l2 } = ZKSYNC_ADDRESSES;
 
-  const zkProvider = new Provider(ZK_CLIENT_WEB3_URL);
+  const zkProvider = new Provider(ZKSYNC_PROVIDER_URL);
   const ethProvider = new JsonRpcProvider(ETH_CLIENT_WEB3_URL);
 
   const ethDeployer = new Wallet(richWallet[0].privateKey, ethProvider);

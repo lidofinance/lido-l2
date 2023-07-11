@@ -1,8 +1,9 @@
+import * as dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 
-require("dotenv").config();
+dotenv.config({ path: "../.env" });
 
 const ETH_NETWORK_URL = process.env.ETH_CLIENT_WEB3_URL as string;
 

@@ -9,12 +9,12 @@ import { Wallet as ZkSyncWallet, Provider, Contract } from "zksync-web3";
 import { L2ERC20Bridge__factory } from "../../l2/typechain";
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
-const ZK_CLIENT_WEB3_URL = process.env.ZK_CLIENT_WEB3_URL || "";
+const ZKSYNC_PROVIDER_URL = process.env.ZKSYNC_PROVIDER_URL || "";
 
 const L2_BRIDGE_EXECUTOR_ADDR = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
 
 const provider = web3Provider();
-const zkProvider = new Provider(ZK_CLIENT_WEB3_URL, 270);
+const zkProvider = new Provider(ZKSYNC_PROVIDER_URL, 270);
 
 async function main() {
   const program = new Command();
