@@ -1,9 +1,9 @@
 import * as hre from "hardhat";
 import { scenario } from "../../../../utils/testing";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { Wallet, Contract, BigNumberish } from "ethers";
+import { Wallet, Contract, BigNumberish, BigNumber } from "ethers";
 import { Provider, Wallet as ZkWallet, utils } from "zksync-web3";
-import { assert } from "chai";
+import { assert, expect } from "chai";
 import {
   L1ERC20Bridge__factory,
   L1Executor__factory,
@@ -17,7 +17,7 @@ import {
 } from "../../../l2/typechain";
 import { ZKSYNC_ADDRESSES } from "./e2e";
 import { richWallet } from "../../scripts/utils/rich_wallet";
-import { parseEther } from "ethers/lib/utils";
+import { keccak256, parseEther, solidityPack } from "ethers/lib/utils";
 import { IZkSyncFactory } from "zksync-web3/build/typechain";
 
 const ETH_CLIENT_WEB3_URL = process.env.ETH_CLIENT_WEB3_URL as string;
@@ -43,6 +43,7 @@ scenario("Bridge E2E Testing", ctxFactory)
       assert.isTrue(await l2Bridge.isInitialized());
     }
   )
+
   .step(
     "Validate tester has required amount of L1 token",
     async ({ l1, depositAmount }) => {
@@ -72,7 +73,7 @@ scenario("Bridge E2E Testing", ctxFactory)
 
       const allowanceTxResponse = await l1Token.approve(
         l1Bridge.address,
-        depositAmount.mul(2)
+        depositAmount
       );
 
       await allowanceTxResponse.wait();
@@ -82,7 +83,10 @@ scenario("Bridge E2E Testing", ctxFactory)
         l1Bridge.address
       );
 
-      assert.equalBN(l1BridgeAllowanceAfter, depositAmount.mul(2));
+      expect(
+        l1BridgeAllowanceAfter.eq(depositAmount),
+        `Value ${l1BridgeAllowanceAfter.toString()} is not equal to ${depositAmount.toString()}`
+      );
     }
   )
 
@@ -154,7 +158,6 @@ scenario("Bridge E2E Testing", ctxFactory)
       /**
        * L1
        */
-
       if (await l1Bridge.isWithdrawalsEnabled()) {
         await executeGovOnL1Bridge(
           l1Bridge,
@@ -247,7 +250,7 @@ scenario("Bridge E2E Testing", ctxFactory)
         walletAddress,
         l1Token.address,
         depositAmount,
-        ethers.BigNumber.from(10_000_000),
+        BigNumber.from(10_000_000),
         utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT,
         walletAddress
       );
@@ -288,30 +291,45 @@ scenario("Bridge E2E Testing", ctxFactory)
       const l1ERC20BridgeTokenBalanceAfter = await l1Token.balanceOf(
         l1Bridge.address
       );
+
       const userL1TokenBalanceAfter = await l1Token.balanceOf(walletAddress);
       const userL2TokenBalanceAfter = await l2Token.balanceOf(walletAddress);
 
+      const l1TokenTotalSupplyDifference = l1ERC20BridgeTokenBalanceAfter.sub(
+        l1ERC20BridgeTokenBalanceBefore
+      );
+      const l2TokenTotalSupplyDifference = l2TokenTotalSupplyAfter.sub(
+        l2TokenTotalSupplyBefore
+      );
+      const l1TokenUserBalanceDifference = userL1TokenBalanceBefore.sub(
+        userL1TokenBalanceAfter
+      );
+      const l2TokenUserBalanceDifference = userL2TokenBalanceAfter.sub(
+        userL2TokenBalanceBefore
+      );
+
       // total supply of L2 token should increase
-      assert.equalBN(
-        l2TokenTotalSupplyAfter.sub(l2TokenTotalSupplyBefore),
-        depositAmount
+      expect(
+        l2TokenTotalSupplyDifference.eq(depositAmount),
+        `Value ${l2TokenTotalSupplyDifference.toString()} is not equal to ${depositAmount.toString()}`
       );
 
       // L1 token balance owned by bridge should increase
-      assert.equalBN(
-        l1ERC20BridgeTokenBalanceAfter.sub(l1ERC20BridgeTokenBalanceBefore),
-        depositAmount
+      expect(
+        l1TokenTotalSupplyDifference.eq(depositAmount),
+        `Value ${l1TokenTotalSupplyDifference.toString()} is not equal to ${depositAmount.toString()}`
       );
+
       // L1 token balance owned by user should decrease
-      assert.equalBN(
-        userL1TokenBalanceBefore.sub(userL1TokenBalanceAfter),
-        depositAmount
+      expect(
+        l1TokenUserBalanceDifference.eq(depositAmount),
+        `Value ${l1TokenTotalSupplyDifference.toString()} is not equal to ${depositAmount.toString()}`
       );
 
       // L2 token balance owned by user should increase
-      assert.equalBN(
-        userL2TokenBalanceBefore.add(depositAmount),
-        userL2TokenBalanceAfter
+      expect(
+        l2TokenUserBalanceDifference.eq(depositAmount),
+        `Value ${l1TokenTotalSupplyDifference.toString()} is not equal to ${depositAmount.toString()}`
       );
     }
   )
@@ -332,7 +350,7 @@ scenario("Bridge E2E Testing", ctxFactory)
         "L2 Withdrawals should be enabled"
       );
 
-      const l1ERC20BridgeTokenBalanceBefore = await l1Token.balanceOf(
+      const l1BridgeTokenBalanceBefore = await l1Token.balanceOf(
         l1Bridge.address
       );
       const l2TokenTotalSupplyBefore = await l2Token.totalSupply();
@@ -351,7 +369,7 @@ scenario("Bridge E2E Testing", ctxFactory)
         await withdrawResponse.waitFinalize();
 
       // Finalize Withdrawal on L1
-      const message = ethers.utils.solidityPack(
+      const message = solidityPack(
         ["bytes4", "address", "address", "uint256"],
         [
           IL1Bridge.getSighash(IL1Bridge.getFunction("finalizeWithdrawal")),
@@ -364,7 +382,7 @@ scenario("Bridge E2E Testing", ctxFactory)
       const messageProof = await zkProvider.getMessageProof(
         blockNumber,
         l2Bridge.address,
-        ethers.utils.keccak256(message)
+        keccak256(message)
       );
 
       const finalizeWithdrawResponse = await l1Bridge.finalizeWithdrawal(
@@ -378,34 +396,47 @@ scenario("Bridge E2E Testing", ctxFactory)
       await finalizeWithdrawResponse.wait();
 
       const l2TokenTotalSupplyAfter = await l2Token.totalSupply();
-      const l1ERC20BridgeTokenBalanceAfter = await l1Token.balanceOf(
+      const l1BridgeTokenBalanceAfter = await l1Token.balanceOf(
         l1Bridge.address
       );
       const userL1TokenBalanceAfter = await l1Token.balanceOf(walletAddress);
       const userL2TokenBalanceAfter = await l2Token.balanceOf(walletAddress);
 
+      const l1TokenTotalSupplyDifference = l2TokenTotalSupplyBefore.sub(
+        l2TokenTotalSupplyAfter
+      );
+      const l1BridgeTokenBalanceDifference = l1BridgeTokenBalanceBefore.sub(
+        l1BridgeTokenBalanceAfter
+      );
+      const l1TokenUserBalanceDifference = userL1TokenBalanceAfter.sub(
+        userL1TokenBalanceBefore
+      );
+      const l2TokenUserBalanceDifference = userL2TokenBalanceBefore.sub(
+        userL2TokenBalanceAfter
+      );
+
       // total supply of L2 token should decrease
-      assert.equalBN(
-        l2TokenTotalSupplyBefore.sub(l2TokenTotalSupplyAfter),
-        withdrawalAmount
+      expect(
+        l1TokenTotalSupplyDifference.eq(withdrawalAmount),
+        `Value ${l1TokenTotalSupplyDifference.toString()} is not equal to ${withdrawalAmount.toString()}`
       );
 
       // L1 token balance owned by bridge should decrease
-      assert.equalBN(
-        l1ERC20BridgeTokenBalanceBefore.sub(l1ERC20BridgeTokenBalanceAfter),
-        withdrawalAmount
+      expect(
+        l1BridgeTokenBalanceDifference.eq(withdrawalAmount),
+        `Value ${l1BridgeTokenBalanceDifference.toString()} is not equal to ${withdrawalAmount.toString()}`
       );
 
       // L1 token balance owned by user should increase
-      assert.equalBN(
-        userL1TokenBalanceAfter.sub(userL1TokenBalanceBefore),
-        withdrawalAmount
+      expect(
+        l1TokenUserBalanceDifference.eq(withdrawalAmount),
+        `Value ${l1TokenUserBalanceDifference.toString()} is not equal to ${withdrawalAmount.toString()}`
       );
 
       // L2 token balance owned by user should decrease
-      assert.equalBN(
-        userL2TokenBalanceBefore.sub(userL2TokenBalanceAfter),
-        withdrawalAmount
+      expect(
+        l2TokenUserBalanceDifference.eq(withdrawalAmount),
+        `Value ${l2TokenUserBalanceDifference.toString()} is not equal to ${withdrawalAmount.toString()}`
       );
     }
   )
@@ -509,11 +540,6 @@ async function executeGovOnL2Bridge(
 
   const IZkSyncBridgeExecutorUpgradable = ZkSyncBridgeExecutor.interface;
 
-  // const zkSync = IZkSyncFactory.connect(
-  //   CONTRACTS_DIAMOND_PROXY_ADDR,
-  //   l1.accounts.deployer
-  // );
-
   // encode data to be queued by ZkBridgeExecutor on L2
   const data = IZkSyncBridgeExecutorUpgradable.encodeFunctionData("queue", [
     [bridge.address],
@@ -584,7 +610,6 @@ async function executeGovOnL2Bridge(
   /**
    * Execute Action Set
    */
-
   const executeAction = await ZkSyncBridgeExecutor.execute(
     actionSetId as BigNumberish,
     {
