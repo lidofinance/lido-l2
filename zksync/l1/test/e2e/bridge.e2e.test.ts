@@ -350,7 +350,7 @@ scenario("Bridge E2E Testing", ctxFactory)
         "L2 Withdrawals should be enabled"
       );
 
-      const l1BridgeTokenBalanceBefore = await l1Token.balanceOf(
+      const l1ERC20BridgeTokenBalanceBefore = await l1Token.balanceOf(
         l1Bridge.address
       );
       const l2TokenTotalSupplyBefore = await l2Token.totalSupply();
@@ -405,9 +405,8 @@ scenario("Bridge E2E Testing", ctxFactory)
       const l1TokenTotalSupplyDifference = l2TokenTotalSupplyBefore.sub(
         l2TokenTotalSupplyAfter
       );
-      const l1BridgeTokenBalanceDifference = l1BridgeTokenBalanceBefore.sub(
-        l1BridgeTokenBalanceAfter
-      );
+      const l1ERC20BridgeTokenBalanceDifference =
+        l1ERC20BridgeTokenBalanceBefore.sub(l1BridgeTokenBalanceAfter);
       const l1TokenUserBalanceDifference = userL1TokenBalanceAfter.sub(
         userL1TokenBalanceBefore
       );
@@ -423,8 +422,8 @@ scenario("Bridge E2E Testing", ctxFactory)
 
       // L1 token balance owned by bridge should decrease
       expect(
-        l1BridgeTokenBalanceDifference.eq(withdrawalAmount),
-        `Value ${l1BridgeTokenBalanceDifference.toString()} is not equal to ${withdrawalAmount.toString()}`
+        l1ERC20BridgeTokenBalanceDifference.eq(withdrawalAmount),
+        `Value ${l1ERC20BridgeTokenBalanceDifference.toString()} is not equal to ${withdrawalAmount.toString()}`
       );
 
       // L1 token balance owned by user should increase
