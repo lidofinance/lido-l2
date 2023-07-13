@@ -396,7 +396,7 @@ scenario("Bridge E2E Testing", ctxFactory)
       await finalizeWithdrawResponse.wait();
 
       const l2TokenTotalSupplyAfter = await l2Token.totalSupply();
-      const l1BridgeTokenBalanceAfter = await l1Token.balanceOf(
+      const l1ERC20BridgeTokenBalanceAfter = await l1Token.balanceOf(
         l1Bridge.address
       );
       const userL1TokenBalanceAfter = await l1Token.balanceOf(walletAddress);
@@ -406,7 +406,7 @@ scenario("Bridge E2E Testing", ctxFactory)
         l2TokenTotalSupplyAfter
       );
       const l1ERC20BridgeTokenBalanceDifference =
-        l1ERC20BridgeTokenBalanceBefore.sub(l1BridgeTokenBalanceAfter);
+        l1ERC20BridgeTokenBalanceBefore.sub(l1ERC20BridgeTokenBalanceAfter);
       const l1TokenUserBalanceDifference = userL1TokenBalanceAfter.sub(
         userL1TokenBalanceBefore
       );
