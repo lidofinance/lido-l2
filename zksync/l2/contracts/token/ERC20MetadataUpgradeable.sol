@@ -6,7 +6,6 @@ pragma solidity ^0.8.10;
 import {IERC20Metadata} from "./interfaces/IERC20Metadata.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-/// @author psirex
 /// @notice Upgradable version of contract that contains the optional metadata functions from the ERC20 standard
 /// @dev Uses the UnstructuredStorage pattern to store dynamic name and symbol data.
 /// Might be used with the upgradable proxies

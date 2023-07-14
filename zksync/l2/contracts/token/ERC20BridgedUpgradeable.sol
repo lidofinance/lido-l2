@@ -5,11 +5,11 @@ pragma solidity ^0.8.10;
 
 import {IERC20BridgedUpgradeable} from "./interfaces/IERC20BridgedUpgradeable.sol";
 
-import {ERC20CoreUpgradeable} from "./ERC20CoreUpgradeable.sol";
+import {ERC20PermitUpgradeable} from "./ERC20PermitUpgradeable.sol";
 import {ERC20MetadataUpgradeable} from "./ERC20MetadataUpgradeable.sol";
 
 /// @notice Extends the ERC20Upgradeable functionality that allows the bridge to mint/burn tokens
-contract ERC20BridgedUpgradeable is IERC20BridgedUpgradeable, ERC20CoreUpgradeable, ERC20MetadataUpgradeable {
+contract ERC20BridgedUpgradeable is IERC20BridgedUpgradeable, ERC20PermitUpgradeable, ERC20MetadataUpgradeable {
     /// @inheritdoc IERC20BridgedUpgradeable
     address public bridge;
 
@@ -22,6 +22,7 @@ contract ERC20BridgedUpgradeable is IERC20BridgedUpgradeable, ERC20CoreUpgradeab
         uint8 decimals_
     ) external initializer {
         __ERC20Metadata_init_unchained(name_, symbol_, decimals_);
+        __ERC20Permit_init(name_);
     }
 
     /// @notice This function is used to integrate the previously deployed token with the bridge.

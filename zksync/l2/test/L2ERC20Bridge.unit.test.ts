@@ -1,11 +1,13 @@
 import hre from "hardhat";
-import { wei } from "../../../utils/wei";
 import { assert, expect } from "chai";
 import { Wallet, Provider, Contract, utils } from "zksync-web3";
 import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
 import { ethers } from "ethers";
 import { describe } from "mocha";
+
 import { richWallet } from "../../l1/scripts/utils/rich_wallet";
+import { wei } from "../../../utils/wei";
+import { L2_TOKEN_NAME, L2_TOKEN_SYMBOL } from "./utils/constants";
 
 const TESTNET_PROVIDER_URL = "http://localhost:3050";
 
@@ -24,8 +26,8 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
     // L2 Token
     const L2TokenArtifact = await deployer.loadArtifact("ERC20BridgedStub");
     const L2TokenContract = await deployer.deploy(L2TokenArtifact, [
-      "wstEth",
-      "wstEth",
+      L2_TOKEN_NAME,
+      L2_TOKEN_SYMBOL,
     ]);
 
     const l2Token = await L2TokenContract.deployed();
@@ -107,7 +109,8 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
     };
   }
 
-  let context: any;
+  let context: Awaited<ReturnType<typeof setup>>;
+
   before("Setting up the context", async () => {
     context = await setup();
   });
