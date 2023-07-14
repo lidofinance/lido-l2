@@ -1,5 +1,5 @@
 import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
-import { Wallet } from "zksync-web3";
+import { Wallet, utils } from "zksync-web3";
 import * as hre from "hardhat";
 
 import {
@@ -20,8 +20,6 @@ async function main() {
     ERC20_BRIDGED_TOKEN_CONTRACT_NAME
   );
 
-  // This will use the same ProxyAdmin contract used for L2BridgeExecutor,
-  // meaning that only L1Executor will be able to do the implementation upgrades
   const contract = await hre.zkUpgrades.deployProxy(
     deployer.zkWallet,
     artifact,
@@ -37,16 +35,7 @@ async function main() {
 
   console.log(`CONTRACTS_L2_LIDO_TOKEN_ADDR=${contract.address}`);
 
-  const newAdmin = await hre.zkUpgrades.deployProxyAdmin(deployer.zkWallet);
-
-  console.log(`New admin ${newAdmin}`);
-  await hre.zkUpgrades.admin.changeProxyAdmin(
-    contract.address,
-    newAdmin,
-    deployer.zkWallet
-  );
-
-  const newOwner = ADDRESSES.L2_BRIDGE_EXECUTOR_ADDR;
+  const newOwner = utils.applyL1ToL2Alias(ADDRESSES.L1_EXECUTOR_ADDR);
 
   await hre.zkUpgrades.admin.transferProxyAdminOwnership(
     newOwner,
