@@ -16,7 +16,7 @@ export function web3Url() {
   return process.env.ETH_CLIENT_WEB3_URL as string;
 }
 export function zkSyncUrl() {
-  return process.env.ZK_CLIENT_WEB3_URL as string;
+  return process.env.ZKSYNC_PROVIDER_URL as string;
 }
 
 export function web3Provider(customUrl?: string) {

@@ -1,7 +1,7 @@
 import hre, { ethers } from "hardhat";
 import { wei } from "../../../utils/wei";
 import { unit } from "../../../utils/testing";
-import { assert } from "chai";
+import { assert, expect } from "chai";
 import * as path from "path";
 import {
   L1ERC20Bridge__factory,
@@ -17,18 +17,18 @@ import { L2ERC20BridgeStub__factory } from "../../l2/typechain";
 import { readBytecode } from "../scripts/utils/utils";
 
 // zksync/l2/artifacts-zk/l2/contracts
-const l2Artifacts = path.join(
+const l2ArtifactsPath = path.join(
   path.resolve(__dirname, "../..", "l2"),
   "artifacts-zk/l2/contracts"
 );
 
 const L2_LIDO_BRIDGE_PROXY_BYTECODE = readBytecode(
-  path.join(l2Artifacts, "proxy"),
+  path.join(l2ArtifactsPath, "proxy"),
   "OssifiableProxy"
 );
 
 const L2_LIDO_BRIDGE_STUB_BYTECODE = readBytecode(
-  path.join(l2Artifacts, "stubs"),
+  path.join(l2ArtifactsPath, "stubs"),
   "L2ERC20BridgeStub"
 );
 
@@ -81,7 +81,7 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
     const l2TxGasLimit = wei`1000 gwei`;
     const l2TxGasPerPubdataByte = wei`800 wei`;
 
-    await assert.revertsWith(
+    await expect(
       ctx.l1Erc20Bridge[
         "deposit(address,address,uint256,uint256,uint256,address)"
       ](
@@ -91,9 +91,8 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
         l2TxGasLimit,
         l2TxGasPerPubdataByte,
         sender.address
-      ),
-      "ErrorDepositsDisabled"
-    );
+      )
+    ).to.be.revertedWith("ErrorDepositsDisabled");
   })
 
   .test("deposit() :: wrong l1Token address", async (ctx) => {
@@ -111,7 +110,7 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
       deployer.address
     );
 
-    await assert.revertsWith(
+    await expect(
       l1Erc20Bridge["deposit(address,address,uint256,uint256,uint256,address)"](
         recipient.address,
         wrongL1Token.address,
@@ -119,9 +118,8 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
         l2TxGasLimit,
         l2TxGasPerPubdataByte,
         sender.address
-      ),
-      "ErrorUnsupportedL1Token"
-    );
+      )
+    ).to.be.revertedWith("ErrorUnsupportedL1Token");
   })
 
   .test("deposit() :: wrong (zero) deposit amount", async (ctx) => {
@@ -139,7 +137,7 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
       deployer.address
     );
 
-    await assert.revertsWith(
+    await expect(
       l1Erc20Bridge["deposit(address,address,uint256,uint256,uint256,address)"](
         recipient.address,
         ctx.stubs.l1Token.address,
@@ -147,9 +145,8 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
         l2TxGasLimit,
         l2TxGasPerPubdataByte,
         sender.address
-      ),
-      "The deposit amount can't be zero"
-    );
+      )
+    ).to.be.revertedWith("The deposit amount can't be zero");
   })
 
   .test("deposit() :: insufficient token allowance for bridge", async (ctx) => {
@@ -167,7 +164,7 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
       deployer.address
     );
 
-    await assert.revertsWith(
+    await expect(
       l1Erc20Bridge["deposit(address,address,uint256,uint256,uint256,address)"](
         recipient.address,
         ctx.stubs.l1Token.address,
@@ -175,9 +172,8 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
         l2TxGasLimit,
         l2TxGasPerPubdataByte,
         sender.address
-      ),
-      "ERC20: insufficient allowance"
-    );
+      )
+    ).to.be.revertedWith("ERC20: insufficient allowance");
   })
 
   .test("deposit() :: works as expected", async (ctx) => {
@@ -204,9 +200,14 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
     await l1Token.connect(sender)["approve"](l1Erc20Bridge.address, amount);
 
     // validate token allowance for bridge
-    assert.equalBN(
-      await l1Token.allowance(sender.address, l1Erc20Bridge.address),
-      amount
+    const l1TokenAllowance = await l1Token.allowance(
+      sender.address,
+      l1Erc20Bridge.address
+    );
+
+    expect(
+      l1TokenAllowance.eq(amount),
+      `Value ${l1TokenAllowance.toString()} is not equal to ${amount.toString()}`
     );
 
     // set canonicalTxHash
@@ -242,47 +243,60 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
       [sender.address, recipient.address, l1Token.address, amount, gettersData]
     );
 
+    const l1BridgeDepositAmount = await l1Erc20Bridge.depositAmount(
+      sender.address,
+      l1Token.address,
+      canonicalTxHash
+    );
+
     // validate depositAmount used to claim funds in case the deposit transaction will fail
-    assert.equalBN(
-      await l1Erc20Bridge.depositAmount(
-        sender.address,
-        l1Token.address,
-        canonicalTxHash
-      ),
-      amount
+    expect(
+      l1BridgeDepositAmount.eq(amount),
+      `Value ${l1BridgeDepositAmount.toString()} is not equal to ${amount.toString()}`
     );
 
     // validate DepositInitiated event is emitted with the expected data
-    await assert.emits(l1Erc20Bridge, depositTx, "DepositInitiated", [
-      canonicalTxHash,
-      sender.address,
-      recipient.address,
-      l1Token.address,
-      amount,
-    ]);
+    await expect(depositTx)
+      .to.emit(l1Erc20Bridge, "DepositInitiated")
+      .withArgs(
+        canonicalTxHash,
+        sender.address,
+        recipient.address,
+        l1Token.address,
+        amount
+      );
 
     // validate RequestL2TransactionCalled event is emitted with the expected data
-    await assert.emits(zkSync, depositTx, "RequestL2TransactionCalled", [
-      value,
-      l2Erc20Bridge.address,
-      0,
-      txCalldata,
-      l2TxGasLimit,
-      l2TxGasPerPubdataByte,
-      [],
-      sender.address,
-    ]);
+    await expect(depositTx)
+      .to.emit(zkSync, "RequestL2TransactionCalled")
+      .withArgs(
+        value,
+        l2Erc20Bridge.address,
+        0,
+        txCalldata,
+        l2TxGasLimit,
+        l2TxGasPerPubdataByte,
+        [],
+        sender.address
+      );
+
+    const senderL1TokenBalance = await l1Token.balanceOf(sender.address);
+    const bridgeL1TokenBalance = await l1Token.balanceOf(l1Erc20Bridge.address);
 
     // validate balance of the sender decreased
-    assert.equalBN(
-      await l1Token.balanceOf(sender.address),
-      senderBalanceBefore.sub(amount)
+    expect(
+      senderL1TokenBalance.eq(senderBalanceBefore.sub(amount)),
+      `Value ${senderL1TokenBalance.toString()} is not equal to ${senderBalanceBefore
+        .sub(amount)
+        .toString()}`
     );
 
     // validate balance of the L1 bridge increased
-    assert.equalBN(
-      await l1Token.balanceOf(l1Erc20Bridge.address),
-      bridgeBalanceBefore.add(amount)
+    expect(
+      bridgeL1TokenBalance.eq(bridgeBalanceBefore.add(amount)),
+      `Value ${bridgeL1TokenBalance.toString()} is not equal to ${bridgeBalanceBefore
+        .add(amount)
+        .toString()}`
     );
   })
 
@@ -304,16 +318,15 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
       ethers.utils.formatBytes32String("proof2"),
     ];
 
-    await assert.revertsWith(
+    await expect(
       l1Erc20Bridge.finalizeWithdrawal(
         l2BlockNumber,
         l2MessageIndex,
         l2TxNumberInBlock,
         withdrawMessage,
         merkleProof
-      ),
-      "ErrorWithdrawalsDisabled"
-    );
+      )
+    ).to.be.revertedWith("ErrorWithdrawalsDisabled");
   })
 
   .test(
@@ -354,16 +367,15 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
         ]
       );
 
-      await assert.revertsWith(
+      await expect(
         l1Erc20Bridge.finalizeWithdrawal(
           l2BlockNumber,
           l2MessageIndex,
           l2TxNumberInBlock,
           withdrawMessage,
           merkleProof
-        ),
-        "ERC20: transfer amount exceeds balance"
-      );
+        )
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     }
   )
 
@@ -428,23 +440,30 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
       );
 
       // validate WithdrawalFinalized event is emitted with the expected data
-      await assert.emits(
-        l1Erc20Bridge,
-        finalizeWithdrawalTx,
-        "WithdrawalFinalized",
-        [recipient.address, l1Token.address, amount]
+      await expect(finalizeWithdrawalTx)
+        .to.emit(l1Erc20Bridge, "WithdrawalFinalized")
+        .withArgs(recipient.address, l1Token.address, amount);
+
+      const recipientL1TokenBalance = await l1Token.balanceOf(
+        recipient.address
+      );
+      const bridgeL1TokenBalance = await l1Token.balanceOf(
+        l1Erc20Bridge.address
       );
 
       // validate balance of the recipient increased
-      assert.equalBN(
-        await l1Token.balanceOf(recipient.address),
-        recipientBalanceBefore.add(amount)
+      expect(
+        recipientL1TokenBalance.eq(recipientBalanceBefore.add(amount)),
+        `Value ${recipientL1TokenBalance.toString()} is not equal to ${recipientBalanceBefore
+          .add(amount)
+          .toString()}`
       );
 
-      // validate balance of the L1 bridge decreased
-      assert.equalBN(
-        await l1Token.balanceOf(l1Erc20Bridge.address),
-        bridgeBalanceBefore.sub(amount)
+      expect(
+        bridgeL1TokenBalance.eq(bridgeBalanceBefore.sub(amount)),
+        `Value ${bridgeL1TokenBalance.toString()} is not equal to ${bridgeBalanceBefore
+          .sub(amount)
+          .toString()}`
       );
     }
   )
@@ -465,7 +484,7 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
       ethers.utils.formatBytes32String("proof2"),
     ];
 
-    await assert.revertsWith(
+    await expect(
       l1Erc20Bridge.claimFailedDeposit(
         sender.address,
         l1Token.address,
@@ -474,9 +493,8 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
         l2MessageIndex,
         l2TxNumberInBlock,
         merkleProof
-      ),
-      "The claimed amount can't be zero"
-    );
+      )
+    ).to.be.revertedWith("The claimed amount can't be zero");
   })
 
   .test("claimFailedDeposit() :: works us expected", async (ctx) => {
@@ -533,15 +551,19 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
     );
 
     // validate balance of the sender decreased after deposit
-    assert.equalBN(
-      senderBalanceAfterDeposit,
-      senderBalanceBeforeDeposit.sub(amount)
+    expect(
+      senderBalanceAfterDeposit.eq(senderBalanceBeforeDeposit.sub(amount)),
+      `Value ${senderBalanceAfterDeposit.toString()} is not equal to ${senderBalanceBeforeDeposit
+        .sub(amount)
+        .toString()}`
     );
 
     // validate balance of the bridge increased after deposit
-    assert.equalBN(
-      bridgeBalanceAfterDeposit,
-      bridgeBalanceBeforeDeposit.add(amount)
+    expect(
+      bridgeBalanceAfterDeposit.eq(bridgeBalanceBeforeDeposit.add(amount)),
+      `Value ${bridgeBalanceAfterDeposit.toString()} is not equal to ${bridgeBalanceBeforeDeposit
+        .add(amount)
+        .toString()}`
     );
 
     const claimFailedDepositTx = await l1Erc20Bridge.claimFailedDeposit(
@@ -554,12 +576,9 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
       merkleProof
     );
 
-    await assert.emits(
-      l1Erc20Bridge,
-      claimFailedDepositTx,
-      "ClaimedFailedDeposit",
-      [sender.address, l1Token.address, amount]
-    );
+    await expect(claimFailedDepositTx)
+      .to.emit(l1Erc20Bridge, "ClaimedFailedDeposit")
+      .withArgs(sender.address, l1Token.address, amount);
 
     const senderBalanceAfterClaimFailedDeposit = await l1Token.balanceOf(
       sender.address
@@ -569,15 +588,23 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
     );
 
     // validate balance of the sender increased after claiming failed deposit
-    assert.equalBN(
-      senderBalanceAfterClaimFailedDeposit,
-      senderBalanceAfterDeposit.add(amount)
+    expect(
+      senderBalanceAfterClaimFailedDeposit.eq(
+        senderBalanceAfterDeposit.add(amount)
+      ),
+      `Value ${senderBalanceAfterClaimFailedDeposit.toString()} is not equal to ${senderBalanceAfterDeposit
+        .add(amount)
+        .toString()}`
     );
 
     // validate balance of the bridge decreased after claiming failed deposit
-    assert.equalBN(
-      bridgeBalanceAfterClaimFailedDeposit,
-      bridgeBalanceAfterDeposit.sub(amount)
+    expect(
+      bridgeBalanceAfterClaimFailedDeposit.eq(
+        bridgeBalanceAfterDeposit.sub(amount)
+      ),
+      `Value ${bridgeBalanceAfterClaimFailedDeposit.toString()} is not equal to ${bridgeBalanceAfterDeposit
+        .sub(amount)
+        .toString()}`
     );
   })
 

@@ -15,20 +15,20 @@ const provider = web3Provider();
 const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 const L2_GOVERNOR_ADDRESS = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
 
-const l2Artifacts = path.join(
-  path.resolve(__dirname, "..", "..", "l2"),
-  "artifacts-zk/l2/contracts"
+const l2ArtifactsPath = path.join(
+  path.resolve(__dirname, "../.."),
+  "l2/artifacts-zk/l2/contracts"
 );
 
-const l2ProxyArtifacts = path.join(l2Artifacts, "proxy");
+const l2ProxyArtifactsPath = path.join(l2ArtifactsPath, "proxy");
 
 const L2_LIDO_BRIDGE_PROXY_BYTECODE = readBytecode(
-  l2ProxyArtifacts,
+  l2ProxyArtifactsPath,
   "OssifiableProxy"
 );
 
 const L2_LIDO_BRIDGE_IMPLEMENTATION_BYTECODE = readBytecode(
-  l2Artifacts,
+  l2ArtifactsPath,
   "L2ERC20Bridge"
 );
 

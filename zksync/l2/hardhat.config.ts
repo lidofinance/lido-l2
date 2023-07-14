@@ -8,7 +8,7 @@ import "@matterlabs/hardhat-zksync-deploy";
 import "@matterlabs/hardhat-zksync-upgradable";
 import "@matterlabs/hardhat-zksync-chai-matchers";
 
-dotenv.config();
+dotenv.config({ path: "../.env" });
 
 const config: HardhatUserConfig = {
   zksolc: {

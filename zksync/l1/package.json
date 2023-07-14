@@ -11,8 +11,8 @@
     "enable-deposits": "hardhat run scripts/enable-deposits.ts",
     "disable-deposits": "hardhat run scripts/disable-deposits.ts",
     "enable-withdrawals": "hardhat run scripts/enable-withdrawals.ts",
-    "test-deposit": "ts-node scripts/tests/deposit-erc20.ts",
-    "test-withdraw": "ts-node scripts/tests/withdraw-erc20.ts",
+    "test-deposit": "hardhat run scripts/tests/deposit-erc20.ts",
+    "test-withdraw": "hardhat run scripts/tests/withdraw-erc20.ts",
     "upgrade-l2-token": "hardhat run scripts/tests/upgrade-l2-token.ts",
     "zksync:test:unit": "hardhat test ./test/*.unit.test.ts",
     "zksync:test:e2e": "hardhat test ./test/e2e/*.e2e.test.ts"

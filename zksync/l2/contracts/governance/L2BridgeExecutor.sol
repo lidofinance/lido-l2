@@ -3,7 +3,7 @@
 pragma solidity ^0.8.10;
 
 import {IL2BridgeExecutor} from "./interfaces/IL2BridgeExecutor.sol";
-import {BridgeExecutorBaseUpgradable} from "./BridgeExecutorBaseUpgradable.sol";
+import {BridgeExecutorBase} from "./BridgeExecutorBase.sol";
 
 /**
  * @title L2BridgeExecutor
@@ -11,10 +11,7 @@ import {BridgeExecutorBaseUpgradable} from "./BridgeExecutorBaseUpgradable.sol";
  * @dev It does not implement the `onlyEthereumGovernanceExecutor` modifier. This should instead be done in the inheriting
  * contract with proper configuration and adjustments depending on the L2
  */
-abstract contract L2BridgeExecutorUpgradable is
-    BridgeExecutorBaseUpgradable,
-    IL2BridgeExecutor
-{
+abstract contract L2BridgeExecutor is BridgeExecutorBase, IL2BridgeExecutor {
     // Address of the Ethereum Governance Executor, which should be able to queue actions sets
     address internal _ethereumGovernanceExecutor;
 
@@ -31,27 +28,22 @@ abstract contract L2BridgeExecutorUpgradable is
      * @param maximumDelay The maximum bound a delay can be set to
      * @param guardian The address of the guardian, which can cancel queued proposals (can be zero)
      */
-    function __L2BridgeExecutor_init(
+    constructor(
         address ethereumGovernanceExecutor,
         uint256 delay,
         uint256 gracePeriod,
         uint256 minimumDelay,
         uint256 maximumDelay,
         address guardian
-    ) internal onlyInitializing {
-        __BridgeExecutorBase_init_unchained(
+    )
+        BridgeExecutorBase(
             delay,
             gracePeriod,
             minimumDelay,
             maximumDelay,
             guardian
-        );
-        __L2BridgeExecutor_init_unchained(ethereumGovernanceExecutor);
-    }
-
-    function __L2BridgeExecutor_init_unchained(
-        address ethereumGovernanceExecutor
-    ) internal onlyInitializing {
+        )
+    {
         _ethereumGovernanceExecutor = ethereumGovernanceExecutor;
     }
 
