@@ -327,17 +327,6 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
         merkleProof
       )
     ).to.be.revertedWith("ErrorWithdrawalsDisabled");
-
-    // await assert.revertsWith(
-    //   l1Erc20Bridge.finalizeWithdrawal(
-    //     l2BlockNumber,
-    //     l2MessageIndex,
-    //     l2TxNumberInBlock,
-    //     withdrawMessage,
-    //     merkleProof
-    //   ),
-    //   "ErrorWithdrawalsDisabled"
-    // );
   })
 
   .test(
