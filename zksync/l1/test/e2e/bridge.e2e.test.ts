@@ -13,7 +13,7 @@ import {
 import {
   ERC20BridgedUpgradeable__factory,
   L2ERC20Bridge__factory,
-  ZkSyncBridgeExecutorUpgradable__factory,
+  ZkSyncBridgeExecutor__factory,
 } from "../../../l2/typechain";
 import { ZKSYNC_ADDRESSES } from "./e2e";
 import { richWallet } from "../../scripts/utils/rich_wallet";
@@ -471,7 +471,7 @@ async function ctxFactory() {
         l2.l2Token
       ),
       l2Bridge: new L2ERC20Bridge__factory(deployer).attach(l2.l2Bridge),
-      govExecutor: new ZkSyncBridgeExecutorUpgradable__factory(deployer).attach(
+      govExecutor: new ZkSyncBridgeExecutor__factory(deployer).attach(
         l2.govExecutor
       ),
       accounts: {
@@ -533,7 +533,7 @@ async function executeGovOnL2Bridge(
   const wallet = l1.accounts.deployer;
   const gasPrice = await ethProvider.getGasPrice();
 
-  const ZkSyncBridgeExecutor = new ZkSyncBridgeExecutorUpgradable__factory(
+  const ZkSyncBridgeExecutor = new ZkSyncBridgeExecutor__factory(
     l2.accounts.deployer
   ).attach(l2.govExecutor.address);
 

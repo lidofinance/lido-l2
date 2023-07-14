@@ -11,7 +11,7 @@ import { L1ERC20Bridge__factory, L1Executor__factory } from "../typechain";
 // L2
 import { Wallet as ZkSyncWallet, Provider, utils, Contract } from "zksync-web3";
 import {
-  ZkSyncBridgeExecutorUpgradable__factory,
+  ZkSyncBridgeExecutor__factory,
   L2ERC20Bridge__factory,
 } from "../../l2/typechain";
 
@@ -80,11 +80,10 @@ async function main() {
         zkWallet
       );
 
-      const zkSyncBridgeExecutor =
-        ZkSyncBridgeExecutorUpgradable__factory.connect(
-          L2_BRIDGE_EXECUTOR_ADDR,
-          zkWallet
-        );
+      const zkSyncBridgeExecutor = ZkSyncBridgeExecutor__factory.connect(
+        L2_BRIDGE_EXECUTOR_ADDR,
+        zkWallet
+      );
 
       const isWithdrawalEnabledOnL1 = await lidoBridge.isWithdrawalsEnabled();
       const isWithdrawalEnabledOnL2 = await l2Bridge.isWithdrawalsEnabled();
