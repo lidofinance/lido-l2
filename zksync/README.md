@@ -38,6 +38,8 @@ npm run deploy-bridges
 
 l2:
 
+- delete .upgradable folder if it exists (local-setup)
+
 ```bash
 npm run deploy-wsteth-token
 ```

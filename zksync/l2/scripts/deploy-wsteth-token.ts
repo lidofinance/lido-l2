@@ -2,7 +2,11 @@ import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
 import { Wallet } from "zksync-web3";
 import * as hre from "hardhat";
 
-import { ERC20_BRIDGED_CONSTANTS, PRIVATE_KEY } from "./utils/constants";
+import {
+  ERC20_BRIDGED_CONSTANTS,
+  PRIVATE_KEY,
+  ADDRESSES,
+} from "./utils/constants";
 
 const ERC20_BRIDGED_TOKEN_CONTRACT_NAME = "ERC20BridgedUpgradeable";
 
@@ -32,6 +36,24 @@ async function main() {
   await contract.deployed();
 
   console.log(`CONTRACTS_L2_LIDO_TOKEN_ADDR=${contract.address}`);
+
+  const newAdmin = await hre.zkUpgrades.deployProxyAdmin(deployer.zkWallet);
+
+  console.log(`New admin ${newAdmin}`);
+  await hre.zkUpgrades.admin.changeProxyAdmin(
+    contract.address,
+    newAdmin,
+    deployer.zkWallet
+  );
+
+  const newOwner = ADDRESSES.L2_BRIDGE_EXECUTOR_ADDR;
+
+  await hre.zkUpgrades.admin.transferProxyAdminOwnership(
+    newOwner,
+    deployer.zkWallet
+  );
+
+  console.log(`New proxy admin owner: ${newOwner}`);
 }
 
 main().catch((error) => {
