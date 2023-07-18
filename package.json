@@ -10,14 +10,10 @@
     "test:e2e": "hardhat test ./test/**/*.e2e.test.ts",
     "test:unit": "hardhat test ./test/**/*.unit.test.ts",
     "test:integration": "hardhat test ./test/**/*.integration.test.ts",
-    "fork:eth:kovan": "hardhat node:fork eth_kovan 8545",
     "fork:eth:mainnet": "hardhat node:fork eth_mainnet 8545",
     "fork:eth:goerli": "hardhat node:fork eth_goerli 8545",
-    "fork:eth:rinkeby": "hardhat node:fork eth_rinkeby 8545",
     "fork:arb:goerli": "hardhat node:fork arb_goerli 8546",
     "fork:arb:mainnet": "hardhat node:fork arb_mainnet 8546",
-    "fork:arb:rinkeby": "hardhat node:fork arb_rinkeby 8546",
-    "fork:opt:kovan": "hardhat node:fork opt_kovan 9545",
     "fork:opt:goerli": "hardhat node:fork opt_goerli 9545",
     "fork:opt:mainnet": "hardhat node:fork opt_mainnet 9545",
     "arbitrum:deploy": "ts-node --files ./scripts/arbitrum/deploy-gateway.ts",
@@ -27,7 +23,7 @@
     "arbitrum:test:integration": "hardhat test ./test/arbitrum/*.integration.test.ts",
     "arbitrum:test:acceptance": "hardhat test ./test/arbitrum/*.acceptance.test.ts",
     "arbitrum:test:executor": "hardhat test ./test/bridge-executor/arbitrum.integration.test.ts",
-    "arbitrum:test:launch": "REVERT=false hardhat test ./test/arbitrum/{launch.integration.test.ts,bridging.integration.test.ts}",
+    "arbitrum:test:launch": "REVERT=false hardhat test ./test/arbitrum/{_launch.test.ts,bridging.integration.test.ts}",
     "optimism:deploy": "ts-node --files ./scripts/optimism/deploy-bridge.ts",
     "optimism:finalize-message": "ts-node --files ./scripts/optimism/finalize-message.ts",
     "optimism:test:e2e": "hardhat test ./test/optimism/*.e2e.test.ts",
@@ -35,14 +31,14 @@
     "optimism:test:integration": "hardhat test ./test/optimism/*.integration.test.ts",
     "optimism:test:acceptance": "hardhat test ./test/optimism/*.acceptance.test.ts",
     "optimism:test:executor": "hardhat test ./test/bridge-executor/optimism.integration.test.ts",
-    "optimism:test:launch": "REVERT=false hardhat test ./test/optimism/{launch.integration.test.ts,bridging.integration.test.ts}"
+    "optimism:test:launch": "REVERT=false hardhat test ./test/optimism/{_launch.test.ts,bridging.integration.test.ts}"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.6",
-    "@nomiclabs/hardhat-etherscan": "^3.1.0",
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
     "@typechain/ethers-v5": "^7.2.0",
     "@typechain/hardhat": "^2.3.1",
@@ -63,7 +59,7 @@
     "ethereum-waffle": "^3.4.4",
     "ethers": "^5.6.2",
     "evm-script-decoder": "git+https://github.com/lidofinance/evm-script-decoder.git#v0.2.2",
-    "hardhat": "^2.9.9",
+    "hardhat": "^2.12.2",
     "hardhat-gas-reporter": "^1.0.8",
     "patch-package": "^6.4.7",
     "prettier": "^2.6.1",
@@ -75,11 +71,10 @@
     "typescript": "^4.6.3"
   },
   "dependencies": {
-    "@arbitrum/sdk": "^2.0.17",
-    "@eth-optimism/sdk": "^1.6.0",
+    "@arbitrum/sdk": "3.1.6",
+    "@eth-optimism/sdk": "3.0.0",
     "@ethersproject/providers": "^5.6.8",
-    "@openzeppelin/contracts": "^4.6.0",
-    "arb-ts": "^1.0.2",
+    "@openzeppelin/contracts": "4.6.0",
     "chalk": "4.1.2"
   }
 }
