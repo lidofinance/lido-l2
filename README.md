@@ -43,7 +43,7 @@ Fill the newly created `.env` file with the required variables. See the [Project
 The configuration of the deployment scripts happens via the ENV variables. The following variables are required:
 
 - [`TOKEN`](#TOKEN) - address of the token to deploy a new bridge on the Ethereum chain.
-- [`NETWORK`](#NETWORK) - name of the network environments used by deployment scripts. Allowed values: `mainnet`, `goerli`, `rinkeby`, `kovan`.
+- [`NETWORK`](#NETWORK) - name of the network environments used by deployment scripts. Allowed values: `mainnet`, `goerli`.
 - [`FORKING`](#FORKING) - run deployment in the forking network instead of real ones
 - [`ETH_DEPLOYER_PRIVATE_KEY`](#ETH_DEPLOYER_PRIVATE_KEY) - The private key of the deployer account in the Ethereum network is used during the deployment process.
 - [`ARB_DEPLOYER_PRIVATE_KEY`](#ARB_DEPLOYER_PRIVATE_KEY) - The private key of the deployer account in the Arbitrum network is used during the deployment process.
@@ -253,25 +253,11 @@ The configuration of the project happens via set of ENV variables. The full list
 
 #### `RPC_URL_ETH_MAINNET`
 
-Address of the RPC node for **Kovan** Ethereum testnet.
-
-#### `RPC_ETH_RINKEBY`
-
 Address of the RPC node for **Mainnet** Ethereum network.
-
-#### `RPC_ETH_KOVAN`
-
-Address of the RPC node for **Kovan** Ethereum network.
 
 #### `RPC_ETH_GOERLI`
 
 Address of the RPC node for **Goerli** Ethereum network.
-
-#### `RPC_ARB_RINKEBY`
-
-Address of the RPC node for **Rinkeby** Arbitrum network.
-
-> Default value: `https://rinkeby.arbitrum.io/rpc`
 
 #### `RPC_ARB_MAINNET`
 
@@ -289,12 +275,6 @@ Address of the RPC node for **Goerli** Arbitrum network.
 
 > Default value: `https://goerli-rollup.arbitrum.io/rpc`
 
-#### `RPC_OPT_KOVAN`
-
-Address of the RPC node for **Kovan** Optimism network.
-
-> Default value: `https://kovan.optimism.io`
-
 #### `RPC_OPT_GOERLI`
 
 Address of the RPC node for **Goerli** Optimism network.
@@ -311,13 +291,6 @@ Address of the RPC node for **Mainnet** Optimism network.
 
 > Default value: `https://mainnet.optimism.io`
 
-#### `MAINNET_RPC`
-
-This variable is required for @arbitrum/sdk library when it works on Nitro
-
-#### `RINKEBY_RPC`
-
-This variable is required for @arbitrum/sdk library when it works on Nitro
 
 ### Etherscan
 
@@ -347,7 +320,7 @@ Address of the token to deploy a new bridge on the Ethereum chain.
 
 > Default value: `mainnet`
 
-Name of the network environments used by deployment scripts. Might be one of: `mainnet`, `goerli`, `rinkeby`, `kovan`.
+Name of the network environments used by deployment scripts. Might be one of: `mainnet`, `goerli`.
 
 #### `FORKING`
 
@@ -469,7 +442,7 @@ The following variables are used in the process of the Integration & E2E testing
 
 #### `TESTING_ARB_NETWORK`
 
-Name of the network environments used for Arbitrum Integration & E2E testing. Might be one of: `mainnet`, `goerli`, `rinkeby`, `kovan`.
+Name of the network environments used for Arbitrum Integration & E2E testing. Might be one of: `mainnet`, `goerli`.
 
 #### `TESTING_ARB_L1_TOKEN`
 
@@ -509,7 +482,7 @@ Address of the L2 gateway router used in the Acceptance Integration & E2E (when 
 
 #### `TESTING_OPT_NETWORK`
 
-Name of the network environments used for Optimism Integration & E2E testing. Might be one of: `mainnet`, `goerli`, `rinkeby`, `kovan`.
+Name of the network environments used for Optimism Integration & E2E testing. Might be one of: `mainnet`, `goerli`.
 
 #### `TESTING_OPT_L1_TOKEN`
 
@@ -559,8 +532,6 @@ Address of the deployed Governance Bridge Executor in the Optimism network. If s
 
 The private key from the address which holds:
 
-- Kovan and Optimismic Kovan Ether to launch Optimism E2E tests
-- Rinkeby and Arbitrum Rinkeby Ether to launch Arbitrum E2E tests
 - Goerli and Arbitrum/Optimistic Goerli Ether to launch Arbitrum/Optimism E2E tests
 
 The test Ether might be retrived via [Paradigm Faucet](https://faucet.paradigm.xyz/).

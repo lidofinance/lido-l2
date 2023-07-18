@@ -1,5 +1,6 @@
 import "./chai-extensions";
 import { impersonate } from "./impersonate";
+import { setBalance } from "./set-balance";
 import accounts from "./accounts";
 import env from "./env";
 
@@ -10,4 +11,5 @@ export default {
   env,
   accounts,
   impersonate,
+  setBalance,
 };

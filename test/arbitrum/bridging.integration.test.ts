@@ -6,8 +6,11 @@ import { wei } from "../../utils/wei";
 import arbitrum from "../../utils/arbitrum";
 import arbitrumAddresses from "../../utils/arbitrum/addresses";
 import testing, { scenario } from "../../utils/testing";
-import { IMessageProvider__factory } from "../../typechain";
-import { OutboxStub__factory, BridgeStub__factory } from "../../typechain";
+import {
+  OutboxStub__factory,
+  BridgeStub__factory,
+  IMessageProvider__factory,
+} from "../../typechain";
 
 scenario("Arbitrum :: Bridging integration test", ctx)
   .after(async (ctx) => {
@@ -393,10 +396,12 @@ async function ctx() {
 
   // send ether to l1ERC20TokenGatewayAliased to run transactions from it
   // as from EOA
-  await accountA.l2Signer.sendTransaction({
-    to: await l1ERC20TokenGatewayAliased.getAddress(),
-    value: wei`1 ether`,
-  });
+
+  await testing.setBalance(
+    await l1ERC20TokenGatewayAliased.getAddress(),
+    wei.toBigNumber(wei`1 ether`),
+    l1Provider
+  );
 
   const maxSubmissionCost = wei`200_000 gwei`;
 
@@ -407,10 +412,11 @@ async function ctx() {
     l1Provider
   );
 
-  await accountA.l1Signer.sendTransaction({
-    to: await l1GatewayRouterAdmin.getAddress(),
-    value: wei.toBigNumber(wei`1 ether`),
-  });
+  await testing.setBalance(
+    l1GatewayRouterAdminAddress,
+    wei.toBigNumber(wei`1 ether`),
+    l1Provider
+  );
 
   const l1OutboxStub = await new OutboxStub__factory(
     accountA.l1Signer

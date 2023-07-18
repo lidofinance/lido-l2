@@ -68,13 +68,6 @@ export default function testing(networkName: NetworkName) {
           )
         : testingUtils.accounts.deployer(ethProvider);
 
-      const l1DevMultisig = hasDeployedContracts
-        ? await testingUtils.impersonate(
-            testingUtils.env.L1_DEV_MULTISIG(),
-            ethProvider
-          )
-        : testingUtils.accounts.deployer(ethProvider);
-
       if (hasDeployedContracts) {
         await printLoadedTestConfig(
           networkName,
@@ -101,7 +94,6 @@ export default function testing(networkName: NetworkName) {
       return {
         l1Provider: ethProvider,
         l2Provider: optProvider,
-        l1DevMultisig,
         l1TokensHolder,
         ...bridgeContracts,
         l1CrossDomainMessenger: optContracts.L1CrossDomainMessengerStub,

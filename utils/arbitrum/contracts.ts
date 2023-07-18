@@ -1,5 +1,3 @@
-import { ArbSys__factory } from "arb-ts";
-
 import {
   L1GatewayRouter__factory,
   L2GatewayRouter__factory,
@@ -25,7 +23,6 @@ export default function contracts(
   const arbAddresses = addresses(networkName, options);
 
   return {
-    ArbSys: ArbSys__factory.connect(arbAddresses.ArbSys, l2Provider),
     ArbSysStub: ArbSysStub__factory.connect(arbAddresses.ArbSys, l2Provider),
     L1GatewayRouter: L1GatewayRouter__factory.connect(
       arbAddresses.L1GatewayRouter,

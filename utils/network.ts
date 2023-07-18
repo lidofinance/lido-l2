@@ -7,27 +7,21 @@ import { HardhatRuntimeEnvironment, HttpNetworkConfig } from "hardhat/types";
 import env from "./env";
 
 type ChainNameShort = "arb" | "opt" | "eth";
-export type NetworkName = "goerli" | "mainnet" | "rinkeby" | "kovan";
+export type NetworkName = "goerli" | "mainnet";
 export type SignerOrProvider = Signer | Provider;
 
 const HARDHAT_NETWORK_NAMES = {
   eth: {
     goerli: "eth_goerli",
     mainnet: "eth_mainnet",
-    kovan: "eth_kovan", // DEPRECATED
-    rinkeby: "eth_rinkeby", // DEPRECATED
   },
   arb: {
     goerli: "arb_goerli",
     mainnet: "arb_mainnet",
-    rinkeby: "arb_rinkeby", // DEPRECATED
-    kovan: "NOT_DEPLOYED", // DEPRECATED
   },
   opt: {
     goerli: "opt_goerli",
     mainnet: "opt_mainnet",
-    kovan: "opt_kovan", // DEPRECATED
-    rinkeby: "NOT_DEPLOYED", // DEPRECATED
   },
 };
 
@@ -35,20 +29,14 @@ const HARDHAT_NETWORK_NAMES_FORK = {
   eth: {
     goerli: "eth_goerli_fork",
     mainnet: "eth_mainnet_fork",
-    kovan: "eth_kovan_fork", // DEPRECATED
-    rinkeby: "eth_rinkeby_fork", // DEPRECATED
   },
   arb: {
     goerli: "arb_goerli_fork",
     mainnet: "arb_mainnet_fork",
-    rinkeby: "arb_rinkeby_fork", // DEPRECATED
-    kovan: "NOT_DEPLOYED",
   },
   opt: {
-    kovan: "opt_kovan_fork", // DEPRECATED
     goerli: "opt_goerli_fork",
     mainnet: "opt_mainnet_fork",
-    rinkeby: "NOT_DEPLOYED",
   },
 };
 
@@ -131,21 +119,15 @@ function getChainId(protocol: ChainNameShort, networkName: NetworkName) {
   const chainIds = {
     eth: {
       mainnet: 1,
-      kovan: 42,
       goerli: 5,
-      rinkeby: 4,
     },
     opt: {
       mainnet: 10,
-      kovan: 69,
       goerli: 420,
-      rinkeby: undefined,
     },
     arb: {
       mainnet: 42161,
-      kovan: undefined,
       goerli: 421613,
-      rinkeby: 421611,
     },
   };
   const chainId = chainIds[protocol][networkName];
@@ -159,17 +141,13 @@ function getBlockExplorerBaseUrlByChainId(chainId: number) {
   const baseUrlByChainId: Record<number, string> = {
     // ethereum
     1: "https://etherscan.io",
-    4: "https://rinkeby.etherscan.io",
     5: "https://goerli.etherscan.io",
-    42: "https://kovan.etherscan.io",
     // arbitrum
     42161: "https://arbiscan.io",
-    421611: "https://testnet.arbiscan.io",
     421613: "https://goerli-rollup-explorer.arbitrum.io",
     // optimism
     10: "https://optimistic.etherscan.io",
     420: "https://blockscout.com/optimism/goerli",
-    69: "https://kovan-optimistic.etherscan.io",
     // forked node
     31337: "https://etherscan.io",
   };

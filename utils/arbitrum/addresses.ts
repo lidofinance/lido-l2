@@ -10,16 +10,6 @@ const ArbitrumMainnetAddresses: ArbContractAddresses = {
   L2GatewayRouter: "0x5288c571Fd7aD117beA99bF60FE0846C4E84F933",
 };
 
-const ArbitrumRinkebyAddresses: ArbContractAddresses = {
-  Inbox: "0x578BAde599406A8fE3d24Fd7f7211c0911F5B29e",
-  ArbSys: "0x0000000000000000000000000000000000000064",
-  Bridge: "0x9a28E783c47bBEB813F32B861A431d0776681E95",
-  Outbox: "0x2360A33905dc1c72b12d975d975F42BaBdcef9F3",
-  L1GatewayRouter: "0x70C143928eCfFaf9F5b406f7f4fC28Dc43d68380",
-  L2GatewayRouter: "0x9413AD42910c1eA60c737dB5f58d1C504498a3cD",
-};
-
-// DEPRECATED
 const ArbitrumGoerliAddresses: ArbContractAddresses = {
   Inbox: "0x6BEbC4925716945D46F0Ec336D5C2564F419682C",
   ArbSys: "0x0000000000000000000000000000000000000064",
@@ -38,8 +28,6 @@ export default function addresses(
       return { ...ArbitrumMainnetAddresses, ...options.customAddresses };
     case "goerli":
       return { ...ArbitrumGoerliAddresses, ...options.customAddresses };
-    case "rinkeby":
-      return { ...ArbitrumRinkebyAddresses, ...options.customAddresses };
     default:
       throw new Error(`Network "${networkName}" is not supported`);
   }

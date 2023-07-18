@@ -12,7 +12,7 @@ import arbitrum from "../../utils/arbitrum";
 import { ethers } from "hardhat";
 
 async function ctxFactory() {
-  const networkName = env.network("TESTING_ARB_NETWORK", "rinkeby");
+  const networkName = env.network("TESTING_ARB_NETWORK", "goerli");
   const testingSetup = await arbitrum.testing(networkName).getE2ETestSetup();
 
   const l2Network = await getL2Network(testingSetup.l2Provider);
@@ -138,14 +138,25 @@ scenario("Arbitrum :: Bridging E2E test natively", ctxFactory)
 
     const l1TxReceipt = new L1TransactionReceipt(depositL1Receipt);
 
-    const message = await l1TxReceipt.getL1ToL2Message(l2Tester);
+    const [message] = await l1TxReceipt.getL1ToL2Messages(l2Tester);
+
     const { status } = await message.waitForStatus();
 
-    assert.equal(
-      status,
-      L1ToL2MessageStatus.REDEEMED,
-      `L2 retryable txn failed with status ${L1ToL2MessageStatus[status]}`
-    );
+    if (status === L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2) {
+      console.warn(
+        `Auto redeem for tx ${l1TxReceipt.transactionHash} failed. Redeeming it manually...`
+      );
+      const redeemResponse = await message.redeem({ gasLimit: 300_000 });
+      await redeemResponse.wait();
+      console.log("Tx was redeemed");
+    } else if (status === L1ToL2MessageStatus.REDEEMED) {
+      console.log("Tx was auto redeemed");
+    } else {
+      assert.isTrue(
+        false,
+        `L2 retryable txn failed with status ${L1ToL2MessageStatus[status]}`
+      );
+    }
 
     assert.equalBN(
       await l2Token.balanceOf(l2Tester.address),

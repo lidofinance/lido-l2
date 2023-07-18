@@ -6,6 +6,7 @@ import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
+
 import "./tasks/fork-node";
 import env from "./utils/env";
 
@@ -42,24 +43,12 @@ const config: HardhatUserConfig = {
     eth_goerli: {
       url: env.string("RPC_ETH_GOERLI", ""),
     },
-    eth_kovan: {
-      url: env.string("RPC_ETH_KOVAN", ""),
-    },
-    eth_rinkeby: {
-      url: env.string("RPC_ETH_RINKEBY", ""),
-    },
 
     // Ethereum Fork Chains
     eth_mainnet_fork: {
       url: "http://localhost:8545",
     },
     eth_goerli_fork: {
-      url: "http://localhost:8545",
-    },
-    eth_kovan_fork: {
-      url: "http://localhost:8545",
-    },
-    eth_rinkeby_fork: {
       url: "http://localhost:8545",
     },
 
@@ -70,18 +59,12 @@ const config: HardhatUserConfig = {
     arb_goerli: {
       url: env.string("RPC_ARB_GOERLI", ""),
     },
-    arb_rinkeby: {
-      url: env.string("RPC_ARB_RINKEBY", ""),
-    },
 
     // Arbitrum Fork Chains
     arb_mainnet_fork: {
       url: "http://localhost:8546",
     },
     arb_goerli_fork: {
-      url: "http://localhost:8546",
-    },
-    arb_rinkeby_fork: {
       url: "http://localhost:8546",
     },
 
@@ -92,18 +75,12 @@ const config: HardhatUserConfig = {
     opt_goerli: {
       url: env.string("RPC_OPT_GOERLI", ""),
     },
-    opt_kovan: {
-      url: env.string("RPC_OPT_KOVAN", ""),
-    },
 
     // Optimism Fork Chains
     opt_mainnet_fork: {
       url: "http://localhost:9545",
     },
     opt_goerli_fork: {
-      url: "http://localhost:9545",
-    },
-    opt_kovan_fork: {
       url: "http://localhost:9545",
     },
   },
@@ -113,26 +90,13 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      kovan: env.string("ETHERSCAN_API_KEY_ETH", ""),
-      rinkeby: env.string("ETHERSCAN_API_KEY_ETH", ""),
       mainnet: env.string("ETHERSCAN_API_KEY_ETH", ""),
       goerli: env.string("ETHERSCAN_API_KEY_ETH", ""),
-      arbitrumTestnet: env.string("ETHERSCAN_API_KEY_ARB", ""),
+      arbitrumGoerli: env.string("ETHERSCAN_API_KEY_ARB", ""),
       arbitrumOne: env.string("ETHERSCAN_API_KEY_ARB", ""),
-      optimisticKovan: env.string("ETHERSCAN_API_KEY_OPT", ""),
       optimisticEthereum: env.string("ETHERSCAN_API_KEY_OPT", ""),
-      optimisticGoerli: env.string("ETHERSCAN_API_KEY_ETH", ""),
+      optimisticGoerli: env.string("ETHERSCAN_API_KEY_OPT", ""),
     },
-    customChains: [
-      {
-        network: "optimisticGoerli",
-        chainId: 420,
-        urls: {
-          apiURL: "https://blockscout.com/optimism/goerli/api",
-          browserURL: "https://blockscout.com/optimism/goerli",
-        },
-      },
-    ],
   },
   typechain: {
     externalArtifacts: [

@@ -55,7 +55,7 @@ scenario("Optimism :: Bridging via depositTo/withdrawTo E2E test", ctxFactory)
     );
   })
 
-  .step("Bridge tokens to L2 via depositERC20()", async (ctx) => {
+  .step("Bridge tokens to L2 via depositERC20To()", async (ctx) => {
     depositTokensTxResponse = await ctx.l1ERC20TokenBridge
       .connect(ctx.l1Tester)
       .depositERC20To(
@@ -77,7 +77,7 @@ scenario("Optimism :: Bridging via depositTo/withdrawTo E2E test", ctxFactory)
     );
   })
 
-  .step("Withdraw tokens from L2 via withdrawERC20()", async (ctx) => {
+  .step("Withdraw tokens from L2 via withdrawERC20To()", async (ctx) => {
     withdrawTokensTxResponse = await ctx.l2ERC20TokenBridge
       .connect(ctx.l2Tester)
       .withdrawTo(
@@ -88,6 +88,20 @@ scenario("Optimism :: Bridging via depositTo/withdrawTo E2E test", ctxFactory)
         "0x"
       );
     await withdrawTokensTxResponse.wait();
+  })
+
+  .step("Waiting for status to change to READY_TO_PROVE", async (ctx) => {
+    await ctx.crossChainMessenger.waitForMessageStatus(
+      withdrawTokensTxResponse.hash,
+      MessageStatus.READY_TO_PROVE
+    );
+  })
+
+  .step("Proving the L2 -> L1 message", async (ctx) => {
+    const tx = await ctx.crossChainMessenger.proveMessage(
+      withdrawTokensTxResponse.hash
+    );
+    await tx.wait();
   })
 
   .step("Waiting for status to change to IN_CHALLENGE_PERIOD", async (ctx) => {
@@ -118,12 +132,12 @@ scenario("Optimism :: Bridging via depositTo/withdrawTo E2E test", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const networkName = env.network("TESTING_OPT_NETWORK", "kovan");
+  const networkName = env.network("TESTING_OPT_NETWORK", "goerli");
   const testingSetup = await optimism.testing(networkName).getE2ETestSetup();
 
   return {
-    depositAmount: wei`0.025 ether`,
-    withdrawalAmount: wei`0.025 ether`,
+    depositAmount: wei`0.0025 ether`,
+    withdrawalAmount: wei`0.0025 ether`,
     l1Tester: testingSetup.l1Tester,
     l2Tester: testingSetup.l2Tester,
     l1Token: testingSetup.l1Token,

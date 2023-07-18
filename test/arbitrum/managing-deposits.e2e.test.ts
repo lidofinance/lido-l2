@@ -77,7 +77,7 @@ const scenarioTest = scenario(
         [false, false],
       ]);
 
-    const arbAddresses = arbitrum.addresses("rinkeby");
+    const arbAddresses = arbitrum.addresses("goerli");
 
     const { calldata, callvalue } =
       await ctx.messaging.prepareRetryableTicketTx({
@@ -160,7 +160,7 @@ scenarioTest.run();
 scenarioTest.run();
 
 async function ctxFactory() {
-  const ethArbNetwork = network.multichain(["eth", "arb"], "rinkeby");
+  const ethArbNetwork = network.multichain(["eth", "arb"], "goerli");
 
   const [l1Provider] = ethArbNetwork.getProviders({
     forking: false,
@@ -176,8 +176,8 @@ async function ctxFactory() {
   );
 
   return {
-    lidoAragonDAO: lido("rinkeby", l1Provider),
-    messaging: arbitrum.messaging("rinkeby", { forking: false }),
+    lidoAragonDAO: lido("goerli", l1Provider),
+    messaging: arbitrum.messaging("goerli", { forking: false }),
     gasAmount: wei`0.1 ether`,
     l2Tester,
     l1Provider,

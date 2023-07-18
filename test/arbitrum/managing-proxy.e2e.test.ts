@@ -1,4 +1,4 @@
-import { L1ToL2MessageStatus } from "@arbitrum/sdk";
+import { L1ToL2MessageStatus, L1TransactionReceipt } from "@arbitrum/sdk";
 import { assert } from "chai";
 import { ContractReceipt } from "ethers";
 
@@ -66,7 +66,7 @@ scenario("Arbitrum :: AAVE governance crosschain bridge", ctxFactory)
         [false],
       ]);
 
-    const arbAddresses = arbitrum.addresses("rinkeby");
+    const arbAddresses = arbitrum.addresses("goerli");
 
     const { calldata, callvalue } =
       await ctx.messaging.prepareRetryableTicketTx({
@@ -103,24 +103,28 @@ scenario("Arbitrum :: AAVE governance crosschain bridge", ctxFactory)
     }
   )
 
-  .step("Proxy upgrade: Waiting for L2 tx", async ({ messaging }) => {
+  .step("Proxy upgrade: Waiting for L2 tx", async ({ messaging, l2Tester }) => {
     const { status } = await messaging.waitForL2Message(
       upgradeMessageResponse.transactionHash
     );
 
-    assert.equal(
-      status,
-      L1ToL2MessageStatus.REDEEMED,
-      `L2 retryable txn failed with status ${L1ToL2MessageStatus[status]}`
-    );
-    // const l1TxReceipt = new L1TransactionReceipt(upgradeMessageResponse);
-    // const message = await l1TxReceipt.getL1ToL2Message(l2Tester);
-
-    // const { status } = await message.waitForStatus();
-    // if (status === L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2) {
-    //   const response = await message.redeem();
-    //   await response.wait();
-    // }
+    if (status === L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2) {
+      console.warn(
+        `Auto redeem for tx ${upgradeMessageResponse.transactionHash} failed. Redeeming it manually...`
+      );
+      const l1TxReceipt = new L1TransactionReceipt(upgradeMessageResponse);
+      const [message] = await l1TxReceipt.getL1ToL2Messages(l2Tester);
+      const redeemResponse = await message.redeem({ gasLimit: 300_000 });
+      await redeemResponse.wait();
+      console.log("Tx was redeemed");
+    } else if (status === L1ToL2MessageStatus.REDEEMED) {
+      console.log("Tx was auto redeemed");
+    } else {
+      assert.isTrue(
+        false,
+        `L2 retryable txn failed with status ${L1ToL2MessageStatus[status]}`
+      );
+    }
   })
 
   .step(
@@ -169,7 +173,7 @@ scenario("Arbitrum :: AAVE governance crosschain bridge", ctxFactory)
         [false],
       ]);
 
-    const arbAddresses = arbitrum.addresses("rinkeby");
+    const arbAddresses = arbitrum.addresses("goerli");
 
     const { calldata, callvalue } =
       await ctx.messaging.prepareRetryableTicketTx({
@@ -236,7 +240,7 @@ scenario("Arbitrum :: AAVE governance crosschain bridge", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const ethArbNetwork = network.multichain(["eth", "arb"], "rinkeby");
+  const ethArbNetwork = network.multichain(["eth", "arb"], "goerli");
 
   const [l1Provider] = ethArbNetwork.getProviders({
     forking: false,
@@ -252,8 +256,8 @@ async function ctxFactory() {
   );
 
   return {
-    lidoAragonDAO: lido("rinkeby", l1Provider),
-    messaging: arbitrum.messaging("rinkeby", { forking: false }),
+    lidoAragonDAO: lido("goerli", l1Provider),
+    messaging: arbitrum.messaging("goerli", { forking: false }),
     gasAmount: wei`0.1 ether`,
     l2Tester,
     l1LDOHolder,

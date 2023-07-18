@@ -83,13 +83,6 @@ export default function testing(networkName: NetworkName) {
           )
         : testingUtils.accounts.deployer(ethProviderForking);
 
-      const l1DevMultisig = hasDeployedContracts
-        ? await testingUtils.impersonate(
-            testingUtils.env.L1_DEV_MULTISIG(),
-            ethProviderForking
-          )
-        : testingUtils.accounts.deployer(ethProviderForking);
-
       if (hasDeployedContracts) {
         await printLoadedTestConfig(
           networkName,
@@ -115,7 +108,6 @@ export default function testing(networkName: NetworkName) {
       const { ArbSysStub } = contracts(networkName, { forking: true });
 
       return {
-        l1DevMultisig,
         l1GatewayRouter,
         l2GatewayRouter,
         l1Provider: ethProviderForking,

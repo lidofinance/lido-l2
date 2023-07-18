@@ -80,6 +80,20 @@ scenario("Optimism :: Bridging via deposit/withdraw E2E test", ctxFactory)
     await withdrawTokensTxResponse.wait();
   })
 
+  .step("Waiting for status to change to READY_TO_PROVE", async (ctx) => {
+    await ctx.crossChainMessenger.waitForMessageStatus(
+      withdrawTokensTxResponse.hash,
+      MessageStatus.READY_TO_PROVE
+    );
+  })
+
+  .step("Proving the L2 -> L1 message", async (ctx) => {
+    const tx = await ctx.crossChainMessenger.proveMessage(
+      withdrawTokensTxResponse.hash
+    );
+    await tx.wait();
+  })
+
   .step("Waiting for status to change to IN_CHALLENGE_PERIOD", async (ctx) => {
     await ctx.crossChainMessenger.waitForMessageStatus(
       withdrawTokensTxResponse.hash,
@@ -108,12 +122,12 @@ scenario("Optimism :: Bridging via deposit/withdraw E2E test", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const networkName = env.network("TESTING_OPT_NETWORK", "kovan");
+  const networkName = env.network("TESTING_OPT_NETWORK", "goerli");
   const testingSetup = await optimism.testing(networkName).getE2ETestSetup();
 
   return {
-    depositAmount: wei`0.025 ether`,
-    withdrawalAmount: wei`0.025 ether`,
+    depositAmount: wei`0.0025 ether`,
+    withdrawalAmount: wei`0.0025 ether`,
     l1Tester: testingSetup.l1Tester,
     l1Token: testingSetup.l1Token,
     l2Token: testingSetup.l2Token,
