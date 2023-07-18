@@ -1,4 +1,4 @@
-import { CrossChainMessenger } from "@eth-optimism/sdk";
+import { CrossChainMessenger, MessageStatus } from "@eth-optimism/sdk";
 import env from "../../utils/env";
 import network from "../../utils/network";
 
@@ -16,6 +16,12 @@ async function main() {
     l1SignerOrProvider: l1Signer,
     l2SignerOrProvider: l2Signer,
   });
+
+  const status = await crossDomainMessenger.getMessageStatus(txHash);
+
+  if (status !== MessageStatus.READY_FOR_RELAY) {
+    throw new Error(`Invalid tx status: ${status}`);
+  }
 
   console.log("Finalizing the L2 -> L1 message");
   await crossDomainMessenger.finalizeMessage(txHash);
