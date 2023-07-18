@@ -1,10 +1,20 @@
 [
-  { "inputs": [], "stateMutability": "nonpayable", "type": "constructor" },
+  {
+    "inputs": [
+      {
+        "internalType": "contract OptimismPortal",
+        "name": "_portal",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
   {
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "bytes32",
         "name": "msgHash",
         "type": "bytes32"
@@ -17,26 +27,13 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "_xDomainCalldataHash",
-        "type": "bytes32"
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "version",
+        "type": "uint8"
       }
     ],
-    "name": "MessageAllowed",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "_xDomainCalldataHash",
-        "type": "bytes32"
-      }
-    ],
-    "name": "MessageBlocked",
+    "name": "Initialized",
     "type": "event"
   },
   {
@@ -75,7 +72,7 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "bytes32",
         "name": "msgHash",
         "type": "bytes32"
@@ -88,13 +85,56 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
         "indexed": false,
         "internalType": "bytes",
         "name": "message",
         "type": "bytes"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "messageNonce",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "gasLimit",
+        "type": "uint256"
       }
     ],
     "name": "SentMessage",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "SentMessageExtension1",
     "type": "event"
   },
   {
@@ -111,45 +151,80 @@
     "type": "event"
   },
   {
-    "inputs": [
+    "inputs": [],
+    "name": "MESSAGE_VERSION",
+    "outputs": [{ "internalType": "uint16", "name": "", "type": "uint16" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_GAS_CALLDATA_OVERHEAD",
+    "outputs": [{ "internalType": "uint64", "name": "", "type": "uint64" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_GAS_CONSTANT_OVERHEAD",
+    "outputs": [{ "internalType": "uint64", "name": "", "type": "uint64" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_GAS_DYNAMIC_OVERHEAD_DENOMINATOR",
+    "outputs": [{ "internalType": "uint64", "name": "", "type": "uint64" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_GAS_DYNAMIC_OVERHEAD_NUMERATOR",
+    "outputs": [{ "internalType": "uint64", "name": "", "type": "uint64" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "OTHER_MESSENGER",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PORTAL",
+    "outputs": [
       {
-        "internalType": "bytes32",
-        "name": "_xDomainCalldataHash",
-        "type": "bytes32"
+        "internalType": "contract OptimismPortal",
+        "name": "",
+        "type": "address"
       }
     ],
-    "name": "allowMessage",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_xDomainCalldataHash",
-        "type": "bytes32"
-      }
+      { "internalType": "bytes", "name": "_message", "type": "bytes" },
+      { "internalType": "uint32", "name": "_minGasLimit", "type": "uint32" }
     ],
-    "name": "blockMessage",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "name": "baseGas",
+    "outputs": [{ "internalType": "uint64", "name": "", "type": "uint64" }],
+    "stateMutability": "pure",
     "type": "function"
   },
   {
     "inputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
-    "name": "blockedMessages",
+    "name": "failedMessages",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "_libAddressManager",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "_owner", "type": "address" }
     ],
     "name": "initialize",
     "outputs": [],
@@ -158,14 +233,8 @@
   },
   {
     "inputs": [],
-    "name": "libAddressManager",
-    "outputs": [
-      {
-        "internalType": "contract Lib_AddressManager",
-        "name": "",
-        "type": "address"
-      }
-    ],
+    "name": "messageNonce",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -192,80 +261,16 @@
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "_target", "type": "address" },
+      { "internalType": "uint256", "name": "_nonce", "type": "uint256" },
       { "internalType": "address", "name": "_sender", "type": "address" },
-      { "internalType": "bytes", "name": "_message", "type": "bytes" },
-      { "internalType": "uint256", "name": "_messageNonce", "type": "uint256" },
-      {
-        "components": [
-          { "internalType": "bytes32", "name": "stateRoot", "type": "bytes32" },
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "batchIndex",
-                "type": "uint256"
-              },
-              {
-                "internalType": "bytes32",
-                "name": "batchRoot",
-                "type": "bytes32"
-              },
-              {
-                "internalType": "uint256",
-                "name": "batchSize",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "prevTotalElements",
-                "type": "uint256"
-              },
-              { "internalType": "bytes", "name": "extraData", "type": "bytes" }
-            ],
-            "internalType": "struct Lib_OVMCodec.ChainBatchHeader",
-            "name": "stateRootBatchHeader",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              { "internalType": "uint256", "name": "index", "type": "uint256" },
-              {
-                "internalType": "bytes32[]",
-                "name": "siblings",
-                "type": "bytes32[]"
-              }
-            ],
-            "internalType": "struct Lib_OVMCodec.ChainInclusionProof",
-            "name": "stateRootProof",
-            "type": "tuple"
-          },
-          {
-            "internalType": "bytes",
-            "name": "stateTrieWitness",
-            "type": "bytes"
-          },
-          {
-            "internalType": "bytes",
-            "name": "storageTrieWitness",
-            "type": "bytes"
-          }
-        ],
-        "internalType": "struct iOVM_L1CrossDomainMessenger.L2MessageInclusionProof",
-        "name": "_proof",
-        "type": "tuple"
-      }
+      { "internalType": "address", "name": "_target", "type": "address" },
+      { "internalType": "uint256", "name": "_value", "type": "uint256" },
+      { "internalType": "uint256", "name": "_minGasLimit", "type": "uint256" },
+      { "internalType": "bytes", "name": "_message", "type": "bytes" }
     ],
     "name": "relayMessage",
     "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
-    "name": "relayedMessages",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-    "stateMutability": "view",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -278,32 +283,12 @@
   {
     "inputs": [
       { "internalType": "address", "name": "_target", "type": "address" },
-      { "internalType": "address", "name": "_sender", "type": "address" },
       { "internalType": "bytes", "name": "_message", "type": "bytes" },
-      { "internalType": "uint256", "name": "_queueIndex", "type": "uint256" },
-      { "internalType": "uint32", "name": "_gasLimit", "type": "uint32" }
-    ],
-    "name": "replayMessage",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{ "internalType": "string", "name": "_name", "type": "string" }],
-    "name": "resolve",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "address", "name": "_target", "type": "address" },
-      { "internalType": "bytes", "name": "_message", "type": "bytes" },
-      { "internalType": "uint32", "name": "_gasLimit", "type": "uint32" }
+      { "internalType": "uint32", "name": "_minGasLimit", "type": "uint32" }
     ],
     "name": "sendMessage",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -320,6 +305,20 @@
     "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "unpause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "version",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
     "type": "function"
   },
   {

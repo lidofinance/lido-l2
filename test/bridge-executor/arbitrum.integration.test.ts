@@ -102,6 +102,7 @@ scenario("Arbitrum :: Bridge Executor integration test", ctx)
     assert.isTrue(await l2ERC20TokenGateway.isDepositsEnabled());
     assert.isTrue(await l2ERC20TokenGateway.isWithdrawalsEnabled());
   })
+
   .step("Change Proxy implementation", async (ctx) => {
     const {
       l2: { l2Token, bridgeExecutor, l2ERC20TokenGatewayProxy },
@@ -136,6 +137,7 @@ scenario("Arbitrum :: Bridge Executor integration test", ctx)
     assert.notEqual(proxyImplBefore, proxyImplAfter);
     assert.equal(proxyImplAfter, l2Token.address);
   })
+
   .step("Change proxy Admin", async (ctx) => {
     const {
       l2: {
@@ -239,10 +241,12 @@ async function ctx() {
     testing.accounts.applyL1ToL2Alias(l1EthGovExecutorAddress),
     l2Provider
   );
-  await l2Deployer.sendTransaction({
-    to: await l1ExecutorAliased.getAddress(),
-    value: wei`1 ether`,
-  });
+
+  await testing.setBalance(
+    await l1ExecutorAliased.getAddress(),
+    wei.toBigNumber(wei`1 ether`),
+    l2Provider
+  );
 
   if (testingOnDeployedContracts) {
     console.log("Testing on deployed contracts");

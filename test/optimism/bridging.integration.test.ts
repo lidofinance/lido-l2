@@ -163,8 +163,11 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     const tx = await l2CrossDomainMessenger
       .connect(l1CrossDomainMessengerAliased)
       .relayMessage(
-        l2ERC20TokenBridge.address,
+        1,
         l1ERC20TokenBridge.address,
+        l2ERC20TokenBridge.address,
+        0,
+        300_000,
         l2ERC20TokenBridge.interface.encodeFunctionData("finalizeDeposit", [
           l1Token.address,
           l2Token.address,
@@ -173,7 +176,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
           depositAmount,
           "0x",
         ]),
-        1
+        { gasLimit: 5_000_000 }
       );
 
     await assert.emits(l2ERC20TokenBridge, tx, "DepositFinalized", [
@@ -388,8 +391,11 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     const tx = await l2CrossDomainMessenger
       .connect(l1CrossDomainMessengerAliased)
       .relayMessage(
-        l2ERC20TokenBridge.address,
+        1,
         l1ERC20TokenBridge.address,
+        l2ERC20TokenBridge.address,
+        0,
+        300_000,
         l2ERC20TokenBridge.interface.encodeFunctionData("finalizeDeposit", [
           l1Token.address,
           l2Token.address,
@@ -398,7 +404,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
           depositAmount,
           "0x",
         ]),
-        1
+        { gasLimit: 5_000_000 }
       );
 
     await assert.emits(l2ERC20TokenBridge, tx, "DepositFinalized", [
@@ -550,20 +556,23 @@ async function ctxFactory() {
   const depositAmount = wei`0.15 ether`;
   const withdrawalAmount = wei`0.05 ether`;
 
-  await accountA.l1Signer.sendTransaction({
-    to: await contracts.l1TokensHolder.getAddress(),
-    value: wei.toBigNumber(wei`1 ether`),
-  });
+  await testing.setBalance(
+    await contracts.l1TokensHolder.getAddress(),
+    wei.toBigNumber(wei`1 ether`),
+    l1Provider
+  );
 
-  await accountA.l1Signer.sendTransaction({
-    to: await l1ERC20TokenBridgeAdmin.getAddress(),
-    value: wei.toBigNumber(wei`1 ether`),
-  });
+  await testing.setBalance(
+    await l1ERC20TokenBridgeAdmin.getAddress(),
+    wei.toBigNumber(wei`1 ether`),
+    l1Provider
+  );
 
-  await accountA.l2Signer.sendTransaction({
-    to: await l2ERC20TokenBridgeAdmin.getAddress(),
-    value: wei.toBigNumber(wei`1 ether`),
-  });
+  await testing.setBalance(
+    await l2ERC20TokenBridgeAdmin.getAddress(),
+    wei.toBigNumber(wei`1 ether`),
+    l2Provider
+  );
 
   await contracts.l1Token
     .connect(contracts.l1TokensHolder)
@@ -574,10 +583,11 @@ async function ctxFactory() {
     l2Provider
   );
 
-  await accountA.l2Signer.sendTransaction({
-    to: await l1CrossDomainMessengerAliased.getAddress(),
-    value: wei.toBigNumber(wei`1 ether`),
-  });
+  await testing.setBalance(
+    await l1CrossDomainMessengerAliased.getAddress(),
+    wei.toBigNumber(wei`1 ether`),
+    l2Provider
+  );
 
   return {
     l1Provider,

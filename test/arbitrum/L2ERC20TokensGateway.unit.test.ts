@@ -617,10 +617,10 @@ async function ctxFactory() {
     l1TokensGatewayAliasedEOAAddress
   );
 
-  await deployer.sendTransaction({
-    to: l1TokensGatewayAliasedEOA.address,
-    value: wei.toBigNumber(wei`1 ether`),
-  });
+  await testing.setBalance(
+    l1TokensGatewayAliasedEOA.address,
+    wei.toBigNumber(wei`1 ether`)
+  );
 
   await hre.network.provider.request({
     method: "hardhat_impersonateAccount",

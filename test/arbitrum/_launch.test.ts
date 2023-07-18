@@ -66,12 +66,10 @@ async function ctx() {
   const l1Snapshot = await l1Provider.send("evm_snapshot", []);
   const l2Snapshot = await l2Provider.send("evm_snapshot", []);
 
-  const l1Sender = testing.accounts.sender(l1Provider);
-
-  await l1Sender.sendTransaction({
-    value: wei`1 ether`,
-    to: await l1DevMultisig.getAddress(),
-  });
+  await testing.setBalance(
+    await l1DevMultisig.getAddress(),
+    wei.toBigNumber(wei`1 ether`)
+  );
 
   const l1ERC20TokenGatewayImpl = L1ERC20TokenBridge__factory.connect(
     l1ERC20TokenGateway.address,

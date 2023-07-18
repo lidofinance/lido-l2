@@ -350,10 +350,11 @@ async function ctx() {
 
   const l1TokensHolderAddress = await contracts.l1TokensHolder.getAddress();
 
-  await accountA.l1Signer.sendTransaction({
-    value: wei`1 ether`,
-    to: l1TokensHolderAddress,
-  });
+  await testing.setBalance(
+    l1TokensHolderAddress,
+    wei.toBigNumber(wei`1 ether`),
+    l1Provider
+  );
 
   const depositAmount = wei`0.15 ether`;
   const withdrawalAmount = wei`0.05 ether`;
@@ -372,27 +373,31 @@ async function ctx() {
     l2Provider
   );
 
-  await accountA.l1Signer.sendTransaction({
-    to: await contracts.l1TokensHolder.getAddress(),
-    value: wei.toBigNumber(wei`1 ether`),
-  });
+  await testing.setBalance(
+    await contracts.l1TokensHolder.getAddress(),
+    wei.toBigNumber(wei`1 ether`),
+    l1Provider
+  );
 
-  await accountA.l1Signer.sendTransaction({
-    to: await l1ERC20TokenGatewayAdmin.getAddress(),
-    value: wei.toBigNumber(wei`1 ether`),
-  });
+  await testing.setBalance(
+    await l1ERC20TokenGatewayAdmin.getAddress(),
+    wei.toBigNumber(wei`1 ether`),
+    l1Provider
+  );
 
-  await accountA.l2Signer.sendTransaction({
-    to: await l2ERC20TokenGatewayAdmin.getAddress(),
-    value: wei.toBigNumber(wei`1 ether`),
-  });
+  await testing.setBalance(
+    await l2ERC20TokenGatewayAdmin.getAddress(),
+    wei.toBigNumber(wei`1 ether`),
+    l2Provider
+  );
 
   // send ether to l1GatewayRouterAliased to run transactions from it
   // as from EOA
-  await accountA.l2Signer.sendTransaction({
-    to: await l1GatewayRouterAliased.getAddress(),
-    value: wei`1 ether`,
-  });
+  await testing.setBalance(
+    await l1GatewayRouterAliased.getAddress(),
+    wei.toBigNumber(wei`1 ether`),
+    l2Provider
+  );
 
   // send ether to l1ERC20TokenGatewayAliased to run transactions from it
   // as from EOA
@@ -400,7 +405,7 @@ async function ctx() {
   await testing.setBalance(
     await l1ERC20TokenGatewayAliased.getAddress(),
     wei.toBigNumber(wei`1 ether`),
-    l1Provider
+    l2Provider
   );
 
   const maxSubmissionCost = wei`200_000 gwei`;
