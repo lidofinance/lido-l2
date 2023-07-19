@@ -8971,7 +8971,6 @@ __metadata:
     ethers: ^5.6.2
     hardhat: ^2.12.2
     hardhat-gas-reporter: ^1.0.8
-    patch-package: ^6.4.7
     prettier: ^2.6.1
     prettier-plugin-solidity: ^1.0.0-beta.13
     solhint: ^3.3.7
@@ -10592,7 +10591,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"patch-package@npm:^6.2.2, patch-package@npm:^6.4.7":
+"patch-package@npm:^6.2.2":
   version: 6.4.7
   resolution: "patch-package@npm:6.4.7"
   dependencies:
