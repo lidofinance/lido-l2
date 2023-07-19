@@ -19,13 +19,13 @@ cd ./lido-l2
 2. Install dependencies:
 
 ```bash
-yarn install
+npm run install
 ```
 
 3. Compile the contracts:
 
 ```bash
-yarn compile
+npm run compile
 ```
 
 ## Configure ENV variables
@@ -73,7 +73,7 @@ The following ENV variables are optional and might be used to make an additional
 To run the deployment of the ERC20 token gateway for the Ethereum <-> Arbitrum chains use the following command:
 
 ```bash
-yarn arbitrum:deploy
+npm run arbitrum:deploy
 ```
 
 ### Deploying Optimism bridge
@@ -81,7 +81,7 @@ yarn arbitrum:deploy
 To run the deployment of the ERC20 token gateway for the Ethereum <-> Optimism chains use the following command:
 
 ```bash
-yarn optimism:deploy
+npm run optimism:deploy
 ```
 
 ## Tests running
@@ -93,13 +93,13 @@ To run unit tests use one of the following commands:
 ```bash
 
 # Run tests for both Arbitrum and Optimism bridges
-yarn test:unit
+npm run test:unit
 
 # Run tests only for Arbitrum gateway
-yarn arbitrum:test:unit
+npm run arbitrum:test:unit
 
 # Run tests only for Optimism bridge
-yarn optimism:test:unit
+npm run optimism:test:unit
 ```
 
 ### Integration tests
@@ -108,26 +108,26 @@ Before running integration tests, run the hardhat forked nodes in the standalone
 
 ```bash
 # Required to run both Arbitrum and Optimism integraton tests
-yarn fork:eth:mainnet
+npm run fork:eth:mainnet
 
 # Required to run Optimism integration tests
-yarn fork:opt:mainnet
+npm run fork:opt:mainnet
 
 # Required to run Arbitrum integration tests
-yarn fork:arb:mainnet
+npm run fork:arb:mainnet
 ```
 
 The integration tests might be run via the following commands:
 
 ```bash
 # Run integration tests for both Arbitrum and Optimism bridges
-yarn test:integration
+npm run test:integration
 
 # Run integration tests for Arbitrum bridge
-yarn arbitrum:test:integration
+npm run arbitrum:test:integration
 
 # Run integration tests for Optimism bridge
-yarn optimism:test:integration
+npm run optimism:test:integration
 ```
 
 Additionally, tests might be run on the deployed contracts. To do it, set the following variables values in the `.env` file:
@@ -169,13 +169,13 @@ To run E2E tests use the following commands:
 
 ```bash
 # Run E2E tests for both Arbitrum and Optimism bridges
-yarn test:e2e
+npm run test:e2e
 
 # Run E2E tests for Arbitrum bridge
-yarn arbitrum:test:e2e
+npm run arbitrum:test:e2e
 
 # Run E2E tests for Optimism bridge
-yarn optimism:test:e2e
+npm run optimism:test:e2e
 ```
 
 Additionally, tests might be run on the deployed contracts. To do it, set the following variables values in the `.env` file:
@@ -231,10 +231,10 @@ To run the acceptance tests, use the following commands:
 
 ```bash
 # Optimism bridge
-yarn optimism:test:acceptance
+npm run optimism:test:acceptance
 
 # Arbitrum bridge
-yarn arbitrum:test:acceptance
+npm run arbitrum:test:acceptance
 ```
 
 ## Code Coverage
@@ -242,7 +242,7 @@ yarn arbitrum:test:acceptance
 To run coverage measurement for unit tests:
 
 ```bash
-yarn coverage
+npm run coverage
 ```
 
 ## Project Configuration
