@@ -36,9 +36,13 @@ scenario("Optimism :: Bridge Executor integration test", ctxFactory)
     assert.isFalse(await l2ERC20TokenBridge.isWithdrawalsEnabled());
 
     const actionsSetCountBefore = await bridgeExecutor.getActionsSetCount();
+
     await l2CrossDomainMessenger.relayMessage(
-      bridgeExecutor.address,
+      0,
       ctx.l1.l1EthGovExecutorAddress,
+      bridgeExecutor.address,
+      0,
+      300_000,
       bridgeExecutor.interface.encodeFunctionData("queue", [
         new Array(4).fill(l2ERC20TokenBridge.address),
         new Array(4).fill(0),
@@ -74,7 +78,7 @@ scenario("Optimism :: Bridge Executor integration test", ctxFactory)
         ],
         new Array(4).fill(false),
       ]),
-      0
+      { gasLimit: 5_000_000 }
     );
 
     const actionsSetCountAfter = await bridgeExecutor.getActionsSetCount();
@@ -114,8 +118,11 @@ scenario("Optimism :: Bridge Executor integration test", ctxFactory)
       await l2ERC20TokenBridgeProxy.proxy__getImplementation();
 
     await l2CrossDomainMessenger.relayMessage(
-      bridgeExecutor.address,
+      0,
       ctx.l1.l1EthGovExecutorAddress,
+      bridgeExecutor.address,
+      0,
+      300_000,
       bridgeExecutor.interface.encodeFunctionData("queue", [
         [l2ERC20TokenBridgeProxy.address],
         [0],
@@ -128,7 +135,7 @@ scenario("Optimism :: Bridge Executor integration test", ctxFactory)
         ],
         [false],
       ]),
-      0
+      { gasLimit: 5_000_000 }
     );
     const actionSetCount = await bridgeExecutor.getActionsSetCount();
 
@@ -155,8 +162,11 @@ scenario("Optimism :: Bridge Executor integration test", ctxFactory)
     const proxyAdminBefore = await l2ERC20TokenBridgeProxy.proxy__getAdmin();
 
     await l2CrossDomainMessenger.relayMessage(
-      bridgeExecutor.address,
+      0,
       ctx.l1.l1EthGovExecutorAddress,
+      bridgeExecutor.address,
+      0,
+      300_000,
       bridgeExecutor.interface.encodeFunctionData("queue", [
         [l2ERC20TokenBridgeProxy.address],
         [0],
@@ -169,7 +179,7 @@ scenario("Optimism :: Bridge Executor integration test", ctxFactory)
         ],
         [false],
       ]),
-      0
+      { gasLimit: 5_000_000 }
     );
     const actionSetCount = await bridgeExecutor.getActionsSetCount();
 
@@ -251,11 +261,6 @@ async function ctxFactory() {
     l2Deployer
   );
 
-  // const l1ExecutorAliased = await testing.impersonate(
-  //   testing.accounts.applyL1ToL2Alias(l1EthGovExecutorAddress),
-  //   l2Provider
-  // );
-
   const optContracts = optimism.contracts(networkName, { forking: true });
 
   const l1CrossDomainMessengerAliased = await testing.impersonate(
@@ -270,10 +275,11 @@ async function ctxFactory() {
       l1CrossDomainMessengerAliased
     );
 
-  await l2Deployer.sendTransaction({
-    to: await l2CrossDomainMessenger.signer.getAddress(),
-    value: wei`1 ether`,
-  });
+  await testing.setBalance(
+    await l2CrossDomainMessenger.signer.getAddress(),
+    wei.toBigNumber(wei`1 ether`),
+    l2Provider
+  );
 
   return {
     l1: {

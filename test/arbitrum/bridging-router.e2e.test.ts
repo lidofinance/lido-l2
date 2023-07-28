@@ -7,7 +7,7 @@ import { scenario } from "../../utils/testing";
 import arbitrum from "../../utils/arbitrum";
 
 async function ctxFactory() {
-  const networkName = env.network("TESTING_ARB_NETWORK", "rinkeby");
+  const networkName = env.network("TESTING_ARB_NETWORK", "goerli");
   const testingSetup = await arbitrum.testing(networkName).getE2ETestSetup();
 
   const l2Network = await getL2Network(testingSetup.l2Provider);
@@ -123,9 +123,10 @@ scenario("Arbitrum :: Bridging E2E test via router", ctxFactory)
     );
 
     const withdrawTxResponse = await erc20Bridge.withdraw({
-      amount: wei.toBigNumber(withdrawalAmount),
-      erc20l1Address: l1Token.address,
       l2Signer: l2Tester,
+      erc20l1Address: l1Token.address,
+      destinationAddress: l2Tester.address,
+      amount: wei.toBigNumber(withdrawalAmount),
     });
     const withdrawRec = await withdrawTxResponse.wait();
     console.log(`Token withdrawal initiated: ${withdrawRec.transactionHash}`);

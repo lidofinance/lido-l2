@@ -42,7 +42,6 @@ export default {
   OPT_GOV_BRIDGE_EXECUTOR() {
     return env.address("TESTING_OPT_GOV_BRIDGE_EXECUTOR");
   },
-
   L1_DEV_MULTISIG() {
     return env.address("L1_DEV_MULTISIG");
   },

@@ -10,22 +10,25 @@ async function main() {
 
   const txHash = env.string("TX_HASH");
 
-  const crossDomainMessenger = new CrossChainMessenger({
+  const crossChainMessenger = new CrossChainMessenger({
     l1ChainId: network.chainId("eth", networkName),
     l2ChainId: network.chainId("opt", networkName),
     l1SignerOrProvider: l1Signer,
     l2SignerOrProvider: l2Signer,
+    bedrock: true,
   });
 
-  const status = await crossDomainMessenger.getMessageStatus(txHash);
+  const status = await crossChainMessenger.getMessageStatus(txHash);
 
-  if (status !== MessageStatus.READY_FOR_RELAY) {
+  if (status !== MessageStatus.READY_TO_PROVE) {
     throw new Error(`Invalid tx status: ${status}`);
   }
 
-  console.log("Finalizing the L2 -> L1 message");
-  await crossDomainMessenger.finalizeMessage(txHash);
-  console.log("Message successfully finalized!");
+  console.log("Prove the L2 -> L1 message");
+  const tx = await crossChainMessenger.proveMessage(txHash);
+  console.log(`Waiting for the prove tx ${tx.hash}...`);
+  await tx.wait();
+  console.log(`Message was proved successfully!`);
 }
 
 main().catch((error) => {
