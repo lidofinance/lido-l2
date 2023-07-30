@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: 2023 Lido <info@lido.fi>
+// SPDX-License-Identifier: GPL-3.0
 
 pragma solidity ^0.8.13;
 
@@ -16,7 +17,7 @@ import {UnsafeBytes} from "@matterlabs/zksync-contracts/l1/contracts/common/libr
 import {L2ContractHelper} from "@matterlabs/zksync-contracts/l1/contracts/common/libraries/L2ContractHelper.sol";
 import {ReentrancyGuard} from "@matterlabs/zksync-contracts/l1/contracts/common/ReentrancyGuard.sol";
 import {AddressAliasHelper} from "@matterlabs/zksync-contracts/l1/contracts/vendor/AddressAliasHelper.sol";
-import {BridgeInitializationHelper} from "./libraries/BridgeInitializationHelper.sol";
+import {BridgeInitializationHelper} from "@matterlabs/zksync-contracts/l1/contracts/bridge/libraries/BridgeInitializationHelper.sol";
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 
 import {BridgeableTokensUpgradable} from "../../common/BridgeableTokensUpgradable.sol";

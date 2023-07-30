@@ -1,10 +1,15 @@
-// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: 2023 Lido <info@lido.fi>
+// SPDX-License-Identifier: GPL-3.0
 
 pragma solidity ^0.8.13;
 
 import {IMailbox, L2Log, L2Message, TxStatus} from "@matterlabs/zksync-contracts/l1/contracts/zksync/interfaces/IZkSync.sol";
 
 contract ZkSyncStub is IMailbox {
+    function getName() external pure returns (string memory) {
+        return "ZkSyncStub";
+    }
+
     bytes32 public canonicalTxHash;
     
     function setCanonicalTxHash(bytes32 canonicalTxHash_) public {
