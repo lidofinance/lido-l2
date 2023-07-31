@@ -1,4 +1,6 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-FileCopyrightText: 2023 Lido <info@lido.fi>
+// SPDX-License-Identifier: GPL-3.0
+
 pragma solidity ^0.8.13;
 
 import {IZkSync} from "@matterlabs/zksync-contracts/l1/contracts/zksync/interfaces/IZkSync.sol";

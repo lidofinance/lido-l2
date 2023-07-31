@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: 2023 Lido <info@lido.fi>
+// SPDX-License-Identifier: GPL-3.0
 
 pragma solidity ^0.8.10;
 
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
-import {IERC20BridgedUpgradeable} from "../../common/token/interfaces/IERC20BridgedUpgradeable.sol";
+import {IERC20BridgedUpgradeable} from "./interfaces/IERC20BridgedUpgradeable.sol";
 
 import {BridgingManager} from "../../common/BridgingManager.sol";
 import {BridgeableTokensUpgradable} from "../../common/BridgeableTokensUpgradable.sol";
