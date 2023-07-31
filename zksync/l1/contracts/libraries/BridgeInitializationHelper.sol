@@ -4,7 +4,6 @@ pragma solidity ^0.8.13;
 
 import {IZkSync} from "@matterlabs/zksync-contracts/l1/contracts/zksync/interfaces/IZkSync.sol";
 import {IL2ContractDeployer} from "@matterlabs/zksync-contracts/l1/contracts/common/interfaces/IL2ContractDeployer.sol";
-
 import {AddressAliasHelper} from "@matterlabs/zksync-contracts/l1/contracts/vendor/AddressAliasHelper.sol";
 import {L2ContractHelper} from "@matterlabs/zksync-contracts/l2/contracts/L2ContractHelper.sol";
 import {L2_DEPLOYER_SYSTEM_CONTRACT_ADDR} from "@matterlabs/zksync-contracts/l1/contracts/common/L2ContractAddresses.sol";
@@ -16,15 +15,13 @@ library BridgeInitializationHelper {
     /// @dev It is big enough to deploy any contract, so we can use the same value for all bridges.
     /// NOTE: this constant will be accurately calculated in the future.
     uint256 constant DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT = 10000000;
-    //   $(DEPLOY_L2_BRIDGE_COUNTERPART_GAS_LIMIT);
 
     /// @dev The default l2GasPricePerPubdata to be used in bridges.
     uint256 constant REQUIRED_L2_GAS_PRICE_PER_PUBDATA = 800;
 
-    //  $(REQUIRED_L2_GAS_PRICE_PER_PUBDATA);
-
     /// @notice Requests L2 transaction that will deploy a contract with a given bytecode hash and constructor data.
     /// NOTE: it is always used to deploy via create2 with ZERO salt
+    /// @param _zkSync The address of the zkSync contract
     /// @param _deployTransactionFee The fee that will be paid for the L1 -> L2 transaction
     /// @param _bytecodeHash The hash of the bytecode of the contract to be deployed
     /// @param _constructorData The data to be passed to the contract constructor
