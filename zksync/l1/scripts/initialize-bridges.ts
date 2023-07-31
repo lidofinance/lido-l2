@@ -15,12 +15,17 @@ const provider = web3Provider();
 const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 const L2_GOVERNOR_ADDRESS = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
 
+const commonArtifactsPath = path.join(
+  path.resolve(__dirname, "../.."),
+  "l2/artifacts-zk/common"
+);
+
 const l2ArtifactsPath = path.join(
   path.resolve(__dirname, "../.."),
   "l2/artifacts-zk/l2/contracts"
 );
 
-const l2ProxyArtifactsPath = path.join(l2ArtifactsPath, "proxy");
+const l2ProxyArtifactsPath = path.join(commonArtifactsPath, "proxy");
 
 const L2_LIDO_BRIDGE_PROXY_BYTECODE = readBytecode(
   l2ProxyArtifactsPath,
