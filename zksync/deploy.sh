@@ -16,7 +16,12 @@ appendOrUpdate(){
 	# Check if the line exists in .env
 	if grep -q "$1=" "$3"; then
 		# Update the line in .env
-		sed -i "s|^$1=.*$|$1=$2|" "$3"
+		if [[ "$OSTYPE" == "darwin"* ]]; then
+			# sed -i is case insensitive in OSX thats why single quotes are added
+			sed -i '' "s|^$1=.*$|$1=$2|" "$3"
+		else
+			sed -i "s|^$1=.*$|$1=$2|" "$3"
+		fi
 	else
 		# Append the line to .env
 		echo "$1=$address" >> "$3"

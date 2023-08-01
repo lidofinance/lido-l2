@@ -1,5 +1,19 @@
 # Deployment plan
 
+To compile Lido zkSync contracts, run the `compile.sh` script:
+
+```
+> ./compile.sh
+```
+
+To deploy Lido zkSync contracts, run the `deploy.sh` script:
+
+```
+> ./deploy.sh
+```
+
+The following are the manual steps needed to deploy bridge and governance contracts:
+
 l1:
 
 ```bash
