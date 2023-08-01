@@ -5,7 +5,7 @@ ENV_LOCATION="../.env"
 echo "DEPLOYING LIDO BRIDGE"
 echo "======================="
 
-formatAndApendOrUpdate(){
+formatAndAppendOrUpdate(){
 	line=$(echo "$1" | grep "$2")
 	address=$(echo "$line" | awk -F'=' '{print $2}')
 	echo "$2=$address"
@@ -27,17 +27,17 @@ cd ./l1
 
 # DEPLOY MOCK AGENT
 output=$(npm run deploy-mock-agent)
-formatAndApendOrUpdate "$output" "CONTRACTS_L1_GOVERNANCE_AGENT_ADDR"
+formatAndAppendOrUpdate "$output" "CONTRACTS_L1_GOVERNANCE_AGENT_ADDR"
 
 # DEPLOY L1 EXECUTOR
 output=$(npm run deploy-l1-executor)
-formatAndApendOrUpdate "$output" "L1_EXECUTOR_ADDR"
+formatAndAppendOrUpdate "$output" "L1_EXECUTOR_ADDR"
 
 cd ../l2
 
 # DEPLOY L2 BRIDGE EXECUTOR
 output=$(npm run deploy-governance-bridge)
-formatAndApendOrUpdate "$output" "L2_BRIDGE_EXECUTOR_ADDR"
+formatAndAppendOrUpdate "$output" "L2_BRIDGE_EXECUTOR_ADDR"
 
 cd ../l1
 
@@ -45,25 +45,25 @@ cd ../l1
 output=$(npm run deploy-bridges)
 
 ## CONTRACTS_L1_LIDO_TOKEN_ADDR
-formatAndApendOrUpdate "$output" "CONTRACTS_L1_LIDO_TOKEN_ADDR"
+formatAndAppendOrUpdate "$output" "CONTRACTS_L1_LIDO_TOKEN_ADDR"
 
 ## CONTRACTS_L1_LIDO_BRIDGE_IMPL_ADDR
-formatAndApendOrUpdate "$output" "CONTRACTS_L1_LIDO_BRIDGE_IMPL_ADDR"
+formatAndAppendOrUpdate "$output" "CONTRACTS_L1_LIDO_BRIDGE_IMPL_ADDR"
 
 ## CONTRACTS_L1_LIDO_BRIDGE_PROXY_ADDR
-formatAndApendOrUpdate "$output" "CONTRACTS_L1_LIDO_BRIDGE_PROXY_ADDR"
+formatAndAppendOrUpdate "$output" "CONTRACTS_L1_LIDO_BRIDGE_PROXY_ADDR"
 
 cd ../l2
 
 # DEPLOY wstETH TOKEN
 output=$(npm run deploy-wsteth-token)
-formatAndApendOrUpdate "$output" "CONTRACTS_L2_LIDO_TOKEN_ADDR"
+formatAndAppendOrUpdate "$output" "CONTRACTS_L2_LIDO_TOKEN_ADDR"
 
 cd ../l1
 
 # INITIALIZE BRIDGES
 output=$(npm run initialize-bridges)
-formatAndApendOrUpdate "$output" "CONTRACTS_L2_LIDO_BRIDGE_PROXY_ADDR"
+formatAndAppendOrUpdate "$output" "CONTRACTS_L2_LIDO_BRIDGE_PROXY_ADDR"
 
 cd ../l2
 
