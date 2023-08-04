@@ -74,8 +74,4 @@ abstract contract L2BridgeExecutor is BridgeExecutorBase, IL2BridgeExecutor {
     function getEthereumGovernanceExecutor() external view returns (address) {
         return _ethereumGovernanceExecutor;
     }
-
-    function setGovernance(address newGovernance) public {
-        _ethereumGovernanceExecutor = newGovernance;
-    }
 }
