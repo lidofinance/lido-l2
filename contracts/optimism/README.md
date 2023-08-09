@@ -12,6 +12,23 @@ At this point, the implementation must provide a scalable and reliable solution 
 
 [^*]: The current implementation might not support the non-standard functionality of the ERC20 tokens. For example, rebasable tokens or tokens with transfers fee will work incorrectly. In case your token implements some non-typical ERC20 logic, make sure it is compatible with the bridge before usage.
 
+## Security surface overview
+
+| Statement | Answer |
+|--------------------------------|-------------------|
+| It is possible to bridge wstETH forth and back using this bridge |Yes|
+| The bridge using a canonical mechanism for message/value passing |Yes|
+| The bridge is upgradeable |Yes|
+| Upgrade authority for the bridge |[Lido DAO Agent](https://etherscan.io/address/0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c) representation [on Arbitrum](https://arbiscan.io/address/0x1dca41859cd23b526cbe74da8f48ac96e14b1a29) via [ArbitrumBridgeExecutor](https://github.com/lidofinance/governance-crosschain-bridges/blob/master/contracts/bridges/ArbitrumBridgeExecutor.sol)|
+| Emergency pause/cancel mechanisms and their authorities |[3/5 emergency msig](https://app.safe.global/home?safe=arb1:0xfDCf209A213a0b3C403d543F87E74FCbcA11de34), [composition](https://research.lido.fi/t/lido-on-l2-first-launches/2786)|
+| The bridged token support permits and ERC-1271 |No, open issue [#46](https://github.com/lidofinance/lido-l2/issues/46) |
+| Are the following things in the scope of this bridge deployment: | |
+| - Passing the (w)stETH/USD price feed | No |
+| - Passing Lido DAO governance decisions | Yes, [ArbitrumBridgeExecutor](https://github.com/lidofinance/governance-crosschain-bridges/blob/master/contracts/bridges/ArbitrumBridgeExecutor.sol) |
+| Bridges are complicated in that the transaction can succeed on one side and fail on the other. What's the handling mechanism for this issue? | TBA |
+| Is there a deployment script that sets all the parameters and authorities correctly? | TBA |
+| Is there a post-deploy check script that, given a deployment, checks that all parameters and authorities are set correctly? | TBA |
+
 ## Optimism's Bridging Flow
 
 The default implementation of the Optimism bridging solution consists of two parts: `L1StandardBridge` and `L2StandardBridge`. These contracts allow bridging the ERC20 tokens between Ethereum and Optimism chains.
@@ -38,13 +55,13 @@ A high-level overview of the proposed solution might be found in the below diagr
 
 ![](https://i.imgur.com/yAF9gbl.png)
 
-- [**`BridgingManager`**](#BridgingManager) - contains administrative methods to retrieve and control the state of the bridging process.
-- [**`BridgeableTokens`**](#BridgeableTokens) - contains the logic for validation of tokens used in the bridging process.
-- [**`CrossDomainEnabled`**](#CrossDomainEnabled) - helper contract for contracts performing cross-domain communications
-- [**`L1ERC20TokenBridge`**](#L1ERC20TokenBridge) - Ethereum's counterpart of the bridge to bridge registered ERC20 compatible tokens between Ethereum and Optimism chains.
-- [**`L2ERC20TokenBridge`**](#L2ERC20TokenBridge) - Optimism's counterpart of the bridge to bridge registered ERC20 compatible tokens between Ethereum and Optimism chains
-- [**`ERC20Bridged`**](#ERC20Bridged) - an implementation of the `ERC20` token with administrative methods to mint and burn tokens.
-- [**`OssifiableProxy`**](#OssifiableProxy) - the ERC1967 proxy with extra admin functionality.
+- [**`BridgingManager`**](#bridgingmanager) - contains administrative methods to retrieve and control the state of the bridging process.
+- [**`BridgeableTokens`**](#bridgeabletokens) - contains the logic for validation of tokens used in the bridging process.
+- [**`CrossDomainEnabled`**](#crossdomainenabled) - helper contract for contracts performing cross-domain communications
+- [**`L1ERC20TokenBridge`**](#l1erc20tokenbridge) - Ethereum's counterpart of the bridge to bridge registered ERC20 compatible tokens between Ethereum and Optimism chains.
+- [**`L2ERC20TokenBridge`**](#l2erc20tokenbridge) - Optimism's counterpart of the bridge to bridge registered ERC20 compatible tokens between Ethereum and Optimism chains
+- [**`ERC20Bridged`**](#erc20bridged) - an implementation of the `ERC20` token with administrative methods to mint and burn tokens.
+- [**`OssifiableProxy`**](#ossifiableproxy) - the ERC1967 proxy with extra admin functionality.
 
 ## BridgingManager
 
@@ -119,7 +136,7 @@ Enables the deposits if they are disabled. Reverts with the error `ErrorDeposits
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`whenDepositsEnabled`](#whenDepositsEnabled) [`onlyRole(DEPOSITS_DISABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69)
+> **Modifiers:** &nbsp;&nbsp; [`whenDepositsEnabled`](#whendepositsenabled) [`onlyRole(DEPOSITS_DISABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69)
 >
 > **Emits:** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; `DepositsDisabled(address account)`
 
@@ -139,7 +156,7 @@ Enables the withdrawals if they are disabled. Reverts with the error `ErrorWithd
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`whenWithdrawalsEnabled`](#whenWithdrawalsEnabled)[`onlyRole(WITHDRAWALS_DISABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69)
+> **Modifiers:** &nbsp;&nbsp; [`whenWithdrawalsEnabled`](#whenwithdrawalsenabled)[`onlyRole(WITHDRAWALS_DISABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69)
 >
 > **Emits:** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; `WithdrawalsDisabled(address account)`
 
@@ -219,7 +236,7 @@ Enforces that the modified function is only callable by a specific cross-domain 
 ## `L1ERC20TokenBridge`
 
 **Implements:** [`IL1ERC20Bridge`](https://github.com/ethereum-optimism/optimism/blob/develop/packages/contracts/contracts/L1/messaging/IL1ERC20Bridge.sol)
-**Inherits:** [`BridgingManager`](#BridgingManager) [`BridgeableTokens`](#BridgeableTokens) [`CrossDomainEnabled`](#CrossDomainEnabled)
+**Inherits:** [`BridgingManager`](#bridgingmanager) [`BridgeableTokens`](#bridgeabletokens) [`CrossDomainEnabled`](#crossdomainenabled)
 
 The L1 Standard bridge is a contract that locks bridged token on L1 side, send deposit messages on L2 side and finalize token withdrawals from L2.
 
@@ -233,7 +250,7 @@ The L1 Standard bridge is a contract that locks bridged token on L1 side, send d
 
 > **Visibility:** `external`
 >
-> **Modifier:** [`whenDepositsEnabled`](#whenDepositsEnabled) [`onlySupportedL1Token(_l1Token)`](#modifier-onlySupportedL1Tokenaddress-l1Token_) [`onlySupportedL2Token(_l2Token)`](#modifier-onlySupportedL2Tokenaddress-l2Token_)
+> **Modifier:** [`whenDepositsEnabled`](#whendepositsenabled) [`onlySupportedL1Token(_l1Token)`](#modifier-onlySupportedL1Tokenaddress-l1Token_) [`onlySupportedL2Token(_l2Token)`](#modifier-onlySupportedL2Tokenaddress-l2Token_)
 >
 > **Arguments:**
 >
@@ -250,7 +267,7 @@ Initiate bridging of ERC-20 token `l1Token_` on L1 side to `l2Token_` on L2 side
 
 > **Visibility:** `external`
 >
-> **Modifier:** [`whenDepositsEnabled`](#whenDepositsEnabled) [`onlySupportedL1Token(_l1Token)`](#modifier-onlySupportedL1Tokenaddress-l1Token_) [`onlySupportedL2Token(_l2Token)`](#modifier-onlySupportedL2Tokenaddress-l2Token_)
+> **Modifier:** [`whenDepositsEnabled`](#whendepositsenabled) [`onlySupportedL1Token(_l1Token)`](#modifier-onlySupportedL1Tokenaddress-l1Token_) [`onlySupportedL2Token(_l2Token)`](#modifier-onlySupportedL2Tokenaddress-l2Token_)
 >
 > **Arguments:**
 >
@@ -268,7 +285,7 @@ Initiate bridging of ERC-20 token on L1 side to L2 to specified recipient.
 
 > **Visibility:** `external`
 >
-> **Modifier:** [`whenWithdrawalsEnabled()`](#whenWithdrawalsEnabled) [`onlySupportedL1Token(_l1Token)`](#modifier-onlySupportedL1Tokenaddress-l1Token_) [`onlySupportedL2Token(_l2Token)`](#modifier-onlySupportedL2Tokenaddress-l2Token_) [`onlyFromCrossDomainAccount(l2TokenBridge)`](#onlyFromCrossDomainAccountaddress-_sourceDomainAccount)
+> **Modifier:** [`whenWithdrawalsEnabled()`](#whenwithdrawalsenabled) [`onlySupportedL1Token(_l1Token)`](#modifier-onlySupportedL1Tokenaddress-l1Token_) [`onlySupportedL2Token(_l2Token)`](#modifier-onlySupportedL2Tokenaddress-l2Token_) [`onlyFromCrossDomainAccount(l2TokenBridge)`](#onlyfromcrossdomainaccountaddress-_sourcedomainaccount)
 >
 > **Arguments:**
 >
@@ -303,7 +320,7 @@ Performs the logic for deposits by informing the L2 Deposited Token contract of 
 ## `L2ERC20TokenBridge`
 
 **Implements:** [`IL2ERC20Bridge`](https://github.com/ethereum-optimism/optimism/blob/develop/packages/contracts/contracts/L2/messaging/IL2ERC20Bridge.sol)
-**Extends** [`BridgingManager`](#BridgingManager) [`BridgeableTokens`](#BridgeableTokens) [`CrossDomainEnabled`](#CrossDomainEnabled)
+**Extends** [`BridgingManager`](#bridgingmanager) [`BridgeableTokens`](#bridgeabletokens) [`CrossDomainEnabled`](#crossdomainenabled)
 
 The L2 token bridge is a contract that works with the L1 Token bridge to enable ERC20 token bridging between L1 and L2. This contract acts as a minter for new tokens when it hears about deposits into the L1 token bridge. This contract also acts as a burner of the tokens intended for withdrawal, informing the L1 bridge to release L1 funds.
 
@@ -317,7 +334,7 @@ The L2 token bridge is a contract that works with the L1 Token bridge to enable 
 
 > **Visibility:** `external`
 >
-> **Modifier:** [`whenWithdrawalsEnabled()`](#whenWithdrawalsEnabled) [`onlySupportedL2Token(_l2Token)`](#modifier-onlySupportedL2Tokenaddress-l2Token_)
+> **Modifier:** [`whenWithdrawalsEnabled()`](#whenwithdrawalsenabled) [`onlySupportedL2Token(_l2Token)`](#modifier-onlySupportedL2Tokenaddress-l2Token_)
 >
 > **Arguments:**
 >
@@ -332,7 +349,7 @@ Initiate a withdraw of some tokens to the caller's account on L1.
 
 > **Visibility:** `external`
 >
-> **Modifier:** [`whenWithdrawalsEnabled()`](#whenWithdrawalsEnabled) [`onlySupportedL2Token(_l2Token)`](#modifier-onlySupportedL2Tokenaddress-l2Token_)
+> **Modifier:** [`whenWithdrawalsEnabled()`](#whenwithdrawalsenabled) [`onlySupportedL2Token(_l2Token)`](#modifier-onlySupportedL2Tokenaddress-l2Token_)
 >
 > **Arguments:**
 >
@@ -348,7 +365,7 @@ Initiate a withdraw of some token to a recipient's account on L1.
 
 > **Visibility:** `external`
 >
-> **Modifiers:** [`whenDepositsEnabled`](#whenDepositsEnabled) [`onlySupportedL1Token(_l1Token)`](#modifier-onlySupportedL1Tokenaddress-l1Token_) [`onlySupportedL2Token(_l2Token)`](#modifier-onlySupportedL2Tokenaddress-l2Token_) [`onlyFromCrossDomainAccount(l2TokenBridge)`](#onlyFromCrossDomainAccountaddress-_sourceDomainAccount)
+> **Modifiers:** [`whenDepositsEnabled`](#whendepositsenabled) [`onlySupportedL1Token(_l1Token)`](#modifier-onlySupportedL1Tokenaddress-l1Token_) [`onlySupportedL2Token(_l2Token)`](#modifier-onlySupportedL2Tokenaddress-l2Token_) [`onlyFromCrossDomainAccount(l2TokenBridge)`](#onlyfromcrossdomainaccountaddress-_sourcedomainaccount)
 >
 > **Arguments:**
 >
@@ -545,7 +562,7 @@ Atomically decreases the allowance granted to `spender` by the caller. Returns a
 ## `ERC20Bridged`
 
 **Implements:** [`IERC20Bridged`](https://github.com/lidofinance/lido-l2/blob/main/contracts/token/interfaces/IERC20Bridged.sol)
-**Inherits:** [`ERC20Metadata`](#ERC20Metadata) [`ERC20Core`](#ERC20CoreLogic)
+**Inherits:** [`ERC20Metadata`](#erc20metadata) [`ERC20Core`](#ERC20CoreLogic)
 
 Inherits the `ERC20` default functionality that allows the bridge to mint and burn tokens.
 
@@ -633,7 +650,7 @@ Returns whether the proxy is ossified or not.
 
 > **Visibility:** &nbsp; &nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyadmin)
 >
 > **Emits:** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; `AdminChanged(address previousAdmin, address newAdmin)`
 
@@ -643,7 +660,7 @@ Allows to transfer admin rights to zero address and prevent future upgrades of t
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyadmin)
 >
 > **Arguments:**
 >
@@ -657,7 +674,7 @@ Changes the admin of the proxy. Reverts with message "ERC1967: new admin is the 
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyadmin)
 >
 > **Arguments:**
 >
@@ -671,7 +688,7 @@ Upgrades the implementation of the proxy. Reverts with the error "ERC1967: new i
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyadmin)
 >
 > **Arguments:**
 >

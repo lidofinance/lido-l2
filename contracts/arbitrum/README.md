@@ -12,6 +12,23 @@ At this point, the implementation must provide a scalable and reliable solution 
 
 [^*]: The current implementation might not support the non-standard functionality of the ERC20 tokens. For example, rebasable tokens or tokens with transfers fee will work incorrectly. In case your token implements some non-typical ERC20 logic, make sure it is compatible with the gateway before usage.
 
+## Security surface overview
+
+| Statement | Answer |
+|--------------------------------|-------------------|
+| It is possible to bridge wstETH forth and back using this bridge |Yes|
+| The bridge using a canonical mechanism for message/value passing |Yes|
+| The bridge is upgradeable |Yes|
+| Upgrade authority for the bridge |[Lido DAO Agent](https://etherscan.io/address/0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c) representation [on Optimism](https://optimistic.etherscan.io/address/0xefa0db536d2c8089685630fafe88cf7805966fc3) via [OptimismBridgeExecutor](https://github.com/lidofinance/governance-crosschain-bridges/blob/master/contracts/bridges/OptimismBridgeExecutor.sol)|
+| Emergency pause/cancel mechanisms and their authorities |[3/5 emergency msig](https://app.safe.global/home?safe=oeth:0x4Cf8fE0A4c2539F7EFDD2047d8A5D46F14613088), [composition](https://research.lido.fi/t/lido-on-l2-first-launches/2786)|
+| The bridged token support permits and ERC-1271 |No, open issue [#46](https://github.com/lidofinance/lido-l2/issues/46) |
+| Are the following things in the scope of this bridge deployment: | |
+| - Passing the (w)stETH/USD price feed | No |
+| - Passing Lido DAO governance decisions | Yes, [OptimismBridgeExecutor](https://github.com/lidofinance/governance-crosschain-bridges/blob/master/contracts/bridges/OptimismBridgeExecutor.sol) |
+| Bridges are complicated in that the transaction can succeed on one side and fail on the other. What's the handling mechanism for this issue? | TBA |
+| Is there a deployment script that sets all the parameters and authorities correctly? | TBA |
+| Is there a post-deploy check script that, given a deployment, checks that all parameters and authorities are set correctly? | TBA |
+
 ## Arbitrum's Bridging Flow
 
 Arbitrum’s “Canonical Bridge” tokens-bridging architecture consists of three types of contracts:
@@ -100,20 +117,20 @@ A high-level overview of the proposed solution might be found in the below diagr
 ![](https://i.imgur.com/TPfEr29.png)
 
 - Libraries:
-  - [**`L1OutboundDataParser`**](#L1OutboundDataParser) - a helper library to parse data passed to `outboundTransfer()` of `L1ERC20TokenGateway`.
-  - [**`L2OutboundDataParser`**](#L2OutboundDataParser) - a helper library to parse data passed to `outboundTransfer()` of `L2ERC20TokenGateway`.
+  - [**`L1OutboundDataParser`**](#l1outbounddataparser) - a helper library to parse data passed to `outboundTransfer()` of `L1ERC20TokenGateway`.
+  - [**`L2OutboundDataParser`**](#l2outbounddataparser) - a helper library to parse data passed to `outboundTransfer()` of `L2ERC20TokenGateway`.
 - Abstract Contracts:
-  - [_**`InterchainERC20TokenGateway`**_](#InterchainERC20TokenGateway) - an abstract contract that implements logic shared between L1 and L2 gateways.
+  - [_**`InterchainERC20TokenGateway`**_](#interchainerc20tokengateway) - an abstract contract that implements logic shared between L1 and L2 gateways.
 - Contracts:
   - [**`AccessControl`**](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/AccessControl.sol) - contract from the @openzeppelin package that allows children to implement role-based access.
-  - [**`BridgingManager`**](#BridgingManager) - contains administrative methods to retrieve and control the state of the bridging process.
-  - [**`BridgeableTokens`**](#BridgeableTokens) - contains the logic for validation of tokens used in the bridging process.
-  - [**`L1CrossDomainEnabled`**](#L1CrossDomainEnabled) - helper contract for contracts performing Ethereum to Arbitrum communication process via Retryable Tickets.
-  - [**`L1ERC20TokenGateway`**](#L1ERC20TokenGateway) - Ethereum's counterpart of the gateway to bridge registered ERC20 compatible tokens between Ethereum and Arbitrum chains.
+  - [**`BridgingManager`**](#bridgingmanager) - contains administrative methods to retrieve and control the state of the bridging process.
+  - [**`BridgeableTokens`**](#bridgeabletokens) - contains the logic for validation of tokens used in the bridging process.
+  - [**`L1CrossDomainEnabled`**](#l1crossdomainenabled) - helper contract for contracts performing Ethereum to Arbitrum communication process via Retryable Tickets.
+  - [**`L1ERC20TokenGateway`**](#l1erc20tokengateway) - Ethereum's counterpart of the gateway to bridge registered ERC20 compatible tokens between Ethereum and Arbitrum chains.
   - [**`L2CrossDomainEnabled`**](#L2Messenger) - helper contract to simplify Arbitrum to Ethereum communication process
-  - [**`L2ERC20TokenGateway`**](#L2ERC20TokenGateway) - Arbitrum's counterpart of the gateway to bridge registered ERC20 compatible tokens between Ethereum and Arbitrum chains
-  - [**`ERC20Bridged`**](#ERC20Bridged) - an implementation of the `ERC20` token with administrative methods to mint and burn tokens.
-  - [**`OssifiableProxy`**](#OssifiableProxy) - the ERC1967 proxy with extra admin functionality.
+  - [**`L2ERC20TokenGateway`**](#l2erc20tokengateway) - Arbitrum's counterpart of the gateway to bridge registered ERC20 compatible tokens between Ethereum and Arbitrum chains
+  - [**`ERC20Bridged`**](#erc20bridged) - an implementation of the `ERC20` token with administrative methods to mint and burn tokens.
+  - [**`OssifiableProxy`**](#ossifiableproxy) - the ERC1967 proxy with extra admin functionality.
 
 ## L1OutboundDataParser
 
@@ -234,7 +251,7 @@ Enables the deposits if they are disabled. Reverts with the error `ErrorDeposits
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`whenDepositsEnabled`](#whenDepositsEnabled) [`onlyRole(DEPOSITS_DISABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69)
+> **Modifiers:** &nbsp;&nbsp; [`whenDepositsEnabled`](#whendepositsenabled) [`onlyRole(DEPOSITS_DISABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69)
 >
 > **Emits:** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; `DepositsDisabled(address account)`
 
@@ -254,7 +271,7 @@ Enables the withdrawals if they are disabled. Reverts with the error `ErrorWithd
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`whenWithdrawalsEnabled`](#whenWithdrawalsEnabled)[`onlyRole(WITHDRAWALS_DISABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69)
+> **Modifiers:** &nbsp;&nbsp; [`whenWithdrawalsEnabled`](#whenwithdrawalsenabled)[`onlyRole(WITHDRAWALS_DISABLER_ROLE)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322/contracts/access/AccessControl.sol#L69)
 >
 > **Emits:** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; `WithdrawalsDisabled(address account)`
 
@@ -304,7 +321,7 @@ Validates that passed `l2Token_` is supported by the bridge. Reverts with error 
 ## InterchainERC20TokenGateway
 
 **Implements:** `IInterchainERC20TokenGateway`
-**Inherits:** [`BridgingManager`](#BridgingManager) [`BridgeableTokens`](#BridgeableTokens)
+**Inherits:** [`BridgingManager`](#bridgingmanager) [`BridgeableTokens`](#bridgeabletokens)
 
 The contract keeps logic shared among both L1 and L2 gateways, adding the methods for bridging management: enabling and disabling withdrawals/deposits.
 
@@ -390,7 +407,7 @@ Validates that transaction was initiated by the `crossDomainAccount_` address fr
 
 ## L1ERC20TokenGateway
 
-- **Inherits**: [`InterchainERC20TokenGateway`](#InterchainERC20TokenGateway) [`L1CrossDomainEnabled`](#L1CrossDomainEnabled)
+- **Inherits**: [`InterchainERC20TokenGateway`](#interchainerc20tokengateway) [`L1CrossDomainEnabled`](#l1crossdomainenabled)
 - **Implements**: `IL1TokenGateway`
 
 Contract implements `ITokenGateway` interface and with counterpart `L2TokensGatewy` allows bridging registered ERC20 compatible tokens between Ethereum and Arbitrum chains. The contract is compatible with `L1GatewayRouter` and might be used to transfer tokens via the "canonical" Arbitrum's bridge.
@@ -405,7 +422,7 @@ Additionally, the contract provides administrative methods to temporarily disabl
 >
 > **Mutability:** &nbsp; `payble`
 >
-> **Modifiers:** &nbsp;&nbsp; [`whenDepositsEnabled()`](#whenDepositsEnabled) [`onlySupportedL1Token(l1Token_)`](#onlySupportedL1Tokenaddress-l1Token_)
+> **Modifiers:** &nbsp;&nbsp; [`whenDepositsEnabled()`](#whendepositsenabled) [`onlySupportedL1Token(l1Token_)`](#onlysupportedl1tokenaddress-l1token_)
 >
 > **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bytes memory)`
 >
@@ -442,7 +459,7 @@ Returns an encoded value of the id for created Retryable Ticket. Same value is u
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `internal`
 >
-> **Modifiers:** &nbsp;&nbsp; [`whenWithdrawalsEnabled()`](#whenWithdrawalsEnabled) [`onlySupportedL1Token(l1Token_)`](#onlySupportedL1Tokenaddress-l1Token_) [`onlyFromCrossDomainAccount(counterpartGateway)`](#onlyFromCrossDomainAccountaddress-crossDomainAccount_)
+> **Modifiers:** &nbsp;&nbsp; [`whenWithdrawalsEnabled()`](#whenwithdrawalsenabled) [`onlySupportedL1Token(l1Token_)`](#onlysupportedl1tokenaddress-l1token_) [`onlyFromCrossDomainAccount(counterpartGateway)`](#onlyfromcrossdomainaccountaddress-crossdomainaccount_)
 >
 > **Arguments:**
 >
@@ -504,7 +521,7 @@ Validates that the `msg.sender` is equal to the `crossDomainAccount_` with appli
 
 ## L2ERC20TokenGateway
 
-- **Inherits**: [`InterchainERC20TokenGateway`](#InterchainERC20TokenGateway) [`L2CrossDomainEnabled`](#L2CrossDomainEnabled)
+- **Inherits**: [`InterchainERC20TokenGateway`](#interchainerc20tokengateway) [`L2CrossDomainEnabled`](#l2crossdomainenabled)
 - **Implements**: `IL2TokenGateway`
 
 Contract implements `ITokenGateway` interface and with counterpart `L1ERC20TokenGateway` allows bridging registered ERC20 compatible tokens between Arbitrum and Ethereum chains. The contract is compatible with `L2GatewayRouter` and might be used to transfer tokens via the “canonical” Arbitrum’s bridge.
@@ -517,7 +534,7 @@ Additionally, the contract provides administrative methods to temporarily disabl
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`whenWithdrawalsEnabled()`](#whenWithdrawalsEnabled) [`onlySupportedL1Token(l1Token_)`](#onlySupportedL1Tokenaddress-l1Token_)
+> **Modifiers:** &nbsp;&nbsp; [`whenWithdrawalsEnabled()`](#whenwithdrawalsenabled) [`onlySupportedL1Token(l1Token_)`](#onlysupportedl1tokenaddress-l1token_)
 >
 > **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bytes memory)`
 >
@@ -549,7 +566,7 @@ Returns encoded value of the unique id for L2-to-L1 transaction. Same value is u
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `internal`
 >
-> **Modifiers:** &nbsp;&nbsp; [`whenDepositsEnabled()`](#whenDepositsEnabled) [`onlySupportedL1Token(l1Token_)`](#onlySupportedL1Tokenaddress-l1Token_) [`onlyFromCrossDomainAccount(counterpartGateway)`](#onlyFromCrossDomainAccountaddress-crossDomainAccount_1)
+> **Modifiers:** &nbsp;&nbsp; [`whenDepositsEnabled()`](#whendepositsenabled) [`onlySupportedL1Token(l1Token_)`](#onlysupportedl1tokenaddress-l1token_) [`onlyFromCrossDomainAccount(counterpartGateway)`](#onlyFromCrossDomainAccountaddress-crossDomainAccount_1)
 >
 > **Arguments:**
 >
@@ -728,7 +745,7 @@ Atomically decreases the allowance granted to `spender` by the caller. Returns a
 ## `ERC20Bridged`
 
 **Implements:** [`IERC20Bridged`](https://github.com/lidofinance/lido-l2/blob/main/contracts/token/interfaces/IERC20Bridged.sol)
-**Inherits:** [`ERC20Metadata`](#ERC20Metadata) [`ERC20Core`](#ERC20CoreLogic)
+**Inherits:** [`ERC20Metadata`](#erc20metadata) [`ERC20Core`](#ERC20CoreLogic)
 
 Inherits the `ERC20` default functionality that allows the bridge to mint and burn tokens.
 
@@ -816,7 +833,7 @@ Returns whether the proxy is ossified or not.
 
 > **Visibility:** &nbsp; &nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyadmin)
 >
 > **Emits:** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; `AdminChanged(address previousAdmin, address newAdmin)`
 
@@ -826,7 +843,7 @@ Allows to transfer admin rights to zero address and prevent future upgrades of t
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyadmin)
 >
 > **Arguments:**
 >
@@ -840,7 +857,7 @@ Changes the admin of the proxy. Reverts with message "ERC1967: new admin is the 
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyadmin)
 >
 > **Arguments:**
 >
@@ -854,7 +871,7 @@ Upgrades the implementation of the proxy. Reverts with the error "ERC1967: new i
 
 > **Visibility:** &nbsp;&nbsp;&nbsp; `external`
 >
-> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyAdmin)
+> **Modifiers:** &nbsp;&nbsp; [`onlyAdmin`](#onlyadmin)
 >
 > **Arguments:**
 >
