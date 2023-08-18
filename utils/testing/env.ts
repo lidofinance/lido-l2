@@ -42,6 +42,22 @@ export default {
   OPT_GOV_BRIDGE_EXECUTOR() {
     return env.address("TESTING_OPT_GOV_BRIDGE_EXECUTOR");
   },
+
+  MNT_L1_TOKEN() {
+    return env.address("TESTING_MNT_L1_TOKEN");
+  },
+  MNT_L2_TOKEN() {
+    return env.address("TESTING_MNT_L2_TOKEN");
+  },
+  MNT_L1_ERC20_TOKEN_BRIDGE() {
+    return env.address("TESTING_MNT_L1_ERC20_TOKEN_BRIDGE");
+  },
+  MNT_L2_ERC20_TOKEN_BRIDGE() {
+    return env.address("TESTING_MNT_L2_ERC20_TOKEN_BRIDGE");
+  },
+  MNT_GOV_BRIDGE_EXECUTOR() {
+    return env.address("TESTING_MNT_GOV_BRIDGE_EXECUTOR");
+  },
   L1_DEV_MULTISIG() {
     return env.address("L1_DEV_MULTISIG");
   },
