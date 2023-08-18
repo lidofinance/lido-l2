@@ -1,4 +1,4 @@
-import { toAddress } from "@mantleio/sdk";
+import { toAddress } from "@eth-optimism/sdk";
 import { NetworkName } from "./network";
 
 function getString(variableName: string, defaultValue?: string) {
