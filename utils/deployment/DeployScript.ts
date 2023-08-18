@@ -169,6 +169,8 @@ export class DeployScript {
       5: "eth_goerli",
       10: "opt_mainnet",
       420: "opt_goerli",
+      5000: "mnt_mainnet",
+      5001: "mnt_goerli",
       31337: "hardhat",
       42161: "arb_mainnet",
       421613: "arb_goerli",

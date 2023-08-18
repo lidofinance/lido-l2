@@ -34,7 +34,7 @@ class UnitTest<T> {
 
     describe(title, function () {
       // @ts-ignore
-      let ctx: T = {};
+      let ctx = {};
 
       let evmSnapshotId: string;
 
@@ -46,7 +46,7 @@ class UnitTest<T> {
 
       // create mocha tests
       for (const { title, test } of tests) {
-        it(title, () => test(ctx));
+        it(title, () => test(ctx as T));
       }
 
       afterEach(async () => {

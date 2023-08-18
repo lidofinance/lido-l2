@@ -83,6 +83,21 @@ const config: HardhatUserConfig = {
     opt_goerli_fork: {
       url: "http://localhost:9545",
     },
+    // Mantle Public Chains
+    mnt_mainnet: {
+      url: env.string("RPC_MNT_MAINNET", ""),
+    },
+    mnt_goerli: {
+      url: env.string("RPC_MNT_GOERLI", ""),
+    },
+
+    // Mantle Fork Chains
+    mnt_mainnet_fork: {
+      url: "http://localhost:9545",
+    },
+    mnt_goerli_fork: {
+      url: "http://localhost:9545",
+    },
   },
   gasReporter: {
     enabled: env.string("REPORT_GAS", "false") !== "false",
@@ -102,6 +117,7 @@ const config: HardhatUserConfig = {
     externalArtifacts: [
       "./interfaces/**/*.json",
       "./utils/optimism/artifacts/*.json",
+      "./utils/mantle/artifacts/*.json",
       "./utils/arbitrum/artifacts/*.json",
     ],
   },
