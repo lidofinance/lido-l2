@@ -15,20 +15,19 @@ async function main() {
     l2ChainId: network.chainId("mnt", networkName),
     l1SignerOrProvider: l1Signer,
     l2SignerOrProvider: l2Signer,
-    bedrock: true,
   });
 
   const status = await crossChainMessenger.getMessageStatus(txHash);
 
-  if (status !== MessageStatus.READY_TO_PROVE) {
-    throw new Error(`Invalid tx status: ${status}`);
-  }
+  // if (status !== MessageStatus.READY_TO_PROVE) {
+  //   throw new Error(`Invalid tx status: ${status}`);
+  // }
 
-  console.log("Prove the L2 -> L1 message");
-  const tx = await crossChainMessenger.proveMessage(txHash);
-  console.log(`Waiting for the prove tx ${tx.hash}...`);
-  await tx.wait();
-  console.log(`Message was proved successfully!`);
+  // console.log("Prove the L2 -> L1 message");
+  // const tx = await crossChainMessenger.proveMessage(txHash);
+  // console.log(`Waiting for the prove tx ${tx.hash}...`);
+  // await tx.wait();
+  // console.log(`Message was proved successfully!`);
 }
 
 main().catch((error) => {

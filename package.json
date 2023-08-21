@@ -34,8 +34,13 @@
     "optimism:test:launch": "REVERT=false hardhat test ./test/optimism/{_launch.test.ts,bridging.integration.test.ts}",
     "mantle:deploy": "ts-node --files ./scripts/mantle/deploy-bridge.ts",
     "mantle:finalize-message": "ts-node --files ./scripts/mantle/finalize-message.ts",
+    "mantle:test:e2e": "hardhat test ./test/mantle/*.e2e.test.ts",
+    "mantle:test:bridginge2e": "hardhat test ./test/mantle/bridging.e2e.test.ts",
+    "mantle:test:proxye2e": "hardhat test ./test/mantle/managing-proxy.e2e.test.ts",
     "mantle:test:unit": "hardhat test ./test/mantle/*.unit.test.ts",
-    "mantle:test:integration": "hardhat test ./test/mantle/*.integration.test.ts"
+    "mantle:test:integration": "hardhat test ./test/mantle/*.integration.test.ts",
+    "mantle:test:acceptance": "hardhat test ./test/mantle/*.acceptance.test.ts",
+    "mantle:test:executor": "hardhat test ./test/bridge-executor/mantle.integration.test.ts"
   },
   "keywords": [],
   "author": "",

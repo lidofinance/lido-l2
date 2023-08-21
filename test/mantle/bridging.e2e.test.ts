@@ -1,8 +1,8 @@
 import {
   CrossChainMessenger,
-  DAIBridgeAdapter,
+  ERC20BridgeAdapter,
   MessageStatus,
-} from "@mantle/sdk";
+} from "@mantleio/sdk";
 import { assert } from "chai";
 import { TransactionResponse } from "@ethersproject/providers";
 
@@ -80,19 +80,19 @@ scenario("Mantle :: Bridging via deposit/withdraw E2E test", ctxFactory)
     await withdrawTokensTxResponse.wait();
   })
 
-  .step("Waiting for status to change to READY_TO_PROVE", async (ctx) => {
-    await ctx.crossChainMessenger.waitForMessageStatus(
-      withdrawTokensTxResponse.hash,
-      MessageStatus.READY_TO_PROVE
-    );
-  })
+  // .step("Waiting for status to change to READY_TO_PROVE", async (ctx) => {
+  //   await ctx.crossChainMessenger.waitForMessageStatus(
+  //     withdrawTokensTxResponse.hash,
+  //     MessageStatus.READY_TO_PROVE
+  //   );
+  // })
 
-  .step("Proving the L2 -> L1 message", async (ctx) => {
-    const tx = await ctx.crossChainMessenger.proveMessage(
-      withdrawTokensTxResponse.hash
-    );
-    await tx.wait();
-  })
+  // .step("Proving the L2 -> L1 message", async (ctx) => {
+  //   const tx = await ctx.crossChainMessenger.proveMessage(
+  //     withdrawTokensTxResponse.hash
+  //   );
+  //   await tx.wait();
+  // })
 
   .step("Waiting for status to change to IN_CHALLENGE_PERIOD", async (ctx) => {
     await ctx.crossChainMessenger.waitForMessageStatus(
@@ -139,7 +139,7 @@ async function ctxFactory() {
       l2SignerOrProvider: testingSetup.l2Tester,
       bridges: {
         LidoBridge: {
-          Adapter: DAIBridgeAdapter,
+          Adapter: ERC20BridgeAdapter,
           l1Bridge: testingSetup.l1ERC20TokenBridge.address,
           l2Bridge: testingSetup.l2ERC20TokenBridge.address,
         },
