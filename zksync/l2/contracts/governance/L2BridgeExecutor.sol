@@ -45,6 +45,10 @@ abstract contract L2BridgeExecutor is BridgeExecutorBase, IL2BridgeExecutor {
             guardian
         )
     {
+        require(
+            ethereumGovernanceExecutor != address(0),
+            "Ethereum Governor address can't be zero"
+        );
         _ethereumGovernanceExecutor = ethereumGovernanceExecutor;
     }
 
@@ -63,6 +67,10 @@ abstract contract L2BridgeExecutor is BridgeExecutorBase, IL2BridgeExecutor {
     function updateEthereumGovernanceExecutor(
         address ethereumGovernanceExecutor
     ) external onlyThis {
+        require(
+            ethereumGovernanceExecutor != address(0),
+            "Ethereum Governor address can't be zero"
+        );
         emit EthereumGovernanceExecutorUpdate(
             _ethereumGovernanceExecutor,
             ethereumGovernanceExecutor
