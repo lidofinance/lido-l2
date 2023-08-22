@@ -9,10 +9,8 @@ import {L2BridgeExecutor} from "./L2BridgeExecutor.sol";
 contract ZkSyncBridgeExecutor is L2BridgeExecutor {
     /// @inheritdoc L2BridgeExecutor
     modifier onlyEthereumGovernanceExecutor() override {
-        if (
-            AddressAliasHelper.undoL1ToL2Alias(msg.sender) !=
-            _ethereumGovernanceExecutor
-        ) revert UnauthorizedEthereumExecutor();
+        if (msg.sender != _ethereumGovernanceExecutor)
+            revert UnauthorizedEthereumExecutor();
         _;
     }
 
