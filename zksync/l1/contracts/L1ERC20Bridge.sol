@@ -188,6 +188,7 @@ contract L1ERC20Bridge is
             l2TxHash,
             msg.sender,
             _l2Receiver,
+            refundRecipient,
             _l1Token,
             amount
         );

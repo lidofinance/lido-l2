@@ -7,6 +7,24 @@ import {IL1Bridge} from "@matterlabs/zksync-contracts/l1/contracts/bridge/interf
 import {IL1BridgeLegacy} from "@matterlabs/zksync-contracts/l1/contracts/bridge/interfaces/IL1BridgeLegacy.sol";
 
 interface IL1ERC20Bridge is IL1Bridge, IL1BridgeLegacy {
+    /**
+     * @dev Emitted when the deposit function is called
+     * @param l2DepositTxHash The L2 transaction hash of deposit finalization
+     * @param from The address of the sender
+     * @param to The address of the the recipient
+     * @param refundRecipient The address of the refundRecipient on L2
+     * @param l1Token The address of the token on L1
+     * @param amount The amount of tokens deposited
+     **/
+    event DepositInitiated(
+        bytes32 indexed l2DepositTxHash,
+        address indexed from,
+        address indexed to,
+        address refundRecipient,
+        address l1Token,
+        uint256 amount
+    );
+
     /// @notice A mapping L2 block number => message number => flag
     /// @notice Used to indicate that zkSync L2 -> L1 message was already processed
     function isWithdrawalFinalized(
