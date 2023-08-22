@@ -64,7 +64,7 @@ contract L1ERC20Bridge is
         uint256 _deployBridgeImplementationFee,
         uint256 _deployBridgeProxyFee
     ) external payable initializer reentrancyGuardInitializer {
-        require(_governor != address(0), "Governor address can't be zero");
+        require(_governor != address(0), "The governor address can't be zero");
         require(
             _factoryDeps.length == 2,
             "Invalid factory deps length provided"
@@ -149,6 +149,11 @@ contract L1ERC20Bridge is
         onlySupportedL1Token(_l1Token)
         returns (bytes32 l2TxHash)
     {
+        require(
+            _l2Receiver != address(0),
+            "The _l2Receiver address can't be zero"
+        );
+
         require(_amount != 0, "The deposit amount can't be zero");
 
         uint256 amount = _depositFunds(msg.sender, IERC20(_l1Token), _amount);
@@ -184,7 +189,7 @@ contract L1ERC20Bridge is
         // Save the deposited amount to claim funds on L1 if the deposit failed on L2
         depositAmount[msg.sender][_l1Token][l2TxHash] = amount;
 
-        emit DepositInitiated(
+        emit DepositInit(
             l2TxHash,
             msg.sender,
             _l2Receiver,

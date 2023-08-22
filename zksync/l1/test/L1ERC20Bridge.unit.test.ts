@@ -260,13 +260,14 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
       `Value ${l1BridgeDepositAmount.toString()} is not equal to ${amount.toString()}`
     );
 
-    // validate DepositInitiated event is emitted with the expected data
+    // validate DepositInit event is emitted with the expected data
     await expect(depositTx)
-      .to.emit(l1Erc20Bridge, "DepositInitiated")
+      .to.emit(l1Erc20Bridge, "DepositInit")
       .withArgs(
         canonicalTxHash,
         sender.address,
         recipient.address,
+        sender.address,
         l1Token.address,
         amount
       );

@@ -16,7 +16,7 @@ interface IL1ERC20Bridge is IL1Bridge, IL1BridgeLegacy {
      * @param l1Token The address of the token on L1
      * @param amount The amount of tokens deposited
      **/
-    event DepositInitiated(
+    event DepositInit(
         bytes32 indexed l2DepositTxHash,
         address indexed from,
         address indexed to,
