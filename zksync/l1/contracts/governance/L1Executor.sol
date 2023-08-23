@@ -11,18 +11,19 @@ contract L1Executor is OwnableUpgradeable {
         _disableInitializers();
     }
 
-    function initialize() external initializer {
+    IZkSync public zksync;
+
+    function initialize(IZkSync _zksync) external initializer {
         __Ownable_init();
+        zksync = _zksync;
     }
 
     function callZkSync(
-        address zkSyncAddress,
         address contractAddr,
         bytes memory data,
         uint256 gasLimit,
         uint256 gasPerPubdataByteLimit
     ) external payable onlyOwner {
-        IZkSync zksync = IZkSync(zkSyncAddress);
         zksync.requestL2Transaction{value: msg.value}(
             contractAddr,
             0,

@@ -155,7 +155,6 @@ async function main() {
       const encodedDataQueue = L1Executor.interface.encodeFunctionData(
         "callZkSync",
         [
-          zkSync.address,
           L2_BRIDGE_EXECUTOR_ADDR,
           data,
           gasLimit,

@@ -286,6 +286,7 @@ abstract contract BridgeExecutorBase is IExecutorBase {
         bool[] memory withDelegatecalls
     ) internal {
         if (targets.length == 0) revert EmptyTargets();
+        if (targets.length > 10) revert TooManyTargets();
         uint256 targetsLength = targets.length;
         if (
             targetsLength != values.length ||

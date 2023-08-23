@@ -574,7 +574,6 @@ async function executeGovOnL2Bridge(
    */
   const encodedDataQueue =
     L1Executor__factory.createInterface().encodeFunctionData("callZkSync", [
-      l1.zkSync.address,
       l2.govExecutor.address,
       data,
       gasLimit,
