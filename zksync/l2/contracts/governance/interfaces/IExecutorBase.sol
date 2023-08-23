@@ -45,6 +45,7 @@ interface IExecutorBase {
      * @param calldatas Array of calldatas to pass in each call, appended to the signature at the same array index if not empty
      * @param withDelegateCalls Array of whether to delegatecall for each call
      * @param executionTime Timestamp starting from which the actions set can be executed
+     * @param expireTime Timestamp after which the action is considered expired
      * @param executed True if the actions set has been executed, false otherwise
      * @param canceled True if the actions set has been canceled, false otherwise
      */
@@ -55,6 +56,7 @@ interface IExecutorBase {
         bytes[] calldatas;
         bool[] withDelegatecalls;
         uint256 executionTime;
+        uint256 expireTime;
         bool executed;
         bool canceled;
     }

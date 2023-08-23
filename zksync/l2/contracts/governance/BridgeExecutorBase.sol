@@ -230,7 +230,7 @@ abstract contract BridgeExecutorBase is IExecutorBase {
             return ActionsSetState.Canceled;
         } else if (actionsSet.executed) {
             return ActionsSetState.Executed;
-        } else if (block.timestamp > actionsSet.executionTime + _gracePeriod) {
+        } else if (block.timestamp > actionsSet.expireTime) {
             return ActionsSetState.Expired;
         } else {
             return ActionsSetState.Queued;
@@ -297,6 +297,8 @@ abstract contract BridgeExecutorBase is IExecutorBase {
 
         uint256 actionsSetId = _actionsSetCounter;
         uint256 executionTime = block.timestamp + _delay;
+        uint256 expireTime = executionTime + _gracePeriod;
+
         unchecked {
             ++_actionsSetCounter;
         }
@@ -326,6 +328,7 @@ abstract contract BridgeExecutorBase is IExecutorBase {
         actionsSet.calldatas = calldatas;
         actionsSet.withDelegatecalls = withDelegatecalls;
         actionsSet.executionTime = executionTime;
+        actionsSet.expireTime = expireTime;
 
         emit ActionsSetQueued(
             actionsSetId,
