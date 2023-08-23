@@ -43,8 +43,8 @@ interface IL1ERC20Bridge is IL1Bridge, IL1BridgeLegacy {
     function initialize(
         bytes[] calldata _factoryDeps,
         address _governor,
-        address l1Token_,
-        address l2Token_,
+        address _l1Token,
+        address _l2Token,
         uint256 _deployBridgeImplementationFee,
         uint256 _deployBridgeProxyFee
     ) external payable;

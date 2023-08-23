@@ -287,9 +287,9 @@ contract L1ERC20Bridge is
         );
 
         (
-            address l1Receiver,
-            address l1Token,
-            uint256 amount
+            address l1Receiver_,
+            address l1Token_,
+            uint256 amount_
         ) = _parseL2WithdrawalMessage(_message);
 
         // @dev struct L2Message
@@ -314,9 +314,9 @@ contract L1ERC20Bridge is
 
         isWithdrawalFinalized[_l2BlockNumber][_l2MessageIndex] = true;
 
-        IERC20(l1Token).safeTransfer(l1Receiver, amount);
+        IERC20(l1Token).safeTransfer(l1Receiver_, amount_);
 
-        emit WithdrawalFinalized(l1Receiver, l1Token, amount);
+        emit WithdrawalFinalized(l1Receiver_, l1Token_, amount_);
     }
 
     /// @dev Decode the withdraw message that came from L2
@@ -325,7 +325,7 @@ contract L1ERC20Bridge is
     )
         internal
         pure
-        returns (address l1Receiver, address l1Token, uint256 amount)
+        returns (address l1Receiver_, address l1Token_, uint256 amount_)
     {
         // Check that the message length is correct.
         // It should be equal to the length of the function selector + address + address + uint256 = 4 + 20 + 20 + 32 = 76 (bytes).
@@ -340,9 +340,9 @@ contract L1ERC20Bridge is
             "Non-matching function selectors"
         );
 
-        (l1Receiver, offset) = UnsafeBytes.readAddress(_l2ToL1message, offset);
-        (l1Token, offset) = UnsafeBytes.readAddress(_l2ToL1message, offset);
-        (amount, offset) = UnsafeBytes.readUint256(_l2ToL1message, offset);
+        (l1Receiver_, offset) = UnsafeBytes.readAddress(_l2ToL1message, offset);
+        (l1Token_, offset) = UnsafeBytes.readAddress(_l2ToL1message, offset);
+        (amount_, offset) = UnsafeBytes.readUint256(_l2ToL1message, offset);
     }
 
     /// @inheritdoc IL1ERC20Bridge
