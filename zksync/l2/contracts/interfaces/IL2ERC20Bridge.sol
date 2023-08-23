@@ -10,8 +10,7 @@ interface IL2ERC20Bridge {
         address indexed l1Sender,
         address indexed l2Receiver,
         address indexed l2Token,
-        uint256 amount,
-        bytes data
+        uint256 amount
     );
 
     event WithdrawalInitiated(

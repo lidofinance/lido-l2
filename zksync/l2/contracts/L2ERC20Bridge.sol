@@ -5,6 +5,7 @@ pragma solidity ^0.8.10;
 
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
+
 import {IERC20BridgedUpgradeable} from "./interfaces/IERC20BridgedUpgradeable.sol";
 
 import {BridgingManager} from "../../common/BridgingManager.sol";
@@ -52,7 +53,7 @@ contract L2ERC20Bridge is
         address _l2Receiver,
         address _l1Token,
         uint256 _amount,
-        bytes calldata _data
+        bytes calldata // _data
     )
         external
         payable
@@ -65,7 +66,7 @@ contract L2ERC20Bridge is
 
         IERC20BridgedUpgradeable(l2Token).bridgeMint(_l2Receiver, _amount);
 
-        emit FinalizeDeposit(_l1Sender, _l2Receiver, l2Token, _amount, _data);
+        emit FinalizeDeposit(_l1Sender, _l2Receiver, l2Token, _amount);
     }
 
     /// @inheritdoc IL2ERC20Bridge

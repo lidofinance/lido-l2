@@ -218,29 +218,11 @@ contract L1ERC20Bridge is
         address _l2Receiver,
         address _l1Token,
         uint256 _amount
-    ) internal view returns (bytes memory txCalldata) {
-        bytes memory gettersData = _getERC20Getters(_l1Token);
-
+    ) internal pure returns (bytes memory txCalldata) {
         txCalldata = abi.encodeCall(
             IL2Bridge.finalizeDeposit,
-            (_l1Sender, _l2Receiver, _l1Token, _amount, gettersData)
+            (_l1Sender, _l2Receiver, _l1Token, _amount, "")
         );
-    }
-
-    /// @dev Receives and parses (name, symbol, decimals) from the token contract
-    function _getERC20Getters(
-        address _token
-    ) internal view returns (bytes memory data) {
-        (, bytes memory data1) = _token.staticcall(
-            abi.encodeCall(IERC20Metadata.name, ())
-        );
-        (, bytes memory data2) = _token.staticcall(
-            abi.encodeCall(IERC20Metadata.symbol, ())
-        );
-        (, bytes memory data3) = _token.staticcall(
-            abi.encodeCall(IERC20Metadata.decimals, ())
-        );
-        data = abi.encode(data1, data2, data3);
     }
 
     /// @inheritdoc IL1ERC20Bridge
