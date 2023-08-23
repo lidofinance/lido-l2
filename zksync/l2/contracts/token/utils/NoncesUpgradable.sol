@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.10;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
  * @dev Provides tracking nonces for addresses. Nonces will only increment.
@@ -44,7 +44,10 @@ abstract contract NoncesUpgradeable is Initializable {
     /**
      * @dev Same as {_useNonce} but checking that `nonce` is the next valid for `owner`.
      */
-    function _useCheckedNonce(address owner, uint256 nonce) internal virtual returns (uint256) {
+    function _useCheckedNonce(
+        address owner,
+        uint256 nonce
+    ) internal virtual returns (uint256) {
         uint256 current = _useNonce(owner);
         if (nonce != current) {
             revert InvalidAccountNonce(owner, current);

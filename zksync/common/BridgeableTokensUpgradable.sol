@@ -15,7 +15,10 @@ contract BridgeableTokensUpgradable is Initializable {
 
     /// @param l1Token_ Address of the bridged token in the L1 chain
     /// @param l2Token_ Address of the token minted on the L2 chain when token bridged
-    function __BridgeableTokens_init(address l1Token_, address l2Token_) internal onlyInitializing {
+    function __BridgeableTokens_init(
+        address l1Token_,
+        address l2Token_
+    ) internal onlyInitializing {
         l1Token = l1Token_;
         l2Token = l2Token_;
     }
@@ -47,4 +50,11 @@ contract BridgeableTokensUpgradable is Initializable {
     error ErrorUnsupportedL1Token();
     error ErrorUnsupportedL2Token();
     error ErrorAccountIsZeroAddress();
+
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[50] private __gap;
 }
