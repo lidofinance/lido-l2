@@ -14,6 +14,7 @@ interface IExecutorBase {
     error OnlyCallableByThis();
     error MinimumDelayTooLong();
     error MaximumDelayTooShort();
+    error MaximumDelayTooLong();
     error GracePeriodTooShort();
     error DelayShorterThanMin();
     error DelayLongerThanMax();

@@ -15,6 +15,9 @@ abstract contract BridgeExecutorBase is IExecutorBase {
     // Minimum allowed grace period, which reduces the risk of having an actions set expire due to network congestion
     uint256 constant MINIMUM_GRACE_PERIOD = 10 minutes;
 
+    // Maximum allowed delay, preventing extremely high values that will make queuing excessively long
+    uint256 constant MAXIMUM_DELAY = 2 weeks;
+
     // Time between queuing and execution
     uint256 private _delay;
     // Time after the execution time during which the actions set can be executed
@@ -65,6 +68,7 @@ abstract contract BridgeExecutorBase is IExecutorBase {
     ) {
         if (
             gracePeriod < MINIMUM_GRACE_PERIOD ||
+            maximumDelay > MAXIMUM_DELAY ||
             minimumDelay >= maximumDelay ||
             delay < minimumDelay ||
             delay > maximumDelay
@@ -163,6 +167,7 @@ abstract contract BridgeExecutorBase is IExecutorBase {
     function updateMaximumDelay(
         uint256 maximumDelay
     ) external override onlyThis {
+        if (maximumDelay > MAXIMUM_DELAY) revert MaximumDelayTooLong();
         if (maximumDelay <= _minimumDelay) revert MaximumDelayTooShort();
         _updateMaximumDelay(maximumDelay);
         _validateDelay(_delay);
