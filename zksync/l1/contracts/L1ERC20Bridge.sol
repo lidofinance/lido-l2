@@ -189,13 +189,13 @@ contract L1ERC20Bridge is
         // Save the deposited amount to claim funds on L1 if the deposit failed on L2
         depositAmount[msg.sender][_l1Token][l2TxHash] = amount;
 
-        emit DepositInit(
+        emit DepositInitiated(
             l2TxHash,
             msg.sender,
             _l2Receiver,
-            refundRecipient,
             _l1Token,
-            amount
+            amount,
+            refundRecipient
         );
     }
 

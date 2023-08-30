@@ -6,6 +6,13 @@ pragma solidity ^0.8.10;
 /// @notice The L2 token bridge works with the L1 token bridge to enable ERC20 token bridging
 ///     between L1 and L2. Mints tokens during deposits and burns tokens during withdrawals.
 interface IL2ERC20Bridge {
+    /**
+     * @dev Emitted when the finalizeDeposit function is called
+     * @param l1Sender The address of the sender on L1
+     * @param l2Receiver The address of token receiver on L2
+     * @param l2Token The address of L2 token
+     * @param amount The amount of tokens to be minted
+     **/
     event FinalizeDeposit(
         address indexed l1Sender,
         address indexed l2Receiver,
@@ -13,6 +20,13 @@ interface IL2ERC20Bridge {
         uint256 amount
     );
 
+    /**
+     * @dev Emitted when the withdraw function is called
+     * @param l2Sender The address of the sender on L2
+     * @param l1Receiver The address of token receiver on L1
+     * @param l2Token The address of L2 token
+     * @param amount The amount of tokens to be withdrawn
+     **/
     event WithdrawalInitiated(
         address indexed l2Sender,
         address indexed l1Receiver,
