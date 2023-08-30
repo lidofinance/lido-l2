@@ -55,6 +55,7 @@ abstract contract BridgeExecutorBase is IExecutorBase {
      * @param minimumDelay The minimum bound a delay can be set to
      * @param maximumDelay The maximum bound a delay can be set to
      * @param guardian The address of the guardian, which can cancel queued proposals (can be zero)
+     * @notice Guardian is a trusted party and may cancel proposals which update the address of the guardian
      */
     constructor(
         uint256 delay,
@@ -108,6 +109,7 @@ abstract contract BridgeExecutorBase is IExecutorBase {
     }
 
     /// @inheritdoc IExecutorBase
+    /// @dev Guardian is a trusted party and may cancel proposals which update the address of the guardian
     function cancel(uint256 actionsSetId) external override onlyGuardian {
         if (getCurrentState(actionsSetId) != ActionsSetState.Queued)
             revert OnlyQueuedActions();
