@@ -5,7 +5,7 @@ pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-/// @notice Upgadeable variant of contract that contains the logic for validation of tokens used in the bridging process
+/// @notice Upgradeable variant of contract that contains the logic for validation of tokens used in the bridging process
 contract BridgeableTokensUpgradable is Initializable {
     /// @notice Address of the bridged token in the L1 chain
     address public l1Token;

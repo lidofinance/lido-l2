@@ -8,7 +8,7 @@ import {BridgeExecutorBase} from "./BridgeExecutorBase.sol";
 
 /**
  * @title L2BridgeExecutor
- * @notice Upgadeable variant of Aave abstract contract that implements bridge executor functionality for L2
+ * @notice Aave abstract contract that implements bridge executor functionality for L2
  * @dev It does not implement the `onlyEthereumGovernanceExecutor` modifier. This should instead be done in the inheriting
  * contract with proper configuration and adjustments depending on the L2
  */
