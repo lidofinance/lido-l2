@@ -44,7 +44,6 @@ interface IExecutorBase {
      * @param values Array of values to pass in each call
      * @param signatures Array of function signatures to encode in each call (can be empty)
      * @param calldatas Array of calldatas to pass in each call, appended to the signature at the same array index if not empty
-     * @param withDelegateCalls Array of whether to delegatecall for each call
      * @param executionTime Timestamp starting from which the actions set can be executed
      * @param expireTime Timestamp after which the action is considered expired
      * @param executed True if the actions set has been executed, false otherwise
@@ -55,7 +54,6 @@ interface IExecutorBase {
         uint256[] values;
         string[] signatures;
         bytes[] calldatas;
-        bool[] withDelegatecalls;
         uint256 executionTime;
         uint256 expireTime;
         bool executed;
@@ -69,7 +67,6 @@ interface IExecutorBase {
      * @param values Array of values to pass in each call by the actions set
      * @param signatures Array of function signatures to encode in each call by the actions set
      * @param calldatas Array of calldata to pass in each call by the actions set
-     * @param withDelegatecalls Array of whether to delegatecall for each call of the actions set
      * @param executionTime The timestamp at which this actions set can be executed
      **/
     event ActionsSetQueued(
@@ -78,7 +75,6 @@ interface IExecutorBase {
         uint256[] values,
         string[] signatures,
         bytes[] calldatas,
-        bool[] withDelegatecalls,
         uint256 executionTime
     );
 
@@ -179,18 +175,6 @@ interface IExecutorBase {
     function updateMaximumDelay(uint256 maximumDelay) external;
 
     /**
-     * @notice Allows to delegatecall a given target with an specific amount of value
-     * @dev This function is external so it allows to specify a defined msg.value for the delegate call, reducing
-     * the risk that a delegatecall gets executed with more value than intended
-     * @return True if the delegate call was successful, false otherwise
-     * @return The bytes returned by the delegate call
-     **/
-    function executeDelegateCall(
-        address target,
-        bytes calldata data
-    ) external payable returns (bool, bytes memory);
-
-    /**
      * @notice Allows to receive funds into the executor
      * @dev Useful for actionsSet that needs funds to gets executed
      */
@@ -252,7 +236,7 @@ interface IExecutorBase {
 
     /**
      * @notice Returns whether an actions set (by actionHash) is queued
-     * @dev actionHash = keccak256(abi.encode(target, value, signature, data, executionTime, withDelegatecall))
+     * @dev actionHash = keccak256(abi.encode(target, value, signature, data, executionTime))
      * @param actionHash hash of the action to be checked
      * @return True if the underlying action of actionHash is queued, false otherwise
      **/

@@ -58,10 +58,9 @@ abstract contract L2BridgeExecutor is BridgeExecutorBase, IL2BridgeExecutor {
         address[] memory targets,
         uint256[] memory values,
         string[] memory signatures,
-        bytes[] memory calldatas,
-        bool[] memory withDelegatecalls
+        bytes[] memory calldatas
     ) external onlyEthereumGovernanceExecutor {
-        _queue(targets, values, signatures, calldatas, withDelegatecalls);
+        _queue(targets, values, signatures, calldatas);
     }
 
     /// @inheritdoc IL2BridgeExecutor

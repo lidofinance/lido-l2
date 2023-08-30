@@ -30,14 +30,12 @@ interface IL2BridgeExecutor is IExecutorBase {
      * @param values Array of values to pass in each call by the actions set
      * @param signatures Array of function signatures to encode in each call by the actions (can be empty)
      * @param calldatas Array of calldata to pass in each call by the actions set
-     * @param withDelegatecalls Array of whether to delegatecall for each call of the actions set
      **/
     function queue(
         address[] memory targets,
         uint256[] memory values,
         string[] memory signatures,
-        bytes[] memory calldatas,
-        bool[] memory withDelegatecalls
+        bytes[] memory calldatas
     ) external;
 
     /**

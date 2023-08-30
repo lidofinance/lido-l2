@@ -125,7 +125,6 @@ async function main() {
         [hre.ethers.utils.parseEther("0")],
         ["disableDeposits()"],
         [new Uint8Array()],
-        [false],
       ]);
 
       // estimate gas to to bridge encoded from L1 to L2
