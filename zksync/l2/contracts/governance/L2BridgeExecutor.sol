@@ -14,6 +14,7 @@ import {BridgeExecutorBase} from "./BridgeExecutorBase.sol";
  */
 abstract contract L2BridgeExecutor is BridgeExecutorBase, IL2BridgeExecutor {
     // Address of the Ethereum Governance Executor, which should be able to queue actions sets
+    // Address can be EOA or an alias of a contract on L1
     address internal _ethereumGovernanceExecutor;
 
     /**
@@ -22,7 +23,7 @@ abstract contract L2BridgeExecutor is BridgeExecutorBase, IL2BridgeExecutor {
     modifier onlyEthereumGovernanceExecutor() virtual;
 
     /**
-     * @param ethereumGovernanceExecutor The address of the EthereumGovernanceExecutor
+     * @param ethereumGovernanceExecutor The address of the EthereumGovernanceExecutor which can be EOA or an alias of a contract on L1
      * @param delay The delay before which an actions set can be executed
      * @param gracePeriod The time period after a delay during which an actions set can be executed
      * @param minimumDelay The minimum bound a delay can be set to
