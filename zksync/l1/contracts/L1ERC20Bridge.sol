@@ -52,6 +52,7 @@ contract L1ERC20Bridge is
     /// @dev Disable the initialization to prevent Parity hack.
     constructor(IZkSync zkSync_) {
         zkSync = zkSync_;
+        _disableInitializers();
     }
 
     /// @inheritdoc IL1ERC20Bridge
