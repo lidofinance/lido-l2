@@ -19,7 +19,7 @@ contract ERC20MetadataUpgradeable is IERC20Metadata, Initializable {
 
     /// @dev Location of the slot with DynamicMetdata
     bytes32 private constant DYNAMIC_METADATA_SLOT =
-        keccak256("ERC20Metdata.dynamicMetadata");
+        bytes32(uint256(keccak256("ERC20Metdata.dynamicMetadata")) - 1);
 
     /// @inheritdoc IERC20Metadata
     uint8 public decimals;

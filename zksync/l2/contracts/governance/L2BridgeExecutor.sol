@@ -8,12 +8,13 @@ import {BridgeExecutorBase} from "./BridgeExecutorBase.sol";
 
 /**
  * @title L2BridgeExecutor
- * @notice Upgadeable variant of Aave abstract contract that implements bridge executor functionality for L2
+ * @notice Aave abstract contract that implements bridge executor functionality for L2
  * @dev It does not implement the `onlyEthereumGovernanceExecutor` modifier. This should instead be done in the inheriting
  * contract with proper configuration and adjustments depending on the L2
  */
 abstract contract L2BridgeExecutor is BridgeExecutorBase, IL2BridgeExecutor {
     // Address of the Ethereum Governance Executor, which should be able to queue actions sets
+    // Address can be EOA or an alias of a contract on L1
     address internal _ethereumGovernanceExecutor;
 
     /**
@@ -22,7 +23,7 @@ abstract contract L2BridgeExecutor is BridgeExecutorBase, IL2BridgeExecutor {
     modifier onlyEthereumGovernanceExecutor() virtual;
 
     /**
-     * @param ethereumGovernanceExecutor The address of the EthereumGovernanceExecutor
+     * @param ethereumGovernanceExecutor The address of the EthereumGovernanceExecutor which can be EOA or an alias of a contract on L1
      * @param delay The delay before which an actions set can be executed
      * @param gracePeriod The time period after a delay during which an actions set can be executed
      * @param minimumDelay The minimum bound a delay can be set to
@@ -45,6 +46,10 @@ abstract contract L2BridgeExecutor is BridgeExecutorBase, IL2BridgeExecutor {
             guardian
         )
     {
+        require(
+            ethereumGovernanceExecutor != address(0),
+            "Ethereum Governor address can't be zero"
+        );
         _ethereumGovernanceExecutor = ethereumGovernanceExecutor;
     }
 
@@ -53,16 +58,19 @@ abstract contract L2BridgeExecutor is BridgeExecutorBase, IL2BridgeExecutor {
         address[] memory targets,
         uint256[] memory values,
         string[] memory signatures,
-        bytes[] memory calldatas,
-        bool[] memory withDelegatecalls
+        bytes[] memory calldatas
     ) external onlyEthereumGovernanceExecutor {
-        _queue(targets, values, signatures, calldatas, withDelegatecalls);
+        _queue(targets, values, signatures, calldatas);
     }
 
     /// @inheritdoc IL2BridgeExecutor
     function updateEthereumGovernanceExecutor(
         address ethereumGovernanceExecutor
     ) external onlyThis {
+        require(
+            ethereumGovernanceExecutor != address(0),
+            "Ethereum Governor address can't be zero"
+        );
         emit EthereumGovernanceExecutorUpdate(
             _ethereumGovernanceExecutor,
             ethereumGovernanceExecutor

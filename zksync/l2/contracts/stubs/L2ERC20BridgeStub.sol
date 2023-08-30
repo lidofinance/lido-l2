@@ -30,7 +30,7 @@ contract L2ERC20BridgeStub is IL2ERC20Bridge {
         uint256 amount_,
         bytes calldata data_
     ) external payable override {
-        emit FinalizeDeposit(l1Sender_, l2Receiver_, l2Token, amount_, data_);
+        emit FinalizeDeposit(l1Sender_, l2Receiver_, l2Token, amount_);
     }
 
     function withdraw(

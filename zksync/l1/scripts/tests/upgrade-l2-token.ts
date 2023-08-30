@@ -123,7 +123,6 @@ async function main() {
       const encodedData = L1Executor.interface.encodeFunctionData(
         "callZkSync",
         [
-          zkSync.address,
           L2_TOKEN_PROXY_ADMIN,
           data,
           gasLimit,

@@ -545,7 +545,6 @@ async function executeGovOnL2Bridge(
     [hre.ethers.utils.parseEther("0")],
     [`${BRIDGE_ACTIONS[type]}()`],
     [new Uint8Array()],
-    [false],
   ]);
 
   // estimate gas to to bridge encoded from L1 to L2
@@ -574,7 +573,6 @@ async function executeGovOnL2Bridge(
    */
   const encodedDataQueue =
     L1Executor__factory.createInterface().encodeFunctionData("callZkSync", [
-      l1.zkSync.address,
       l2.govExecutor.address,
       data,
       gasLimit,

@@ -7,6 +7,7 @@ const provider = web3Provider();
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 const AGENT_ADDRESS = process.env.CONTRACTS_L1_GOVERNANCE_AGENT_ADDR as string;
+const ZKSYNC_ADDRESS = process.env.CONTRACTS_DIAMOND_PROXY_ADDR as string;
 
 async function main() {
   // without ethers.Wallet -> HardhatError: HH5: HardhatContext is not created.
@@ -30,7 +31,9 @@ async function main() {
 
   console.log(`L1Executor: ${L1Executor.address}`);
 
-  const initResponseTx = await L1Executor.initialize({ gasLimit: 10_000_000 });
+  const initResponseTx = await L1Executor.initialize(ZKSYNC_ADDRESS, {
+    gasLimit: 10_000_000,
+  });
   await initResponseTx.wait();
   const transferOwnerResponseTx = await L1Executor.transferOwnership(
     AGENT_ADDRESS

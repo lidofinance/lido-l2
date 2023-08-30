@@ -233,24 +233,13 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
         { value }
       );
 
-    const abiCoder = ethers.utils.defaultAbiCoder;
-
-    const gettersData = abiCoder.encode(
-      ["bytes", "bytes", "bytes"],
-      [
-        abiCoder.encode(["string"], [L1_TOKEN_STUB_NAME]),
-        abiCoder.encode(["string"], [L1_TOKEN_STUB_SYMBOL]),
-        abiCoder.encode(["uint8"], [L1_TOKEN_STUB_DECIMALS]),
-      ]
-    );
     const txCalldata = l2Erc20Bridge.interface.encodeFunctionData(
       "finalizeDeposit",
-      [sender.address, recipient.address, l1Token.address, amount, gettersData]
+      [sender.address, recipient.address, l1Token.address, amount, "0x"]
     );
 
     const l1BridgeDepositAmount = await l1Erc20Bridge.depositAmount(
       sender.address,
-      l1Token.address,
       canonicalTxHash
     );
 
@@ -268,7 +257,8 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
         sender.address,
         recipient.address,
         l1Token.address,
-        amount
+        amount,
+        sender.address
       );
 
     // validate RequestL2TransactionCalled event is emitted with the expected data

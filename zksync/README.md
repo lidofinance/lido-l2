@@ -94,7 +94,7 @@ npm run enable-withdrawals
 |--------------------------------|-------------------|
 | It is possible to bridge wstETH forth and back using this bridge |Yes|
 | The bridge using a canonical mechanism for message/value passing |Yes, canonical zkSync mechanism for callin L2 functions from L1 + canonical mechainsm to confirm txs from L2 on L1|
-| The bridge is upgradeable |Yes, all parts of the wstETH bridge on L1 and L2 are deployed behind an OssifiableProxy. However, governance bridge components on L2 are not upgradable. Since the L2 executor (AAVE) contains <b>delegatecall</b> opcode which is not considered "upgrade safe" according to OZ docs.|
+| The bridge is upgradeable |Yes, all parts of the wstETH bridge on L1 and L2 are deployed behind an OssifiableProxy. However, governance bridge components on L2 are not upgradable.|
 | Upgrade authority for the bridge |Only Aragon Agent on L1 (Lido DAO) has the permissions to change the implementation of the bridges (upgrade) and enable (disable) deposits (withdrawals) on L1 and L2 bridges (using cross-chain governance bridge). Additionaly, a multisig of guradians can be added which can cancel any upgrade or parameter setting call on L2 but cannot initiate them.|
 | Emergency pause/cancel mechanisms and their authorities |There's deposit/withdrawal enabler roles on L1 and L2 part of the birdge that can be set to an address of the admin's choosing.|
 | The bridged token support permits and ERC-1271 |Yes, L2 token is extended to support ERC20Permit which allows for approval to spend tokens to be performed using a message signed by the owner of the tokens and ERC1271 standards which allows for Smart Accounts (Account Abstraction) to interact with the token.|

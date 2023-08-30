@@ -1,5 +1,5 @@
 import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
-import { Wallet } from "zksync-web3";
+import { Wallet, utils } from "zksync-web3";
 import * as hre from "hardhat";
 
 import {
@@ -18,8 +18,12 @@ async function main() {
 
   const artifact = await deployer.loadArtifact(BRIDGE_EXECUTOR_CONTRACT_NAME);
 
+  const l2AddressOfL1Executor = utils.applyL1ToL2Alias(
+    ADDRESSES.L1_EXECUTOR_ADDR
+  );
+
   const contract = await deployer.deploy(artifact, [
-    ADDRESSES.L1_EXECUTOR_ADDR,
+    l2AddressOfL1Executor,
     GOVERNANCE_CONSTANTS.DELAY,
     GOVERNANCE_CONSTANTS.GRACE_PERIOD,
     GOVERNANCE_CONSTANTS.MIN_DELAY,

@@ -3,10 +3,49 @@
 
 pragma solidity ^0.8.13;
 
-import {IL1Bridge} from "@matterlabs/zksync-contracts/l1/contracts/bridge/interfaces/IL1Bridge.sol";
-import {IL1BridgeLegacy} from "@matterlabs/zksync-contracts/l1/contracts/bridge/interfaces/IL1BridgeLegacy.sol";
+interface IL1ERC20Bridge {
+    /**
+     * @dev Emitted when the deposit function is called
+     * @param l2DepositTxHash The L2 transaction hash of deposit finalization
+     * @param from The address of the sender
+     * @param to The address of the the recipient
+     * @param refundRecipient The address of the refundRecipient on L2
+     * @param l1Token The address of the token on L1
+     * @param amount The amount of tokens deposited
+     **/
+    event DepositInitiated(
+        bytes32 indexed l2DepositTxHash,
+        address indexed from,
+        address indexed to,
+        address l1Token,
+        uint256 amount,
+        address refundRecipient
+    );
 
-interface IL1ERC20Bridge is IL1Bridge, IL1BridgeLegacy {
+    /**
+     * @dev Emitted when the finalizeWithdrawal function is called
+     * @param to The address of the recipient on L1
+     * @param l1Token The address of L1 token
+     * @param amount The amount of tokens to be withdrawn
+     **/
+    event WithdrawalFinalized(
+        address indexed to,
+        address indexed l1Token,
+        uint256 amount
+    );
+
+    /**
+     * @dev Emitted when the claimFailedDeposit function is called
+     * @param to The address of the the recipient on L1
+     * @param l1Token The address of L1 token
+     * @param amount The amount of tokens to be claimed
+     **/
+    event ClaimedFailedDeposit(
+        address indexed to,
+        address indexed l1Token,
+        uint256 amount
+    );
+
     /// @notice A mapping L2 block number => message number => flag
     /// @notice Used to indicate that zkSync L2 -> L1 message was already processed
     function isWithdrawalFinalized(
@@ -25,8 +64,8 @@ interface IL1ERC20Bridge is IL1Bridge, IL1BridgeLegacy {
     function initialize(
         bytes[] calldata _factoryDeps,
         address _governor,
-        address l1Token_,
-        address l2Token_,
+        address _l1Token,
+        address _l2Token,
         uint256 _deployBridgeImplementationFee,
         uint256 _deployBridgeProxyFee
     ) external payable;

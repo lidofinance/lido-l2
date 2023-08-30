@@ -125,7 +125,6 @@ async function main() {
         [hre.ethers.utils.parseEther("0")],
         ["disableDeposits()"],
         [new Uint8Array()],
-        [false],
       ]);
 
       // estimate gas to to bridge encoded from L1 to L2
@@ -149,7 +148,6 @@ async function main() {
       const encodedDataQueue = L1Executor.interface.encodeFunctionData(
         "callZkSync",
         [
-          zkSync.address,
           L2_BRIDGE_EXECUTOR_ADDR,
           data,
           gasLimit,

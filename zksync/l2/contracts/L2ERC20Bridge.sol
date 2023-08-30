@@ -5,6 +5,7 @@ pragma solidity ^0.8.10;
 
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
+
 import {IERC20BridgedUpgradeable} from "./interfaces/IERC20BridgedUpgradeable.sol";
 
 import {BridgingManager} from "../../common/BridgingManager.sol";
@@ -12,7 +13,7 @@ import {BridgeableTokensUpgradable} from "../../common/BridgeableTokensUpgradabl
 import {L2CrossDomainEnabled} from "./L2CrossDomainEnabled.sol";
 
 /// @notice The L2 token bridge works with the L1 token bridge to enable ERC20 token bridging
-///     between L1 and L2. Mints tokens during deposits and burns tokens during withdrawals. 
+///     between L1 and L2. Mints tokens during deposits and burns tokens during withdrawals.
 ///     Additionally, adds the methods for bridging management: enabling and disabling withdrawals/deposits
 contract L2ERC20Bridge is
     IL2ERC20Bridge,
@@ -30,91 +31,91 @@ contract L2ERC20Bridge is
     }
 
     /// @notice Initializes the contract with parameters needed for its functionality.
-    /// @param l1TokenBridge_ Address of the corresponding L1 bridge
-    /// @param l1Token_ Address of the bridged token in the L1 chain
-    /// @param l2Token_ Address of the token minted on the L2 chain when token bridged
+    /// @param _l1TokenBridge Address of the corresponding L1 bridge
+    /// @param _l1Token Address of the bridged token in the L1 chain
+    /// @param _l2Token Address of the token minted on the L2 chain when token bridged
     /// @dev The function can only be called once during contract deployment due to the 'initializer' modifier.
     function initialize(
-        address l1TokenBridge_,
-        address l1Token_,
-        address l2Token_
-    )
-        external
-        initializer
-        onlyNonZeroAccount(l1TokenBridge_)
-    {
-        require(l1Token_ != address(0), "L1 token address cannot be zero");
-        require(l2Token_ != address(0), "L2 token address cannot be zero");
+        address _l1TokenBridge,
+        address _l1Token,
+        address _l2Token
+    ) external initializer onlyNonZeroAccount(_l1TokenBridge) {
+        require(_l1Token != address(0), "L1 token address cannot be zero");
+        require(_l2Token != address(0), "L2 token address cannot be zero");
 
-        __BridgeableTokens_init(l1Token_, l2Token_);
-        l1Bridge = l1TokenBridge_;
+        __BridgeableTokens_init(_l1Token, _l2Token);
+        l1Bridge = _l1TokenBridge;
     }
 
     /// @inheritdoc IL2ERC20Bridge
     function finalizeDeposit(
-        address l1Sender_,
-        address l2Receiver_,
-        address l1Token_,
-        uint256 amount_,
-        bytes calldata data_
-    ) 
+        address _l1Sender,
+        address _l2Receiver,
+        address _l1Token,
+        uint256 _amount,
+        bytes calldata // _data
+    )
         external
         payable
         override
         whenDepositsEnabled
-        onlySupportedL1Token(l1Token_)
+        onlySupportedL1Token(_l1Token)
         onlyFromCrossDomainAccount(l1Bridge)
     {
         require(msg.value == 0, "Value should be 0 for ERC20 bridge");
 
-        IERC20BridgedUpgradeable(l2Token).bridgeMint(l2Receiver_, amount_);
+        IERC20BridgedUpgradeable(l2Token).bridgeMint(_l2Receiver, _amount);
 
-        emit FinalizeDeposit(l1Sender_, l2Receiver_, l2Token, amount_, data_);
+        emit FinalizeDeposit(_l1Sender, _l2Receiver, l2Token, _amount);
     }
 
     /// @inheritdoc IL2ERC20Bridge
     function withdraw(
-        address l1Receiver_,
-        address l2Token_,
-        uint256 amount_
-    ) 
-        external
-        override
-        whenWithdrawalsEnabled
-        onlySupportedL2Token(l2Token_)
-    {
-        IERC20BridgedUpgradeable(l2Token).bridgeBurn(msg.sender, amount_);
+        address _l1Receiver,
+        address _l2Token,
+        uint256 _amount
+    ) external override whenWithdrawalsEnabled onlySupportedL2Token(_l2Token) {
+        IERC20BridgedUpgradeable(l2Token).bridgeBurn(msg.sender, _amount);
 
-        bytes memory message = _getL1WithdrawMessage(l1Receiver_, l1Token, amount_);
+        bytes memory message = _getL1WithdrawMessage(
+            _l1Receiver,
+            l1Token,
+            _amount
+        );
         sendCrossDomainMessage(message);
 
-        emit WithdrawalInitiated(msg.sender, l1Receiver_, l2Token_, amount_);
+        emit WithdrawalInitiated(msg.sender, _l1Receiver, _l2Token, _amount);
     }
 
     /// @notice Encode the message for l2ToL1log sent with withdraw initialization
-    /// @param to_ Address that will receive tokens on L1 after finalizeWithdrawal
-    /// @param l1Token_ The address of the token that was locked on the L1
-    /// @param amount_ The total amount of tokens to be withdrawn
+    /// @param _to Address that will receive tokens on L1 after finalizeWithdrawal
+    /// @param _l1Token The address of the token that was locked on the L1
+    /// @param _amount The total amount of tokens to be withdrawn
     function _getL1WithdrawMessage(
-        address to_,
-        address l1Token_,
-        uint256 amount_
+        address _to,
+        address _l1Token,
+        uint256 _amount
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            IL1ERC20Bridge.finalizeWithdrawal.selector,
-            to_,
-            l1Token_,
-            amount_
-        );
+        return
+            abi.encodePacked(
+                IL1ERC20Bridge.finalizeWithdrawal.selector,
+                _to,
+                _l1Token,
+                _amount
+            );
     }
 
     /// @inheritdoc IL2ERC20Bridge
-    function l1TokenAddress(address l2Token_) public view override returns (address l1TokenAddr) {
-        l1TokenAddr = l2Token_ == l2Token ? l1Token : address(0);
+    function l1TokenAddress(
+        address _l2Token
+    ) public view override returns (address l1TokenAddr) {
+        l1TokenAddr = _l2Token == l2Token ? l1Token : address(0);
     }
 
     /// @inheritdoc IL2ERC20Bridge
-    function l2TokenAddress(address l1Token_) public view override returns (address l2TokenAddr) {
-        l2TokenAddr = l1Token_ == l1Token ? l2Token : address(0);
+    function l2TokenAddress(
+        address _l1Token
+    ) public view override returns (address l2TokenAddr) {
+        l2TokenAddr = _l1Token == l1Token ? l2Token : address(0);
     }
 }

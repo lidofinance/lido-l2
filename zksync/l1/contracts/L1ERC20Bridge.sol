@@ -43,8 +43,7 @@ contract L1ERC20Bridge is
 
     /// @dev A mapping account => L1 token address => L2 deposit transaction hash => amount
     /// @dev Used for saving the number of deposited funds, to claim them in case the deposit transaction will fail
-    mapping(address => mapping(address => mapping(bytes32 => uint256)))
-        public depositAmount;
+    mapping(address => mapping(bytes32 => uint256)) public depositAmount;
 
     /// @inheritdoc IL1ERC20Bridge
     address public l2Bridge;
@@ -53,6 +52,7 @@ contract L1ERC20Bridge is
     /// @dev Disable the initialization to prevent Parity hack.
     constructor(IZkSync zkSync_) {
         zkSync = zkSync_;
+        _disableInitializers();
     }
 
     /// @inheritdoc IL1ERC20Bridge
@@ -64,7 +64,7 @@ contract L1ERC20Bridge is
         uint256 _deployBridgeImplementationFee,
         uint256 _deployBridgeProxyFee
     ) external payable initializer reentrancyGuardInitializer {
-        require(_governor != address(0), "Governor address can't be zero");
+        require(_governor != address(0), "The governor address can't be zero");
         require(
             _factoryDeps.length == 2,
             "Invalid factory deps length provided"
@@ -149,6 +149,11 @@ contract L1ERC20Bridge is
         onlySupportedL1Token(_l1Token)
         returns (bytes32 l2TxHash)
     {
+        require(
+            _l2Receiver != address(0),
+            "The _l2Receiver address can't be zero"
+        );
+
         require(_amount != 0, "The deposit amount can't be zero");
 
         uint256 amount = _depositFunds(msg.sender, IERC20(_l1Token), _amount);
@@ -182,14 +187,15 @@ contract L1ERC20Bridge is
         );
 
         // Save the deposited amount to claim funds on L1 if the deposit failed on L2
-        depositAmount[msg.sender][_l1Token][l2TxHash] = amount;
+        depositAmount[msg.sender][l2TxHash] = amount;
 
         emit DepositInitiated(
             l2TxHash,
             msg.sender,
             _l2Receiver,
             _l1Token,
-            amount
+            amount,
+            refundRecipient
         );
     }
 
@@ -212,29 +218,11 @@ contract L1ERC20Bridge is
         address _l2Receiver,
         address _l1Token,
         uint256 _amount
-    ) internal view returns (bytes memory txCalldata) {
-        bytes memory gettersData = _getERC20Getters(_l1Token);
-
+    ) internal pure returns (bytes memory txCalldata) {
         txCalldata = abi.encodeCall(
             IL2Bridge.finalizeDeposit,
-            (_l1Sender, _l2Receiver, _l1Token, _amount, gettersData)
+            (_l1Sender, _l2Receiver, _l1Token, _amount, "")
         );
-    }
-
-    /// @dev Receives and parses (name, symbol, decimals) from the token contract
-    function _getERC20Getters(
-        address _token
-    ) internal view returns (bytes memory data) {
-        (, bytes memory data1) = _token.staticcall(
-            abi.encodeCall(IERC20Metadata.name, ())
-        );
-        (, bytes memory data2) = _token.staticcall(
-            abi.encodeCall(IERC20Metadata.symbol, ())
-        );
-        (, bytes memory data3) = _token.staticcall(
-            abi.encodeCall(IERC20Metadata.decimals, ())
-        );
-        data = abi.encode(data1, data2, data3);
     }
 
     /// @inheritdoc IL1ERC20Bridge
@@ -257,10 +245,10 @@ contract L1ERC20Bridge is
         );
         require(proofValid, "The proof is not valid");
 
-        uint256 amount = depositAmount[_depositSender][_l1Token][_l2TxHash];
+        uint256 amount = depositAmount[_depositSender][_l2TxHash];
         require(amount > 0, "The claimed amount can't be zero");
 
-        delete depositAmount[_depositSender][_l1Token][_l2TxHash];
+        delete depositAmount[_depositSender][_l2TxHash];
 
         IERC20(_l1Token).safeTransfer(_depositSender, amount);
 
@@ -281,9 +269,9 @@ contract L1ERC20Bridge is
         );
 
         (
-            address l1Receiver,
-            address l1Token,
-            uint256 amount
+            address l1Receiver_,
+            address l1Token_,
+            uint256 amount_
         ) = _parseL2WithdrawalMessage(_message);
 
         // @dev struct L2Message
@@ -308,9 +296,9 @@ contract L1ERC20Bridge is
 
         isWithdrawalFinalized[_l2BlockNumber][_l2MessageIndex] = true;
 
-        IERC20(l1Token).safeTransfer(l1Receiver, amount);
+        IERC20(l1Token).safeTransfer(l1Receiver_, amount_);
 
-        emit WithdrawalFinalized(l1Receiver, l1Token, amount);
+        emit WithdrawalFinalized(l1Receiver_, l1Token_, amount_);
     }
 
     /// @dev Decode the withdraw message that came from L2
@@ -319,7 +307,7 @@ contract L1ERC20Bridge is
     )
         internal
         pure
-        returns (address l1Receiver, address l1Token, uint256 amount)
+        returns (address l1Receiver_, address l1Token_, uint256 amount_)
     {
         // Check that the message length is correct.
         // It should be equal to the length of the function selector + address + address + uint256 = 4 + 20 + 20 + 32 = 76 (bytes).
@@ -334,9 +322,9 @@ contract L1ERC20Bridge is
             "Non-matching function selectors"
         );
 
-        (l1Receiver, offset) = UnsafeBytes.readAddress(_l2ToL1message, offset);
-        (l1Token, offset) = UnsafeBytes.readAddress(_l2ToL1message, offset);
-        (amount, offset) = UnsafeBytes.readUint256(_l2ToL1message, offset);
+        (l1Receiver_, offset) = UnsafeBytes.readAddress(_l2ToL1message, offset);
+        (l1Token_, offset) = UnsafeBytes.readAddress(_l2ToL1message, offset);
+        (amount_, offset) = UnsafeBytes.readUint256(_l2ToL1message, offset);
     }
 
     /// @inheritdoc IL1ERC20Bridge

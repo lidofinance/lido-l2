@@ -29,7 +29,7 @@ contract BridgingManager is AccessControl {
 
     /// @dev The location of the slot with State
     bytes32 private constant STATE_SLOT =
-        keccak256("BridgingManager.bridgingState");
+        bytes32(uint256(keccak256("BridgingManager.bridgingState")) - 1);
 
     /// @notice Initializes the contract to grant DEFAULT_ADMIN_ROLE to the admin_ address
     /// @dev This method might be called only once

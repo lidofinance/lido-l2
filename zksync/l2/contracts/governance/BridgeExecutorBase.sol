@@ -7,13 +7,16 @@ import {IExecutorBase} from "./interfaces/IExecutorBase.sol";
 
 /**
  * @title BridgeExecutorBase
- * @notice Upgadeable variant of Aave abstract contract that implements basic executor functionality
+ * @notice Aave abstract contract that implements basic executor functionality
  * @dev It does not implement an external `queue` function. This should instead be done in the inheriting
  * contract with proper access control
  */
 abstract contract BridgeExecutorBase is IExecutorBase {
     // Minimum allowed grace period, which reduces the risk of having an actions set expire due to network congestion
     uint256 constant MINIMUM_GRACE_PERIOD = 10 minutes;
+
+    // Maximum allowed delay, preventing extremely high values that will make queuing excessively long
+    uint256 constant MAXIMUM_DELAY = 2 weeks;
 
     // Time between queuing and execution
     uint256 private _delay;
@@ -55,6 +58,7 @@ abstract contract BridgeExecutorBase is IExecutorBase {
      * @param minimumDelay The minimum bound a delay can be set to
      * @param maximumDelay The maximum bound a delay can be set to
      * @param guardian The address of the guardian, which can cancel queued proposals (can be zero)
+     * @notice Guardian is a trusted party and may cancel proposals which update the address of the guardian
      */
     constructor(
         uint256 delay,
@@ -65,6 +69,7 @@ abstract contract BridgeExecutorBase is IExecutorBase {
     ) {
         if (
             gracePeriod < MINIMUM_GRACE_PERIOD ||
+            maximumDelay > MAXIMUM_DELAY ||
             minimumDelay >= maximumDelay ||
             delay < minimumDelay ||
             delay > maximumDelay
@@ -96,8 +101,7 @@ abstract contract BridgeExecutorBase is IExecutorBase {
                 actionsSet.values[i],
                 actionsSet.signatures[i],
                 actionsSet.calldatas[i],
-                actionsSet.executionTime,
-                actionsSet.withDelegatecalls[i]
+                actionsSet.executionTime
             );
             unchecked {
                 ++i;
@@ -108,6 +112,7 @@ abstract contract BridgeExecutorBase is IExecutorBase {
     }
 
     /// @inheritdoc IExecutorBase
+    /// @dev Guardian is a trusted party and may cancel proposals which update the address of the guardian
     function cancel(uint256 actionsSetId) external override onlyGuardian {
         if (getCurrentState(actionsSetId) != ActionsSetState.Queued)
             revert OnlyQueuedActions();
@@ -122,8 +127,7 @@ abstract contract BridgeExecutorBase is IExecutorBase {
                 actionsSet.values[i],
                 actionsSet.signatures[i],
                 actionsSet.calldatas[i],
-                actionsSet.executionTime,
-                actionsSet.withDelegatecalls[i]
+                actionsSet.executionTime
             );
             unchecked {
                 ++i;
@@ -163,21 +167,10 @@ abstract contract BridgeExecutorBase is IExecutorBase {
     function updateMaximumDelay(
         uint256 maximumDelay
     ) external override onlyThis {
+        if (maximumDelay > MAXIMUM_DELAY) revert MaximumDelayTooLong();
         if (maximumDelay <= _minimumDelay) revert MaximumDelayTooShort();
         _updateMaximumDelay(maximumDelay);
         _validateDelay(_delay);
-    }
-
-    /// @inheritdoc IExecutorBase
-    function executeDelegateCall(
-        address target,
-        bytes calldata data
-    ) external payable override onlyThis returns (bool, bytes memory) {
-        bool success;
-        bytes memory resultData;
-        // solium-disable-next-line security/no-call-value
-        (success, resultData) = target.delegatecall(data);
-        return (success, resultData);
     }
 
     /// @inheritdoc IExecutorBase
@@ -230,7 +223,7 @@ abstract contract BridgeExecutorBase is IExecutorBase {
             return ActionsSetState.Canceled;
         } else if (actionsSet.executed) {
             return ActionsSetState.Executed;
-        } else if (block.timestamp > actionsSet.executionTime + _gracePeriod) {
+        } else if (block.timestamp > actionsSet.expireTime) {
             return ActionsSetState.Expired;
         } else {
             return ActionsSetState.Queued;
@@ -276,26 +269,26 @@ abstract contract BridgeExecutorBase is IExecutorBase {
      * @param values Array of values to pass in each call by the actions set
      * @param signatures Array of function signatures to encode in each call (can be empty)
      * @param calldatas Array of calldata to pass in each call (can be empty)
-     * @param withDelegatecalls Array of whether to delegatecall for each call
      **/
     function _queue(
         address[] memory targets,
         uint256[] memory values,
         string[] memory signatures,
-        bytes[] memory calldatas,
-        bool[] memory withDelegatecalls
+        bytes[] memory calldatas
     ) internal {
         if (targets.length == 0) revert EmptyTargets();
+        if (targets.length > 10) revert TooManyTargets();
         uint256 targetsLength = targets.length;
         if (
             targetsLength != values.length ||
             targetsLength != signatures.length ||
-            targetsLength != calldatas.length ||
-            targetsLength != withDelegatecalls.length
+            targetsLength != calldatas.length
         ) revert InconsistentParamsLength();
 
         uint256 actionsSetId = _actionsSetCounter;
         uint256 executionTime = block.timestamp + _delay;
+        uint256 expireTime = executionTime + _gracePeriod;
+
         unchecked {
             ++_actionsSetCounter;
         }
@@ -307,8 +300,7 @@ abstract contract BridgeExecutorBase is IExecutorBase {
                     values[i],
                     signatures[i],
                     calldatas[i],
-                    executionTime,
-                    withDelegatecalls[i]
+                    executionTime
                 )
             );
             if (isActionQueued(actionHash)) revert DuplicateAction();
@@ -323,8 +315,8 @@ abstract contract BridgeExecutorBase is IExecutorBase {
         actionsSet.values = values;
         actionsSet.signatures = signatures;
         actionsSet.calldatas = calldatas;
-        actionsSet.withDelegatecalls = withDelegatecalls;
         actionsSet.executionTime = executionTime;
+        actionsSet.expireTime = expireTime;
 
         emit ActionsSetQueued(
             actionsSetId,
@@ -332,7 +324,6 @@ abstract contract BridgeExecutorBase is IExecutorBase {
             values,
             signatures,
             calldatas,
-            withDelegatecalls,
             executionTime
         );
     }
@@ -342,20 +333,12 @@ abstract contract BridgeExecutorBase is IExecutorBase {
         uint256 value,
         string memory signature,
         bytes memory data,
-        uint256 executionTime,
-        bool withDelegatecall
+        uint256 executionTime
     ) internal returns (bytes memory) {
         if (address(this).balance < value) revert InsufficientBalance();
 
         bytes32 actionHash = keccak256(
-            abi.encode(
-                target,
-                value,
-                signature,
-                data,
-                executionTime,
-                withDelegatecall
-            )
+            abi.encode(target, value, signature, data, executionTime)
         );
         _queuedActions[actionHash] = false;
 
@@ -371,15 +354,10 @@ abstract contract BridgeExecutorBase is IExecutorBase {
 
         bool success;
         bytes memory resultData;
-        if (withDelegatecall) {
-            (success, resultData) = this.executeDelegateCall{value: value}(
-                target,
-                callData
-            );
-        } else {
-            // solium-disable-next-line security/no-call-value
-            (success, resultData) = target.call{value: value}(callData);
-        }
+
+        // solium-disable-next-line security/no-call-value
+        (success, resultData) = target.call{value: value}(callData);
+
         return _verifyCallResult(success, resultData);
     }
 
@@ -388,18 +366,10 @@ abstract contract BridgeExecutorBase is IExecutorBase {
         uint256 value,
         string memory signature,
         bytes memory data,
-        uint256 executionTime,
-        bool withDelegatecall
+        uint256 executionTime
     ) internal {
         bytes32 actionHash = keccak256(
-            abi.encode(
-                target,
-                value,
-                signature,
-                data,
-                executionTime,
-                withDelegatecall
-            )
+            abi.encode(target, value, signature, data, executionTime)
         );
         _queuedActions[actionHash] = false;
     }
