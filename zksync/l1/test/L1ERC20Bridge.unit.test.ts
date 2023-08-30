@@ -240,7 +240,6 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
 
     const l1BridgeDepositAmount = await l1Erc20Bridge.depositAmount(
       sender.address,
-      l1Token.address,
       canonicalTxHash
     );
 

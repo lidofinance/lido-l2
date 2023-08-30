@@ -43,8 +43,7 @@ contract L1ERC20Bridge is
 
     /// @dev A mapping account => L1 token address => L2 deposit transaction hash => amount
     /// @dev Used for saving the number of deposited funds, to claim them in case the deposit transaction will fail
-    mapping(address => mapping(address => mapping(bytes32 => uint256)))
-        public depositAmount;
+    mapping(address => mapping(bytes32 => uint256)) public depositAmount;
 
     /// @inheritdoc IL1ERC20Bridge
     address public l2Bridge;
@@ -187,7 +186,7 @@ contract L1ERC20Bridge is
         );
 
         // Save the deposited amount to claim funds on L1 if the deposit failed on L2
-        depositAmount[msg.sender][_l1Token][l2TxHash] = amount;
+        depositAmount[msg.sender][l2TxHash] = amount;
 
         emit DepositInitiated(
             l2TxHash,
@@ -245,10 +244,10 @@ contract L1ERC20Bridge is
         );
         require(proofValid, "The proof is not valid");
 
-        uint256 amount = depositAmount[_depositSender][_l1Token][_l2TxHash];
+        uint256 amount = depositAmount[_depositSender][_l2TxHash];
         require(amount > 0, "The claimed amount can't be zero");
 
-        delete depositAmount[_depositSender][_l1Token][_l2TxHash];
+        delete depositAmount[_depositSender][_l2TxHash];
 
         IERC20(_l1Token).safeTransfer(_depositSender, amount);
 
