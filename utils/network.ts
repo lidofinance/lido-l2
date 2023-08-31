@@ -6,7 +6,7 @@ import { HardhatRuntimeEnvironment, HttpNetworkConfig } from "hardhat/types";
 
 import env from "./env";
 
-type ChainNameShort = "arb" | "opt" | "eth";
+type ChainNameShort = "arb" | "opt" | "eth" | "mnt";
 export type NetworkName = "goerli" | "mainnet";
 export type SignerOrProvider = Signer | Provider;
 
@@ -23,6 +23,10 @@ const HARDHAT_NETWORK_NAMES = {
     goerli: "opt_goerli",
     mainnet: "opt_mainnet",
   },
+  mnt: {
+    goerli: "mnt_goerli",
+    mainnet: "mnt_mainnet",
+  },
 };
 
 const HARDHAT_NETWORK_NAMES_FORK = {
@@ -37,6 +41,10 @@ const HARDHAT_NETWORK_NAMES_FORK = {
   opt: {
     goerli: "opt_goerli_fork",
     mainnet: "opt_mainnet_fork",
+  },
+  mnt: {
+    goerli: "mnt_goerli_fork",
+    mainnet: "mnt_mainnet_fork",
   },
 };
 
@@ -125,6 +133,10 @@ function getChainId(protocol: ChainNameShort, networkName: NetworkName) {
       mainnet: 10,
       goerli: 420,
     },
+    mnt: {
+      mainnet: 5000,
+      goerli: 5001,
+    },
     arb: {
       mainnet: 42161,
       goerli: 421613,
@@ -150,6 +162,9 @@ function getBlockExplorerBaseUrlByChainId(chainId: number) {
     420: "https://blockscout.com/optimism/goerli",
     // forked node
     31337: "https://etherscan.io",
+    // mantle
+    5000: "https://rpc.mantle.xyz",
+    5001: "https://blockscout.com/mantle/goerli"
   };
   return baseUrlByChainId[chainId];
 }

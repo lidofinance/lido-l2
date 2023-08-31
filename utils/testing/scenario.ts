@@ -34,11 +34,11 @@ class ScenarioTest<T> {
     for (let i = 0; i < repeat; i++) {
       describe(this.title, function () {
         // @ts-ignore
-        let ctx: T = {};
+        let ctx = {};
         before(async () => {
           ctx = Object.assign(ctx, await self.ctxFactory());
           if (beforeFn) {
-            await beforeFn(ctx);
+            await beforeFn(ctx as T);
           }
         });
 
@@ -52,7 +52,7 @@ class ScenarioTest<T> {
               this.skip();
             }
             try {
-              await step.test(ctx);
+              await step.test(ctx as T);
             } catch (error) {
               skipOtherTests = true;
               throw error;
@@ -61,7 +61,7 @@ class ScenarioTest<T> {
         }
 
         if (afterFn !== undefined) {
-          after(async () => afterFn(ctx));
+          after(async () => afterFn(ctx as T));
         }
       });
     }
