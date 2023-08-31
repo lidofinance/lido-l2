@@ -50,16 +50,16 @@ contract L1ERC20Bridge is
 
     /// @dev Contract is expected to be used as proxy implementation.
     /// @dev Disable the initialization to prevent Parity hack.
-    constructor(IZkSync zkSync_) {
-        zkSync = zkSync_;
+    constructor(IZkSync _zkSync) {
+        zkSync = _zkSync;
         _disableInitializers();
     }
 
     /// @inheritdoc IL1ERC20Bridge
     function initialize(
         bytes[] calldata _factoryDeps,
-        address l1Token_,
-        address l2Token_,
+        address _l1Token,
+        address _l2Token,
         address _governor,
         uint256 _deployBridgeImplementationFee,
         uint256 _deployBridgeProxyFee
@@ -73,7 +73,7 @@ contract L1ERC20Bridge is
             msg.value == _deployBridgeImplementationFee + _deployBridgeProxyFee,
             "The caller miscalculated deploy transactions fees"
         );
-        __BridgeableTokens_init(l1Token_, l2Token_);
+        __BridgeableTokens_init(_l1Token, _l2Token);
 
         bytes32 l2BridgeImplementationBytecodeHash = L2ContractHelper
             .hashL2Bytecode(_factoryDeps[0]);
