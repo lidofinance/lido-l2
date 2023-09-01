@@ -4,9 +4,10 @@
 pragma solidity ^0.8.10;
 
 import {AddressAliasHelper} from "@matterlabs/zksync-contracts/l1/contracts/vendor/AddressAliasHelper.sol";
+import {L2BridgeExecutor2Step} from "./L2BridgeExecutor2Step.sol";
 import {L2BridgeExecutor} from "./L2BridgeExecutor.sol";
 
-contract ZkSyncBridgeExecutor is L2BridgeExecutor {
+contract ZkSyncBridgeExecutor is L2BridgeExecutor2Step {
     /// @inheritdoc L2BridgeExecutor
     modifier onlyEthereumGovernanceExecutor() override {
         if (msg.sender != _ethereumGovernanceExecutor)
@@ -30,7 +31,7 @@ contract ZkSyncBridgeExecutor is L2BridgeExecutor {
         uint256 maximumDelay,
         address guardian
     )
-        L2BridgeExecutor(
+        L2BridgeExecutor2Step(
             ethereumGovernanceExecutor,
             delay,
             gracePeriod,
