@@ -13,10 +13,16 @@ async function main() {
   // without ethers.Wallet -> HardhatError: HH5: HardhatContext is not created.
   const wallet = new Wallet(PRIVATE_KEY, provider);
 
+  /**
+   * L1Executor Implementation
+   */
   const L1ExecutorContractImpl = await new L1Executor__factory(wallet).deploy();
 
   console.log(`L1Executor implementation:${L1ExecutorContractImpl.address}`);
 
+  /**
+   * L1Executor Proxy
+   */
   const L1ExecutorContractProxy = await new OssifiableProxy__factory(
     wallet
   ).deploy(L1ExecutorContractImpl.address, AGENT_ADDRESS, "0x", {
@@ -25,16 +31,26 @@ async function main() {
 
   console.log(`L1Executor proxy:${L1ExecutorContractProxy.address}`);
 
+  /**
+   * Attach proxy address to L1Executor typechain factory
+   */
   const L1Executor = new L1Executor__factory(wallet).attach(
     L1ExecutorContractProxy.address
   );
 
   console.log(`L1Executor: ${L1Executor.address}`);
 
+  /**
+   * Initialize L1Executor
+   */
   const initResponseTx = await L1Executor.initialize(ZKSYNC_ADDRESS, {
     gasLimit: 10_000_000,
   });
   await initResponseTx.wait();
+
+  /**
+   * Transfer L1Executor ownership to the Governance Agent
+   */
   const transferOwnerResponseTx = await L1Executor.transferOwnership(
     AGENT_ADDRESS
   );
