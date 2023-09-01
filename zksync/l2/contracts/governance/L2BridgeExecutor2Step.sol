@@ -3,6 +3,7 @@
 
 pragma solidity ^0.8.10;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {L2BridgeExecutor} from "./L2BridgeExecutor.sol";
 import {IL2BridgeExecutor2Step} from "./interfaces/IL2BridgeExecutor2Step.sol";
 
@@ -10,7 +11,11 @@ import {IL2BridgeExecutor2Step} from "./interfaces/IL2BridgeExecutor2Step.sol";
  * @title L2BridgeExecutor2Step
  * @notice Implements the two step executor update (similar to OpenZeppelin Ownable2Step.sol implementation)
  */
-abstract contract L2BridgeExecutor2Step is L2BridgeExecutor, IL2BridgeExecutor2Step {
+abstract contract L2BridgeExecutor2Step is
+    Initializable,
+    L2BridgeExecutor,
+    IL2BridgeExecutor2Step
+{
     address internal _pendingEthereumGovernanceExecutor;
 
     /**
@@ -21,23 +26,23 @@ abstract contract L2BridgeExecutor2Step is L2BridgeExecutor, IL2BridgeExecutor2S
      * @param maximumDelay The maximum bound a delay can be set to
      * @param guardian The address of the guardian, which can cancel queued proposals (can be zero)
      */
-    constructor(
+    function __L2BridgeExecutor2Step_init(
         address ethereumGovernanceExecutor,
         uint256 delay,
         uint256 gracePeriod,
         uint256 minimumDelay,
         uint256 maximumDelay,
         address guardian
-    )
-        L2BridgeExecutor(
+    ) internal onlyInitializing {
+        __L2BridgeExecutor_init(
             ethereumGovernanceExecutor,
             delay,
             gracePeriod,
             minimumDelay,
             maximumDelay,
             guardian
-        )
-    {}
+        );
+    }
 
     /// @inheritdoc IL2BridgeExecutor2Step
     function updateEthereumGovernanceExecutor(
@@ -68,7 +73,11 @@ abstract contract L2BridgeExecutor2Step is L2BridgeExecutor, IL2BridgeExecutor2S
     }
 
     /// @inheritdoc IL2BridgeExecutor2Step
-    function getPendingEthereumGovernanceExecutor() external view returns (address) {
+    function getPendingEthereumGovernanceExecutor()
+        external
+        view
+        returns (address)
+    {
         return _pendingEthereumGovernanceExecutor;
     }
 }

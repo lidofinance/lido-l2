@@ -23,21 +23,21 @@ contract ZkSyncBridgeExecutor is L2BridgeExecutor2Step {
      * @param maximumDelay The maximum bound a delay can be set to
      * @param guardian The address of the guardian, which can cancel queued proposals (can be zero)
      */
-    constructor(
+    function __ZkSyncBridgeExecutor_init(
         address ethereumGovernanceExecutor,
         uint256 delay,
         uint256 gracePeriod,
         uint256 minimumDelay,
         uint256 maximumDelay,
         address guardian
-    )
-        L2BridgeExecutor2Step(
+    ) public initializer {
+        __L2BridgeExecutor2Step_init(
             ethereumGovernanceExecutor,
             delay,
             gracePeriod,
             minimumDelay,
             maximumDelay,
             guardian
-        )
-    {}
+        );
+    }
 }
