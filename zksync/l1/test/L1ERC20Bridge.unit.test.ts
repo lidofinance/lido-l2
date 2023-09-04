@@ -611,13 +611,8 @@ async function enableDepositsWithAssertions(
   depositEnablerAddress: string
 ) {
   // validate that contract is not initialized and deposits are disabled
-  assert.isFalse(await l1Erc20Bridge.isInitialized());
-  assert.isFalse(await l1Erc20Bridge.isDepositsEnabled());
-
-  // grant DEFAULT_ADMIN_ROLE role
-  await l1Erc20Bridge["initialize(address)"](defaultAdminAddress);
-
   assert.isTrue(await l1Erc20Bridge.isInitialized());
+  assert.isFalse(await l1Erc20Bridge.isDepositsEnabled());
 
   // grant DEPOSITS_ENABLER_ROLE role
   await l1Erc20Bridge.grantRole(
@@ -636,13 +631,8 @@ async function enableWithdrawalsWithAssertions(
   withdrawalEnablerAddress: string
 ) {
   // validate that contract is not initialized and withdrawals are disabled
-  assert.isFalse(await l1Erc20Bridge.isInitialized());
-  assert.isFalse(await l1Erc20Bridge.isWithdrawalsEnabled());
-
-  // grant DEFAULT_ADMIN_ROLE role
-  await l1Erc20Bridge["initialize(address)"](defaultAdminAddress);
-
   assert.isTrue(await l1Erc20Bridge.isInitialized());
+  assert.isFalse(await l1Erc20Bridge.isWithdrawalsEnabled());
 
   // grant WITHDRAWALS_ENABLER_ROLE role
   await l1Erc20Bridge.grantRole(
@@ -684,13 +674,14 @@ async function ctxFactory() {
     deployer
   );
 
-  const initTx = await l1Erc20Bridge[
-    "initialize(bytes[],address,address,address,uint256,uint256)"
-  ](
+  const initTx = await l1Erc20Bridge.initialize(
     [L2_LIDO_BRIDGE_STUB_BYTECODE, L2_LIDO_BRIDGE_PROXY_BYTECODE],
-    l1TokenStub.address,
-    l2TokenStub.address,
-    governor.address,
+    [
+      l1TokenStub.address,
+      l2TokenStub.address,
+      governor.address,
+      deployer.address,
+    ] as any,
     requiredValueToInitializeBridge,
     requiredValueToInitializeBridge
   );

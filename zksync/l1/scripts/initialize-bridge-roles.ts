@@ -65,7 +65,6 @@ async function main() {
       );
 
       // get bytecode for roles
-      const DEFAULT_ADMIN_ROLE = await lidoBridge.DEFAULT_ADMIN_ROLE();
       const DEPOSITS_ENABLER_ROLE = await lidoBridge.DEPOSITS_ENABLER_ROLE();
       const DEPOSITS_DISABLER_ROLE = await lidoBridge.DEPOSITS_DISABLER_ROLE();
       const WITHDRAWALS_ENABLER_ROLE =
@@ -74,15 +73,6 @@ async function main() {
         await lidoBridge.WITHDRAWALS_DISABLER_ROLE();
 
       console.log("\n===============L1===============");
-
-      await initializeBridgingManager(lidoBridge, deployWallet.address);
-
-      await grantRole(
-        lidoBridge,
-        DEFAULT_ADMIN_ROLE,
-        "DEFAULT_ADMIN_ROLE",
-        deployer.addresses.GovernanceL1
-      );
 
       await grantRole(
         lidoBridge,
@@ -115,23 +105,14 @@ async function main() {
       /**
        * Revokes deployer's DEFAULT_ADMIN_ROLE on L1
        */
-      await revokeRole(
-        lidoBridge,
-        DEFAULT_ADMIN_ROLE,
-        "DEFAULT_ADMIN_ROLE",
-        deployWallet.address
-      );
+      // await revokeRole(
+      //   lidoBridge,
+      //   DEFAULT_ADMIN_ROLE,
+      //   "DEFAULT_ADMIN_ROLE",
+      //   deployWallet.address
+      // );
 
       console.log("\n===============L2===============");
-
-      await initializeBridgingManager(l2Bridge, zkWallet.address);
-
-      await grantRole(
-        l2Bridge,
-        DEFAULT_ADMIN_ROLE,
-        "DEFAULT_ADMIN_ROLE",
-        L2_BRIDGE_EXECUTOR_ADDR
-      );
 
       await grantRole(
         l2Bridge,
@@ -164,12 +145,12 @@ async function main() {
       /**
        * Revokes deployer's DEFAULT_ADMIN_ROLE on L2
        */
-      await revokeRole(
-        l2Bridge,
-        DEFAULT_ADMIN_ROLE,
-        "DEFAULT_ADMIN_ROLE",
-        zkWallet.address
-      );
+      // await revokeRole(
+      //   l2Bridge,
+      //   DEFAULT_ADMIN_ROLE,
+      //   "DEFAULT_ADMIN_ROLE",
+      //   zkWallet.address
+      // );
     });
 
   await program.parseAsync(process.argv);
@@ -184,6 +165,7 @@ async function grantRole(
   roleName: string,
   target: string
 ) {
+  console.log(roleBytecode);
   const hasL2ExecutorDepositDisablerRoleL2 = await contract.hasRole(
     roleBytecode,
     target
