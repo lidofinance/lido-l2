@@ -35,7 +35,7 @@ contract L1ERC20Bridge is
     using SafeERC20 for IERC20;
 
     /// @dev zkSync smart contract that is used to operate with L2 via asynchronous L2 <-> L1 communication
-    IZkSync public immutable zkSync;
+    IZkSync public zkSync;
 
     /// @dev A mapping L2 block number => message number => flag
     /// @dev Used to indicate that zkSync L2 -> L1 message was already processed
@@ -50,8 +50,7 @@ contract L1ERC20Bridge is
 
     /// @dev Contract is expected to be used as proxy implementation.
     /// @dev Disable the initialization to prevent Parity hack.
-    constructor(IZkSync _zkSync) {
-        zkSync = _zkSync;
+    constructor() {
         _disableInitializers();
     }
 
@@ -74,6 +73,8 @@ contract L1ERC20Bridge is
             msg.value == _deployBridgeImplementationFee + _deployBridgeProxyFee,
             "The caller miscalculated deploy transactions fees"
         );
+
+        zkSync = IZkSync(addresses._zkSync);
 
         __BridgeableTokens_init(addresses._l1Token, addresses._l2Token);
 

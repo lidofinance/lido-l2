@@ -4,11 +4,17 @@
 pragma solidity ^0.8.13;
 
 interface IL1ERC20Bridge {
+    /// @dev _l1Token Address of token on L1
+    /// @dev _l2Token Address of token on L2
+    /// @dev _governor Address which can change L2 token implementation and upgrade the bridge
+    /// @dev _admin Address of Bridging Manager admin
+    /// @dev _zkSync Address of zkSync diamond proxy contract on L1
     struct InitializeAddressesParams {
         address _l1Token;
         address _l2Token;
         address _governor;
         address _admin;
+        address _zkSync;
     }
 
     /**
@@ -70,6 +76,7 @@ interface IL1ERC20Bridge {
     /// @dev _l2Token Address of token on L2
     /// @dev _governor Address which can change L2 token implementation and upgrade the bridge
     /// @dev _admin Address of bridging manager admin
+    /// @dev _zkSync Address of zkSync diamond proxy contract
     /// @param _deployBridgeImplementationFee How much of the sent value should be allocated to deploying the L2 bridge implementation
     /// @param _deployBridgeProxyFee How much of the sent value should be allocated to deploying the L2 bridge proxy
     function initialize(

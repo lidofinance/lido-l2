@@ -104,6 +104,7 @@ async function main() {
             deployer.addresses.LidoTokenL2,
             L2_GOVERNOR_ADDRESS,
             deployWallet.address,
+            deployer.addresses.ZkSync.DiamondProxy,
           ] as any,
           requiredValueToInitializeBridge,
           requiredValueToInitializeBridge,

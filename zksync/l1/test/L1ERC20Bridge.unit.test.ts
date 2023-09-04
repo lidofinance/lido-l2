@@ -16,6 +16,8 @@ import {
 import { L2ERC20BridgeStub__factory } from "../../l2/typechain";
 import { readBytecode } from "../scripts/utils/utils";
 
+const ZKSYNC_DIAMOND_PROXY = process.env.CONTRACTS_DIAMOND_PROXY_ADDR as string; // local-setup
+
 const commonArtifactsPath = path.join(
   path.resolve(__dirname, "../.."),
   "l2/artifacts-zk/common"
@@ -39,7 +41,6 @@ const L2_LIDO_BRIDGE_STUB_BYTECODE = readBytecode(
 
 const L1_TOKEN_STUB_NAME = "ERC20 Mock";
 const L1_TOKEN_STUB_SYMBOL = "ERC20";
-const L1_TOKEN_STUB_DECIMALS = "18";
 
 unit("ZkSync :: L1ERC20Bridge", ctxFactory)
   .test("zkSync()", async (ctx) => {
@@ -658,9 +659,7 @@ async function ctxFactory() {
   );
   await l1TokenStub.transfer(sender.address, wei`100 ether`);
 
-  const l1Erc20BridgeImpl = await new L1ERC20Bridge__factory(deployer).deploy(
-    zkSyncStub.address
-  );
+  const l1Erc20BridgeImpl = await new L1ERC20Bridge__factory(deployer).deploy();
 
   const requiredValueToInitializeBridge =
     await zkSyncStub.l2TransactionBaseCost(0, 0, 0);
@@ -681,6 +680,7 @@ async function ctxFactory() {
       l2TokenStub.address,
       governor.address,
       deployer.address,
+      zkSyncStub.address,
     ] as any,
     requiredValueToInitializeBridge,
     requiredValueToInitializeBridge
