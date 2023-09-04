@@ -27,14 +27,21 @@ async function main() {
     ADDRESSES.L1_EXECUTOR_ADDR
   );
 
-  const contract = await deployer.deploy(artifact, [
-    l2AddressOfL1Executor,
-    GOVERNANCE_CONSTANTS.DELAY,
-    GOVERNANCE_CONSTANTS.GRACE_PERIOD,
-    GOVERNANCE_CONSTANTS.MIN_DELAY,
-    GOVERNANCE_CONSTANTS.MAX_DELAY,
-    ADDRESSES.GUARDIAN || hre.ethers.constants.AddressZero,
-  ]);
+  const contract = await hre.zkUpgrades.deployProxy(
+    deployer.zkWallet,
+    artifact,
+    [
+      l2AddressOfL1Executor,
+      GOVERNANCE_CONSTANTS.DELAY,
+      GOVERNANCE_CONSTANTS.GRACE_PERIOD,
+      GOVERNANCE_CONSTANTS.MIN_DELAY,
+      GOVERNANCE_CONSTANTS.MAX_DELAY,
+      ADDRESSES.GUARDIAN || hre.ethers.constants.AddressZero,
+    ],
+    {
+      initializer: "__ZkSyncBridgeExecutor_init",
+    }
+  );
 
   await contract.deployed();
 

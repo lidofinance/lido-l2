@@ -3,6 +3,7 @@
 
 pragma solidity ^0.8.10;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IExecutorBase} from "./interfaces/IExecutorBase.sol";
 
 /**
@@ -11,7 +12,7 @@ import {IExecutorBase} from "./interfaces/IExecutorBase.sol";
  * @dev It does not implement an external `queue` function. This should instead be done in the inheriting
  * contract with proper access control
  */
-abstract contract BridgeExecutorBase is IExecutorBase {
+abstract contract BridgeExecutorBase is Initializable, IExecutorBase {
     // Minimum allowed grace period, which reduces the risk of having an actions set expire due to network congestion
     uint256 constant MINIMUM_GRACE_PERIOD = 10 minutes;
 
@@ -58,15 +59,30 @@ abstract contract BridgeExecutorBase is IExecutorBase {
      * @param minimumDelay The minimum bound a delay can be set to
      * @param maximumDelay The maximum bound a delay can be set to
      * @param guardian The address of the guardian, which can cancel queued proposals (can be zero)
-     * @notice Guardian is a trusted party and may cancel proposals which update the address of the guardian
      */
-    constructor(
+    function __BridgeExecutorBase_init(
         uint256 delay,
         uint256 gracePeriod,
         uint256 minimumDelay,
         uint256 maximumDelay,
         address guardian
-    ) {
+    ) internal onlyInitializing {
+        __BridgeExecutorBase_init_unchained(
+            delay,
+            gracePeriod,
+            minimumDelay,
+            maximumDelay,
+            guardian
+        );
+    }
+
+    function __BridgeExecutorBase_init_unchained(
+        uint256 delay,
+        uint256 gracePeriod,
+        uint256 minimumDelay,
+        uint256 maximumDelay,
+        address guardian
+    ) internal onlyInitializing {
         if (
             gracePeriod < MINIMUM_GRACE_PERIOD ||
             maximumDelay > MAXIMUM_DELAY ||

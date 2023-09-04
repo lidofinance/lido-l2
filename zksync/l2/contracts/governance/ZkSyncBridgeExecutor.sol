@@ -4,9 +4,10 @@
 pragma solidity ^0.8.10;
 
 import {AddressAliasHelper} from "@matterlabs/zksync-contracts/l1/contracts/vendor/AddressAliasHelper.sol";
+import {L2BridgeExecutor2Step} from "./L2BridgeExecutor2Step.sol";
 import {L2BridgeExecutor} from "./L2BridgeExecutor.sol";
 
-contract ZkSyncBridgeExecutor is L2BridgeExecutor {
+contract ZkSyncBridgeExecutor is L2BridgeExecutor2Step {
     /// @inheritdoc L2BridgeExecutor
     modifier onlyEthereumGovernanceExecutor() override {
         if (msg.sender != _ethereumGovernanceExecutor)
@@ -22,21 +23,21 @@ contract ZkSyncBridgeExecutor is L2BridgeExecutor {
      * @param maximumDelay The maximum bound a delay can be set to
      * @param guardian The address of the guardian, which can cancel queued proposals (can be zero)
      */
-    constructor(
+    function __ZkSyncBridgeExecutor_init(
         address ethereumGovernanceExecutor,
         uint256 delay,
         uint256 gracePeriod,
         uint256 minimumDelay,
         uint256 maximumDelay,
         address guardian
-    )
-        L2BridgeExecutor(
+    ) public initializer {
+        __L2BridgeExecutor2Step_init(
             ethereumGovernanceExecutor,
             delay,
             gracePeriod,
             minimumDelay,
             maximumDelay,
             guardian
-        )
-    {}
+        );
+    }
 }

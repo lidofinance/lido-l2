@@ -79,10 +79,11 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
       deployer.zkWallet
     );
 
-    const initTx = await l2Erc20Bridge["initialize(address,address,address)"](
+    const initTx = await l2Erc20Bridge.initialize(
       ethers.utils.getAddress(L1BridgeAddress),
       l1Token.address,
-      l2Token.address
+      l2Token.address,
+      deployerWallet.address
     );
 
     await initTx.wait();
@@ -316,7 +317,6 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
         recipient.address,
         stubs.l2Token.address,
         amount
-        
       );
 
     const l2TotalSupplyAfterFirstTx = await stubs.l2Token.totalSupply();

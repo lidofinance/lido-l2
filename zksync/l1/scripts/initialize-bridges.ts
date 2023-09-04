@@ -93,16 +93,19 @@ async function main() {
 
       try {
         console.log("Initializing bridges");
-        const tx = await lidoBridge[
-          "initialize(bytes[],address,address,address,uint256,uint256)"
-        ](
+
+        const tx = await lidoBridge.initialize(
           [
             L2_LIDO_BRIDGE_IMPLEMENTATION_BYTECODE,
             L2_LIDO_BRIDGE_PROXY_BYTECODE,
           ],
-          deployer.addresses.LidoTokenL1,
-          deployer.addresses.LidoTokenL2,
-          L2_GOVERNOR_ADDRESS,
+          [
+            deployer.addresses.LidoTokenL1,
+            deployer.addresses.LidoTokenL2,
+            L2_GOVERNOR_ADDRESS,
+            deployWallet.address,
+            deployer.addresses.ZkSync.DiamondProxy,
+          ] as any,
           requiredValueToInitializeBridge,
           requiredValueToInitializeBridge,
           {

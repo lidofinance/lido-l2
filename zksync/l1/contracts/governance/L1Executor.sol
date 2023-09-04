@@ -5,9 +5,9 @@ pragma solidity ^0.8.13;
 
 import {IZkSync} from "@matterlabs/zksync-contracts/l1/contracts/zksync/interfaces/IZkSync.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
-contract L1Executor is Initializable, OwnableUpgradeable {
+contract L1Executor is Initializable, Ownable2StepUpgradeable {
     IZkSync public zksync;
 
     /// @dev Contract is expected to be used as proxy implementation.
@@ -18,6 +18,7 @@ contract L1Executor is Initializable, OwnableUpgradeable {
 
     function initialize(IZkSync _zksync) external initializer {
         __Ownable_init();
+        __Ownable2Step_init();
         zksync = _zksync;
     }
 

@@ -3,11 +3,15 @@
 
 pragma solidity ^0.8.10;
 
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {AccessControlDefaultAdminRulesUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlDefaultAdminRulesUpgradeable.sol";
 
 /// @author psirex
 /// @notice Contains administrative methods to retrieve and control the state of the bridging
-contract BridgingManager is AccessControl {
+contract BridgingManager is
+    Initializable,
+    AccessControlDefaultAdminRulesUpgradeable
+{
     /// @dev Stores the state of the bridging
     /// @param isInitialized Shows whether the contract is initialized or not
     /// @param isDepositsEnabled Stores the state of the deposits
@@ -17,6 +21,7 @@ contract BridgingManager is AccessControl {
         bool isDepositsEnabled;
         bool isWithdrawalsEnabled;
     }
+    uint48 internal constant INITIAL_DELAY = 1 days;
 
     bytes32 public constant DEPOSITS_ENABLER_ROLE =
         keccak256("BridgingManager.DEPOSITS_ENABLER_ROLE");
@@ -34,12 +39,12 @@ contract BridgingManager is AccessControl {
     /// @notice Initializes the contract to grant DEFAULT_ADMIN_ROLE to the admin_ address
     /// @dev This method might be called only once
     /// @param admin_ Address of the account to grant the DEFAULT_ADMIN_ROLE
-    function initialize(address admin_) external {
+    function __BridgingManager_init(address admin_) internal onlyInitializing {
         State storage s = _loadState();
         if (s.isInitialized) {
             revert ErrorAlreadyInitialized();
         }
-        _setupRole(DEFAULT_ADMIN_ROLE, admin_);
+        __AccessControlDefaultAdminRules_init(INITIAL_DELAY, admin_);
         s.isInitialized = true;
         emit InitializedBridgingManager(admin_);
     }

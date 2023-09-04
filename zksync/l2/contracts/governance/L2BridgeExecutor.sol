@@ -3,12 +3,13 @@
 
 pragma solidity ^0.8.10;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IL2BridgeExecutor} from "./interfaces/IL2BridgeExecutor.sol";
 import {BridgeExecutorBase} from "./BridgeExecutorBase.sol";
 
 /**
  * @title L2BridgeExecutor
- * @notice Aave abstract contract that implements bridge executor functionality for L2
+ * @notice Upgradable version of Aave abstract contract that implements bridge executor functionality for L2
  * @dev It does not implement the `onlyEthereumGovernanceExecutor` modifier. This should instead be done in the inheriting
  * contract with proper configuration and adjustments depending on the L2
  */
@@ -30,22 +31,27 @@ abstract contract L2BridgeExecutor is BridgeExecutorBase, IL2BridgeExecutor {
      * @param maximumDelay The maximum bound a delay can be set to
      * @param guardian The address of the guardian, which can cancel queued proposals (can be zero)
      */
-    constructor(
+    function __L2BridgeExecutor_init(
         address ethereumGovernanceExecutor,
         uint256 delay,
         uint256 gracePeriod,
         uint256 minimumDelay,
         uint256 maximumDelay,
         address guardian
-    )
-        BridgeExecutorBase(
+    ) internal onlyInitializing {
+        __BridgeExecutorBase_init_unchained(
             delay,
             gracePeriod,
             minimumDelay,
             maximumDelay,
             guardian
-        )
-    {
+        );
+        __L2BridgeExecutor_init_unchained(ethereumGovernanceExecutor);
+    }
+
+    function __L2BridgeExecutor_init_unchained(
+        address ethereumGovernanceExecutor
+    ) internal onlyInitializing {
         require(
             ethereumGovernanceExecutor != address(0),
             "Ethereum Governor address can't be zero"
@@ -61,21 +67,6 @@ abstract contract L2BridgeExecutor is BridgeExecutorBase, IL2BridgeExecutor {
         bytes[] memory calldatas
     ) external onlyEthereumGovernanceExecutor {
         _queue(targets, values, signatures, calldatas);
-    }
-
-    /// @inheritdoc IL2BridgeExecutor
-    function updateEthereumGovernanceExecutor(
-        address ethereumGovernanceExecutor
-    ) external onlyThis {
-        require(
-            ethereumGovernanceExecutor != address(0),
-            "Ethereum Governor address can't be zero"
-        );
-        emit EthereumGovernanceExecutorUpdate(
-            _ethereumGovernanceExecutor,
-            ethereumGovernanceExecutor
-        );
-        _ethereumGovernanceExecutor = ethereumGovernanceExecutor;
     }
 
     /// @inheritdoc IL2BridgeExecutor
