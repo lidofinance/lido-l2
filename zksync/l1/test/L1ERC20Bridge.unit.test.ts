@@ -16,8 +16,6 @@ import {
 import { L2ERC20BridgeStub__factory } from "../../l2/typechain";
 import { readBytecode } from "../scripts/utils/utils";
 
-const ZKSYNC_DIAMOND_PROXY = process.env.CONTRACTS_DIAMOND_PROXY_ADDR as string; // local-setup
-
 const commonArtifactsPath = path.join(
   path.resolve(__dirname, "../.."),
   "l2/artifacts-zk/common"

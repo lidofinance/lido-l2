@@ -1,5 +1,5 @@
 import { web3Provider } from "./utils/utils";
-import { OssifiableProxy__factory } from "../typechain/index";
+import { AragonAgentMock__factory, OssifiableProxy__factory } from "../typechain/index";
 import { L1Executor__factory } from "../typechain";
 import { Wallet } from "ethers";
 
@@ -55,6 +55,20 @@ async function main() {
     AGENT_ADDRESS
   );
   await transferOwnerResponseTx.wait();
+
+  const AgentMock = new AragonAgentMock__factory().connect(wallet).attach(AGENT_ADDRESS);
+  
+  const data = L1Executor.interface.encodeFunctionData("acceptOwnership");
+  const acceptOwnershipTx = await AgentMock.execute(
+    L1Executor.address,
+    0,
+    data,
+    {
+      gasLimit: 10_000_000,
+    }
+  );
+
+  await acceptOwnershipTx.wait();
 
   console.log("Owner of the L1 Executor:", await L1Executor.owner());
   console.log(`L1_EXECUTOR_ADDR=${L1ExecutorContractProxy.address}`);

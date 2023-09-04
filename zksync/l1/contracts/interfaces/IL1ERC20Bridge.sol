@@ -71,7 +71,7 @@ interface IL1ERC20Bridge {
     /// @param _factoryDeps A list of raw bytecodes that are needed for deployment of the L2 bridge
     /// @notice _factoryDeps[0] == a raw bytecode of L2 bridge implementation
     /// @notice _factoryDeps[1] == a raw bytecode of proxy that is used as L2 bridge
-    /// @param addresses Struct containing the following arguments:
+    /// @param addresses Struct containing the following arguments (to prevent stack too deep error):
     /// @dev _l1Token Address of token on L1
     /// @dev _l2Token Address of token on L2
     /// @dev _governor Address which can change L2 token implementation and upgrade the bridge

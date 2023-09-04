@@ -102,16 +102,6 @@ async function main() {
         deployer.addresses.GovernanceL1
       );
 
-      /**
-       * Revokes deployer's DEFAULT_ADMIN_ROLE on L1
-       */
-      // await revokeRole(
-      //   lidoBridge,
-      //   DEFAULT_ADMIN_ROLE,
-      //   "DEFAULT_ADMIN_ROLE",
-      //   deployWallet.address
-      // );
-
       console.log("\n===============L2===============");
 
       await grantRole(
@@ -141,16 +131,6 @@ async function main() {
         "WITHDRAWALS_DISABLER_ROLE",
         L2_BRIDGE_EXECUTOR_ADDR
       );
-
-      /**
-       * Revokes deployer's DEFAULT_ADMIN_ROLE on L2
-       */
-      // await revokeRole(
-      //   l2Bridge,
-      //   DEFAULT_ADMIN_ROLE,
-      //   "DEFAULT_ADMIN_ROLE",
-      //   zkWallet.address
-      // );
     });
 
   await program.parseAsync(process.argv);
@@ -165,7 +145,6 @@ async function grantRole(
   roleName: string,
   target: string
 ) {
-  console.log(roleBytecode);
   const hasL2ExecutorDepositDisablerRoleL2 = await contract.hasRole(
     roleBytecode,
     target
@@ -209,20 +188,6 @@ async function revokeRole(
     }
   }
   console.log(`${target} doesn't possess ${roleName}`);
-}
-
-/**
- * initializeBridgingManager
- */
-async function initializeBridgingManager(contract: Contract, target: string) {
-  const isInitiated = await contract.isInitialized();
-
-  if (!isInitiated) {
-    console.log("Initializing Bridge Default Admin...");
-    const tx = await contract["initialize(address)"](target);
-    await tx.wait();
-  }
-  console.log("Bridging manager initiated");
 }
 
 main().catch((error) => {
