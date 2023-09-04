@@ -4,6 +4,13 @@
 pragma solidity ^0.8.13;
 
 interface IL1ERC20Bridge {
+    struct InitializeAddressesParams {
+        address _l1Token;
+        address _l2Token;
+        address _governor;
+        address _admin;
+    }
+
     /**
      * @dev Emitted when the deposit function is called
      * @param l2DepositTxHash The L2 transaction hash of deposit finalization
@@ -58,14 +65,16 @@ interface IL1ERC20Bridge {
     /// @param _factoryDeps A list of raw bytecodes that are needed for deployment of the L2 bridge
     /// @notice _factoryDeps[0] == a raw bytecode of L2 bridge implementation
     /// @notice _factoryDeps[1] == a raw bytecode of proxy that is used as L2 bridge
-    /// @param _governor Address which can change L2 token implementation and upgrade the bridge
+    /// @param addresses Struct containing the following arguments:
+    /// @dev _l1Token Address of token on L1
+    /// @dev _l2Token Address of token on L2
+    /// @dev _governor Address which can change L2 token implementation and upgrade the bridge
+    /// @dev _admin Address of bridging manager admin
     /// @param _deployBridgeImplementationFee How much of the sent value should be allocated to deploying the L2 bridge implementation
     /// @param _deployBridgeProxyFee How much of the sent value should be allocated to deploying the L2 bridge proxy
     function initialize(
         bytes[] calldata _factoryDeps,
-        address _governor,
-        address _l1Token,
-        address _l2Token,
+        InitializeAddressesParams calldata addresses,
         uint256 _deployBridgeImplementationFee,
         uint256 _deployBridgeProxyFee
     ) external payable;

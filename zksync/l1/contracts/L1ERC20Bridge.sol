@@ -58,13 +58,14 @@ contract L1ERC20Bridge is
     /// @inheritdoc IL1ERC20Bridge
     function initialize(
         bytes[] calldata _factoryDeps,
-        address _l1Token,
-        address _l2Token,
-        address _governor,
+        InitializeAddressesParams calldata addresses,
         uint256 _deployBridgeImplementationFee,
         uint256 _deployBridgeProxyFee
     ) external payable initializer reentrancyGuardInitializer {
-        require(_governor != address(0), "The governor address can't be zero");
+        require(
+            addresses._governor != address(0),
+            "The governor address can't be zero"
+        );
         require(
             _factoryDeps.length == 2,
             "Invalid factory deps length provided"
@@ -73,7 +74,10 @@ contract L1ERC20Bridge is
             msg.value == _deployBridgeImplementationFee + _deployBridgeProxyFee,
             "The caller miscalculated deploy transactions fees"
         );
-        __BridgeableTokens_init(_l1Token, _l2Token);
+
+        __BridgeableTokens_init(addresses._l1Token, addresses._l2Token);
+
+        __BridgingManager_init(addresses._admin);
 
         bytes32 l2BridgeImplementationBytecodeHash = L2ContractHelper
             .hashL2Bytecode(_factoryDeps[0]);
@@ -97,11 +101,11 @@ contract L1ERC20Bridge is
             // Data to be used in delegate call to initialize the proxy
             bytes memory proxyInitializationParams = abi.encodeCall(
                 IL2ERC20Bridge.initialize,
-                (address(this), l1Token, l2Token)
+                (address(this), l1Token, l2Token, addresses._admin)
             );
             l2BridgeProxyConstructorData = abi.encode(
                 bridgeImplementationAddr,
-                _governor,
+                addresses._governor,
                 proxyInitializationParams
             );
         }
