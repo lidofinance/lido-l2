@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "scripts": {
     "compile": "hardhat clean && hardhat compile && ts-node utils/generateTypings.ts",
+    "deploy-create2-factory": "hardhat run scripts/deploy-create2-factory.ts",
     "deploy-mock-agent": "hardhat run scripts/deploy-mock-agent.ts",
     "deploy-l1-executor": "hardhat run scripts/deploy-l1-executor.ts",
     "deploy-bridges": "hardhat run scripts/deploy-bridges.ts",
