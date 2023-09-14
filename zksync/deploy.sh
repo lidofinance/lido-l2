@@ -2,6 +2,8 @@
 
 ENV_LOCATION="../.env"
 
+set -e
+
 echo "DEPLOYING LIDO BRIDGE"
 echo "======================="
 

@@ -335,7 +335,7 @@ scenario("Bridge E2E Testing", ctxFactory)
   )
   .step(
     "Withdraw tokens from L2 via L2ERC20Bridge",
-    async ({ l1, l2, withdrawalAmount, zkProvider, ethProvider, gasLimit }) => {
+    async ({ l1, l2, withdrawalAmount, zkProvider, gasLimit }) => {
       const { l1Token, l1Bridge, accounts } = l1;
       const { l2Token, l2Bridge } = l2;
       const walletAddress = accounts.deployer.address;
@@ -345,10 +345,13 @@ scenario("Bridge E2E Testing", ctxFactory)
         await l1Bridge.isWithdrawalsEnabled(),
         "L1 Withdrawals should be enabled"
       );
+      console.log("L1 Withdrawals should be enabled");
+
       assert.isTrue(
         await l2Bridge.isWithdrawalsEnabled(),
         "L2 Withdrawals should be enabled"
       );
+      console.log("L2 Withdrawals should be enabled");
 
       const l1ERC20BridgeTokenBalanceBefore = await l1Token.balanceOf(
         l1Bridge.address
@@ -357,6 +360,14 @@ scenario("Bridge E2E Testing", ctxFactory)
       const userL1TokenBalanceBefore = await l1Token.balanceOf(walletAddress);
       const userL2TokenBalanceBefore = await l2Token.balanceOf(walletAddress);
 
+      console.log(
+        "userL1TokenBalanceBefore",
+        userL2TokenBalanceBefore.toString()
+      );
+      console.log(
+        "userL2TokenBalanceBefore",
+        userL2TokenBalanceBefore.toString()
+      );
       const withdrawResponse = await l2Bridge.withdraw(
         walletAddress,
         l2Token.address,
@@ -385,6 +396,7 @@ scenario("Bridge E2E Testing", ctxFactory)
         keccak256(message)
       );
 
+      console.log("finalizeWithdrawal");
       const finalizeWithdrawResponse = await l1Bridge.finalizeWithdrawal(
         l1BatchNumber,
         messageProof?.id,
@@ -393,6 +405,8 @@ scenario("Bridge E2E Testing", ctxFactory)
         messageProof?.proof,
         { gasLimit }
       );
+      console.log("finalizeWithdrawResponse.wait()");
+
       await finalizeWithdrawResponse.wait();
 
       const l2TokenTotalSupplyAfter = await l2Token.totalSupply();
@@ -448,11 +462,11 @@ async function ctxFactory() {
   const zkProvider = new Provider(ZKSYNC_PROVIDER_URL);
   const ethProvider = new JsonRpcProvider(ETH_CLIENT_WEB3_URL);
 
-  const ethDeployer = new Wallet(richWallet[0].privateKey, ethProvider);
-  const ethGovernor = new Wallet(richWallet[1].privateKey, ethProvider);
-
-  const deployer = new ZkWallet(richWallet[0].privateKey, zkProvider);
-  const governor = new ZkWallet(richWallet[1].privateKey, zkProvider);
+  const ethDeployer = new Wallet(
+    process.env.PRIVATE_KEY as string,
+    ethProvider
+  );
+  const deployer = new ZkWallet(process.env.PRIVATE_KEY as string, zkProvider);
 
   return {
     l1: {
@@ -463,7 +477,6 @@ async function ctxFactory() {
       zkSync: IZkSyncFactory.connect(CONTRACTS_DIAMOND_PROXY_ADDR, ethDeployer),
       accounts: {
         deployer: ethDeployer,
-        governor: ethGovernor,
       },
     },
     l2: {
@@ -476,7 +489,6 @@ async function ctxFactory() {
       ),
       accounts: {
         deployer,
-        governor,
       },
     },
     zkProvider,

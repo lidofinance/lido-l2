@@ -65,13 +65,17 @@ async function main() {
         zkWallet
       );
 
+      console.log(`Using L2 Bridge: ${l2Bridge.address}`);
+
       // get bytecode for roles
-      const DEPOSITS_ENABLER_ROLE = await lidoBridge.DEPOSITS_ENABLER_ROLE();
-      const DEPOSITS_DISABLER_ROLE = await lidoBridge.DEPOSITS_DISABLER_ROLE();
+      const DEPOSITS_ENABLER_ROLE =
+        "0x4b43b36766bde12c5e9cbbc37d15f8d1f769f08f54720ab370faeb4ce893753a";
+      const DEPOSITS_DISABLER_ROLE =
+        "0x63f736f21cb2943826cd50b191eb054ebbea670e4e962d0527611f830cd399d6";
       const WITHDRAWALS_ENABLER_ROLE =
-        await lidoBridge.WITHDRAWALS_ENABLER_ROLE();
+        "0x9ab8816a3dc0b3849ec1ac00483f6ec815b07eee2fd766a353311c823ad59d0d";
       const WITHDRAWALS_DISABLER_ROLE =
-        await lidoBridge.WITHDRAWALS_DISABLER_ROLE();
+        "0x94a954c0bc99227eddbc0715a62a7e1056ed8784cd719c2303b685683908857c";
 
       console.log("\n===============L1===============");
 
@@ -158,6 +162,8 @@ async function grantRole(
     await tx.wait();
 
     const isRoleGranted = await contract.hasRole(roleBytecode, target);
+
+    console.log("has role final second");
     if (!isRoleGranted) {
       console.warn(`Error granting ${roleName} to ${target}`);
       return;

@@ -37,12 +37,17 @@ async function main() {
 
   const newOwner = utils.applyL1ToL2Alias(ADDRESSES.L1_EXECUTOR_ADDR);
 
-  await hre.zkUpgrades.admin.transferProxyAdminOwnership(
-    newOwner,
-    deployer.zkWallet
-  );
+  try {
+    console.log("Transferring Proxy Admin Ownership");
+    await hre.zkUpgrades.admin.transferProxyAdminOwnership(
+      newOwner,
+      deployer.zkWallet
+    );
 
-  console.log(`New proxy admin owner: ${newOwner}`);
+    console.log(`New proxy admin owner: ${newOwner}`);
+  } catch (error: unknown) {
+    console.log("Failed to transferring Proxy Admin Ownership", error);
+  }
 }
 
 main().catch((error) => {
