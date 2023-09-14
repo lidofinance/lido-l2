@@ -13,6 +13,7 @@ import {
   ProxyAdmin__factory,
   TransparentUpgradeableProxy__factory,
 } from "../../../l2/typechain";
+import { SYSTEM_CONFIG_CONSTANTS } from "../utils/constants";
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 const ZKSYNC_PROVIDER_URL = process.env.ZKSYNC_PROVIDER_URL as string;
@@ -25,7 +26,7 @@ const CONTRACTS_L2_LIDO_TOKEN_ADDR = process.env
 const NEW_L2_TOKEN_IMPL = "0x4a2cc36B98debBEb649d802E8B136f37a3705dC8";
 
 const provider = web3Provider();
-const zkProvider = new Provider(ZKSYNC_PROVIDER_URL, 270);
+const zkProvider = new Provider(ZKSYNC_PROVIDER_URL, SYSTEM_CONFIG_CONSTANTS.CHAIND_ID);
 
 async function main() {
   const program = new Command();

@@ -8,6 +8,7 @@ import {
   readInterface,
 } from "../utils/utils";
 import { richWallet } from "../utils/rich_wallet";
+import { SYSTEM_CONFIG_CONSTANTS } from "../utils/constants";
 
 const l1ArtifactsPath = path.join(
   path.resolve(__dirname, "../.."),
@@ -45,7 +46,7 @@ const { address: WALLET_ADDRESS, privateKey: WALLET_PRIVATE_KEY } =
 
 const provider = web3Provider();
 const wallet = new ethers.Wallet(WALLET_PRIVATE_KEY, provider);
-const zkProvider = new Provider(zkSyncUrl(), 270);
+const zkProvider = new Provider(zkSyncUrl(), SYSTEM_CONFIG_CONSTANTS.CHAIND_ID);
 const zkWallet = new Wallet(WALLET_PRIVATE_KEY, zkProvider, provider);
 
 async function main() {
