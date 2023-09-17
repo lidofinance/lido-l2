@@ -21,6 +21,7 @@
   "license": "ISC",
   "devDependencies": {
     "@matterlabs/zksync-contracts": "^0.6.2-beta",
+    "@nomicfoundation/hardhat-verify": "^1.1.1",
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@nomiclabs/hardhat-waffle": "^2.0.6",
     "@openzeppelin/contracts-upgradeable": "^4.9.0",
