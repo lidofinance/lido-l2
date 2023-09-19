@@ -8,6 +8,7 @@
     "deploy-wsteth-token": "hardhat run ./scripts/deploy-wsteth-token.ts",
     "deploy-wsteth-impl": "hardhat run ./scripts/deploy-new-wsteth-implementation.ts",
     "connect-token-to-bridge": "hardhat run ./scripts/connect-token-to-bridge.ts",
+    "verify-l2-bridge": "hardhat run ./scripts/verify-l2-bridge.ts",
     "zksync:test:unit": "hardhat test ./test/*.unit.test.ts"
   },
   "license": "ISC",
