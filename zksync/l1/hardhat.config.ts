@@ -19,6 +19,7 @@ const config: HardhatUserConfig & { etherscan: { apiKey: string } } = {
       },
     },
   },
+  defaultNetwork: "goerli",
   networks: {
     goerli: {
       url: ETH_NETWORK_URL,
