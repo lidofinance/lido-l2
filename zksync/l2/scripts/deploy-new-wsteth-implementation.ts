@@ -20,6 +20,8 @@ export async function main() {
   const contractImpl = await deployedContract.deployed();
 
   console.log("New wstETH implementation deployed at:", contractImpl.address);
+  await hre.run("verify:verify", { address: contractImpl.address });
+
   return contractImpl.address;
 }
 

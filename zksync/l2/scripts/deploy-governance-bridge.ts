@@ -46,6 +46,8 @@ async function main() {
   await contract.deployed();
 
   console.log(`L2_BRIDGE_EXECUTOR_ADDR=${contract.address}`);
+
+  await hre.run("verify:verify", { address: contract.address });
 }
 
 main().catch((error) => {
