@@ -5,6 +5,7 @@ import {
 } from "../typechain/index";
 import { L1Executor__factory } from "../typechain";
 import { Wallet } from "ethers";
+import { Deployer } from "./deploy";
 
 const provider = web3Provider();
 
@@ -15,6 +16,11 @@ const ZKSYNC_ADDRESS = process.env.CONTRACTS_DIAMOND_PROXY_ADDR as string;
 async function main() {
   // without ethers.Wallet -> HardhatError: HH5: HardhatContext is not created.
   const wallet = new Wallet(PRIVATE_KEY, provider);
+  const deployer = new Deployer({
+    deployWallet: wallet,
+    governorAddress: AGENT_ADDRESS,
+    verbose: true,
+  });
 
   /**
    * L1Executor Implementation
@@ -22,6 +28,8 @@ async function main() {
   const L1ExecutorContractImpl = await new L1Executor__factory(wallet).deploy();
 
   console.log(`L1Executor implementation:${L1ExecutorContractImpl.address}`);
+
+  deployer.verifyContract(L1ExecutorContractImpl.address);
 
   /**
    * L1Executor Proxy
@@ -34,6 +42,12 @@ async function main() {
 
   console.log(`L1Executor proxy:${L1ExecutorContractProxy.address}`);
 
+  deployer.verifyContract(L1ExecutorContractProxy.address, [
+    L1ExecutorContractImpl.address,
+    AGENT_ADDRESS,
+    "0x",
+  ]);
+
   /**
    * Attach proxy address to L1Executor typechain factory
    */
@@ -42,6 +56,8 @@ async function main() {
   );
 
   console.log(`L1Executor: ${L1Executor.address}`);
+
+  deployer.verifyContract(L1Executor.address);
 
   /**
    * Initialize L1Executor

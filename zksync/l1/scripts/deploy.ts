@@ -102,6 +102,7 @@ export class Deployer {
     }
 
     this.addresses.Create2Factory = create2Factory.address;
+    this.verifyContract(create2Factory.address);
   }
 
   private async deployViaCreate2(
@@ -176,7 +177,7 @@ export class Deployer {
       nonce: nonce++,
     });
     await this.deployLidoBridgeProxy(create2Salt, { gasPrice, nonce: nonce++ });
-    
+
     this.verifyContract(this.addresses.Bridges.LidoBridgeImplementation);
     this.verifyContract(this.addresses.Bridges.LidoBridgeProxy, [
       this.addresses.Bridges.LidoBridgeImplementation,
@@ -291,7 +292,7 @@ export class Deployer {
       .attach(this.addresses.GovernanceL1);
   }
 
-  private verifyContract(address: string, constructorArguments?: any[]) {
+  public verifyContract(address: string, constructorArguments?: any[]) {
     if (!IS_LOCAL) {
       setTimeout(() => {
         hardhatRun("verify:verify", {
