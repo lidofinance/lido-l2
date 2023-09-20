@@ -5,7 +5,7 @@ import {
 } from "../typechain/index";
 import { L1Executor__factory } from "../typechain";
 import { Wallet } from "ethers";
-import { Deployer } from "./deploy";
+import { Deployer, IS_PRODUCTION } from "./deploy";
 
 const provider = web3Provider();
 
@@ -74,25 +74,31 @@ async function main() {
     AGENT_ADDRESS
   );
   await transferOwnerResponseTx.wait();
+  if (IS_PRODUCTION) {
+    console.log(
+      "please call accept ownership on this Aragon Agent:",
+      AGENT_ADDRESS
+    );
+  } else {
+    const AgentMock = new AragonAgentMock__factory()
+      .connect(wallet)
+      .attach(AGENT_ADDRESS);
 
-  const AgentMock = new AragonAgentMock__factory()
-    .connect(wallet)
-    .attach(AGENT_ADDRESS);
+    const data = L1Executor.interface.encodeFunctionData("acceptOwnership");
 
-  const data = L1Executor.interface.encodeFunctionData("acceptOwnership");
+    const acceptOwnershipTx = await AgentMock.execute(
+      L1Executor.address,
+      0,
+      data,
+      {
+        gasLimit: 10_000_000,
+      }
+    );
 
-  const acceptOwnershipTx = await AgentMock.execute(
-    L1Executor.address,
-    0,
-    data,
-    {
-      gasLimit: 10_000_000,
-    }
-  );
+    await acceptOwnershipTx.wait();
 
-  await acceptOwnershipTx.wait();
-
-  console.log("Owner of the L1 Executor:", await L1Executor.owner());
+    console.log("Owner of the L1 Executor:", await L1Executor.owner());
+  }
   console.log(`L1_EXECUTOR_ADDR=${L1ExecutorContractProxy.address}`);
 }
 
