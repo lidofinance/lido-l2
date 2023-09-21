@@ -163,7 +163,6 @@ async function grantRole(
 
     const isRoleGranted = await contract.hasRole(roleBytecode, target);
 
-    console.log("has role final second");
     if (!isRoleGranted) {
       console.warn(`Error granting ${roleName} to ${target}`);
       return;
