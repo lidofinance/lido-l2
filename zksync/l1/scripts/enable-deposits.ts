@@ -17,13 +17,12 @@ import {
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 const ZKSYNC_PROVIDER_URL = process.env.ZKSYNC_PROVIDER_URL as string;
-const ZKSYNC_NETWORK_ID = Number(process.env.ZKSYNC_NETWORK_ID);
 
 const L1_EXECUTOR_ADDR = process.env.L1_EXECUTOR_ADDR as string;
 const L2_BRIDGE_EXECUTOR_ADDR = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
 
 const provider = web3Provider();
-const zkProvider = new Provider(ZKSYNC_PROVIDER_URL, ZKSYNC_NETWORK_ID);
+const zkProvider = new Provider(ZKSYNC_PROVIDER_URL);
 
 async function main() {
   const program = new Command();
