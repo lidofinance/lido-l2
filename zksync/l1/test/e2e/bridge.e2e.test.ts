@@ -345,13 +345,11 @@ scenario("Bridge E2E Testing", ctxFactory)
         await l1Bridge.isWithdrawalsEnabled(),
         "L1 Withdrawals should be enabled"
       );
-      console.log("L1 Withdrawals should be enabled");
 
       assert.isTrue(
         await l2Bridge.isWithdrawalsEnabled(),
         "L2 Withdrawals should be enabled"
       );
-      console.log("L2 Withdrawals should be enabled");
 
       const l1ERC20BridgeTokenBalanceBefore = await l1Token.balanceOf(
         l1Bridge.address
@@ -360,14 +358,6 @@ scenario("Bridge E2E Testing", ctxFactory)
       const userL1TokenBalanceBefore = await l1Token.balanceOf(walletAddress);
       const userL2TokenBalanceBefore = await l2Token.balanceOf(walletAddress);
 
-      console.log(
-        "userL1TokenBalanceBefore",
-        userL2TokenBalanceBefore.toString()
-      );
-      console.log(
-        "userL2TokenBalanceBefore",
-        userL2TokenBalanceBefore.toString()
-      );
       const withdrawResponse = await l2Bridge.withdraw(
         walletAddress,
         l2Token.address,
@@ -396,7 +386,6 @@ scenario("Bridge E2E Testing", ctxFactory)
         keccak256(message)
       );
 
-      console.log("finalizeWithdrawal");
       const finalizeWithdrawResponse = await l1Bridge.finalizeWithdrawal(
         l1BatchNumber,
         messageProof?.id,
@@ -405,7 +394,6 @@ scenario("Bridge E2E Testing", ctxFactory)
         messageProof?.proof,
         { gasLimit }
       );
-      console.log("finalizeWithdrawResponse.wait()");
 
       await finalizeWithdrawResponse.wait();
 
