@@ -1,10 +1,8 @@
-import * as hre from "hardhat";
 import { ADDRESSES } from "./utils/constants";
+import { verify } from "./utils/verify";
 
 async function main() {
-  await hre.run("verify:verify", {
-    address: ADDRESSES.L2_LIDO_BRIDGE_PROXY_ADDR,
-  });
+  await verify(ADDRESSES.L2_LIDO_BRIDGE_PROXY_ADDR);
 }
 
 main().catch((error) => {

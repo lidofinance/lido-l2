@@ -7,6 +7,7 @@ import {
   PRIVATE_KEY,
   ADDRESSES,
 } from "./utils/constants";
+import { verify } from "./utils/verify";
 
 const ERC20_BRIDGED_TOKEN_CONTRACT_NAME = "ERC20BridgedUpgradeable";
 
@@ -35,7 +36,7 @@ async function main() {
 
   console.log(`CONTRACTS_L2_LIDO_TOKEN_ADDR=${contract.address}`);
 
-  await hre.run("verify:verify", { address: contract.address });
+  await verify(contract.address);
 
   const newOwner = utils.applyL1ToL2Alias(ADDRESSES.L1_EXECUTOR_ADDR);
 

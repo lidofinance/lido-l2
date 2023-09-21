@@ -7,6 +7,7 @@ import {
   ADDRESSES,
   PRIVATE_KEY,
 } from "./utils/constants";
+import { verify } from "./utils/verify";
 
 const BRIDGE_EXECUTOR_CONTRACT_NAME = "ZkSyncBridgeExecutor";
 
@@ -47,7 +48,7 @@ async function main() {
 
   console.log(`L2_BRIDGE_EXECUTOR_ADDR=${contract.address}`);
 
-  await hre.run("verify:verify", { address: contract.address });
+  await verify(contract.address);
 }
 
 main().catch((error) => {
