@@ -86,8 +86,8 @@ cd ../l1
 # INITIALIZE BRIDGE ROLES
 npm run init-bridge-roles
 
-# ENABLE DEPOSITS
-npm run enable-deposits
+# # ENABLE DEPOSITS
+# npm run enable-deposits
 
-# ENABLE WITHDRAWALS
-npm run enable-withdrawals
+# # ENABLE WITHDRAWALS
+# npm run enable-withdrawals
