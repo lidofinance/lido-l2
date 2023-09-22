@@ -87,6 +87,7 @@ async function main() {
       );
 
       // get bytecode for roles
+      const DEFAULT_ADMIN_ROLE = "0x00";
       const DEPOSITS_ENABLER_ROLE =
         "0x4b43b36766bde12c5e9cbbc37d15f8d1f769f08f54720ab370faeb4ce893753a";
       const DEPOSITS_DISABLER_ROLE =
@@ -126,32 +127,43 @@ async function main() {
         [deployer.addresses.GovernanceL1, EMERGENCY_BRAKE_MULTISIG]
       );
 
-      // 2 Step transfer of default admin role to L1 Lido Agent
-      const defaultAdminTransferTx = await lidoBridge.beginDefaultAdminTransfer(
-        L1GovernorAgent.address
+      await grantRole(lidoBridge, DEFAULT_ADMIN_ROLE, "DEFAULT_ADMIN_ROLE", [
+        L1GovernorAgent.address,
+      ]);
+
+      await revokeRole(
+        lidoBridge,
+        DEFAULT_ADMIN_ROLE,
+        "DEFAULT_ADMIN_ROLE",
+        deployWallet.address
       );
 
-      await defaultAdminTransferTx.wait();
+      // // 2 Step transfer of default admin role to L1 Lido Agent
+      // const defaultAdminTransferTx = await lidoBridge.beginDefaultAdminTransfer(
+      //   L1GovernorAgent.address
+      // );
 
-      const data = lidoBridge.interface.encodeFunctionData(
-        "acceptDefaultAdminTransfer"
-      );
+      // await defaultAdminTransferTx.wait();
 
-      const acceptDefaultAdminTransferTx = await L1GovernorAgent.execute(
-        lidoBridge.address,
-        0,
-        data,
-        {
-          gasLimit: 10_000_000,
-        }
-      );
+      // const data = lidoBridge.interface.encodeFunctionData(
+      //   "acceptDefaultAdminTransfer"
+      // );
 
-      await acceptDefaultAdminTransferTx.wait();
+      // const acceptDefaultAdminTransferTx = await L1GovernorAgent.execute(
+      //   lidoBridge.address,
+      //   0,
+      //   data,
+      //   {
+      //     gasLimit: 10_000_000,
+      //   }
+      // );
 
-      console.log("L1 BRIDGE DEFAULT ADMIN:", await lidoBridge.defaultAdmin());
+      // await acceptDefaultAdminTransferTx.wait();
+
+      // console.log("L1 BRIDGE DEFAULT ADMIN:", await lidoBridge.defaultAdmin());
       console.log(
         "EXPECTED ADMIN:",
-        (await lidoBridge.defaultAdmin()) === L1GovernorAgent.address
+        await lidoBridge.hasRole(DEFAULT_ADMIN_ROLE, L1GovernorAgent.address)
       );
 
       console.log("\n===============L2===============");
@@ -184,105 +196,115 @@ async function main() {
         [L2_BRIDGE_EXECUTOR_ADDR, EMERGENCY_BRAKE_MULTISIG]
       );
 
-      // 2 Step transfer of default admin role to L1 Lido Agent
-      const defaultAdminTransferL2Tx = await l2Bridge.beginDefaultAdminTransfer(
-        L2_BRIDGE_EXECUTOR_ADDR
+      await grantRole(l2Bridge, DEFAULT_ADMIN_ROLE, "DEFAULT_ADMIN_ROLE", [
+        L2_BRIDGE_EXECUTOR_ADDR,
+      ]);
+
+      await revokeRole(
+        l2Bridge,
+        DEFAULT_ADMIN_ROLE,
+        "DEFAULT_ADMIN_ROLE",
+        deployWallet.address
       );
 
-      await defaultAdminTransferL2Tx.wait();
+      // // 2 Step transfer of default admin role to L1 Lido Agent
+      // const defaultAdminTransferL2Tx = await l2Bridge.beginDefaultAdminTransfer(
+      //   L2_BRIDGE_EXECUTOR_ADDR
+      // );
 
-      // encode data to be queued by ZkBridgeExecutor on L2
-      const dataL2 = zkSyncBridgeExecutor.interface.encodeFunctionData(
-        "queue",
-        [
-          [deployer.addresses.Bridges.LidoL2BridgeProxy],
-          [hre.ethers.utils.parseEther("0")],
-          ["acceptDefaultAdminTransfer()"],
-          [new Uint8Array()],
-        ]
-      );
+      // await defaultAdminTransferL2Tx.wait();
 
-      // estimate gas to to bridge encoded from L1 to L2
-      const gasLimit = await zkProvider.estimateL1ToL2Execute({
-        contractAddress: L2_BRIDGE_EXECUTOR_ADDR,
-        calldata: dataL2,
-        caller: utils.applyL1ToL2Alias(L1_EXECUTOR_ADDR),
-      });
+      // // encode data to be queued by ZkBridgeExecutor on L2
+      // const dataL2 = zkSyncBridgeExecutor.interface.encodeFunctionData(
+      //   "queue",
+      //   [
+      //     [deployer.addresses.Bridges.LidoL2BridgeProxy],
+      //     [hre.ethers.utils.parseEther("0")],
+      //     ["acceptDefaultAdminTransfer()"],
+      //     [new Uint8Array()],
+      //   ]
+      // );
 
-      // estimate cons of L1 to L2 execution
-      const baseCost = await zkSync.l2TransactionBaseCost(
-        gasPrice,
-        gasLimit,
-        utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT
-      );
+      // // estimate gas to to bridge encoded from L1 to L2
+      // const gasLimit = await zkProvider.estimateL1ToL2Execute({
+      //   contractAddress: L2_BRIDGE_EXECUTOR_ADDR,
+      //   calldata: dataL2,
+      //   caller: utils.applyL1ToL2Alias(L1_EXECUTOR_ADDR),
+      // });
 
-      // send eth to the agent to cover base cost for L1 to L2 bridging
-      const ethTransferResponse = await deployWallet.sendTransaction({
-        to: L1GovernorAgent.address,
-        value: baseCost,
-      });
-      await ethTransferResponse.wait();
+      // // estimate cons of L1 to L2 execution
+      // const baseCost = await zkSync.l2TransactionBaseCost(
+      //   gasPrice,
+      //   gasLimit,
+      //   utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT
+      // );
 
-      /**
-       * Encode data which is sent to L1 Executor
-       * * This data contains previously encoded queue data
-       */
-      const encodedDataQueue = L1Executor.interface.encodeFunctionData(
-        "callZkSync",
-        [
-          L2_BRIDGE_EXECUTOR_ADDR,
-          dataL2,
-          gasLimit,
-          utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT,
-        ]
-      );
+      // // send eth to the agent to cover base cost for L1 to L2 bridging
+      // const ethTransferResponse = await deployWallet.sendTransaction({
+      //   to: L1GovernorAgent.address,
+      //   value: baseCost,
+      // });
+      // await ethTransferResponse.wait();
 
-      /**
-       *  Sends Action set from L1 Executor to L2 Bridge Executor
-       */
-      const executeTx = await L1GovernorAgent.execute(
-        L1_EXECUTOR_ADDR,
-        baseCost,
-        encodedDataQueue,
-        { gasPrice, gasLimit: 10_000_000 }
-      );
+      // /**
+      //  * Encode data which is sent to L1 Executor
+      //  * * This data contains previously encoded queue data
+      //  */
+      // const encodedDataQueue = L1Executor.interface.encodeFunctionData(
+      //   "callZkSync",
+      //   [
+      //     L2_BRIDGE_EXECUTOR_ADDR,
+      //     dataL2,
+      //     gasLimit,
+      //     utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT,
+      //   ]
+      // );
 
-      await executeTx.wait();
+      // /**
+      //  *  Sends Action set from L1 Executor to L2 Bridge Executor
+      //  */
+      // const executeTx = await L1GovernorAgent.execute(
+      //   L1_EXECUTOR_ADDR,
+      //   baseCost,
+      //   encodedDataQueue,
+      //   { gasPrice, gasLimit: 10_000_000 }
+      // );
 
-      /**
-       * Catch ActionsSetQueued Event
-       */
-      const actionSetQueuedPromise = new Promise((resolve) => {
-        zkSyncBridgeExecutor.on("ActionsSetQueued", (actionSetId) => {
-          resolve(actionSetId.toString());
-          zkSyncBridgeExecutor.removeAllListeners();
-        });
-      });
+      // await executeTx.wait();
 
-      const actionSetId = await actionSetQueuedPromise.then((res) => res);
+      // /**
+      //  * Catch ActionsSetQueued Event
+      //  */
+      // const actionSetQueuedPromise = new Promise((resolve) => {
+      //   zkSyncBridgeExecutor.on("ActionsSetQueued", (actionSetId) => {
+      //     resolve(actionSetId.toString());
+      //     zkSyncBridgeExecutor.removeAllListeners();
+      //   });
+      // });
 
-      console.log("New Action Set Id :", actionSetId);
+      // const actionSetId = await actionSetQueuedPromise.then((res) => res);
 
-      const l2Response2 = await zkProvider.getL2TransactionFromPriorityOp(
-        executeTx
-      );
-      await l2Response2.wait();
+      // console.log("New Action Set Id :", actionSetId);
 
-      console.log("Action Set Queued on L2");
+      // const l2Response2 = await zkProvider.getL2TransactionFromPriorityOp(
+      //   executeTx
+      // );
+      // await l2Response2.wait();
 
-      const executeAction = await zkSyncBridgeExecutor.execute(
-        actionSetId as BigNumberish,
-        {
-          gasLimit: 10_000_000,
-        }
-      );
+      // console.log("Action Set Queued on L2");
 
-      await executeAction.wait();
+      // const executeAction = await zkSyncBridgeExecutor.execute(
+      //   actionSetId as BigNumberish,
+      //   {
+      //     gasLimit: 10_000_000,
+      //   }
+      // );
 
-      console.log("L2 BRIDGE DEFAULT ADMIN:", await l2Bridge.defaultAdmin());
+      // await executeAction.wait();
+
       console.log(
         "EXPECTED ADMIN:",
-        (await l2Bridge.defaultAdmin()) === L2_BRIDGE_EXECUTOR_ADDR
+        await l2Bridge.hasRole(DEFAULT_ADMIN_ROLE, L2_BRIDGE_EXECUTOR_ADDR)
       );
     });
 

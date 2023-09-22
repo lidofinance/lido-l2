@@ -12,6 +12,8 @@ const provider = web3Provider();
 const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 const AGENT_ADDRESS = process.env.CONTRACTS_L1_GOVERNANCE_AGENT_ADDR as string;
 const ZKSYNC_ADDRESS = process.env.CONTRACTS_DIAMOND_PROXY_ADDR as string;
+const L1_GOVERNANCE_AGENT_ADDR = process.env
+  .CONTRACTS_L1_GOVERNANCE_AGENT_ADDR as string;
 
 async function main() {
   // without ethers.Wallet -> HardhatError: HH5: HardhatContext is not created.
@@ -62,43 +64,16 @@ async function main() {
   /**
    * Initialize L1Executor
    */
-  const initResponseTx = await L1Executor.initialize(ZKSYNC_ADDRESS, {
-    gasLimit: 10_000_000,
-  });
+  const initResponseTx = await L1Executor.initialize(
+    ZKSYNC_ADDRESS,
+    L1_GOVERNANCE_AGENT_ADDR,
+    {
+      gasLimit: 10_000_000,
+    }
+  );
   await initResponseTx.wait();
 
-  /**
-   * Transfer L1Executor ownership to the Governance Agent
-   */
-  const transferOwnerResponseTx = await L1Executor.transferOwnership(
-    AGENT_ADDRESS
-  );
-  await transferOwnerResponseTx.wait();
-  if (IS_PRODUCTION) {
-    console.log(
-      "please call accept ownership on this Aragon Agent:",
-      AGENT_ADDRESS
-    );
-  } else {
-    const AgentMock = new AragonAgentMock__factory()
-      .connect(wallet)
-      .attach(AGENT_ADDRESS);
-
-    const data = L1Executor.interface.encodeFunctionData("acceptOwnership");
-
-    const acceptOwnershipTx = await AgentMock.execute(
-      L1Executor.address,
-      0,
-      data,
-      {
-        gasLimit: 10_000_000,
-      }
-    );
-
-    await acceptOwnershipTx.wait();
-
-    console.log("Owner of the L1 Executor:", await L1Executor.owner());
-  }
+  console.log("Owner of the L1 Executor:", await L1Executor.owner());
   console.log(`L1_EXECUTOR_ADDR=${L1ExecutorContractProxy.address}`);
 }
 
