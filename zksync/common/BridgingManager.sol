@@ -21,7 +21,7 @@ contract BridgingManager is
         bool isDepositsEnabled;
         bool isWithdrawalsEnabled;
     }
-    uint48 internal constant INITIAL_DELAY = 1 days;
+    uint48 internal constant INITIAL_DELAY = 0;
 
     bytes32 public constant DEPOSITS_ENABLER_ROLE =
         keccak256("BridgingManager.DEPOSITS_ENABLER_ROLE");

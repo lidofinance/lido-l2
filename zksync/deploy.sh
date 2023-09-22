@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Load environment variables from the .env file
+source .env
+
 ENV_LOCATION="../.env"
 
 set -e
@@ -70,6 +73,7 @@ cd ../l1
 
 # INITIALIZE BRIDGES
 output=$(npm run initialize-bridges)
+echo $output
 formatAndAppendOrUpdate "$output" "CONTRACTS_L2_LIDO_BRIDGE_PROXY_ADDR"
 
 cd ../l2

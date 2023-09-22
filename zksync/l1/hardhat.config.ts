@@ -4,10 +4,7 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "@nomicfoundation/hardhat-verify";
 
-dotenv.config({ path: "../.env" });
-
-const ETH_NETWORK_URL = process.env.ETH_CLIENT_WEB3_URL as string;
-const ETHER_SCAN_API_KEY = process.env.ETHER_SCAN_API_KEY as string;
+dotenv.config({ path: `../.env` });
 
 const config: HardhatUserConfig & { etherscan: { apiKey: string } } = {
   solidity: {
@@ -21,11 +18,11 @@ const config: HardhatUserConfig & { etherscan: { apiKey: string } } = {
   },
   networks: {
     goerli: {
-      url: ETH_NETWORK_URL,
+      url: process.env.ETH_CLIENT_WEB3_URL as string,
     },
   },
   etherscan: {
-    apiKey: ETHER_SCAN_API_KEY,
+    apiKey: process.env.ETHER_SCAN_API_KEY as string,
   },
   paths: {
     root: "../",
