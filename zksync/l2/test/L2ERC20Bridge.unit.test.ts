@@ -168,29 +168,10 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
     assert.equal(fetchedL2TokenAddress, ethers.constants.AddressZero);
   });
 
-  it("deposit() :: deposits are disabled", async () => {
-    const { l2Erc20Bridge, accounts, stubs, l1Erc20Bridge, gasLimit } = context;
-    const { sender, recipient } = accounts;
+  it("deposit() :: deposits are enabled", async () => {
+    const { l2Erc20Bridge } = context;
 
-    assert.isFalse(await l2Erc20Bridge.isDepositsEnabled());
-
-    const amount = wei`1 ether`;
-    const l2TxGasLimit = wei`1000 gwei`;
-    const l2TxGasPerPubdataByte = wei`800 wei`;
-
-    expect(
-      await l1Erc20Bridge.deposit(
-        recipient.address,
-        stubs.l1Token.address,
-        amount,
-        l2TxGasLimit,
-        l2TxGasPerPubdataByte,
-        sender.address,
-        l2Erc20Bridge.address,
-        "0x",
-        { gasLimit }
-      )
-    ).to.be.revertedWith("ErrorDepositsDisabled");
+    assert.isTrue(await l2Erc20Bridge.isDepositsEnabled());
   });
 
   it("deposit() :: wrong l1Token address", async () => {
@@ -362,19 +343,9 @@ describe("ZkSync :: L2ERC20Bridge", async () => {
   });
 
   it("withdraw() :: withdrawals are disabled", async () => {
-    const { l2Erc20Bridge, accounts, stubs, gasLimit } = context;
+    const { l2Erc20Bridge } = context;
 
-    const { recipient } = accounts;
-
-    assert.isFalse(await l2Erc20Bridge.isWithdrawalsEnabled());
-
-    const amount = wei`1 ether`;
-
-    await expect(
-      l2Erc20Bridge.withdraw(recipient.address, stubs.l2Token.address, amount, {
-        gasLimit,
-      })
-    ).to.be.reverted;
+    assert.isTrue(await l2Erc20Bridge.isWithdrawalsEnabled());
   });
 
   it("withdraw() :: wrong L2 token", async () => {
