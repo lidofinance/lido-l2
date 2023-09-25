@@ -571,12 +571,6 @@ async function ctxFactory() {
     L1_TOKEN_STUB_SYMBOL
   );
 
-  // console.log("deployer", deployer.address);
-  console.log("governor", governor.address);
-  console.log("sender", sender.address);
-  console.log("recipient", recipient.address);
-  console.log("stranger", stranger.address);
-
   await l1TokenStub.transfer(sender.address, wei`100 ether`);
 
   const l1Erc20BridgeImpl = await new L1ERC20Bridge__factory(deployer).deploy();
