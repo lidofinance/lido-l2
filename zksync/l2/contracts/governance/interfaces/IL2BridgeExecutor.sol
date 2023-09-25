@@ -14,6 +14,16 @@ interface IL2BridgeExecutor is IExecutorBase {
     error UnauthorizedEthereumExecutor();
 
     /**
+     * @dev Emitted when the Ethereum Governance Executor is updated
+     * @param oldEthereumGovernanceExecutor The address of the old EthereumGovernanceExecutor
+     * @param newEthereumGovernanceExecutor The address of the new EthereumGovernanceExecutor
+     **/
+    event EthereumGovernanceExecutorUpdate(
+        address oldEthereumGovernanceExecutor,
+        address newEthereumGovernanceExecutor
+    );
+
+    /**
      * @notice Queue an ActionsSet
      * @dev If a signature is empty, calldata is used for the execution, calldata is appended to signature otherwise
      * @param targets Array of targets to be called by the actions set
@@ -26,6 +36,14 @@ interface IL2BridgeExecutor is IExecutorBase {
         uint256[] memory values,
         string[] memory signatures,
         bytes[] memory calldatas
+    ) external;
+
+    /**
+     * @notice Update the address of the Ethereum Governance Executor
+     * @param ethereumGovernanceExecutor The address of the new EthereumGovernanceExecutor which can be EOA or an alias of a contract on L1
+     **/
+    function updateEthereumGovernanceExecutor(
+        address ethereumGovernanceExecutor
     ) external;
 
     /**
