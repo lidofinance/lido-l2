@@ -39,6 +39,11 @@
       "address": "0x23d83651A6dd0E9A2cdcaf4E38D08cd51dCAD733",
       "txHash": "0x90498cd66c9449f84da65a2a51ceb407131eb2c7146f4e35bea202bfe861f1b8",
       "kind": "transparent"
+    },
+    {
+      "address": "0xbC8c59c38d542986a05cC9bd209808b8983098a0",
+      "txHash": "0x5741668ad5912639b3219bdee7741366dd0dccb1609d02f9de83ac9ed6fcfa4e",
+      "kind": "transparent"
     }
   ],
   "impls": {
@@ -422,6 +427,212 @@
           "t_string_storage": {
             "label": "string",
             "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "e51973f87b6ff3c717678c268bc55bdb999ab3817e3d725234d963c5d6497211": {
+      "address": "0x7420e7931251763E805dd50b698F18B2Af364d04",
+      "txHash": "0x98a4fd0e2f04dd38234784f406120d6bbfe07aa5e7c1abfe74a985e0962b164b",
+      "layout": {
+        "solcVersion": "0.8.13",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:63",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:68"
+          },
+          {
+            "label": "_delay",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "BridgeExecutorBase",
+            "src": "l2\\contracts\\governance\\BridgeExecutorBase.sol:23"
+          },
+          {
+            "label": "_gracePeriod",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256",
+            "contract": "BridgeExecutorBase",
+            "src": "l2\\contracts\\governance\\BridgeExecutorBase.sol:25"
+          },
+          {
+            "label": "_minimumDelay",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256",
+            "contract": "BridgeExecutorBase",
+            "src": "l2\\contracts\\governance\\BridgeExecutorBase.sol:27"
+          },
+          {
+            "label": "_maximumDelay",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_uint256",
+            "contract": "BridgeExecutorBase",
+            "src": "l2\\contracts\\governance\\BridgeExecutorBase.sol:29"
+          },
+          {
+            "label": "_guardian",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_address",
+            "contract": "BridgeExecutorBase",
+            "src": "l2\\contracts\\governance\\BridgeExecutorBase.sol:31"
+          },
+          {
+            "label": "_actionsSetCounter",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_uint256",
+            "contract": "BridgeExecutorBase",
+            "src": "l2\\contracts\\governance\\BridgeExecutorBase.sol:34"
+          },
+          {
+            "label": "_actionsSets",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_mapping(t_uint256,t_struct(ActionsSet)8036_storage)",
+            "contract": "BridgeExecutorBase",
+            "src": "l2\\contracts\\governance\\BridgeExecutorBase.sol:36"
+          },
+          {
+            "label": "_queuedActions",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "BridgeExecutorBase",
+            "src": "l2\\contracts\\governance\\BridgeExecutorBase.sol:38"
+          },
+          {
+            "label": "_ethereumGovernanceExecutor",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_address",
+            "contract": "L2BridgeExecutor",
+            "src": "l2\\contracts\\governance\\L2BridgeExecutor.sol:19"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_bytes_storage)dyn_storage": {
+            "label": "bytes[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_string_storage)dyn_storage": {
+            "label": "string[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_bytes_storage": {
+            "label": "bytes",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bool)": {
+            "label": "mapping(bytes32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(ActionsSet)8036_storage)": {
+            "label": "mapping(uint256 => struct IExecutorBase.ActionsSet)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(ActionsSet)8036_storage": {
+            "label": "struct IExecutorBase.ActionsSet",
+            "members": [
+              {
+                "label": "targets",
+                "type": "t_array(t_address)dyn_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "values",
+                "type": "t_array(t_uint256)dyn_storage",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "signatures",
+                "type": "t_array(t_string_storage)dyn_storage",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "calldatas",
+                "type": "t_array(t_bytes_storage)dyn_storage",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "executionTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "expireTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "executed",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "canceled",
+                "type": "t_bool",
+                "offset": 1,
+                "slot": "6"
+              }
+            ],
+            "numberOfBytes": "224"
           },
           "t_uint256": {
             "label": "uint256",

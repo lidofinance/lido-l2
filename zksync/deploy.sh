@@ -43,6 +43,8 @@ else
     echo 'Skipping agent deployment'
 fi
 
+echo "==============================="
+echo "DEPLOYING L1 EXECUTOR"
 # DEPLOY L1 EXECUTOR
 output=$(npm run deploy-l1-executor)
 echo $output
@@ -50,12 +52,18 @@ formatAndAppendOrUpdate "$output" "L1_EXECUTOR_ADDR"
 
 cd ../l2
 
+echo "==============================="
+echo "DEPLOY L2 BRIDGE EXECUTOR"
 # DEPLOY L2 BRIDGE EXECUTOR
 output=$(npm run deploy-governance-bridge)
+echo $output
 formatAndAppendOrUpdate "$output" "L2_BRIDGE_EXECUTOR_ADDR"
+
 
 cd ../l1
 
+echo "==============================="
+echo "DEPLOYING L1 Bridge"
 # DEPLOY L1 BRIDGE
 output=$(npm run deploy-bridges)
 
@@ -70,23 +78,30 @@ formatAndAppendOrUpdate "$output" "CONTRACTS_L1_LIDO_BRIDGE_PROXY_ADDR"
 
 cd ../l2
 
+echo "==============================="
+echo "DEPLOYING wstETH TOKEN"
 # DEPLOY wstETH TOKEN
 output=$(npm run deploy-wsteth-token)
 formatAndAppendOrUpdate "$output" "CONTRACTS_L2_LIDO_TOKEN_ADDR"
 
 cd ../l1
 
+echo "==============================="
+echo "INITIALIZING BRIDGES"
 # INITIALIZE BRIDGES
 output=$(npm run initialize-bridges)
-echo $output
 formatAndAppendOrUpdate "$output" "CONTRACTS_L2_LIDO_BRIDGE_PROXY_ADDR"
 
 cd ../l2
 
+echo "==============================="
+echo "CONNECTING L2 BRIDGE TO L2 TOKEN"
 # CONNECT L2 BRIDGE TO L2 TOKEN
 npm run connect-token-to-bridge
 
 cd ../l1
 
+echo "==============================="
+echo "INITIALIZING BRIDGE ROLES"
 # INITIALIZE BRIDGE ROLES
 npm run init-bridge-roles

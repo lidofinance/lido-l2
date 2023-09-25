@@ -39,7 +39,9 @@ async function main() {
   await verify(contract.address);
 
   const newOwner = utils.applyL1ToL2Alias(ADDRESSES.L1_EXECUTOR_ADDR);
-
+  console.log(
+    `New Proxy Owner: Aliasing L1 Executor from ${ADDRESSES.L1_EXECUTOR_ADDR} to ${newOwner}`
+  );
   try {
     console.log("Transferring Proxy Admin Ownership");
     await hre.zkUpgrades.admin.transferProxyAdminOwnership(

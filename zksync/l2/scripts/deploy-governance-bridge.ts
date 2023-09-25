@@ -28,6 +28,10 @@ async function main() {
     ADDRESSES.L1_EXECUTOR_ADDR
   );
 
+  console.log(
+    `Aliasing L1 Executor from ${ADDRESSES.L1_EXECUTOR_ADDR} to ${l2AddressOfL1Executor}`
+  );
+
   const contract = await hre.zkUpgrades.deployProxy(
     deployer.zkWallet,
     artifact,
