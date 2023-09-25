@@ -70,6 +70,21 @@ abstract contract L2BridgeExecutor is BridgeExecutorBase, IL2BridgeExecutor {
     }
 
     /// @inheritdoc IL2BridgeExecutor
+    function updateEthereumGovernanceExecutor(
+        address ethereumGovernanceExecutor
+    ) external onlyThis {
+        require(
+            ethereumGovernanceExecutor != address(0),
+            "Ethereum Governor address can't be zero"
+        );
+        emit EthereumGovernanceExecutorUpdate(
+            _ethereumGovernanceExecutor,
+            ethereumGovernanceExecutor
+        );
+        _ethereumGovernanceExecutor = ethereumGovernanceExecutor;
+    }
+
+    /// @inheritdoc IL2BridgeExecutor
     function getEthereumGovernanceExecutor() external view returns (address) {
         return _ethereumGovernanceExecutor;
     }

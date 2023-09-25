@@ -12,8 +12,6 @@ import { Deployer } from "./deploy";
 import * as path from "path";
 
 const provider = web3Provider();
-const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
-const L2_GOVERNOR_ADDRESS = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
 
 const commonArtifactsPath = path.join(
   path.resolve(__dirname, "../.."),
@@ -52,6 +50,15 @@ async function main() {
     .option("--nonce <nonce>")
     .option("--lido-bridge <lido-bridge>")
     .action(async (cmd) => {
+      const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
+
+      const L1_GOVERNANCE_AGENT_ADDR = process.env
+        .CONTRACTS_L1_GOVERNANCE_AGENT_ADDR as string;
+      const L2_GOVERNOR_ADDRESS = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
+
+      const CONTRACTS_L1_LIDO_TOKEN_ADDR = process.env
+        .CONTRACTS_L1_LIDO_TOKEN_ADDR as string;
+
       const deployWallet = cmd.privateKey
         ? new Wallet(cmd.privateKey, provider)
         : new Wallet(PRIVATE_KEY, provider);
@@ -81,7 +88,7 @@ async function main() {
       const zkSync = deployer.zkSyncContract(deployWallet);
       console.log("Governor:", L2_GOVERNOR_ADDRESS);
 
-      console.log("wstETH L1 token:", deployer.addresses.LidoTokenL1);
+      console.log("wstETH L1 token:", CONTRACTS_L1_LIDO_TOKEN_ADDR);
       console.log("wstETH L2 token:", deployer.addresses.LidoTokenL2);
 
       const requiredValueToInitializeBridge =
@@ -103,7 +110,7 @@ async function main() {
             deployer.addresses.LidoTokenL1,
             deployer.addresses.LidoTokenL2,
             L2_GOVERNOR_ADDRESS,
-            deployWallet.address,
+            deployWallet.address, // default admin for L1 Bridge -> later transfer role L1: Governor Agent, L2: ZkSyncBridgeExecutor on zkSync
             deployer.addresses.ZkSync.DiamondProxy,
           ] as any,
           requiredValueToInitializeBridge,

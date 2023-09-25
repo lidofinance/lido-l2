@@ -2,12 +2,13 @@ import * as dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
+import "@nomicfoundation/hardhat-verify";
 
-dotenv.config({ path: "../.env" });
+dotenv.config({ path: `../.env` });
 
-const ETH_NETWORK_URL = process.env.ETH_CLIENT_WEB3_URL as string;
+const IS_LOCAL = (process.env.NODE_ENV as string) === "local";
 
-const config: HardhatUserConfig = {
+const config: HardhatUserConfig & { etherscan: { apiKey: string } } = {
   solidity: {
     version: "0.8.15",
     settings: {
@@ -17,12 +18,15 @@ const config: HardhatUserConfig = {
       },
     },
   },
+  ...(!IS_LOCAL && { defaultNetwork: "eth_network" }),
   networks: {
-    goerli: {
-      url: ETH_NETWORK_URL,
+    eth_network: {
+      url: process.env.ETH_CLIENT_WEB3_URL as string,
     },
   },
-
+  etherscan: {
+    apiKey: process.env.ETHER_SCAN_API_KEY as string,
+  },
   paths: {
     root: "../",
     sources: "l1/contracts",

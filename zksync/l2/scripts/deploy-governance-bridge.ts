@@ -7,6 +7,7 @@ import {
   ADDRESSES,
   PRIVATE_KEY,
 } from "./utils/constants";
+import { verify } from "./utils/verify";
 
 const BRIDGE_EXECUTOR_CONTRACT_NAME = "ZkSyncBridgeExecutor";
 
@@ -25,6 +26,10 @@ async function main() {
    */
   const l2AddressOfL1Executor = utils.applyL1ToL2Alias(
     ADDRESSES.L1_EXECUTOR_ADDR
+  );
+
+  console.log(
+    `Aliasing L1 Executor from ${ADDRESSES.L1_EXECUTOR_ADDR} to ${l2AddressOfL1Executor}`
   );
 
   const contract = await hre.zkUpgrades.deployProxy(
@@ -46,6 +51,8 @@ async function main() {
   await contract.deployed();
 
   console.log(`L2_BRIDGE_EXECUTOR_ADDR=${contract.address}`);
+
+  await verify(contract.address);
 }
 
 main().catch((error) => {

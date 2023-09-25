@@ -22,7 +22,7 @@ const L1_EXECUTOR_ADDR = process.env.L1_EXECUTOR_ADDR as string;
 const L2_BRIDGE_EXECUTOR_ADDR = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
 
 const provider = web3Provider();
-const zkProvider = new Provider(ZKSYNC_PROVIDER_URL, 270);
+const zkProvider = new Provider(ZKSYNC_PROVIDER_URL);
 
 async function main() {
   const program = new Command();

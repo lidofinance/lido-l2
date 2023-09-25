@@ -4,14 +4,11 @@
 pragma solidity ^0.8.10;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {AccessControlDefaultAdminRulesUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlDefaultAdminRulesUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 /// @author psirex
 /// @notice Contains administrative methods to retrieve and control the state of the bridging
-contract BridgingManager is
-    Initializable,
-    AccessControlDefaultAdminRulesUpgradeable
-{
+contract BridgingManager is Initializable, AccessControlUpgradeable {
     /// @dev Stores the state of the bridging
     /// @param isInitialized Shows whether the contract is initialized or not
     /// @param isDepositsEnabled Stores the state of the deposits
@@ -21,7 +18,6 @@ contract BridgingManager is
         bool isDepositsEnabled;
         bool isWithdrawalsEnabled;
     }
-    uint48 internal constant INITIAL_DELAY = 1 days;
 
     bytes32 public constant DEPOSITS_ENABLER_ROLE =
         keccak256("BridgingManager.DEPOSITS_ENABLER_ROLE");
@@ -44,8 +40,11 @@ contract BridgingManager is
         if (s.isInitialized) {
             revert ErrorAlreadyInitialized();
         }
-        __AccessControlDefaultAdminRules_init(INITIAL_DELAY, admin_);
+        __AccessControl_init();
+        _setupRole(DEFAULT_ADMIN_ROLE, admin_);
         s.isInitialized = true;
+        s.isDepositsEnabled = true;
+        s.isWithdrawalsEnabled = true;
         emit InitializedBridgingManager(admin_);
     }
 

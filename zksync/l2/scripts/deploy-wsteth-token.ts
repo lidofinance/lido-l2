@@ -7,6 +7,7 @@ import {
   PRIVATE_KEY,
   ADDRESSES,
 } from "./utils/constants";
+import { verify } from "./utils/verify";
 
 const ERC20_BRIDGED_TOKEN_CONTRACT_NAME = "ERC20BridgedUpgradeable";
 
@@ -35,14 +36,23 @@ async function main() {
 
   console.log(`CONTRACTS_L2_LIDO_TOKEN_ADDR=${contract.address}`);
 
+  await verify(contract.address);
+
   const newOwner = utils.applyL1ToL2Alias(ADDRESSES.L1_EXECUTOR_ADDR);
-
-  await hre.zkUpgrades.admin.transferProxyAdminOwnership(
-    newOwner,
-    deployer.zkWallet
+  console.log(
+    `New Proxy Owner: Aliasing L1 Executor from ${ADDRESSES.L1_EXECUTOR_ADDR} to ${newOwner}`
   );
+  try {
+    console.log("Transferring Proxy Admin Ownership");
+    await hre.zkUpgrades.admin.transferProxyAdminOwnership(
+      newOwner,
+      deployer.zkWallet
+    );
 
-  console.log(`New proxy admin owner: ${newOwner}`);
+    console.log(`New proxy admin owner: ${newOwner}`);
+  } catch (error: unknown) {
+    console.log("Failed to transferring Proxy Admin Ownership", error);
+  }
 }
 
 main().catch((error) => {

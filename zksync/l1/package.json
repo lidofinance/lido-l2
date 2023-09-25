@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "scripts": {
     "compile": "hardhat clean && hardhat compile && ts-node utils/generateTypings.ts",
+    "deploy-create2-factory": "hardhat run scripts/deploy-create2-factory.ts",
     "deploy-mock-agent": "hardhat run scripts/deploy-mock-agent.ts",
     "deploy-l1-executor": "hardhat run scripts/deploy-l1-executor.ts",
     "deploy-bridges": "hardhat run scripts/deploy-bridges.ts",
@@ -20,6 +21,7 @@
   "license": "ISC",
   "devDependencies": {
     "@matterlabs/zksync-contracts": "^0.6.2-beta",
+    "@nomicfoundation/hardhat-verify": "^1.1.1",
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@nomiclabs/hardhat-waffle": "^2.0.6",
     "@openzeppelin/contracts-upgradeable": "^4.9.0",

@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import { ethers, run as hardhatRun } from "hardhat";
 import "@nomiclabs/hardhat-ethers";
 import {
   ethers as eth,
@@ -13,6 +13,9 @@ import { IZkSyncFactory } from "zksync-web3/build/typechain";
 import { SingletonFactory__factory } from "../typechain/factories/l1/contracts/SingletonFactory__factory";
 import { L1ERC20Bridge__factory } from "../typechain/factories/l1/contracts/L1ERC20Bridge__factory";
 import { AragonAgentMock__factory } from "../typechain/factories/l1/contracts/governance/AragonAgentMock__factory";
+
+export const IS_PRODUCTION = (process.env.NODE_ENV as string) === "prod";
+export const IS_LOCAL = (process.env.NODE_ENV as string) === "local";
 
 export interface DeployedAddresses {
   ZkSync: {
@@ -99,6 +102,7 @@ export class Deployer {
     }
 
     this.addresses.Create2Factory = create2Factory.address;
+    this.verifyContract(create2Factory.address);
   }
 
   private async deployViaCreate2(
@@ -164,7 +168,7 @@ export class Deployer {
   ) {
     nonce = nonce || (await this.deployWallet.getTransactionCount());
 
-    if (process.env.CHAIN_ETH_NETWORK === "localhost") {
+    if (!IS_PRODUCTION) {
       await this.deployLidoL1Token(create2Salt, { gasPrice, nonce: nonce++ });
     }
 
@@ -173,6 +177,13 @@ export class Deployer {
       nonce: nonce++,
     });
     await this.deployLidoBridgeProxy(create2Salt, { gasPrice, nonce: nonce++ });
+
+    this.verifyContract(this.addresses.Bridges.LidoBridgeImplementation);
+    this.verifyContract(this.addresses.Bridges.LidoBridgeProxy, [
+      this.addresses.Bridges.LidoBridgeImplementation,
+      this.governorAddress,
+      "0x",
+    ]);
   }
 
   private async deployLidoL1Token(
@@ -279,5 +290,16 @@ export class Deployer {
     return new AragonAgentMock__factory()
       .connect(signerOrProvider)
       .attach(this.addresses.GovernanceL1);
+  }
+
+  public verifyContract(address: string, constructorArguments?: any[]) {
+    if (!IS_LOCAL) {
+      setTimeout(() => {
+        hardhatRun("verify:verify", {
+          address,
+          constructorArguments,
+        });
+      }, 60_000);
+    }
   }
 }

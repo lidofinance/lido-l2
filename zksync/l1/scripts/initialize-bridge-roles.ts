@@ -8,13 +8,13 @@ import { Deployer } from "./deploy";
 import { Wallet as ZkSyncWallet, Provider, Contract } from "zksync-web3";
 import { L2ERC20Bridge__factory } from "../../l2/typechain";
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
-const ZKSYNC_PROVIDER_URL = process.env.ZKSYNC_PROVIDER_URL || "";
-
+const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
+const ZKSYNC_PROVIDER_URL = process.env.ZKSYNC_PROVIDER_URL as string;
+const EMERGENCY_BRAKE_MULTISIG = process.env.EMERGENCY_BRAKE_MULTISIG as string;
 const L2_BRIDGE_EXECUTOR_ADDR = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
 
 const provider = web3Provider();
-const zkProvider = new Provider(ZKSYNC_PROVIDER_URL, 270);
+const zkProvider = new Provider(ZKSYNC_PROVIDER_URL);
 
 async function main() {
   const program = new Command();
@@ -64,13 +64,19 @@ async function main() {
         zkWallet
       );
 
+      console.log(`Using L2 Bridge: ${l2Bridge.address}`);
+
       // get bytecode for roles
-      const DEPOSITS_ENABLER_ROLE = await lidoBridge.DEPOSITS_ENABLER_ROLE();
-      const DEPOSITS_DISABLER_ROLE = await lidoBridge.DEPOSITS_DISABLER_ROLE();
+      const DEFAULT_ADMIN_ROLE =
+        "0x0000000000000000000000000000000000000000000000000000000000000000";
+      const DEPOSITS_ENABLER_ROLE =
+        "0x4b43b36766bde12c5e9cbbc37d15f8d1f769f08f54720ab370faeb4ce893753a";
+      const DEPOSITS_DISABLER_ROLE =
+        "0x63f736f21cb2943826cd50b191eb054ebbea670e4e962d0527611f830cd399d6";
       const WITHDRAWALS_ENABLER_ROLE =
-        await lidoBridge.WITHDRAWALS_ENABLER_ROLE();
+        "0x9ab8816a3dc0b3849ec1ac00483f6ec815b07eee2fd766a353311c823ad59d0d";
       const WITHDRAWALS_DISABLER_ROLE =
-        await lidoBridge.WITHDRAWALS_DISABLER_ROLE();
+        "0x94a954c0bc99227eddbc0715a62a7e1056ed8784cd719c2303b685683908857c";
 
       console.log("\n===============L1===============");
 
@@ -78,28 +84,44 @@ async function main() {
         lidoBridge,
         DEPOSITS_ENABLER_ROLE,
         "DEPOSITS_ENABLER_ROLE",
-        deployer.addresses.GovernanceL1
+        [deployer.addresses.GovernanceL1]
       );
 
       await grantRole(
         lidoBridge,
         DEPOSITS_DISABLER_ROLE,
         "DEPOSITS_DISABLER_ROLE",
-        deployer.addresses.GovernanceL1
+        [deployer.addresses.GovernanceL1, EMERGENCY_BRAKE_MULTISIG]
       );
 
       await grantRole(
         lidoBridge,
         WITHDRAWALS_ENABLER_ROLE,
         "WITHDRAWALS_ENABLER_ROLE",
-        deployer.addresses.GovernanceL1
+        [deployer.addresses.GovernanceL1]
       );
 
       await grantRole(
         lidoBridge,
         WITHDRAWALS_DISABLER_ROLE,
         "WITHDRAWALS_DISABLER_ROLE",
-        deployer.addresses.GovernanceL1
+        [deployer.addresses.GovernanceL1, EMERGENCY_BRAKE_MULTISIG]
+      );
+
+      await grantRole(lidoBridge, DEFAULT_ADMIN_ROLE, "DEFAULT_ADMIN_ROLE", [
+        L1GovernorAgent.address,
+      ]);
+
+      await revokeRole(
+        lidoBridge,
+        DEFAULT_ADMIN_ROLE,
+        "DEFAULT_ADMIN_ROLE",
+        deployWallet.address
+      );
+
+      console.log(
+        "EXPECTED ADMIN:",
+        await lidoBridge.hasRole(DEFAULT_ADMIN_ROLE, L1GovernorAgent.address)
       );
 
       console.log("\n===============L2===============");
@@ -108,28 +130,44 @@ async function main() {
         l2Bridge,
         DEPOSITS_ENABLER_ROLE,
         "DEPOSITS_ENABLER_ROLE",
-        L2_BRIDGE_EXECUTOR_ADDR
+        [L2_BRIDGE_EXECUTOR_ADDR]
       );
 
       await grantRole(
         l2Bridge,
         DEPOSITS_DISABLER_ROLE,
         "DEPOSITS_DISABLER_ROLE",
-        L2_BRIDGE_EXECUTOR_ADDR
+        [L2_BRIDGE_EXECUTOR_ADDR, EMERGENCY_BRAKE_MULTISIG]
       );
 
       await grantRole(
         l2Bridge,
         WITHDRAWALS_ENABLER_ROLE,
         "WITHDRAWALS_ENABLER_ROLE",
-        L2_BRIDGE_EXECUTOR_ADDR
+        [L2_BRIDGE_EXECUTOR_ADDR]
       );
 
       await grantRole(
         l2Bridge,
         WITHDRAWALS_DISABLER_ROLE,
         "WITHDRAWALS_DISABLER_ROLE",
-        L2_BRIDGE_EXECUTOR_ADDR
+        [L2_BRIDGE_EXECUTOR_ADDR, EMERGENCY_BRAKE_MULTISIG]
+      );
+
+      await grantRole(l2Bridge, DEFAULT_ADMIN_ROLE, "DEFAULT_ADMIN_ROLE", [
+        L2_BRIDGE_EXECUTOR_ADDR,
+      ]);
+
+      await revokeRole(
+        l2Bridge,
+        DEFAULT_ADMIN_ROLE,
+        "DEFAULT_ADMIN_ROLE",
+        deployWallet.address
+      );
+
+      console.log(
+        "EXPECTED ADMIN:",
+        await l2Bridge.hasRole(DEFAULT_ADMIN_ROLE, L2_BRIDGE_EXECUTOR_ADDR)
       );
     });
 
@@ -143,26 +181,29 @@ async function grantRole(
   contract: Contract,
   roleBytecode: string,
   roleName: string,
-  target: string
+  targets: string[]
 ) {
-  const hasL2ExecutorDepositDisablerRoleL2 = await contract.hasRole(
-    roleBytecode,
-    target
-  );
+  for (const target of targets) {
+    const hasL2ExecutorDepositDisablerRoleL2 = await contract.hasRole(
+      roleBytecode,
+      target
+    );
 
-  if (!hasL2ExecutorDepositDisablerRoleL2) {
-    const tx = await contract.grantRole(roleBytecode, target, {
-      gasLimit: 10_000_000,
-    });
-    await tx.wait();
+    if (!hasL2ExecutorDepositDisablerRoleL2) {
+      const tx = await contract.grantRole(roleBytecode, target, {
+        gasLimit: 10_000_000,
+      });
+      await tx.wait();
 
-    const isRoleGranted = await contract.hasRole(roleBytecode, target);
-    if (!isRoleGranted) {
-      console.warn(`Error granting ${roleName} to ${target}`);
-      return;
+      const isRoleGranted = await contract.hasRole(roleBytecode, target);
+
+      if (!isRoleGranted) {
+        console.warn(`Error granting ${roleName} to ${target}`);
+        return;
+      }
     }
+    console.log(`${roleName}:${target}`);
   }
-  console.log(`${roleName}:${target}`);
 }
 
 /**

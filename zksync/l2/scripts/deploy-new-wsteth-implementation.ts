@@ -3,6 +3,7 @@ import { Wallet } from "zksync-web3";
 import * as hre from "hardhat";
 
 import { PRIVATE_KEY } from "./utils/constants";
+import { verify } from "./utils/verify";
 
 const ERC20_BRIDGED_TOKEN_CONTRACT_NAME = "ERC20BridgedUpgradeable";
 
@@ -20,6 +21,8 @@ export async function main() {
   const contractImpl = await deployedContract.deployed();
 
   console.log("New wstETH implementation deployed at:", contractImpl.address);
+  await verify(contractImpl.address);
+
   return contractImpl.address;
 }
 

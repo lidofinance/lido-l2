@@ -5,7 +5,6 @@ import { assert, expect } from "chai";
 import * as path from "path";
 import {
   L1ERC20Bridge__factory,
-  L1ERC20Bridge,
   ZkSyncStub__factory,
 } from "../typechain";
 import {
@@ -76,43 +75,39 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
     assert.equal(actualL2TokenAddress, hre.ethers.constants.AddressZero);
   })
 
-  .test("deposit() :: deposits disabled", async (ctx) => {
-    // validate deposits are disabled
-    assert.isFalse(await ctx.l1Erc20Bridge.isDepositsEnabled());
+  .test("deposit() :: deposits enabled", async (ctx) => {
+    assert.isTrue(await ctx.l1Erc20Bridge.isDepositsEnabled());
+  })
 
-    const { sender, recipient } = ctx.accounts;
-    const amount = wei`1 ether`;
-    const l2TxGasLimit = wei`1000 gwei`;
-    const l2TxGasPerPubdataByte = wei`800 wei`;
+  .test("deposit() :: disable deposits", async (ctx) => {
+    const {
+      accounts: { deployer },
+      l1Erc20Bridge,
+    } = ctx;
 
-    await expect(
-      ctx.l1Erc20Bridge[
-        "deposit(address,address,uint256,uint256,uint256,address)"
-      ](
-        recipient.address,
-        ctx.stubs.l1Token.address,
-        amount,
-        l2TxGasLimit,
-        l2TxGasPerPubdataByte,
-        sender.address
-      )
-    ).to.be.revertedWith("ErrorDepositsDisabled");
+    // validate that contract is not initialized and deposits are enabled
+    assert.isTrue(await l1Erc20Bridge.isInitialized());
+    assert.isTrue(await l1Erc20Bridge.isDepositsEnabled());
+
+    // grant DEPOSITS_DISABLER_ROLE role
+    await l1Erc20Bridge.grantRole(
+      await l1Erc20Bridge.DEPOSITS_DISABLER_ROLE(),
+      deployer.address
+    );
+
+    await l1Erc20Bridge.disableDeposits();
+
+    assert.isFalse(await l1Erc20Bridge.isDepositsEnabled());
   })
 
   .test("deposit() :: wrong l1Token address", async (ctx) => {
     const {
-      accounts: { deployer, sender, recipient, stranger: wrongL1Token },
+      accounts: { sender, recipient, stranger: wrongL1Token },
       l1Erc20Bridge,
     } = ctx;
     const amount = wei`1 ether`;
     const l2TxGasLimit = wei`1000 gwei`;
     const l2TxGasPerPubdataByte = wei`800 wei`;
-
-    await enableDepositsWithAssertions(
-      l1Erc20Bridge,
-      deployer.address,
-      deployer.address
-    );
 
     await expect(
       l1Erc20Bridge["deposit(address,address,uint256,uint256,uint256,address)"](
@@ -128,18 +123,12 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
 
   .test("deposit() :: wrong (zero) deposit amount", async (ctx) => {
     const {
-      accounts: { deployer, sender, recipient },
+      accounts: { sender, recipient },
       l1Erc20Bridge,
     } = ctx;
     const wrongAmount = "0";
     const l2TxGasLimit = wei`1000 gwei`;
     const l2TxGasPerPubdataByte = wei`800 wei`;
-
-    await enableDepositsWithAssertions(
-      l1Erc20Bridge,
-      deployer.address,
-      deployer.address
-    );
 
     await expect(
       l1Erc20Bridge["deposit(address,address,uint256,uint256,uint256,address)"](
@@ -155,18 +144,12 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
 
   .test("deposit() :: insufficient token allowance for bridge", async (ctx) => {
     const {
-      accounts: { deployer, sender, recipient },
+      accounts: { sender, recipient },
       l1Erc20Bridge,
     } = ctx;
     const amount = wei`1 ether`;
     const l2TxGasLimit = wei`1000 gwei`;
     const l2TxGasPerPubdataByte = wei`800 wei`;
-
-    await enableDepositsWithAssertions(
-      l1Erc20Bridge,
-      deployer.address,
-      deployer.address
-    );
 
     await expect(
       l1Erc20Bridge["deposit(address,address,uint256,uint256,uint256,address)"](
@@ -182,7 +165,7 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
 
   .test("deposit() :: works as expected", async (ctx) => {
     const {
-      accounts: { deployer, sender, recipient },
+      accounts: { sender, recipient },
       stubs: { zkSync, l2Erc20Bridge, l1Token },
       l1Erc20Bridge,
     } = ctx;
@@ -190,12 +173,6 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
     const l2TxGasLimit = wei`1000 gwei`;
     const l2TxGasPerPubdataByte = wei`800 wei`;
     const value = wei`250_000 gwei`;
-
-    await enableDepositsWithAssertions(
-      l1Erc20Bridge,
-      deployer.address,
-      deployer.address
-    );
 
     const senderBalanceBefore = await l1Token.balanceOf(sender.address);
     const bridgeBalanceBefore = await l1Token.balanceOf(l1Erc20Bridge.address);
@@ -294,49 +271,39 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
     );
   })
 
-  .test("finalizeWithdrawal() :: withdrawals disabled", async (ctx) => {
-    const { l1Erc20Bridge } = ctx;
+  .test("finalizeWithdrawal() :: withdrawals enabled", async (ctx) => {
+    assert.isTrue(await ctx.l1Erc20Bridge.isWithdrawalsEnabled());
+  })
 
-    // validate withdrawals are disabled
-    assert.isFalse(await l1Erc20Bridge.isWithdrawalsEnabled());
+  .test("finalizeWithdrawal() :: disable withdrawals", async (ctx) => {
+    const {
+      accounts: { deployer },
+      l1Erc20Bridge,
+    } = ctx;
 
-    const l2BlockNumber = ethers.BigNumber.from("1");
-    const l2MessageIndex = ethers.BigNumber.from("1");
-    const l2TxNumberInBlock = 1;
-    const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string"],
-      ["message"]
+    // validate that contract is not initialized and withdrawals are enabled
+    assert.isTrue(await l1Erc20Bridge.isInitialized());
+    assert.isTrue(await l1Erc20Bridge.isWithdrawalsEnabled());
+
+    // grant WITHDRAWALS_DISABLER_ROLE role
+    await l1Erc20Bridge.grantRole(
+      await l1Erc20Bridge.WITHDRAWALS_DISABLER_ROLE(),
+      deployer.address
     );
-    const merkleProof = [
-      ethers.utils.formatBytes32String("proof1"),
-      ethers.utils.formatBytes32String("proof2"),
-    ];
 
-    await expect(
-      l1Erc20Bridge.finalizeWithdrawal(
-        l2BlockNumber,
-        l2MessageIndex,
-        l2TxNumberInBlock,
-        withdrawMessage,
-        merkleProof
-      )
-    ).to.be.revertedWith("ErrorWithdrawalsDisabled");
+    await l1Erc20Bridge.disableWithdrawals();
+
+    assert.isFalse(await l1Erc20Bridge.isWithdrawalsEnabled());
   })
 
   .test(
     "finalizeWithdrawal() :: not enough ETH locked on L1 bridge",
     async (ctx) => {
       const {
-        accounts: { deployer, recipient },
+        accounts: { recipient },
         stubs: { l1Token },
         l1Erc20Bridge,
       } = ctx;
-
-      await enableWithdrawalsWithAssertions(
-        l1Erc20Bridge,
-        deployer.address,
-        deployer.address
-      );
 
       const amount = wei`1 ether`;
 
@@ -377,16 +344,10 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
     "finalizeWithdrawal() :: works as expected (called by stranger)",
     async (ctx) => {
       const {
-        accounts: { deployer, recipient, stranger },
+        accounts: { recipient, stranger },
         stubs: { l1Token },
         l1Erc20Bridge,
       } = ctx;
-
-      await enableWithdrawalsWithAssertions(
-        l1Erc20Bridge,
-        deployer.address,
-        deployer.address
-      );
 
       const amount = wei`1 ether`;
 
@@ -493,7 +454,7 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
 
   .test("claimFailedDeposit() :: works us expected", async (ctx) => {
     const {
-      accounts: { deployer, sender, recipient },
+      accounts: { sender, recipient },
       stubs: { zkSync, l1Token },
       l1Erc20Bridge,
     } = ctx;
@@ -501,12 +462,6 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
     const l2TxGasLimit = wei`1000 gwei`;
     const l2TxGasPerPubdataByte = wei`800 wei`;
     const value = wei`250_000 gwei`;
-
-    await enableDepositsWithAssertions(
-      l1Erc20Bridge,
-      deployer.address,
-      deployer.address
-    );
 
     await l1Token.connect(sender)["approve"](l1Erc20Bridge.address, amount);
 
@@ -604,46 +559,6 @@ unit("ZkSync :: L1ERC20Bridge", ctxFactory)
 
   .run();
 
-async function enableDepositsWithAssertions(
-  l1Erc20Bridge: L1ERC20Bridge,
-  defaultAdminAddress: string,
-  depositEnablerAddress: string
-) {
-  // validate that contract is not initialized and deposits are disabled
-  assert.isTrue(await l1Erc20Bridge.isInitialized());
-  assert.isFalse(await l1Erc20Bridge.isDepositsEnabled());
-
-  // grant DEPOSITS_ENABLER_ROLE role
-  await l1Erc20Bridge.grantRole(
-    await l1Erc20Bridge.DEPOSITS_ENABLER_ROLE(),
-    depositEnablerAddress
-  );
-
-  await l1Erc20Bridge.enableDeposits();
-
-  assert.isTrue(await l1Erc20Bridge.isDepositsEnabled());
-}
-
-async function enableWithdrawalsWithAssertions(
-  l1Erc20Bridge: L1ERC20Bridge,
-  defaultAdminAddress: string,
-  withdrawalEnablerAddress: string
-) {
-  // validate that contract is not initialized and withdrawals are disabled
-  assert.isTrue(await l1Erc20Bridge.isInitialized());
-  assert.isFalse(await l1Erc20Bridge.isWithdrawalsEnabled());
-
-  // grant WITHDRAWALS_ENABLER_ROLE role
-  await l1Erc20Bridge.grantRole(
-    await l1Erc20Bridge.WITHDRAWALS_ENABLER_ROLE(),
-    withdrawalEnablerAddress
-  );
-
-  await l1Erc20Bridge.enableWithdrawals();
-
-  assert.isTrue(await l1Erc20Bridge.isWithdrawalsEnabled());
-}
-
 async function ctxFactory() {
   const [deployer, governor, sender, recipient, stranger] =
     await hre.ethers.getSigners();
@@ -655,6 +570,7 @@ async function ctxFactory() {
     L1_TOKEN_STUB_NAME,
     L1_TOKEN_STUB_SYMBOL
   );
+
   await l1TokenStub.transfer(sender.address, wei`100 ether`);
 
   const l1Erc20BridgeImpl = await new L1ERC20Bridge__factory(deployer).deploy();

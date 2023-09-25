@@ -5,10 +5,14 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "@matterlabs/hardhat-zksync-solc";
 import "@matterlabs/hardhat-zksync-deploy";
+import "@matterlabs/hardhat-zksync-verify";
 import "@matterlabs/hardhat-zksync-upgradable";
 import "@matterlabs/hardhat-zksync-chai-matchers";
 
 dotenv.config({ path: "../.env" });
+
+const L1_RPC_URL = process.env.ETH_CLIENT_WEB3_URL as string;
+const L2_RPC_URL = process.env.ZKSYNC_PROVIDER_URL as string;
 
 const config: HardhatUserConfig = {
   zksolc: {
@@ -31,12 +35,13 @@ const config: HardhatUserConfig = {
   networks: {
     goerli: {
       zksync: false,
-      url: "http://localhost:8545",
+      url: L1_RPC_URL,
     },
     zkSyncNetwork: {
       zksync: true,
       ethNetwork: "goerli",
-      url: "http://localhost:3050",
+      url: L2_RPC_URL,
+      verifyURL: process.env.ZKSYNC_VERIFY_URL as string,
     },
   },
   paths: {

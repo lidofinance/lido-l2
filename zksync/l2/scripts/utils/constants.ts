@@ -23,3 +23,5 @@ export const ERC20_BRIDGED_CONSTANTS = {
   SYMBOL: "wstETH",
   DECIMALS: 18,
 };
+
+export const IS_LOCAL = process.env.CHAIN_ETH_NETWORK === "localhost";
