@@ -41,6 +41,7 @@ const config: HardhatUserConfig = {
       zksync: true,
       ethNetwork: "goerli",
       url: L2_RPC_URL,
+      verifyURL: process.env.ZKSYNC_VERIFY_URL as string,
     },
   },
   paths: {

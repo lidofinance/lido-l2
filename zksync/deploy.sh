@@ -36,11 +36,16 @@ appendOrUpdate(){
 cd ./l1
 
 # DEPLOY MOCK AGENT
-output=$(npm run deploy-mock-agent)
-formatAndAppendOrUpdate "$output" "CONTRACTS_L1_GOVERNANCE_AGENT_ADDR"
+if [ "$NODE_ENV" = "local" ]; then
+    output=$(npm run deploy-mock-agent)
+    formatAndAppendOrUpdate "$output" "CONTRACTS_L1_GOVERNANCE_AGENT_ADDR"
+else
+    echo 'Skipping agent deployment'
+fi
 
 # DEPLOY L1 EXECUTOR
 output=$(npm run deploy-l1-executor)
+echo $output
 formatAndAppendOrUpdate "$output" "L1_EXECUTOR_ADDR"
 
 cd ../l2
@@ -85,9 +90,3 @@ cd ../l1
 
 # INITIALIZE BRIDGE ROLES
 npm run init-bridge-roles
-
-# # ENABLE DEPOSITS
-# npm run enable-deposits
-
-# # ENABLE WITHDRAWALS
-# npm run enable-withdrawals

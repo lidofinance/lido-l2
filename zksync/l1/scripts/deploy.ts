@@ -14,10 +14,8 @@ import { SingletonFactory__factory } from "../typechain/factories/l1/contracts/S
 import { L1ERC20Bridge__factory } from "../typechain/factories/l1/contracts/L1ERC20Bridge__factory";
 import { AragonAgentMock__factory } from "../typechain/factories/l1/contracts/governance/AragonAgentMock__factory";
 
-export const IS_PRODUCTION =
-  (process.env.CHAIN_ETH_NETWORK as string) === "production";
-export const IS_LOCAL =
-  (process.env.CHAIN_ETH_NETWORK as string) === "localhost";
+export const IS_PRODUCTION = (process.env.NODE_ENV as string) === "prod";
+export const IS_LOCAL = (process.env.NODE_ENV as string) === "local";
 
 export interface DeployedAddresses {
   ZkSync: {

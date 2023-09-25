@@ -8,10 +8,9 @@ import { Deployer } from "./deploy";
 import { Wallet as ZkSyncWallet, Provider, Contract } from "zksync-web3";
 import { L2ERC20Bridge__factory } from "../../l2/typechain";
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
-const ZKSYNC_PROVIDER_URL = process.env.ZKSYNC_PROVIDER_URL || "";
+const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
+const ZKSYNC_PROVIDER_URL = process.env.ZKSYNC_PROVIDER_URL as string;
 const EMERGENCY_BRAKE_MULTISIG = process.env.EMERGENCY_BRAKE_MULTISIG as string;
-
 const L2_BRIDGE_EXECUTOR_ADDR = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
 
 const provider = web3Provider();
