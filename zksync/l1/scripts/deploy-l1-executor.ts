@@ -59,8 +59,6 @@ async function main() {
 
   console.log(`L1Executor: ${L1Executor.address}`);
 
-  deployer.verifyContract(L1Executor.address);
-
   /**
    * Initialize L1Executor
    */
