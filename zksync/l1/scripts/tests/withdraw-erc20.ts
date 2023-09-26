@@ -7,8 +7,6 @@ import {
   zkSyncUrl,
   readInterface,
 } from "../utils/utils";
-import { richWallet } from "../utils/rich_wallet";
-import { SYSTEM_CONFIG_CONSTANTS } from "../utils/constants";
 
 const l1ArtifactsPath = path.join(
   path.resolve(__dirname, "../.."),
@@ -46,15 +44,14 @@ const L2_LIDO_TOKEN_INTERFACE = readInterface(
   "ERC20BridgedUpgradeable"
 );
 
-const AMOUNT_TO_WITHDRAW = ethers.utils.parseEther("1");
+const AMOUNT_TO_WITHDRAW = ethers.utils.parseEther("0.0005");
 
-const { address: WALLET_ADDRESS, privateKey: WALLET_PRIVATE_KEY } =
-  richWallet[0];
+const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 
 const provider = web3Provider();
-const wallet = new ethers.Wallet(WALLET_PRIVATE_KEY, provider);
-const zkProvider = new Provider(zkSyncUrl(), SYSTEM_CONFIG_CONSTANTS.CHAIND_ID);
-const zkWallet = new Wallet(WALLET_PRIVATE_KEY, zkProvider, provider);
+const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+const zkProvider = new Provider(zkSyncUrl());
+const zkWallet = new Wallet(PRIVATE_KEY, zkProvider, provider);
 
 async function main() {
   console.log("Running script to withdraw ERC20 from zkSync");
@@ -83,7 +80,7 @@ async function main() {
   console.log("\n================== BEFORE WITHDRAW =================");
   console.log(
     `Account token balance on L1: ${await l1TokenContract.balanceOf(
-      WALLET_ADDRESS
+      wallet.address
     )}`
   );
   console.log(
@@ -93,14 +90,14 @@ async function main() {
   );
   console.log(
     `Account token balance on L2: ${await l2TokenContract.balanceOf(
-      WALLET_ADDRESS
+      wallet.address
     )}`
   );
 
   // Withdrawal on L2
 
   const withdrawResponse = await l2BridgeContract.withdraw(
-    WALLET_ADDRESS,
+    wallet.address,
     l2TokenContract.address,
     AMOUNT_TO_WITHDRAW,
     { gasLimit: 10_000_000 }
@@ -118,7 +115,7 @@ async function main() {
       L1_LIDO_BRIDGE_PROXY_INTERFACE.getSighash(
         L1_LIDO_BRIDGE_PROXY_INTERFACE.getFunction("finalizeWithdrawal")
       ),
-      WALLET_ADDRESS,
+      wallet.address,
       l1TokenContract.address,
       AMOUNT_TO_WITHDRAW,
     ]
@@ -143,7 +140,7 @@ async function main() {
   console.log("\n================== AFTER FINALIZE WITHDRAW =================");
   console.log(
     `Account token balance on L1: ${await l1TokenContract.balanceOf(
-      WALLET_ADDRESS
+      wallet.address
     )}`
   );
   console.log(
@@ -153,7 +150,7 @@ async function main() {
   );
   console.log(
     `Account token balance on L2: ${await l2TokenContract.balanceOf(
-      WALLET_ADDRESS
+      wallet.address
     )}`
   );
 }

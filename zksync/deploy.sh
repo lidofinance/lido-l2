@@ -59,11 +59,10 @@ output=$(npm run deploy-governance-bridge)
 echo $output
 formatAndAppendOrUpdate "$output" "L2_BRIDGE_EXECUTOR_ADDR"
 
-
 cd ../l1
 
 echo "==============================="
-echo "DEPLOYING L1 Bridge"
+echo "DEPLOYING L1 BRIDGE"
 # DEPLOY L1 BRIDGE
 output=$(npm run deploy-bridges)
 
@@ -82,6 +81,7 @@ echo "==============================="
 echo "DEPLOYING wstETH TOKEN"
 # DEPLOY wstETH TOKEN
 output=$(npm run deploy-wsteth-token)
+echo $output
 formatAndAppendOrUpdate "$output" "CONTRACTS_L2_LIDO_TOKEN_ADDR"
 
 cd ../l1

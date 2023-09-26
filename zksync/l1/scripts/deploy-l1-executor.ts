@@ -1,19 +1,14 @@
 import { web3Provider } from "./utils/utils";
-import {
-  AragonAgentMock__factory,
-  OssifiableProxy__factory,
-} from "../typechain/index";
+import { OssifiableProxy__factory } from "../typechain/index";
 import { L1Executor__factory } from "../typechain";
 import { Wallet } from "ethers";
-import { Deployer, IS_PRODUCTION } from "./deploy";
+import { Deployer } from "./deploy";
 
 const provider = web3Provider();
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 const AGENT_ADDRESS = process.env.CONTRACTS_L1_GOVERNANCE_AGENT_ADDR as string;
 const ZKSYNC_ADDRESS = process.env.CONTRACTS_DIAMOND_PROXY_ADDR as string;
-const L1_GOVERNANCE_AGENT_ADDR = process.env
-  .CONTRACTS_L1_GOVERNANCE_AGENT_ADDR as string;
 
 async function main() {
   // without ethers.Wallet -> HardhatError: HH5: HardhatContext is not created.
@@ -64,7 +59,7 @@ async function main() {
    */
   const initResponseTx = await L1Executor.initialize(
     ZKSYNC_ADDRESS,
-    L1_GOVERNANCE_AGENT_ADDR,
+    AGENT_ADDRESS,
     {
       gasLimit: 10_000_000,
     }

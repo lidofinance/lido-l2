@@ -39,15 +39,14 @@ const L2_LIDO_TOKEN_INTERFACE = readInterface(
   "ERC20BridgedUpgradeable"
 );
 
-const AMOUNT_TO_DEPOSIT = ethers.utils.parseEther("10");
+const AMOUNT_TO_DEPOSIT = ethers.utils.parseEther("0.001");
 
-const { address: WALLET_ADDRESS, privateKey: WALLET_PRIVATE_KEY } =
-  richWallet[0];
+const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 
 const provider = web3Provider();
-const wallet = new ethers.Wallet(WALLET_PRIVATE_KEY, provider);
-const zkProvider = new Provider(zkSyncUrl(), SYSTEM_CONFIG_CONSTANTS.CHAIND_ID);
-const zkWallet = new Wallet(WALLET_PRIVATE_KEY, zkProvider, provider);
+const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+const zkProvider = new Provider(zkSyncUrl());
+const zkWallet = new Wallet(PRIVATE_KEY, zkProvider, provider);
 
 async function main() {
   console.log("Running script to deposit ERC20 to zkSync");
@@ -70,20 +69,23 @@ async function main() {
 
   // Mint tokens to L1 account
   const mintResponse = await l1TokenContract.mint(
-    WALLET_ADDRESS,
-    AMOUNT_TO_DEPOSIT
+    wallet.address,
+    AMOUNT_TO_DEPOSIT,
+    { gasLimit: 10_000_000 }
   );
+
   await mintResponse.wait();
 
   // Set allowance to L1 bridge
   const allowanceResponse = await l1TokenContract.approve(
     l1BridgeContract.address,
-    AMOUNT_TO_DEPOSIT
+    AMOUNT_TO_DEPOSIT,
+    { gasLimit: 10_000_000 }
   );
   await allowanceResponse.wait();
   console.log(
     `L1 Bridge allowance: ${await l1TokenContract.allowance(
-      WALLET_ADDRESS,
+      wallet.address,
       l1BridgeContract.address
     )}`
   );
@@ -91,7 +93,7 @@ async function main() {
   console.log("\n================== BEFORE DEPOSIT =================");
   console.log(
     `Account token balance on L1: ${await l1TokenContract.balanceOf(
-      WALLET_ADDRESS
+      wallet.address
     )}`
   );
   console.log(
@@ -101,19 +103,20 @@ async function main() {
   );
   console.log(
     `Account token balance on L2: ${await l2TokenContract.balanceOf(
-      WALLET_ADDRESS
+      wallet.address
     )}`
   );
 
   const depositTx = await l1BridgeContract.populateTransaction[
     "deposit(address,address,uint256,uint256,uint256,address)"
   ](
-    WALLET_ADDRESS,
+    wallet.address,
     l1TokenContract.address,
     AMOUNT_TO_DEPOSIT,
     ethers.BigNumber.from(10_000_000),
     utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT,
-    WALLET_ADDRESS
+    wallet.address,
+    { gasLimit: 10_000_000 }
   );
 
   // call to RPC method zks_estimateGasL1ToL2 to estimate L2 gas limit
@@ -129,12 +132,12 @@ async function main() {
   const depositResponse = await l1BridgeContract[
     "deposit(address,address,uint256,uint256,uint256,address)"
   ](
-    WALLET_ADDRESS,
+    wallet.address,
     l1TokenContract.address,
     AMOUNT_TO_DEPOSIT,
     l2GasLimit,
     utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT,
-    WALLET_ADDRESS,
+    wallet.address,
     {
       value: baseCost,
       gasLimit: 10_000_000,
@@ -150,7 +153,7 @@ async function main() {
   console.log("\n================== AFTER DEPOSIT =================");
   console.log(
     `Account token balance on L1: ${await l1TokenContract.balanceOf(
-      WALLET_ADDRESS
+      wallet.address
     )}`
   );
   console.log(
@@ -160,7 +163,7 @@ async function main() {
   );
   console.log(
     `Account token balance on L2: ${await l2TokenContract.balanceOf(
-      WALLET_ADDRESS
+      wallet.address
     )}`
   );
 }
