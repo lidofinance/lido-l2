@@ -47,15 +47,29 @@ contract ERC20BridgedPermit is ERC20Bridged, IERC2612 {
         virtual
         override
     {
-        require(deadline >= block.timestamp, "ERC20Permit: expired deadline");
+        if (deadline < block.timestamp) {
+            revert ErrorExpiredPermit();
+        }
 
         bytes32 hashStruct = keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, amount, nonces[owner]++, deadline));
 
         bytes32 hash = keccak256(abi.encodePacked("\x19\x01", _domainSeparatorV4(), hashStruct));
 
         address signer = ecrecover(hash, v, r, s);
-        require(signer != address(0) && signer == owner, "ERC20Permit: invalid signature");
+
+        if (signer == address(0) || signer != owner) {
+            revert ErrorInvalidSignature();
+        }
 
         _approve(owner, spender, amount);
     }
+
+    /// @dev used to consume a nonce so that the user is able to invalidate a signature. Returns the current value and increments.
+    function useNonce() external virtual returns (uint256 current) {
+        current = nonces[msg.sender];
+        nonces[msg.sender]++;
+    }
+
+    error ErrorExpiredPermit();
+    error ErrorInvalidSignature();
 }
