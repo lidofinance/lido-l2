@@ -11,6 +11,7 @@ import testing, { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 import { assert } from "chai";
 
+
 unit("Mantle:: L2ERC20TokenBridge", ctxFactory)
   .test("l1TokenBridge()", async (ctx) => {
     assert.equal(
@@ -48,6 +49,20 @@ unit("Mantle:: L2ERC20TokenBridge", ctxFactory)
     await assert.revertsWith(
       l2TokenBridge.withdraw(stranger.address, wei`1 ether`, wei`1 gwei`, "0x"),
       "ErrorUnsupportedL2Token()"
+    );
+  })
+
+  .test("withdraw() :: not from EOA", async (ctx) => {
+    await assert.revertsWith(
+      ctx.l2TokenBridge
+        .connect(ctx.accounts.emptyContractEOA)
+        .withdraw(
+          ctx.stubs.l2Token.address,
+          wei`1 ether`,
+          wei`1 gwei`,
+          "0x"
+        ),
+      "ErrorSenderNotEOA()"
     );
   })
 
