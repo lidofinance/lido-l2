@@ -9,16 +9,29 @@ import {IERC2612} from "@openzeppelin/contracts/interfaces/draft-IERC2612.sol";
 /// @notice Extends the ERC20 functionality that allows the bridge to mint/burn tokens
 contract ERC20BridgedPermit is ERC20Bridged, IERC2612 {
 
+    bytes32 private immutable _cachedDomainSeparator;
+    uint256 private immutable _cachedChainId;
+    address private immutable _cachedThis;
+
     mapping(address => uint256) public override nonces;
 
     bytes32 public immutable PERMIT_TYPEHASH =
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     constructor(string memory name_, string memory symbol_, uint8 decimals_, address bridge_)
-        ERC20Bridged(name_, symbol_, decimals_, bridge_){}
+        ERC20Bridged(name_, symbol_, decimals_, bridge_){
+
+        _cachedChainId = block.chainid;
+        _cachedDomainSeparator = _buildDomainSeparator();
+        _cachedThis = address(this);
+    }
 
     function _domainSeparatorV4() internal view returns (bytes32) {
-        return _buildDomainSeparator();
+        if (address(this) == _cachedThis && block.chainid == _cachedChainId) {
+            return _cachedDomainSeparator;
+        } else {
+            return _buildDomainSeparator();
+        }
     }
 
     function _buildDomainSeparator() private view returns (bytes32) {
