@@ -55,6 +55,33 @@ unit("ERC20BridgedPermit", ctxFactory)
     assert.equalBN(await erc20BridgedPermit.allowance(holder.address, spender.address), value)
   })
 
+  .test("useNonce() :: can invalidate valid signature", async (ctx) => {
+    const { erc20BridgedPermit } = ctx;
+    const { holder, spender } = ctx.accounts;
+    const value = 123
+
+    const { v, r, s } = await getPermitSignature(holder, erc20BridgedPermit, spender.address, value)
+
+    assert.equalBN(await erc20BridgedPermit.allowance(holder.address, spender.address), 0)
+
+    await erc20BridgedPermit.useNonce()
+
+    await assert.revertsWith(
+      erc20BridgedPermit.permit(
+        holder.address,
+        spender.address,
+        value,
+        constants.MaxUint256,
+        v,
+        r,
+        s
+      ),
+      "ErrorInvalidSignature()"
+    );
+
+    assert.equalBN(await erc20BridgedPermit.allowance(holder.address, spender.address), 0)
+  })
+
   .run();
 
   async function ctxFactory() {
