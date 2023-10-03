@@ -45,6 +45,7 @@ async function main() {
     ],
     {
       initializer: "__ZkSyncBridgeExecutor_init",
+      unsafeAllow: ["constructor"],
     }
   );
 

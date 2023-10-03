@@ -7,6 +7,12 @@ import {AddressAliasHelper} from "@matterlabs/zksync-contracts/l1/contracts/vend
 import {L2BridgeExecutor} from "./L2BridgeExecutor.sol";
 
 contract ZkSyncBridgeExecutor is L2BridgeExecutor {
+    /// @dev Contract is expected to be used as proxy implementation.
+    /// @dev Disable the initialization to prevent Parity hack.
+    constructor() {
+        _disableInitializers();
+    }
+
     /// @inheritdoc L2BridgeExecutor
     modifier onlyEthereumGovernanceExecutor() override {
         if (msg.sender != _ethereumGovernanceExecutor)
