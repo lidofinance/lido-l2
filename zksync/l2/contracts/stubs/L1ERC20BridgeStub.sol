@@ -10,12 +10,12 @@ contract L1ERC20BridgeStub {
         address _l2Receiver,
         address _l1Token,
         uint256 _amount,
-        uint256 _l2TxGasLimit,
-        uint256 _l2TxGasPerPubdataByte,
-        address _refundRecipient,
+        uint256,
+        uint256,
+        address,
         address _l2Bridge,
         bytes memory data
-    ) public payable returns (bool) {
+    ) public payable {
         IL2ERC20Bridge(_l2Bridge).finalizeDeposit{value: msg.value}(
             msg.sender,
             _l2Receiver,
