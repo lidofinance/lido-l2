@@ -16,9 +16,9 @@ contract L1Executor is Initializable, OwnableUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(IZkSync _zksync, address owner) external initializer {
+    function initialize(IZkSync _zksync, address _newOwner) external initializer {
         __Ownable_init();
-        _transferOwnership(owner);
+        _transferOwnership(_newOwner);
         zksync = _zksync;
     }
 

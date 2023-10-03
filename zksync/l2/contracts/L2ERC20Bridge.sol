@@ -34,6 +34,7 @@ contract L2ERC20Bridge is
     /// @param _l1TokenBridge Address of the corresponding L1 bridge
     /// @param _l1Token Address of the bridged token in the L1 chain
     /// @param _l2Token Address of the token minted on the L2 chain when token bridged
+    /// @param _admin Address of the account to grant the DEFAULT_ADMIN_ROLE
     /// @dev The function can only be called once during contract deployment due to the 'initializer' modifier.
     function initialize(
         address _l1TokenBridge,
