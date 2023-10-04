@@ -122,8 +122,8 @@ function getChainId(protocol: ChainNameShort, networkName: NetworkName) {
       goerli: 5,
     },
     opt: {
-      mainnet: 10,
-      goerli: 420,
+      mainnet: 8453,
+      goerli: 84531,
     },
     arb: {
       mainnet: 42161,
@@ -146,8 +146,8 @@ function getBlockExplorerBaseUrlByChainId(chainId: number) {
     42161: "https://arbiscan.io",
     421613: "https://goerli-rollup-explorer.arbitrum.io",
     // optimism
-    10: "https://optimistic.etherscan.io",
-    420: "https://blockscout.com/optimism/goerli",
+    8453: "https://basescan.org",
+    84531: "https://goerli.basescan.org",
     // forked node
     31337: "https://etherscan.io",
   };
