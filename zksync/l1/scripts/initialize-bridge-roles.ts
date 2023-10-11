@@ -7,10 +7,14 @@ import { Deployer } from "./deploy";
 // L2
 import { Wallet as ZkSyncWallet, Provider, Contract } from "zksync-web3";
 import { L2ERC20Bridge__factory } from "../../l2/typechain";
+import { L1ERC20Bridge__factory } from "../typechain";
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY as string;
 const ZKSYNC_PROVIDER_URL = process.env.ZKSYNC_PROVIDER_URL as string;
-const EMERGENCY_BRAKE_MULTISIG = process.env.EMERGENCY_BRAKE_MULTISIG as string;
+const L1_EMERGENCY_BRAKE_MULTISIG = process.env
+  .L1_EMERGENCY_BRAKE_MULTISIG as string;
+const L2_EMERGENCY_BRAKE_MULTISIG = process.env
+  .L2_EMERGENCY_BRAKE_MULTISIG as string;
 const L2_BRIDGE_EXECUTOR_ADDR = process.env.L2_BRIDGE_EXECUTOR_ADDR as string;
 
 const provider = web3Provider();
@@ -84,14 +88,18 @@ async function main() {
         lidoBridge,
         DEPOSITS_ENABLER_ROLE,
         "DEPOSITS_ENABLER_ROLE",
-        [deployer.addresses.GovernanceL1]
+        [deployer.addresses.GovernanceL1, L1_EMERGENCY_BRAKE_MULTISIG]
       );
 
       await grantRole(
         lidoBridge,
         DEPOSITS_DISABLER_ROLE,
         "DEPOSITS_DISABLER_ROLE",
-        [deployer.addresses.GovernanceL1, EMERGENCY_BRAKE_MULTISIG]
+        [
+          deployer.addresses.GovernanceL1,
+          L1_EMERGENCY_BRAKE_MULTISIG,
+          deployWallet.address,
+        ]
       );
 
       await grantRole(
@@ -105,12 +113,26 @@ async function main() {
         lidoBridge,
         WITHDRAWALS_DISABLER_ROLE,
         "WITHDRAWALS_DISABLER_ROLE",
-        [deployer.addresses.GovernanceL1, EMERGENCY_BRAKE_MULTISIG]
+        [deployer.addresses.GovernanceL1, L1_EMERGENCY_BRAKE_MULTISIG]
       );
 
       await grantRole(lidoBridge, DEFAULT_ADMIN_ROLE, "DEFAULT_ADMIN_ROLE", [
-        L1GovernorAgent.address,
+        L1_EMERGENCY_BRAKE_MULTISIG,
       ]);
+
+      const disableDepositsTx = await L1ERC20Bridge__factory.connect(
+        deployer.addresses.Bridges.LidoBridgeProxy,
+        deployWallet
+      ).disableDeposits();
+
+      await disableDepositsTx.wait();
+
+      await revokeRole(
+        lidoBridge,
+        DEPOSITS_DISABLER_ROLE,
+        "DEPOSITS_DISABLER_ROLE",
+        deployWallet.address
+      );
 
       await revokeRole(
         lidoBridge,
@@ -121,7 +143,10 @@ async function main() {
 
       console.log(
         "EXPECTED ADMIN:",
-        await lidoBridge.hasRole(DEFAULT_ADMIN_ROLE, L1GovernorAgent.address)
+        await lidoBridge.hasRole(
+          DEFAULT_ADMIN_ROLE,
+          L1_EMERGENCY_BRAKE_MULTISIG
+        )
       );
 
       console.log("\n===============L2===============");
@@ -137,7 +162,7 @@ async function main() {
         l2Bridge,
         DEPOSITS_DISABLER_ROLE,
         "DEPOSITS_DISABLER_ROLE",
-        [L2_BRIDGE_EXECUTOR_ADDR, EMERGENCY_BRAKE_MULTISIG]
+        [L2_BRIDGE_EXECUTOR_ADDR, L2_EMERGENCY_BRAKE_MULTISIG]
       );
 
       await grantRole(
@@ -151,7 +176,7 @@ async function main() {
         l2Bridge,
         WITHDRAWALS_DISABLER_ROLE,
         "WITHDRAWALS_DISABLER_ROLE",
-        [L2_BRIDGE_EXECUTOR_ADDR, EMERGENCY_BRAKE_MULTISIG]
+        [L2_BRIDGE_EXECUTOR_ADDR, L2_EMERGENCY_BRAKE_MULTISIG]
       );
 
       await grantRole(l2Bridge, DEFAULT_ADMIN_ROLE, "DEFAULT_ADMIN_ROLE", [

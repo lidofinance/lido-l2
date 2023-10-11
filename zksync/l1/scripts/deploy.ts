@@ -168,7 +168,7 @@ export class Deployer {
   ) {
     nonce = nonce || (await this.deployWallet.getTransactionCount());
 
-    if (!IS_PRODUCTION) {
+    if (IS_LOCAL) {
       await this.deployLidoL1Token(create2Salt, { gasPrice, nonce: nonce++ });
     }
 

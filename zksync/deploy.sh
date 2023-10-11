@@ -67,7 +67,11 @@ echo "DEPLOYING L1 BRIDGE"
 output=$(npm run deploy-bridges)
 
 ## CONTRACTS_L1_LIDO_TOKEN_ADDR
-formatAndAppendOrUpdate "$output" "CONTRACTS_L1_LIDO_TOKEN_ADDR"
+if [ "$NODE_ENV" = "local" ]; then
+	formatAndAppendOrUpdate "$output" "CONTRACTS_L1_LIDO_TOKEN_ADDR"
+else
+    echo 'Skipping CONTRACTS_L1_LIDO_TOKEN_ADDR deployment'
+fi
 
 ## CONTRACTS_L1_LIDO_BRIDGE_IMPL_ADDR
 formatAndAppendOrUpdate "$output" "CONTRACTS_L1_LIDO_BRIDGE_IMPL_ADDR"

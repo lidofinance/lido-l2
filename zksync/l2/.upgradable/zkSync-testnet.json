@@ -1,25 +1,25 @@
 {
   "manifestVersion": "3.2",
   "admin": {
-    "address": "0x3aAd916D98A9a19b56336fb44eb734c7AcaBf069",
-    "txHash": "0x21bb9be4b28e8709bcd273b52713f37452a2a3890d67302bbeeb8160244c0c88"
+    "address": "0xe7E7befca267e5967e20d135941535a2396CCdF4",
+    "txHash": "0x6a6140df2a9bfd79dc23be0a713beab8677f258b4f1955f39a393614f1d3e039"
   },
   "proxies": [
     {
-      "address": "0xfEF1a26853D2a4133017849f5738eaE92fb8117e",
-      "txHash": "0x22359ad46c9eb9c93ae764ba685ea90be453da4bd31aa1b17405996d8321171a",
+      "address": "0x4097BC99a9B5fB253B938d105111FFcb862Be668",
+      "txHash": "0x0d5c6362d6ae50279560dccbc3e3be93e8e7d2959656972e9b7fab1a17a2c980",
       "kind": "transparent"
     },
     {
-      "address": "0x948947F2f05864032Fb340E574D0F13C6BA7bE74",
-      "txHash": "0xa9a3d94d8771f8dc88ceb664f0d9f7cb60a4890c25640810e28274e26a9be48e",
+      "address": "0x6750967d6e4712Ae6cF9401a87dc34642339E0Ef",
+      "txHash": "0xab35d515f142c4e9a739dfb4d8f08e2d98a247bbf7098c4c69d8c4664ab23a63",
       "kind": "transparent"
     }
   ],
   "impls": {
-    "e51973f87b6ff3c717678c268bc55bdb999ab3817e3d725234d963c5d6497211": {
-      "address": "0xA6f68f512F9C96348f7d5c9192782279a93d1C3B",
-      "txHash": "0x67142bb8676a6825077dcdc115897327d024ceeb0813053b077ae89863d74f88",
+    "1eed597a8a42cd1e50e6a9c619ee73b59bc02cd732ecbbf194e146ff63c33a59": {
+      "address": "0x213ec81bB9740c75d2BC186378cf734F9306e7e5",
+      "txHash": "0x01d6be340bee93410b1861a05195f5ab5f4bb17de3f21a1d43b96f46c46ae078",
       "layout": {
         "solcVersion": "0.8.13",
         "storage": [
@@ -92,7 +92,7 @@
             "label": "_actionsSets",
             "offset": 0,
             "slot": "7",
-            "type": "t_mapping(t_uint256,t_struct(ActionsSet)8036_storage)",
+            "type": "t_mapping(t_uint256,t_struct(ActionsSet)8044_storage)",
             "contract": "BridgeExecutorBase",
             "src": "l2\\contracts\\governance\\BridgeExecutorBase.sol:36"
           },
@@ -150,7 +150,7 @@
             "label": "mapping(bytes32 => bool)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(ActionsSet)8036_storage)": {
+          "t_mapping(t_uint256,t_struct(ActionsSet)8044_storage)": {
             "label": "mapping(uint256 => struct IExecutorBase.ActionsSet)",
             "numberOfBytes": "32"
           },
@@ -158,7 +158,7 @@
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(ActionsSet)8036_storage": {
+          "t_struct(ActionsSet)8044_storage": {
             "label": "struct IExecutorBase.ActionsSet",
             "members": [
               {
@@ -224,8 +224,8 @@
       }
     },
     "8df7ae2cd7ccdee22b6508b22eedd077efac926a54842e60f8dd8c576e91e597": {
-      "address": "0xEce0C449f94a4869d090153b8419BAe1488FE667",
-      "txHash": "0x90d48a893cc96fc840ff1c3b70cb2d0036f4f813be7f6cb8667a306c9a6e7f59",
+      "address": "0x75e79BCe0F5a81b6D0097CCB473D867940A4C2Ca",
+      "txHash": "0xb48fbe60b403b441b5781546750b3abd95cb7fbb93b15b70a6b38f3bdc0433e1",
       "layout": {
         "solcVersion": "0.8.13",
         "storage": [
