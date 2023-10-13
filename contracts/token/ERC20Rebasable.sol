@@ -4,16 +4,13 @@
 pragma solidity 0.8.10;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import {IERC20Wrapable} from "./interfaces/IERC20Wrapable.sol";
 import {ITokensRateOracle} from "./interfaces/ITokensRateOracle.sol";
-
-import {ERC20Core} from "./ERC20Core.sol";
 import {ERC20Metadata} from "./ERC20Metadata.sol";
 
 /// @author kovalgek
-/// @notice Extends the ERC20Core functionality
-contract ERC20Rebasable is IERC20Wrapable, ERC20Core, ERC20Metadata {
+/// @notice Extends the ERC20Shared functionality
+contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
 
     IERC20 public immutable wrappedToken;
     ITokensRateOracle public immutable tokensRateOracle;
@@ -42,24 +39,247 @@ contract ERC20Rebasable is IERC20Wrapable, ERC20Core, ERC20Metadata {
         _setERC20MetadataSymbol(symbol_);
     }
 
-    /// @inheritdoc IERC20Wrapable
-    function wrap(uint256 wstETHAmount_) external returns (uint256) {
-        require(wstETHAmount_ > 0, "stETH: can't wrap zero wstETH");
-        uint256 stETHAmount = wstETHAmount_ / tokensRateOracle.wstETH_to_stETH_rate(); // check how to divide.
-        // 
-        _mint(msg.sender, stETHAmount);
-        wrappedToken.transferFrom(msg.sender, address(this), wstETHAmount_);
-        return stETHAmount;
-    }
 
-    // tests when rate is different <1, >1.
+    /// ------------IERC20Wrapable------------
 
     /// @inheritdoc IERC20Wrapable
-    function unwrap(uint256 stETHAmount_) external returns (uint256) {
-        require(stETHAmount_ > 0, "stETH: zero amount unwrap not allowed");
-        uint256 wstETHAmount = stETHAmount_ * tokensRateOracle.wstETH_to_stETH_rate();
-        _burn(msg.sender, stETHAmount_);
-        wrappedToken.transfer(msg.sender, wstETHAmount);
-        return wstETHAmount;
+    function wrap(uint256 sharesAmount_) external returns (uint256) {
+        require(sharesAmount_ > 0, "Rebasable: can't wrap zero shares");
+
+        _mintShares(msg.sender, sharesAmount_);
+        wrappedToken.transferFrom(msg.sender, address(this), sharesAmount_);
+
+        return getTokensByShares(sharesAmount_);
     }
+
+    /// @inheritdoc IERC20Wrapable
+    function unwrap(uint256 tokenAmount_) external returns (uint256) {
+        require(tokenAmount_ > 0, "Rebasable: zero amount unwrap not allowed");
+
+        uint256 sharesAmount = getSharesByTokens(tokenAmount_);
+
+        _burnShares(msg.sender, sharesAmount);
+        wrappedToken.transfer(msg.sender, sharesAmount);
+
+        return sharesAmount;
+    }
+
+
+    /// ------------ERC20------------
+
+    /// @inheritdoc IERC20
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    /// @inheritdoc IERC20
+    function totalSupply() external view returns (uint256) {
+        return getTokensByShares(totalShares);
+    }
+
+    /// @inheritdoc IERC20
+    function balanceOf(address account_) external view returns (uint256) {
+        return getTokensByShares(_sharesOf(account_));
+    }
+
+    /// @inheritdoc IERC20
+    function approve(address spender_, uint256 amount_)
+        external
+        returns (bool)
+    {
+        _approve(msg.sender, spender_, amount_);
+        return true;
+    }
+
+    /// @inheritdoc IERC20
+    function transfer(address to_, uint256 amount_) external returns (bool) {
+        _transfer(msg.sender, to_, amount_);
+        return true;
+    }
+
+    /// @inheritdoc IERC20
+    function transferFrom(
+        address from_,
+        address to_,
+        uint256 amount_
+    ) external returns (bool) {
+        _spendAllowance(from_, msg.sender, amount_);
+        _transfer(from_, to_, amount_);
+        return true;
+    }
+
+    /// @notice Atomically increases the allowance granted to spender by the caller.
+    /// @param spender_ An address of the tokens spender
+    /// @param addedValue_ An amount to increase the allowance
+    function increaseAllowance(address spender_, uint256 addedValue_)
+        external
+        returns (bool)
+    {
+        _approve(
+            msg.sender,
+            spender_,
+            allowance[msg.sender][spender_] + addedValue_
+        );
+        return true;
+    }
+
+    /// @notice Atomically decreases the allowance granted to spender by the caller.
+    /// @param spender_ An address of the tokens spender
+    /// @param subtractedValue_ An amount to decrease the  allowance
+    function decreaseAllowance(address spender_, uint256 subtractedValue_)
+        external
+        returns (bool)
+    {
+        uint256 currentAllowance = allowance[msg.sender][spender_];
+        if (currentAllowance < subtractedValue_) {
+            revert ErrorDecreasedAllowanceBelowZero();
+        }
+        unchecked {
+            _approve(msg.sender, spender_, currentAllowance - subtractedValue_);
+        }
+        return true;
+    }
+
+    /// @dev Moves amount_ of tokens from sender_ to recipient_
+    /// @param from_ An address of the sender of the tokens
+    /// @param to_  An address of the recipient of the tokens
+    /// @param amount_ An amount of tokens to transfer
+    function _transfer(
+        address from_,
+        address to_,
+        uint256 amount_
+    ) internal onlyNonZeroAccount(from_) onlyNonZeroAccount(to_) {
+        uint256 sharesToTransfer = getSharesByTokens(amount_);
+        _transferShares(from_, to_, sharesToTransfer);
+        emit Transfer(from_, to_, amount_);
+    }
+
+    /// @dev Updates owner_'s allowance for spender_ based on spent amount_. Does not update
+    ///     the allowance amount in case of infinite allowance
+    /// @param owner_ An address of the account to spend allowance
+    /// @param spender_  An address of the spender of the tokens
+    /// @param amount_ An amount of allowance spend
+    function _spendAllowance(
+        address owner_,
+        address spender_,
+        uint256 amount_
+    ) internal {
+        uint256 currentAllowance = allowance[owner_][spender_];
+        if (currentAllowance == type(uint256).max) {
+            return;
+        }
+        if (amount_ > currentAllowance) {
+            revert ErrorNotEnoughAllowance();
+        }
+        unchecked {
+            _approve(owner_, spender_, currentAllowance - amount_);
+        }
+    }
+
+    /// @dev Sets amount_ as the allowance of spender_ over the owner_'s tokens
+    /// @param owner_ An address of the account to set allowance
+    /// @param spender_  An address of the tokens spender
+    /// @param amount_ An amount of tokens to allow to spend
+    function _approve(
+        address owner_,
+        address spender_,
+        uint256 amount_
+    ) internal virtual onlyNonZeroAccount(owner_) onlyNonZeroAccount(spender_) {
+        allowance[owner_][spender_] = amount_;
+        emit Approval(owner_, spender_, amount_);
+    }
+
+
+    /// ------------Shares------------
+
+    mapping (address => uint256) private shares;
+    
+    uint256 private totalShares;
+
+    function _sharesOf(address account_) internal view returns (uint256) {
+        return shares[account_];
+    }
+
+    function getTokensByShares(uint256 sharesAmount_) public view returns (uint256) {
+        (uint256 tokensRate, uint8 decimals)  = _getTokensRate();
+        return sharesAmount_ * (10 ** uint256(decimals)) / tokensRate;
+    }
+
+    function getSharesByTokens(uint256 tokenAmount_) public view returns (uint256) {
+        (uint256 tokensRate, uint8 decimals)  = _getTokensRate();
+        return tokenAmount_ * tokensRate / (10 ** uint256(decimals));
+    }
+
+    function _getTokensRate() internal view returns (uint256, uint8) {
+        uint8 priceDecimals = tokensRateOracle.decimals();
+
+        require(priceDecimals > uint8(0) && priceDecimals <= uint8(18), "Invalid priceDecimals");
+
+        (,
+        int256 answer
+        ,
+        ,
+        uint256 updatedAt
+        ,) = tokensRateOracle.latestRoundData();
+
+        require(updatedAt != 0);
+
+        return (uint256(answer), priceDecimals);
+    }
+
+    /// @dev Creates amount_ shares and assigns them to account_, increasing the total shares supply
+    /// @param recipient_ An address of the account to mint shares
+    /// @param amount_ An amount of shares to mint
+    function _mintShares(
+        address recipient_,
+        uint256 amount_
+    ) internal onlyNonZeroAccount(recipient_) returns (uint256)  {
+        totalShares = totalShares + amount_;
+        shares[recipient_] = shares[recipient_] + amount_;
+        return totalShares;
+    }
+
+    /// @dev Destroys amount_ shares from account_, reducing the total shares supply.
+    /// @param account_ An address of the account to mint shares
+    /// @param amount_ An amount of shares to mint
+    function _burnShares(
+        address account_,
+        uint256 amount_
+    ) internal onlyNonZeroAccount(account_) returns (uint256) {
+        uint256 accountShares = shares[account_];
+        require(amount_ <= accountShares, "BALANCE_EXCEEDED");
+        totalShares = totalShares - amount_;
+        shares[account_] = accountShares - amount_;
+        return totalShares;
+    }
+
+    /// @dev  Moves `sharesAmount_` shares from `sender_` to `recipient_`.
+    /// @param sender_ An address of the account to take shares
+    /// @param recipient_ An address of the account to transfer shares
+    /// @param sharesAmount_ An amount of shares to transfer
+    function _transferShares(
+        address sender_,
+        address recipient_,
+        uint256 sharesAmount_
+    ) internal onlyNonZeroAccount(sender_) onlyNonZeroAccount(recipient_) {
+        
+        require(recipient_ != address(this), "TRANSFER_TO_REBASABLE_CONTRACT");
+
+        uint256 currentSenderShares = shares[sender_];
+        require(sharesAmount_ <= currentSenderShares, "BALANCE_EXCEEDED");
+
+        shares[sender_] = currentSenderShares - sharesAmount_;
+        shares[recipient_] = shares[recipient_] + sharesAmount_;
+    }
+
+    /// @dev validates that account_ is not zero address
+    modifier onlyNonZeroAccount(address account_) {
+        if (account_ == address(0)) {
+            revert ErrorAccountIsZeroAddress();
+        }
+        _;
+    }
+
+    error ErrorNotEnoughBalance();
+    error ErrorNotEnoughAllowance();
+    error ErrorAccountIsZeroAddress();
+    error ErrorDecreasedAllowanceBelowZero();
 }
