@@ -12,6 +12,17 @@ import {ERC20Metadata} from "./ERC20Metadata.sol";
 /// @notice Extends the ERC20Shared functionality
 contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
 
+    error ErrorZeroSharesWrap();
+    error ErrorZeroTokensUnwrap();
+    error ErrorInvalidRateDecimals(uint8);
+    error ErrorWrongOracleUpdateTime();
+    error ErrorOracleAnswerIsNegative();
+    error ErrorTrasferToRebasableContract();
+    error ErrorNotEnoughBalance();
+    error ErrorNotEnoughAllowance();
+    error ErrorAccountIsZeroAddress();
+    error ErrorDecreasedAllowanceBelowZero();
+
     IERC20 public immutable wrappedToken;
     ITokensRateOracle public immutable tokensRateOracle;
 
@@ -39,31 +50,29 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         _setERC20MetadataSymbol(symbol_);
     }
 
-
     /// ------------IERC20Wrapable------------
 
     /// @inheritdoc IERC20Wrapable
     function wrap(uint256 sharesAmount_) external returns (uint256) {
-        require(sharesAmount_ > 0, "Rebasable: can't wrap zero shares");
-
+        if (sharesAmount_ == 0) revert ErrorZeroSharesWrap();
+        
         _mintShares(msg.sender, sharesAmount_);
         wrappedToken.transferFrom(msg.sender, address(this), sharesAmount_);
 
-        return getTokensByShares(sharesAmount_);
+        return _getTokensByShares(sharesAmount_);
     }
 
     /// @inheritdoc IERC20Wrapable
     function unwrap(uint256 tokenAmount_) external returns (uint256) {
-        require(tokenAmount_ > 0, "Rebasable: zero amount unwrap not allowed");
+        if (tokenAmount_ == 0) revert ErrorZeroTokensUnwrap();
 
-        uint256 sharesAmount = getSharesByTokens(tokenAmount_);
+        uint256 sharesAmount = _getSharesByTokens(tokenAmount_);
 
         _burnShares(msg.sender, sharesAmount);
         wrappedToken.transfer(msg.sender, sharesAmount);
 
         return sharesAmount;
     }
-
 
     /// ------------ERC20------------
 
@@ -72,12 +81,12 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
 
     /// @inheritdoc IERC20
     function totalSupply() external view returns (uint256) {
-        return getTokensByShares(totalShares);
+        return _getTokensByShares(totalShares);
     }
 
     /// @inheritdoc IERC20
     function balanceOf(address account_) external view returns (uint256) {
-        return getTokensByShares(_sharesOf(account_));
+        return _getTokensByShares(_sharesOf(account_));
     }
 
     /// @inheritdoc IERC20
@@ -147,7 +156,7 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         address to_,
         uint256 amount_
     ) internal onlyNonZeroAccount(from_) onlyNonZeroAccount(to_) {
-        uint256 sharesToTransfer = getSharesByTokens(amount_);
+        uint256 sharesToTransfer = _getSharesByTokens(amount_);
         _transferShares(from_, to_, sharesToTransfer);
         emit Transfer(from_, to_, amount_);
     }
@@ -189,6 +198,28 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
 
 
     /// ------------Shares------------
+    // API
+    function sharesOf(address _account) external view returns (uint256) {
+        return _sharesOf(_account);
+    }
+
+    function getTotalShares() external view returns (uint256) {
+        return _getTotalShares();
+    }
+
+    function getTokensByShares(uint256 sharesAmount_) external view returns (uint256) {
+        return _getTokensByShares(sharesAmount_);
+    }
+
+    function getSharesByTokens(uint256 tokenAmount_) external view returns (uint256) {
+        return _getSharesByTokens(tokenAmount_);
+    }
+
+    function getTokensRateAndDecimal() external view returns (uint256, uint256) {
+        return _getTokensRateAndDecimal();
+    }
+
+    // private/internal
 
     mapping (address => uint256) private shares;
     
@@ -198,20 +229,24 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         return shares[account_];
     }
 
-    function getTokensByShares(uint256 sharesAmount_) public view returns (uint256) {
-        (uint256 tokensRate, uint8 decimals)  = _getTokensRate();
-        return sharesAmount_ * (10 ** uint256(decimals)) / tokensRate;
+    function _getTotalShares() internal view returns (uint256) {
+        return totalShares;
     }
 
-    function getSharesByTokens(uint256 tokenAmount_) public view returns (uint256) {
-        (uint256 tokensRate, uint8 decimals)  = _getTokensRate();
-        return tokenAmount_ * tokensRate / (10 ** uint256(decimals));
+    function _getTokensByShares(uint256 sharesAmount_) internal view returns (uint256) {
+        (uint256 tokensRate, uint256 decimals)  = _getTokensRateAndDecimal();
+        return (sharesAmount_ * (10 ** decimals)) / tokensRate;
     }
 
-    function _getTokensRate() internal view returns (uint256, uint8) {
-        uint8 priceDecimals = tokensRateOracle.decimals();
+    function _getSharesByTokens(uint256 tokenAmount_) internal view returns (uint256) {
+        (uint256 tokensRate, uint256 decimals)  = _getTokensRateAndDecimal();
+        return (tokenAmount_ * tokensRate) / (10 ** decimals);
+    }
 
-        require(priceDecimals > uint8(0) && priceDecimals <= uint8(18), "Invalid priceDecimals");
+    function _getTokensRateAndDecimal() internal view returns (uint256, uint256) {
+        uint8 rateDecimals = tokensRateOracle.decimals();
+
+        if (rateDecimals == uint8(0) || rateDecimals > uint8(18)) revert ErrorInvalidRateDecimals(rateDecimals);
 
         (,
         int256 answer
@@ -220,9 +255,10 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         uint256 updatedAt
         ,) = tokensRateOracle.latestRoundData();
 
-        require(updatedAt != 0);
-
-        return (uint256(answer), priceDecimals);
+        if (updatedAt == 0) revert ErrorWrongOracleUpdateTime();
+        if (answer <= 0) revert ErrorOracleAnswerIsNegative();
+        
+        return (uint256(answer), uint256(rateDecimals));
     }
 
     /// @dev Creates amount_ shares and assigns them to account_, increasing the total shares supply
@@ -245,7 +281,7 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         uint256 amount_
     ) internal onlyNonZeroAccount(account_) returns (uint256) {
         uint256 accountShares = shares[account_];
-        require(amount_ <= accountShares, "BALANCE_EXCEEDED");
+        if (accountShares < amount_) revert ErrorNotEnoughBalance();
         totalShares = totalShares - amount_;
         shares[account_] = accountShares - amount_;
         return totalShares;
@@ -261,10 +297,10 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         uint256 sharesAmount_
     ) internal onlyNonZeroAccount(sender_) onlyNonZeroAccount(recipient_) {
         
-        require(recipient_ != address(this), "TRANSFER_TO_REBASABLE_CONTRACT");
+        if (recipient_ == address(this)) revert ErrorTrasferToRebasableContract();
 
         uint256 currentSenderShares = shares[sender_];
-        require(sharesAmount_ <= currentSenderShares, "BALANCE_EXCEEDED");
+        if (sharesAmount_ > currentSenderShares) revert ErrorNotEnoughBalance();
 
         shares[sender_] = currentSenderShares - sharesAmount_;
         shares[recipient_] = shares[recipient_] + sharesAmount_;
@@ -277,9 +313,4 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         }
         _;
     }
-
-    error ErrorNotEnoughBalance();
-    error ErrorNotEnoughAllowance();
-    error ErrorAccountIsZeroAddress();
-    error ErrorDecreasedAllowanceBelowZero();
 }

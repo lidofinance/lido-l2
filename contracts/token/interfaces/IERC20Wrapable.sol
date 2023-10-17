@@ -9,7 +9,7 @@ interface IERC20Wrapable {
 
     /**
      * @notice Exchanges wstETH to stETH
-     * @param wrappedTokenAmount_ amount of wstETH to wrap in exchange for stETH
+     * @param sharesAmount_ amount of wstETH to wrap in exchange for stETH
      * @dev Requirements:
      *  - `wstETHAmount_` must be non-zero
      *  - msg.sender must approve at least `wstETHAmount_` stETH to this
@@ -18,7 +18,7 @@ interface IERC20Wrapable {
      * User should first approve wstETHAmount_ to the StETH contract
      * @return Amount of StETH user receives after wrap
      */
-    function wrap(uint256 wrappedTokenAmount_) external returns (uint256);
+    function wrap(uint256 sharesAmount_) external returns (uint256);
 
     /**
      * @notice Exchanges stETH to wstETH

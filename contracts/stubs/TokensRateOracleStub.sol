@@ -23,6 +23,12 @@ contract TokensRateOracleStub is ITokensRateOracle {
         latestRoundDataAnswer = answer_;
     }
 
+    uint256 public latestRoundDataUpdatedAt;
+
+    function setUpdatedAt(uint256 updatedAt_) external {
+        latestRoundDataUpdatedAt = updatedAt_;
+    }
+
     /**
      * @notice get data about the latest round.
      */
@@ -36,6 +42,6 @@ contract TokensRateOracleStub is ITokensRateOracle {
         uint256 updatedAt,
         uint80 answeredInRound
       ) {
-        return (0,latestRoundDataAnswer,0,0,0);
+        return (0,latestRoundDataAnswer,0,latestRoundDataUpdatedAt,0);
       }
 }
