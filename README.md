@@ -1,11 +1,12 @@
 # Lido L2
 
-This project contains the implementations of the L2 ERC20 token bridges for Arbitrum and Optimism chains. The current solution allows transferring ERC20 tokens between L1 and L2 chains.
+This project contains the implementations of the L2 ERC20 token bridges for Arbitrum, Optimism and zkSync Era chains. The current solution allows transferring ERC20 tokens between L1 and L2 chains.
 
 To retrieve more detailed info about the bridging process, see the specifications for certain chains:
 
 - [Lido's Arbitrum Gateway](https://github.com/lidofinance/lido-l2/blob/main/contracts/arbitrum/README.md).
 - [Lido's Optimism Bridge](https://github.com/lidofinance/lido-l2/blob/main/contracts/optimism/README.md).
+- [Lido's zkSync Era Bridge](https://github.com/txfusion/lido-l2/blob/main/zksync/README.md).
 
 ## Project setup
 
