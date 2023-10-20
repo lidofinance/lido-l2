@@ -99,9 +99,6 @@ else
     echo 'Skipping CONTRACTS_L1_LIDO_TOKEN_ADDR deployment'
 fi
 
-## CONTRACTS_L1_LIDO_BRIDGE_IMPL_ADDR
-formatAndAppendOrUpdate "$output" "CONTRACTS_L1_LIDO_BRIDGE_IMPL_ADDR"
-
 ## CONTRACTS_L1_LIDO_BRIDGE_PROXY_ADDR
 formatAndAppendOrUpdate "$output" "CONTRACTS_L1_LIDO_BRIDGE_PROXY_ADDR"
 
