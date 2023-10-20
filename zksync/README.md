@@ -80,13 +80,6 @@ l1:
 npm run init-bridge-roles
 ```
 
-```bash
-npm run enable-deposits
-```
-
-```bash
-npm run enable-withdrawals
-```
 
 # Statements
 

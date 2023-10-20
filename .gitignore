@@ -5,11 +5,14 @@ coverage.json
 typechain
 out
 
+addresses.local.json
+
 #Hardhat files
 cache
 artifacts
 cache-zk
 artifacts-zk
+
 
 # hardhat-zksync-upgradable plugin manifest file for contracts deployed on zkSync's local-setup
 **/.upgradable/zkSync-local-setup.json
