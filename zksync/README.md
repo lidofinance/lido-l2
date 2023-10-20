@@ -102,5 +102,5 @@ npm run enable-withdrawals
 | - Passing the (w)stETH/USD price feed | No |
 | - Passing Lido DAO governance decisions | Yes, for upgrading the L2 part of bridge and enabling/disabling deposit/withdrawal.|
 | Bridges are complicated in that the transaction can succeed on one side and fail on the other. What's the handling mechanism for this issue? | For deposits there is a way to claim failed deposits in case that tx passes on L1 but fails on L2. For withdrawals, if the tx passes on L2 and fails on L1, the funds will be burnt on L2 and locked on L1 bridge until someone passes the correct L2-L1 message inclusion proof to unlock the fund to L1 receiver.|
-| Is there a deployment script that sets all the parameters and authorities correctly? | There is a deploy script but it takes the addresses from environment variables. TODO: make a release deployment script with hardcoded values | 
-| Is there a post-deploy check script that, given a deployment, checks that all parameters and authorities are set correctly? | No. TODO: make a deployment check script |
+| Is there a deployment script that sets all the parameters and authorities correctly? | There is a deploy script but it takes the addresses from environment variables. | 
+| Is there a post-deploy check script that, given a deployment, checks that all parameters and authorities are set correctly? | Yes. |
