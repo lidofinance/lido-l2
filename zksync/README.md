@@ -49,7 +49,7 @@ The general process of bridging tokens via zkSync's Lido bridge consists of next
 
 ![Withdrawal Flow](images/withdrawal-flow.png)
 
-# Deployment
+## Deployment
 
 To compile Lido zkSync contracts, run the `compile.sh` script:
 
@@ -96,7 +96,7 @@ Run the following command in the `l1` folder:
 ```
 
 
-# Statements
+## Statements
 
 | Statement | Answer |
 |--------------------------------|-------------------|
