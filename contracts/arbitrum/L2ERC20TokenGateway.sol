@@ -22,19 +22,24 @@ contract L2ERC20TokenGateway is
     /// @param router_ Address of the router in the L2 chain
     /// @param counterpartGateway_ Address of the counterpart L1 gateway
     /// @param l1Token_ Address of the bridged token in the L1 chain
+    /// @param l1TokenRebasable_ Address of the bridged token in the L1 chain
     /// @param l2Token_ Address of the token minted on the Arbitrum chain when token bridged
     constructor(
         address arbSys_,
         address router_,
         address counterpartGateway_,
         address l1Token_,
-        address l2Token_
+        address l1TokenRebasable_,
+        address l2Token_,
+        address l2TokenRebasable_
     )
         InterchainERC20TokenGateway(
             router_,
             counterpartGateway_,
             l1Token_,
-            l2Token_
+            l1TokenRebasable_,
+            l2Token_,
+            l2TokenRebasable_
         )
         L2CrossDomainEnabled(arbSys_)
     {}

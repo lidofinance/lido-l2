@@ -32,13 +32,17 @@ contract L1ERC20TokenGateway is
         address router_,
         address counterpartGateway_,
         address l1Token_,
-        address l2Token_
+        address l1TokenRebasable_,
+        address l2Token_,
+        address l2TokenRebasable_
     )
         InterchainERC20TokenGateway(
             router_,
             counterpartGateway_,
             l1Token_,
-            l2Token_
+            l1TokenRebasable_,
+            l2Token_,
+            l2TokenRebasable_
         )
         L1CrossDomainEnabled(inbox_)
     {}

@@ -7,6 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Wrapable} from "./interfaces/IERC20Wrapable.sol";
 import {ITokensRateOracle} from "./interfaces/ITokensRateOracle.sol";
 import {ERC20Metadata} from "./ERC20Metadata.sol";
+import { console } from "hardhat/console.sol";
 
 /// @author kovalgek
 /// @notice Extends the ERC20Shared functionality
@@ -73,6 +74,15 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
 
         return sharesAmount;
     }
+
+    function mintShares(address account_, uint256 amount_) external returns (uint256) {
+        return _mintShares(account_, amount_);
+    }
+
+    function burnShares(address account_, uint256 amount_) external {
+        _burnShares(account_, amount_);
+    }
+
 
     /// ------------ERC20------------
 
@@ -234,7 +244,12 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
     }
 
     function _getTokensByShares(uint256 sharesAmount_) internal view returns (uint256) {
+        console.log("_getTokensByShares");
         (uint256 tokensRate, uint256 decimals)  = _getTokensRateAndDecimal();
+        console.log("sharesAmount_=",sharesAmount_);
+        console.log("decimals=",decimals);
+        console.log("tokensRate=",tokensRate);
+
         return (sharesAmount_ * (10 ** decimals)) / tokensRate;
     }
 
@@ -245,8 +260,10 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
 
     function _getTokensRateAndDecimal() internal view returns (uint256, uint256) {
         uint8 rateDecimals = tokensRateOracle.decimals();
+        console.log("_getTokensRateAndDecimal1");
 
         if (rateDecimals == uint8(0) || rateDecimals > uint8(18)) revert ErrorInvalidRateDecimals(rateDecimals);
+        console.log("_getTokensRateAndDecimal2");
 
         (,
         int256 answer
@@ -254,10 +271,12 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         ,
         uint256 updatedAt
         ,) = tokensRateOracle.latestRoundData();
+        console.log("_getTokensRateAndDecimal3");
 
         if (updatedAt == 0) revert ErrorWrongOracleUpdateTime();
         if (answer <= 0) revert ErrorOracleAnswerIsNegative();
-        
+        console.log("_getTokensRateAndDecimal4");
+
         return (uint256(answer), uint256(rateDecimals));
     }
 

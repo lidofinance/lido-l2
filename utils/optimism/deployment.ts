@@ -2,6 +2,7 @@ import { assert } from "chai";
 import { Overrides, Wallet } from "ethers";
 import {
   ERC20Bridged__factory,
+  ERC20Rebasable__factory,
   IERC20Metadata__factory,
   L1ERC20TokenBridge__factory,
   L2ERC20TokenBridge__factory,
@@ -20,6 +21,7 @@ interface OptL1DeployScriptParams {
 
 interface OptL2DeployScriptParams extends OptL1DeployScriptParams {
   l2Token?: { name?: string; symbol?: string };
+  l2TokenRebasable?: { name?: string; symbol?: string };
 }
 
 interface OptDeploymentOptions extends CommonOptions {
@@ -35,21 +37,26 @@ export default function deployment(
   return {
     async erc20TokenBridgeDeployScript(
       l1Token: string,
+      l1TokenRebasable: string,
+      tokensRateOracleStub: string,
       l1Params: OptL1DeployScriptParams,
-      l2Params: OptL2DeployScriptParams
+      l2Params: OptL2DeployScriptParams,
     ) {
+
       const [
         expectedL1TokenBridgeImplAddress,
         expectedL1TokenBridgeProxyAddress,
       ] = await network.predictAddresses(l1Params.deployer, 2);
-
+            
       const [
         expectedL2TokenImplAddress,
         expectedL2TokenProxyAddress,
+        expectedL2TokenRebasableImplAddress,
+        expectedL2TokenRebasableProxyAddress,
         expectedL2TokenBridgeImplAddress,
         expectedL2TokenBridgeProxyAddress,
-      ] = await network.predictAddresses(l2Params.deployer, 4);
-
+      ] = await network.predictAddresses(l2Params.deployer, 6);
+      
       const l1DeployScript = new DeployScript(
         l1Params.deployer,
         options?.logger
@@ -60,7 +67,9 @@ export default function deployment(
             optAddresses.L1CrossDomainMessenger,
             expectedL2TokenBridgeProxyAddress,
             l1Token,
+            l1TokenRebasable,
             expectedL2TokenProxyAddress,
+            expectedL2TokenRebasableProxyAddress,
             options?.overrides,
           ],
           afterDeploy: (c) =>
@@ -86,10 +95,16 @@ export default function deployment(
         l1Params.deployer
       );
 
-      const [decimals, l2TokenName, l2TokenSymbol] = await Promise.all([
+      const l1TokenRebasableInfo = IERC20Metadata__factory.connect(
+        l1TokenRebasable,
+        l1Params.deployer
+      );
+      const [decimals, l2TokenName, l2TokenSymbol, l2TokenRebasableName, l2TokenRebasableSymbol] = await Promise.all([
         l1TokenInfo.decimals(),
         l2Params.l2Token?.name ?? l1TokenInfo.name(),
         l2Params.l2Token?.symbol ?? l1TokenInfo.symbol(),
+        l2Params.l2TokenRebasable?.name ?? l1TokenRebasableInfo.name(),
+        l2Params.l2TokenRebasable?.symbol ?? l1TokenRebasableInfo.symbol(),
       ]);
 
       const l2DeployScript = new DeployScript(
@@ -123,12 +138,42 @@ export default function deployment(
             assert.equal(c.address, expectedL2TokenProxyAddress),
         })
         .addStep({
+          factory: ERC20Rebasable__factory,
+          args: [
+            expectedL2TokenProxyAddress,
+            tokensRateOracleStub,
+            l2TokenRebasableName,
+            l2TokenRebasableSymbol,
+            decimals,
+            options?.overrides,
+          ],
+          afterDeploy: (c) =>
+            assert.equal(c.address, expectedL2TokenRebasableImplAddress),
+        })
+        .addStep({
+          factory: OssifiableProxy__factory,
+          args: [
+            expectedL2TokenRebasableImplAddress,
+            l2Params.admins.proxy,
+            ERC20Rebasable__factory.createInterface().encodeFunctionData(
+              "initialize",
+              [l2TokenRebasableName, l2TokenRebasableSymbol]
+            ),
+            options?.overrides,
+          ],
+          afterDeploy: (c) =>
+            assert.equal(c.address, expectedL2TokenRebasableProxyAddress),
+        })
+
+        .addStep({
           factory: L2ERC20TokenBridge__factory,
           args: [
             optAddresses.L2CrossDomainMessenger,
             expectedL1TokenBridgeProxyAddress,
             l1Token,
+            l1TokenRebasable,
             expectedL2TokenProxyAddress,
+            expectedL2TokenRebasableProxyAddress,
             options?.overrides,
           ],
           afterDeploy: (c) =>

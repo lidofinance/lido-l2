@@ -6,10 +6,13 @@ pragma solidity 0.8.10;
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
 import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
+import {ERC20Rebasable} from "../token/ERC20Rebasable.sol";
 
 import {BridgingManager} from "../BridgingManager.sol";
 import {BridgeableTokens} from "../BridgeableTokens.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
+
+import { console } from "hardhat/console.sol";
 
 /// @author psirex
 /// @notice The L2 token bridge works with the L1 token bridge to enable ERC20 token bridging
@@ -34,8 +37,10 @@ contract L2ERC20TokenBridge is
         address messenger_,
         address l1TokenBridge_,
         address l1Token_,
-        address l2Token_
-    ) CrossDomainEnabled(messenger_) BridgeableTokens(l1Token_, l2Token_) {
+        address l1TokenRebasable_,
+        address l2Token_,
+        address l2TokenRebasable_
+    ) CrossDomainEnabled(messenger_) BridgeableTokens(l1Token_, l1TokenRebasable_, l2Token_, l2TokenRebasable_) {
         l1TokenBridge = l1TokenBridge_;
     }
 
@@ -75,8 +80,21 @@ contract L2ERC20TokenBridge is
         onlySupportedL2Token(l2Token_)
         onlyFromCrossDomainAccount(l1TokenBridge)
     {
-        IERC20Bridged(l2Token_).bridgeMint(to_, amount_);
-        emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, data_);
+        if (data_.length > 0 && data_[0] == hex'01') {
+            console.log("finalizeDeposit1 l2TokenRebasable balanceBefore=",ERC20Rebasable(l2TokenRebasable).balanceOf(to_));
+
+            ERC20Rebasable(l2TokenRebasable).mintShares(to_, amount_);
+
+            console.log("finalizeDeposit1 l2TokenRebasable balanceafter==",ERC20Rebasable(l2TokenRebasable).balanceOf(to_));
+
+            bytes memory data = data_[1:];
+            emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, data);
+        } else {
+            console.log("finalizeDeposit2 data=", data_.length);
+
+            IERC20Bridged(l2Token_).bridgeMint(to_, amount_);
+            emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, data_);
+        }
     }
 
     /// @notice Performs the logic for withdrawals by burning the token and informing
