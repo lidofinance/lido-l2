@@ -82,7 +82,7 @@ contract L1ERC20TokenGateway is
             })
         );
 
-        emit DepositInitiated(l1Token, from, to_, retryableTicketId, amount_);
+        emit DepositInitiated(l1TokenNonRebasable, from, to_, retryableTicketId, amount_);
 
         return abi.encode(retryableTicketId);
     }
@@ -117,7 +117,7 @@ contract L1ERC20TokenGateway is
             sendCrossDomainMessage(
                 from_,
                 counterpartGateway,
-                getOutboundCalldata(l1Token, from_, to_, amount_, ""),
+                getOutboundCalldata(l1TokenNonRebasable, from_, to_, amount_, ""),
                 messageOptions
             );
     }

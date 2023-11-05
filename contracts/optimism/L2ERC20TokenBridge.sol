@@ -7,6 +7,9 @@ import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
 import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
 import {ERC20Rebasable} from "../token/ERC20Rebasable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Wrapable} from "../token/interfaces/IERC20Wrapable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {BridgingManager} from "../BridgingManager.sol";
 import {BridgeableTokens} from "../BridgeableTokens.sol";
@@ -26,32 +29,45 @@ contract L2ERC20TokenBridge is
     BridgeableTokens,
     CrossDomainEnabled
 {
+    using SafeERC20 for IERC20;
+
     /// @inheritdoc IL2ERC20Bridge
     address public immutable l1TokenBridge;
 
     /// @param messenger_ L2 messenger address being used for cross-chain communications
     /// @param l1TokenBridge_  Address of the corresponding L1 bridge
-    /// @param l1Token_ Address of the bridged token in the L1 chain
-    /// @param l2Token_ Address of the token minted on the L2 chain when token bridged
+    /// @param l1TokenNonRebasable_ Address of the bridged token in the L1 chain
+    /// @param l1TokenRebasable_ Address of the bridged token in the L1 chain
+    /// @param l2TokenNonRebasable_ Address of the token minted on the L2 chain when token bridged
+    /// @param l2TokenRebasable_ Address of the token minted on the L2 chain when token bridged
     constructor(
         address messenger_,
         address l1TokenBridge_,
-        address l1Token_,
+        address l1TokenNonRebasable_,
         address l1TokenRebasable_,
-        address l2Token_,
+        address l2TokenNonRebasable_,
         address l2TokenRebasable_
-    ) CrossDomainEnabled(messenger_) BridgeableTokens(l1Token_, l1TokenRebasable_, l2Token_, l2TokenRebasable_) {
+    ) CrossDomainEnabled(messenger_) BridgeableTokens(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
         l1TokenBridge = l1TokenBridge_;
     }
 
     /// @inheritdoc IL2ERC20Bridge
     function withdraw(
+        address l1Token_,
         address l2Token_,
         uint256 amount_,
         uint32 l1Gas_,
         bytes calldata data_
     ) external whenWithdrawalsEnabled onlySupportedL2Token(l2Token_) {
-        _initiateWithdrawal(msg.sender, msg.sender, amount_, l1Gas_, data_);
+        if(l2Token_ == l2TokenRebasable) {
+            bytes memory data = bytes.concat(hex'01', data_);
+            uint256 shares = ERC20Rebasable(l2TokenRebasable).getSharesByTokens(amount_);
+            ERC20Rebasable(l2TokenRebasable).burnShares(msg.sender, shares);
+            _initiateWithdrawal(l1Token_, l2Token_, msg.sender, msg.sender, shares, l1Gas_, data);
+        } else {
+            IERC20Bridged(l2TokenNonRebasable).bridgeBurn(msg.sender, amount_);
+            _initiateWithdrawal(l1Token_, l2Token_, msg.sender, msg.sender, amount_, l1Gas_, data_);
+        }
     }
 
     /// @inheritdoc IL2ERC20Bridge
@@ -62,7 +78,7 @@ contract L2ERC20TokenBridge is
         uint32 l1Gas_,
         bytes calldata data_
     ) external whenWithdrawalsEnabled onlySupportedL2Token(l2Token_) {
-        _initiateWithdrawal(msg.sender, to_, amount_, l1Gas_, data_);
+        _initiateWithdrawal(l1TokenNonRebasable, l2Token_, msg.sender, to_, amount_, l1Gas_, data_);
     }
 
     /// @inheritdoc IL2ERC20Bridge
@@ -81,17 +97,10 @@ contract L2ERC20TokenBridge is
         onlyFromCrossDomainAccount(l1TokenBridge)
     {
         if (data_.length > 0 && data_[0] == hex'01') {
-            console.log("finalizeDeposit1 l2TokenRebasable balanceBefore=",ERC20Rebasable(l2TokenRebasable).balanceOf(to_));
-
             ERC20Rebasable(l2TokenRebasable).mintShares(to_, amount_);
-
-            console.log("finalizeDeposit1 l2TokenRebasable balanceafter==",ERC20Rebasable(l2TokenRebasable).balanceOf(to_));
-
             bytes memory data = data_[1:];
             emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, data);
         } else {
-            console.log("finalizeDeposit2 data=", data_.length);
-
             IERC20Bridged(l2Token_).bridgeMint(to_, amount_);
             emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, data_);
         }
@@ -107,18 +116,19 @@ contract L2ERC20TokenBridge is
     ///     solely as a convenience for external contracts. Aside from enforcing a maximum
     ///     length, these contracts provide no guarantees about its content
     function _initiateWithdrawal(
+        address l1Token_,
+        address l2Token_,
         address from_,
         address to_,
         uint256 amount_,
         uint32 l1Gas_,
-        bytes calldata data_
+        bytes memory data_
     ) internal {
-        IERC20Bridged(l2Token).bridgeBurn(from_, amount_);
 
         bytes memory message = abi.encodeWithSelector(
             IL1ERC20Bridge.finalizeERC20Withdrawal.selector,
-            l1Token,
-            l2Token,
+            l1Token_,
+            l2Token_,
             from_,
             to_,
             amount_,
@@ -127,6 +137,6 @@ contract L2ERC20TokenBridge is
 
         sendCrossDomainMessage(l1TokenBridge, l1Gas_, message);
 
-        emit WithdrawalInitiated(l1Token, l2Token, from_, to_, amount_, data_);
+        emit WithdrawalInitiated(l1Token_, l2Token_, from_, to_, amount_, data_);
     }
 }

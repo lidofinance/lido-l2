@@ -21,24 +21,25 @@ contract L2ERC20TokenGateway is
     /// @param arbSys_ Address of the Arbitrum’s ArbSys contract in the L2 chain
     /// @param router_ Address of the router in the L2 chain
     /// @param counterpartGateway_ Address of the counterpart L1 gateway
-    /// @param l1Token_ Address of the bridged token in the L1 chain
+    /// @param l1TokenNonRebasable_ Address of the bridged token in the L1 chain
     /// @param l1TokenRebasable_ Address of the bridged token in the L1 chain
-    /// @param l2Token_ Address of the token minted on the Arbitrum chain when token bridged
+    /// @param l2TokenNonRebasable_ Address of the token minted on the Arbitrum chain when token bridged
+    /// @param l2TokenRebasable_ Address of the token minted on the Arbitrum chain when token bridged
     constructor(
         address arbSys_,
         address router_,
         address counterpartGateway_,
-        address l1Token_,
+        address l1TokenNonRebasable_,
         address l1TokenRebasable_,
-        address l2Token_,
+        address l2TokenNonRebasable_,
         address l2TokenRebasable_
     )
         InterchainERC20TokenGateway(
             router_,
             counterpartGateway_,
-            l1Token_,
+            l1TokenNonRebasable_,
             l1TokenRebasable_,
-            l2Token_,
+            l2TokenNonRebasable_,
             l2TokenRebasable_
         )
         L2CrossDomainEnabled(arbSys_)
@@ -60,7 +61,7 @@ contract L2ERC20TokenGateway is
     {
         address from = L2OutboundDataParser.decode(router, data_);
 
-        IERC20Bridged(l2Token).bridgeBurn(from, amount_);
+        IERC20Bridged(l2TokenNonRebasable).bridgeBurn(from, amount_);
 
         uint256 id = sendCrossDomainMessage(
             from,
@@ -88,7 +89,7 @@ contract L2ERC20TokenGateway is
         onlySupportedL1Token(l1Token_)
         onlyFromCrossDomainAccount(counterpartGateway)
     {
-        IERC20Bridged(l2Token).bridgeMint(to_, amount_);
+        IERC20Bridged(l2TokenNonRebasable).bridgeMint(to_, amount_);
 
         emit DepositFinalized(l1Token_, from_, to_, amount_);
     }

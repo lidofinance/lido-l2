@@ -34,23 +34,24 @@ contract L1ERC20TokenBridge is
 
     /// @param messenger_ L1 messenger address being used for cross-chain communications
     /// @param l2TokenBridge_ Address of the corresponding L2 bridge
-    /// @param l1Token_ Address of the bridged token in the L1 chain
+    /// @param l1TokenNonRebasable_ Address of the bridged token in the L1 chain
     /// @param l1TokenRebasable_ Address of the bridged token in the L1 chain
-    /// @param l2Token_ Address of the token minted on the L2 chain when token bridged
+    /// @param l2TokenNonRebasable_ Address of the token minted on the L2 chain when token bridged
+    /// @param l2TokenRebasable_ Address of the token minted on the L2 chain when token bridged
     constructor(
         address messenger_,
         address l2TokenBridge_,
-        address l1Token_,           // wstETH
-        address l1TokenRebasable_,  // stETH
-        address l2Token_,
+        address l1TokenNonRebasable_,
+        address l1TokenRebasable_,
+        address l2TokenNonRebasable_,
         address l2TokenRebasable_
-    ) CrossDomainEnabled(messenger_) BridgeableTokens(l1Token_, l1TokenRebasable_, l2Token_, l2TokenRebasable_) {
+    ) CrossDomainEnabled(messenger_) BridgeableTokens(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
         l2TokenBridge = l2TokenBridge_;
     }
 
     /// @inheritdoc IL1ERC20Bridge
     function depositERC20(
-        address l1Token_, // stETH or wstETH
+        address l1Token_,
         address l2Token_,
         uint256 amount_,
         uint32 l2Gas_,
@@ -66,19 +67,14 @@ contract L1ERC20TokenBridge is
         }
 
         if(l1Token_ == l1TokenRebasable) {
-            bytes memory data = bytes.concat(hex'01', data_); // add rate
+            bytes memory data = bytes.concat(hex'01', data_);
             IERC20(l1TokenRebasable).safeTransferFrom(msg.sender, address(this), amount_);
-            IERC20(l1TokenRebasable).approve(l1Token, amount_);
-            uint256 wstETHAmount = IERC20Wrapable(l1Token).wrap(amount_);
-            console.log("wstETHAmount=",wstETHAmount);
-
-            uint256 balanceOfl1Token = IERC20(l1Token).balanceOf(address(this));
-            console.log("balanceOfl1Token=",balanceOfl1Token);
-
-            _initiateERC20Deposit(msg.sender, msg.sender, wstETHAmount, l2Gas_, data);
+            IERC20(l1TokenRebasable).approve(l1TokenNonRebasable, amount_);
+            uint256 wstETHAmount = IERC20Wrapable(l1TokenNonRebasable).wrap(amount_);
+            _initiateERC20Deposit(l1Token_, l2Token_, msg.sender, msg.sender, wstETHAmount, l2Gas_, data);
         } else {
-            IERC20(l1Token).safeTransferFrom(msg.sender, address(this), amount_);
-            _initiateERC20Deposit(msg.sender, msg.sender, amount_, l2Gas_, data_);
+            IERC20(l1TokenNonRebasable).safeTransferFrom(msg.sender, address(this), amount_);
+            _initiateERC20Deposit(l1Token_, l2Token_, msg.sender, msg.sender, amount_, l2Gas_, data_);
         }
     }
 
@@ -97,7 +93,7 @@ contract L1ERC20TokenBridge is
         onlySupportedL1Token(l1Token_)
         onlySupportedL2Token(l2Token_)
     {
-        _initiateERC20Deposit(msg.sender, to_, amount_, l2Gas_, data_);
+        _initiateERC20Deposit(l1Token_, l2Token_, msg.sender, to_, amount_, l2Gas_, data_);
     }
 
     /// @inheritdoc IL1ERC20Bridge
@@ -115,7 +111,12 @@ contract L1ERC20TokenBridge is
         onlySupportedL2Token(l2Token_)
         onlyFromCrossDomainAccount(l2TokenBridge)
     {
-        IERC20(l1Token_).safeTransfer(to_, amount_);
+        if (data_.length > 0 && data_[0] == hex'01') {
+            uint256 stETHAmount = IERC20Wrapable(l1TokenNonRebasable).unwrap(amount_);
+            IERC20(l1TokenRebasable).safeTransfer(to_, stETHAmount);
+        } else {
+            IERC20(l1Token_).safeTransfer(to_, amount_);
+        }
 
         emit ERC20WithdrawalFinalized(
             l1Token_,
@@ -137,6 +138,8 @@ contract L1ERC20TokenBridge is
     ///        solely as a convenience for external contracts. Aside from enforcing a maximum
     ///        length, these contracts provide no guarantees about its content.
     function _initiateERC20Deposit(
+        address l1Token_,
+        address l2Token_,
         address from_,
         address to_,
         uint256 amount_,
@@ -146,20 +149,19 @@ contract L1ERC20TokenBridge is
 
         bytes memory message = abi.encodeWithSelector(
             IL2ERC20Bridge.finalizeDeposit.selector,
-            l1Token,
-            l2Token,
+            l1Token_,
+            l2Token_,
             from_,
             to_,
             amount_,
             data_
         );
-        console.log("SEND l2TokenBridge=%s l1Token=%s l2Token=%s", l2TokenBridge, l1Token, l2Token);
 
         sendCrossDomainMessage(l2TokenBridge, l2Gas_, message);
 
         emit ERC20DepositInitiated(
-            l1Token,
-            l2Token,
+            l1Token_,
+            l2Token_,
             from_,
             to_,
             amount_,

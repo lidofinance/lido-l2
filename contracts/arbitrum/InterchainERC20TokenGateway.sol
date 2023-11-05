@@ -24,18 +24,18 @@ abstract contract InterchainERC20TokenGateway is
 
     /// @param router_ Address of the router in the corresponding chain
     /// @param counterpartGateway_ Address of the counterpart gateway used in the bridging process
-    /// @param l1Token_ Address of the bridged token in the Ethereum chain
+    /// @param l1TokenNonRebasable Address of the bridged token in the Ethereum chain
     /// @param l1TokenRebasable_ Address of the bridged token in the Ethereum chain
-    /// @param l2Token_ Address of the token minted on the Arbitrum chain when token bridged
+    /// @param l2TokenNonRebasable_ Address of the token minted on the Arbitrum chain when token bridged
     /// @param l2TokenRebasable_ Address of the token minted on the Arbitrum chain when token bridged
     constructor(
         address router_,
         address counterpartGateway_,
-        address l1Token_,
+        address l1TokenNonRebasable,
         address l1TokenRebasable_,
-        address l2Token_,
+        address l2TokenNonRebasable_,
         address l2TokenRebasable_
-    ) BridgeableTokens(l1Token_, l1TokenRebasable_, l2Token_, l2TokenRebasable_) {
+    ) BridgeableTokens(l1TokenNonRebasable, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
         router = router_;
         counterpartGateway = counterpartGateway_;
     }
@@ -48,8 +48,8 @@ abstract contract InterchainERC20TokenGateway is
         view
         returns (address)
     {
-        if (l1Token_ == l1Token) {
-            return l2Token;
+        if (l1Token_ == l1TokenRebasable) {
+            return l2TokenNonRebasable;
         }
         return address(0);
     }
