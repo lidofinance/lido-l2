@@ -174,6 +174,7 @@ export default function deployment(
             l1TokenRebasable,
             expectedL2TokenProxyAddress,
             expectedL2TokenRebasableProxyAddress,
+            tokensRateOracleStub,
             options?.overrides,
           ],
           afterDeploy: (c) =>

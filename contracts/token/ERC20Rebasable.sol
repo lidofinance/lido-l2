@@ -75,6 +75,10 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         return sharesAmount;
     }
 
+    function tokensPerStEth() external view returns (uint256) {
+        return 0;
+    }
+
     function mintShares(address account_, uint256 amount_) external returns (uint256) {
         return _mintShares(account_, amount_);
     }

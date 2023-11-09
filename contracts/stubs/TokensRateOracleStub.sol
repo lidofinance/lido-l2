@@ -44,4 +44,9 @@ contract TokensRateOracleStub is ITokensRateOracle {
       ) {
         return (0,latestRoundDataAnswer,0,latestRoundDataUpdatedAt,0);
       }
+
+    function updateRate(int256 rate, uint256 updatedAt) external {
+      latestRoundDataAnswer = rate;
+      latestRoundDataUpdatedAt = updatedAt;
+    }
 }

@@ -13,6 +13,7 @@ import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
 import {BridgingManager} from "../BridgingManager.sol";
 import {BridgeableTokens} from "../BridgeableTokens.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
+import {DepositDataCodec} from "./DepositDataCodec.sol";
 
 import {IERC20Wrapable} from "../token/interfaces/IERC20Wrapable.sol";
 import "hardhat/console.sol";
@@ -25,7 +26,8 @@ contract L1ERC20TokenBridge is
     IL1ERC20Bridge,
     BridgingManager,
     BridgeableTokens,
-    CrossDomainEnabled
+    CrossDomainEnabled,
+    DepositDataCodec
 {
     using SafeERC20 for IERC20;
 
@@ -65,16 +67,22 @@ contract L1ERC20TokenBridge is
         if (Address.isContract(msg.sender)) {
             revert ErrorSenderNotEOA();
         }
+        
+        DepositData memory depositData;
+        depositData.rate = IERC20Wrapable(l1TokenNonRebasable).tokensPerStEth();
+        depositData.time = block.timestamp;
+        depositData.data = data_;
 
-        if(l1Token_ == l1TokenRebasable) {
-            bytes memory data = bytes.concat(hex'01', data_);
+        bytes memory encodedDepositData = encodeDepositData(depositData);
+
+        if (isRebasableTokenFlow(l1Token_, l2Token_)) {
             IERC20(l1TokenRebasable).safeTransferFrom(msg.sender, address(this), amount_);
             IERC20(l1TokenRebasable).approve(l1TokenNonRebasable, amount_);
             uint256 wstETHAmount = IERC20Wrapable(l1TokenNonRebasable).wrap(amount_);
-            _initiateERC20Deposit(l1Token_, l2Token_, msg.sender, msg.sender, wstETHAmount, l2Gas_, data);
-        } else {
+            _initiateERC20Deposit(l1TokenRebasable, l2TokenRebasable, msg.sender, msg.sender, wstETHAmount, l2Gas_, encodedDepositData);
+        } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
             IERC20(l1TokenNonRebasable).safeTransferFrom(msg.sender, address(this), amount_);
-            _initiateERC20Deposit(l1Token_, l2Token_, msg.sender, msg.sender, amount_, l2Gas_, data_);
+            _initiateERC20Deposit(l1TokenNonRebasable, l2TokenNonRebasable, msg.sender, msg.sender, amount_, l2Gas_, encodedDepositData);
         }
     }
 
@@ -111,10 +119,10 @@ contract L1ERC20TokenBridge is
         onlySupportedL2Token(l2Token_)
         onlyFromCrossDomainAccount(l2TokenBridge)
     {
-        if (data_.length > 0 && data_[0] == hex'01') {
+        if (isRebasableTokenFlow(l1Token_, l2Token_)) {
             uint256 stETHAmount = IERC20Wrapable(l1TokenNonRebasable).unwrap(amount_);
             IERC20(l1TokenRebasable).safeTransfer(to_, stETHAmount);
-        } else {
+        } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
             IERC20(l1Token_).safeTransfer(to_, amount_);
         }
 

@@ -6,6 +6,7 @@ pragma solidity 0.8.10;
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
 import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
+import {ITokensRateOracle} from "../token/interfaces/ITokensRateOracle.sol";
 import {ERC20Rebasable} from "../token/ERC20Rebasable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Wrapable} from "../token/interfaces/IERC20Wrapable.sol";
@@ -14,6 +15,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {BridgingManager} from "../BridgingManager.sol";
 import {BridgeableTokens} from "../BridgeableTokens.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
+import {DepositDataCodec} from "./DepositDataCodec.sol";
 
 import { console } from "hardhat/console.sol";
 
@@ -27,12 +29,17 @@ contract L2ERC20TokenBridge is
     IL2ERC20Bridge,
     BridgingManager,
     BridgeableTokens,
-    CrossDomainEnabled
+    CrossDomainEnabled,
+    DepositDataCodec
 {
     using SafeERC20 for IERC20;
 
     /// @inheritdoc IL2ERC20Bridge
     address public immutable l1TokenBridge;
+
+    address public immutable tokensRateOracle;
+
+
 
     /// @param messenger_ L2 messenger address being used for cross-chain communications
     /// @param l1TokenBridge_  Address of the corresponding L1 bridge
@@ -46,9 +53,11 @@ contract L2ERC20TokenBridge is
         address l1TokenNonRebasable_,
         address l1TokenRebasable_,
         address l2TokenNonRebasable_,
-        address l2TokenRebasable_
+        address l2TokenRebasable_,
+        address tokensRateOracle_
     ) CrossDomainEnabled(messenger_) BridgeableTokens(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
         l1TokenBridge = l1TokenBridge_;
+        tokensRateOracle = tokensRateOracle_;
     }
 
     /// @inheritdoc IL2ERC20Bridge
@@ -60,10 +69,9 @@ contract L2ERC20TokenBridge is
         bytes calldata data_
     ) external whenWithdrawalsEnabled onlySupportedL2Token(l2Token_) {
         if(l2Token_ == l2TokenRebasable) {
-            bytes memory data = bytes.concat(hex'01', data_);
             uint256 shares = ERC20Rebasable(l2TokenRebasable).getSharesByTokens(amount_);
             ERC20Rebasable(l2TokenRebasable).burnShares(msg.sender, shares);
-            _initiateWithdrawal(l1Token_, l2Token_, msg.sender, msg.sender, shares, l1Gas_, data);
+            _initiateWithdrawal(l1Token_, l2Token_, msg.sender, msg.sender, shares, l1Gas_, data_);
         } else {
             IERC20Bridged(l2TokenNonRebasable).bridgeBurn(msg.sender, amount_);
             _initiateWithdrawal(l1Token_, l2Token_, msg.sender, msg.sender, amount_, l1Gas_, data_);
@@ -96,14 +104,15 @@ contract L2ERC20TokenBridge is
         onlySupportedL2Token(l2Token_)
         onlyFromCrossDomainAccount(l1TokenBridge)
     {
-        if (data_.length > 0 && data_[0] == hex'01') {
+        DepositData memory depositData = decodeDepositData(data_);
+        ITokensRateOracle(tokensRateOracle).updateRate(int256(depositData.rate), depositData.time);
+
+        if (isRebasableTokenFlow(l1Token_, l2Token_)) {
             ERC20Rebasable(l2TokenRebasable).mintShares(to_, amount_);
-            bytes memory data = data_[1:];
-            emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, data);
-        } else {
-            IERC20Bridged(l2Token_).bridgeMint(to_, amount_);
-            emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, data_);
+        } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
+            IERC20Bridged(l2TokenNonRebasable).bridgeMint(to_, amount_);
         }
+        emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, depositData.data);
     }
 
     /// @notice Performs the logic for withdrawals by burning the token and informing

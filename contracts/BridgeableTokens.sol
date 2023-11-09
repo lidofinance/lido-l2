@@ -53,6 +53,14 @@ contract BridgeableTokens {
         _;
     }
 
+    function isRebasableTokenFlow(address l1Token_, address l2Token_) internal view returns (bool) {
+        return l1Token_ == l1TokenRebasable && l2Token_ == l2TokenRebasable;
+    }
+
+    function isNonRebasableTokenFlow(address l1Token_, address l2Token_) internal view returns (bool) {
+        return l1Token_ == l1TokenNonRebasable && l2Token_ == l2TokenNonRebasable;
+    }
+
     error ErrorUnsupportedL1Token();
     error ErrorUnsupportedL2Token();
     error ErrorAccountIsZeroAddress();

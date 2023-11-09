@@ -80,11 +80,15 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       l2TokenRebasable,
       l1CrossDomainMessenger,
       l2ERC20TokenBridge,
+      tokensRateOracle,
+      l1Provider
     } = ctx;
     const { accountA: tokenHolderA } = ctx.accounts;
     const { depositAmount: depositAmountInRebasableTokens } = ctx.common;
-
     const depositAmount = wei.toBigNumber(depositAmountInRebasableTokens).mul(2);
+    const tokensPerStEth = await l1Token.tokensPerStEth();
+    
+    await tokensRateOracle.setLatestRoundDataAnswer(BigNumber.from("1000000000000000000"));
 
     await l1TokenRebasable
       .connect(tokenHolderA.l1Signer)
@@ -108,13 +112,19 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         "0x"
       );
 
+    const blockNumber = await l1Provider.getBlockNumber();
+    const blockTimestamp = (await l1Provider.getBlock(blockNumber)).timestamp;
+    const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 32)
+    const tokensPerStEthStr = ethers.utils.hexZeroPad(tokensPerStEth.toHexString(), 32)
+    const dataToSend = tokensPerStEthStr + blockTimestampStr.slice(2);
+
     await assert.emits(l1ERC20TokenBridge, tx, "ERC20DepositInitiated", [
       l1TokenRebasable.address,
       l2TokenRebasable.address,
       tokenHolderA.address,
       tokenHolderA.address,
       depositAmount,
-      "0x01",
+      dataToSend,
     ]);
 
     const l2DepositCalldata = l2ERC20TokenBridge.interface.encodeFunctionData(
@@ -125,7 +135,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         tokenHolderA.address,
         tokenHolderA.address,
         depositAmount,
-        "0x01",
+        dataToSend,
       ]
     );
 
@@ -152,15 +162,27 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
 
   .step("Finalize deposit on L2", async (ctx) => {
     const {
+      l1Token,
       l1TokenRebasable,
       l2Token,
       l2TokenRebasable,
       l1ERC20TokenBridge,
       l2CrossDomainMessenger,
       l2ERC20TokenBridge,
+      tokensRateOracle,
+      l2Provider
     } = ctx;
     const { depositAmount: depositAmountInRebasableTokens } = ctx.common;
     const depositAmount = wei.toBigNumber(depositAmountInRebasableTokens).mul(2);
+    const tokensPerStEth = await l1Token.tokensPerStEth();
+
+
+    const blockNumber = await l2Provider.getBlockNumber();
+    const blockTimestamp = (await l2Provider.getBlock(blockNumber)).timestamp;
+    const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 32)
+    const tokensPerStEthStr = ethers.utils.hexZeroPad(tokensPerStEth.toHexString(), 32)
+    const dataToReceive = tokensPerStEthStr + blockTimestampStr.slice(2);
+
 
     const { accountA: tokenHolderA, l1CrossDomainMessengerAliased } =
       ctx.accounts;
@@ -186,12 +208,16 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
           tokenHolderA.address,
           tokenHolderA.address,
           depositAmount,
-          "0x01",
+          dataToReceive,
         ]),
         { gasLimit: 5_000_000 }
       );
     
-    console.log("test2");
+
+    const [,tokensRate,,,]  = await tokensRateOracle.latestRoundData();
+    console.log("tokensPerStEth=",tokensPerStEth);
+    console.log("tokensRate=",tokensRate);
+    assert.equalBN(tokensPerStEth, tokensRate);
 
     await assert.emits(l2ERC20TokenBridge, tx, "DepositFinalized", [
       l1TokenRebasable.address,
@@ -250,7 +276,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       tokenHolderA.address,
       tokenHolderA.address,
       withdrawalAmount,
-      "0x01",
+      "0x",
     ]);
     
 
@@ -302,7 +328,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
             tokenHolderA.address,
             tokenHolderA.address,
             withdrawalAmount,
-            "0x01",
+            "0x",
           ]
         ),
         0
@@ -314,7 +340,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       tokenHolderA.address,
       tokenHolderA.address,
       withdrawalAmount,
-      "0x01",
+      "0x",
     ]);
 
     assert.equalBN(

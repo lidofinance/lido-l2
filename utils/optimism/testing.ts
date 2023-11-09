@@ -156,7 +156,7 @@ async function loadDeployedBridges(
   l2SignerOrProvider: SignerOrProvider
 ) {
   return {
-    l1Token: IERC20__factory.connect(
+    l1Token: ERC20WrapableStub__factory.connect(
       testingUtils.env.OPT_L1_TOKEN(),
       l1SignerOrProvider
     ),
@@ -164,6 +164,11 @@ async function loadDeployedBridges(
       testingUtils.env.OPT_L1_TOKEN(),
       l1SignerOrProvider
     ),
+    tokensRateOracle: TokensRateOracleStub__factory.connect(
+      testingUtils.env.OPT_L1_TOKEN(),
+      l1SignerOrProvider
+    ),
+
     ...connectBridgeContracts(
       {
         l2Token: testingUtils.env.OPT_L2_TOKEN(),
@@ -197,7 +202,7 @@ async function deployTestBridge(
   );
 
   const tokensRateOracleStub = await new TokensRateOracleStub__factory(optDeployer).deploy();
-  await tokensRateOracleStub.setLatestRoundDataAnswer(BigNumber.from("2000000000000000000"));
+  await tokensRateOracleStub.setLatestRoundDataAnswer(BigNumber.from("1000000000000000000"));
   await tokensRateOracleStub.setDecimals(18);
   await tokensRateOracleStub.setUpdatedAt(100);
 
@@ -247,6 +252,7 @@ async function deployTestBridge(
   return {
     l1Token: l1Token.connect(ethProvider),
     l1TokenRebasable: l1TokenRebasable.connect(ethProvider),
+    tokensRateOracle: tokensRateOracleStub,
     ...connectBridgeContracts(
       {
         l2Token: optDeployScript.getContractAddress(1),

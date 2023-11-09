@@ -7,6 +7,8 @@ pragma solidity 0.8.10;
 /// @notice Oracle interface for two tokens rate
 interface ITokensRateOracle {
 
+    function updateRate(int256 rate, uint256 updatedAt) external; 
+
     /**
      * @notice represents the number of decimals the oracle responses represent.
      */
@@ -25,4 +27,8 @@ interface ITokensRateOracle {
         uint256 updatedAt,
         uint80 answeredInRound
       );
+}
+
+interface ITokensRateOracleUpdatable {
+    function updateRate(int256 rate, uint256 updatedAt) external; 
 }
