@@ -15,13 +15,12 @@ contract ERC20WrapableStub is IERC20Wrapable, ERC20 {
 
     IERC20 public stETH;
     address public bridge;
-    uint256 public tokensRate; /// wst/st
+    uint256 public tokensRate;
 
     constructor(IERC20 stETH_, string memory name_, string memory symbol_)
         ERC20(name_, symbol_)
     {
         stETH = stETH_;
-        console.log("constructor wrap stETH=",address(stETH));
 
         tokensRate = 2 * 10 **18;
         _mint(msg.sender, 1000000 * 10**18);

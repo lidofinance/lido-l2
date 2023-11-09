@@ -4,8 +4,8 @@ import env from "../../utils/env";
 import { wei } from "../../utils/wei";
 import optimism from "../../utils/optimism";
 import testing, { scenario } from "../../utils/testing";
-import hre, { ethers } from "hardhat";
-import { BigNumber, FixedNumber } from "ethers";
+import { ethers } from "hardhat";
+import { BigNumber } from "ethers";
 
 scenario("Optimism :: Bridging integration test", ctxFactory)
   .after(async (ctx) => {
@@ -71,12 +71,169 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     assert.isTrue(await l2ERC20TokenBridge.isWithdrawalsEnabled());
   })
 
+  .step("L1 -> L2 deposit zero tokens via depositERC20() method", async (ctx) => {
+    const {
+      l1Token,
+      l1TokenRebasable,
+      l1ERC20TokenBridge,
+      l2TokenRebasable,
+      l1CrossDomainMessenger,
+      l2ERC20TokenBridge,
+      tokensRateOracle,
+      l1Provider
+    } = ctx;
+
+    const { accountA: tokenHolderA } = ctx.accounts;
+    const tokensPerStEth = await l1Token.tokensPerStEth();
+    
+    await l1TokenRebasable
+      .connect(tokenHolderA.l1Signer)
+      .approve(l1ERC20TokenBridge.address, 0);
+
+    const tokenHolderABalanceBefore = await l1TokenRebasable.balanceOf(
+      tokenHolderA.address
+    );
+
+    const l1ERC20TokenBridgeBalanceBefore = await l1TokenRebasable.balanceOf(
+      l1ERC20TokenBridge.address
+    );
+
+    const tx = await l1ERC20TokenBridge
+      .connect(tokenHolderA.l1Signer)
+      .depositERC20(
+        l1TokenRebasable.address,
+        l2TokenRebasable.address,
+        0,
+        200_000,
+        "0x"
+      );
+
+    const blockNumber = await l1Provider.getBlockNumber();
+    const blockTimestamp = (await l1Provider.getBlock(blockNumber)).timestamp;
+    const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 32)
+    const tokensPerStEthStr = ethers.utils.hexZeroPad(tokensPerStEth.toHexString(), 32)
+    const dataToSend = ethers.utils.hexConcat([tokensPerStEthStr, blockTimestampStr]);
+
+
+    await assert.emits(l1ERC20TokenBridge, tx, "ERC20DepositInitiated", [
+      l1TokenRebasable.address,
+      l2TokenRebasable.address,
+      tokenHolderA.address,
+      tokenHolderA.address,
+      0,
+      dataToSend,
+    ]);
+
+    const l2DepositCalldata = l2ERC20TokenBridge.interface.encodeFunctionData(
+      "finalizeDeposit",
+      [
+        l1TokenRebasable.address,
+        l2TokenRebasable.address,
+        tokenHolderA.address,
+        tokenHolderA.address,
+        0,
+        dataToSend,
+      ]
+    );
+
+    const messageNonce = await l1CrossDomainMessenger.messageNonce();
+
+    await assert.emits(l1CrossDomainMessenger, tx, "SentMessage", [
+      l2ERC20TokenBridge.address,
+      l1ERC20TokenBridge.address,
+      l2DepositCalldata,
+      messageNonce,
+      200_000,
+    ]);
+
+    assert.equalBN(
+      await l1Token.balanceOf(l1ERC20TokenBridge.address),
+      l1ERC20TokenBridgeBalanceBefore
+    );
+
+    assert.equalBN(
+      await l1TokenRebasable.balanceOf(tokenHolderA.address),
+      tokenHolderABalanceBefore
+    );
+  })
+
+  .step("Finalize deposit zero tokens on L2", async (ctx) => {
+    const {
+      l1Token,
+      l1TokenRebasable,
+      l2TokenRebasable,
+      l1ERC20TokenBridge,
+      l2CrossDomainMessenger,
+      l2ERC20TokenBridge,
+      tokensRateOracle,
+      l2Provider
+    } = ctx;
+
+    const tokensPerStEth = await l1Token.tokensPerStEth();
+    const blockNumber = await l2Provider.getBlockNumber();
+    const blockTimestamp = (await l2Provider.getBlock(blockNumber)).timestamp;
+    const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 32)
+    const tokensPerStEthStr = ethers.utils.hexZeroPad(tokensPerStEth.toHexString(), 32)
+    const dataToReceive = ethers.utils.hexConcat([tokensPerStEthStr, blockTimestampStr]);
+    
+    const { accountA: tokenHolderA, l1CrossDomainMessengerAliased } =
+      ctx.accounts;
+
+
+    const tokenHolderABalanceBefore = await l2TokenRebasable.balanceOf(
+      tokenHolderA.address
+    );
+    
+    const l2TokenRebasableTotalSupplyBefore = await l2TokenRebasable.totalSupply();
+        
+    const tx = await l2CrossDomainMessenger
+      .connect(l1CrossDomainMessengerAliased)
+      .relayMessage(
+        1,
+        l1ERC20TokenBridge.address,
+        l2ERC20TokenBridge.address,
+        0,
+        300_000,
+        l2ERC20TokenBridge.interface.encodeFunctionData("finalizeDeposit", [
+          l1TokenRebasable.address,
+          l2TokenRebasable.address,
+          tokenHolderA.address,
+          tokenHolderA.address,
+          0,
+          dataToReceive,
+        ]),
+        { gasLimit: 5_000_000 }
+      );
+    
+
+    const [,tokensRate,,updatedAt,]  = await tokensRateOracle.latestRoundData();
+    assert.equalBN(tokensPerStEth, tokensRate);
+    assert.equalBN(blockTimestamp, updatedAt);
+
+    await assert.emits(l2ERC20TokenBridge, tx, "DepositFinalized", [
+      l1TokenRebasable.address,
+      l2TokenRebasable.address,
+      tokenHolderA.address,
+      tokenHolderA.address,
+      0,
+      "0x",
+    ]);
+
+    assert.equalBN(
+      await l2TokenRebasable.balanceOf(tokenHolderA.address),
+      tokenHolderABalanceBefore
+    );
+    assert.equalBN(
+      await l2TokenRebasable.totalSupply(),
+      l2TokenRebasableTotalSupplyBefore
+    );
+  })
+
   .step("L1 -> L2 deposit via depositERC20() method", async (ctx) => {
     const {
-      l1Token,          // wstETH
-      l1TokenRebasable, // stETH
+      l1Token,
+      l1TokenRebasable,
       l1ERC20TokenBridge,
-      l2Token,
       l2TokenRebasable,
       l1CrossDomainMessenger,
       l2ERC20TokenBridge,
@@ -116,7 +273,8 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     const blockTimestamp = (await l1Provider.getBlock(blockNumber)).timestamp;
     const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 32)
     const tokensPerStEthStr = ethers.utils.hexZeroPad(tokensPerStEth.toHexString(), 32)
-    const dataToSend = tokensPerStEthStr + blockTimestampStr.slice(2);
+    const dataToSend = ethers.utils.hexConcat([tokensPerStEthStr, blockTimestampStr]);
+
 
     await assert.emits(l1ERC20TokenBridge, tx, "ERC20DepositInitiated", [
       l1TokenRebasable.address,
@@ -164,7 +322,6 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     const {
       l1Token,
       l1TokenRebasable,
-      l2Token,
       l2TokenRebasable,
       l1ERC20TokenBridge,
       l2CrossDomainMessenger,
@@ -181,7 +338,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     const blockTimestamp = (await l2Provider.getBlock(blockNumber)).timestamp;
     const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 32)
     const tokensPerStEthStr = ethers.utils.hexZeroPad(tokensPerStEth.toHexString(), 32)
-    const dataToReceive = tokensPerStEthStr + blockTimestampStr.slice(2);
+    const dataToReceive = ethers.utils.hexConcat([tokensPerStEthStr, blockTimestampStr]);
 
 
     const { accountA: tokenHolderA, l1CrossDomainMessengerAliased } =
@@ -214,10 +371,9 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       );
     
 
-    const [,tokensRate,,,]  = await tokensRateOracle.latestRoundData();
-    console.log("tokensPerStEth=",tokensPerStEth);
-    console.log("tokensRate=",tokensRate);
+    const [,tokensRate,,updatedAt,]  = await tokensRateOracle.latestRoundData();
     assert.equalBN(tokensPerStEth, tokensRate);
+    assert.equalBN(blockTimestamp, updatedAt);
 
     await assert.emits(l2ERC20TokenBridge, tx, "DepositFinalized", [
       l1TokenRebasable.address,
@@ -241,9 +397,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
   .step("L2 -> L1 withdrawal via withdraw()", async (ctx) => {
     const { accountA: tokenHolderA } = ctx.accounts;
     const { withdrawalAmount: withdrawalAmountInRebasableTokens } = ctx.common;
-    const { 
-        l1Token,
-        l2Token,
+    const {
         l1TokenRebasable,
         l2TokenRebasable,
         l2ERC20TokenBridge
@@ -263,7 +417,6 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     const tx = await l2ERC20TokenBridge
       .connect(tokenHolderA.l2Signer)
       .withdraw(
-        l1TokenRebasable.address,
         l2TokenRebasable.address,
         withdrawalAmountInRebasableTokens,
         0,
@@ -278,7 +431,6 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       withdrawalAmount,
       "0x",
     ]);
-    
 
     assert.equalBN(
       await l2TokenRebasable.balanceOf(tokenHolderA.address),
@@ -292,7 +444,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
 
   .step("Finalize withdrawal on L1", async (ctx) => {
     const {
-        l1Token,
+      l1Token,
       l1TokenRebasable,
       l1CrossDomainMessenger,
       l1ERC20TokenBridge,
@@ -353,6 +505,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       tokenHolderABalanceBefore.add(withdrawalAmountInRebasableTokens)
     );
   })
+
 
 //   .step("L1 -> L2 deposit via depositERC20To()", async (ctx) => {
 //     const {

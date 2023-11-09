@@ -46,7 +46,6 @@ interface IL2ERC20Bridge {
     ///     solely as a convenience for external contracts. Aside from enforcing a maximum
     ///     length, these contracts provide no guarantees about its content.
     function withdraw(
-        address l1Token_,
         address l2Token_,
         uint256 amount_,
         uint32 l1Gas_,

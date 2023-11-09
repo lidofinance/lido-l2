@@ -27,8 +27,8 @@ contract DepositDataCodec {
         }
         
         DepositData memory depositData;
-        depositData.rate = uint256(bytes32(buffer[0:31]));
-        depositData.time = uint256(bytes32(buffer[32:63]));
+        depositData.rate = uint256(bytes32(buffer[0:32]));
+        depositData.time = uint256(bytes32(buffer[32:64]));
         depositData.data = buffer[64:];
 
         return depositData;
