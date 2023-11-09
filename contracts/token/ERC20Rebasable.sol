@@ -75,7 +75,7 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         return sharesAmount;
     }
 
-    function tokensPerStEth() external view returns (uint256) {
+    function tokensPerStEth() external pure returns (uint256) {
         return 0;
     }
 

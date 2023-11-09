@@ -129,11 +129,12 @@ contract L1ERC20TokenBridge is
         uint32 l2Gas_,
         bytes calldata data_
     ) internal {
-        
-        DepositData memory depositData;
-        depositData.rate = IERC20Wrapable(l1TokenNonRebasable).tokensPerStEth();
-        depositData.time = block.timestamp;
-        depositData.data = data_;
+
+        DepositData memory depositData = DepositData({
+            rate: IERC20Wrapable(l1TokenNonRebasable).tokensPerStEth(),
+            time: block.timestamp,
+            data: data_
+        });
 
         bytes memory encodedDepositData = encodeDepositData(depositData);
 
