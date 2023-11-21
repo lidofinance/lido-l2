@@ -97,6 +97,7 @@ const config: HardhatUserConfig = {
     },
     mnt_goerli_fork: {
       url: "http://localhost:9545",
+
     },
   },
   gasReporter: {
@@ -110,8 +111,19 @@ const config: HardhatUserConfig = {
       arbitrumGoerli: env.string("ETHERSCAN_API_KEY_ARB", ""),
       arbitrumOne: env.string("ETHERSCAN_API_KEY_ARB", ""),
       optimisticEthereum: env.string("ETHERSCAN_API_KEY_OPT", ""),
-      optimisticGoerli: env.string("ETHERSCAN_API_KEY_OPT", ""),
-    },
+      mnt_goerli: env.string("ETHERSCAN_API_KEY_MNT", ""),
+      mnt_mainnet: env.string("ETHERSCAN_API_KEY_MNT", ""),
+      },
+      customChains: [
+      {
+        network: "mnt_mainnet",
+        chainId: 5000,
+        urls: {
+          apiURL: "https://explorer.mantle.xyz/api",
+          browserURL: "https://explorer.mantle.xyz/api?module=contract&action=verify"
+        }
+      }
+    ]
   },
   typechain: {
     externalArtifacts: [

@@ -4,7 +4,7 @@ import {
   L2ERC20TokenBridge__factory,
   OssifiableProxy__factory,
   MantleBridgeExecutor__factory,
-  ERC20Bridged__factory,
+  ERC20BridgedPermit__factory,
 } from "../../typechain";
 import { wei } from "../../utils/wei";
 import mantle from "../../utils/mantle";
@@ -248,7 +248,7 @@ async function ctxFactory() {
 
   await l2DeployScript.run();
 
-  const l2Token = ERC20Bridged__factory.connect(
+  const l2Token = ERC20BridgedPermit__factory.connect(
     l2DeployScript.getContractAddress(1),
     l2Deployer
   );

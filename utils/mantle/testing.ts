@@ -7,7 +7,7 @@ import {
   IERC20__factory,
   L1ERC20TokenBridge,
   L2ERC20TokenBridge,
-  ERC20Bridged__factory,
+  ERC20BridgedPermit__factory,
   ERC20BridgedStub__factory,
   L1ERC20TokenBridge__factory,
   L2ERC20TokenBridge__factory,
@@ -254,7 +254,7 @@ function connectBridgeContracts(
     addresses.l2ERC20TokenBridge,
     mntSignerOrProvider
   );
-  const l2Token = ERC20Bridged__factory.connect(
+  const l2Token = ERC20BridgedPermit__factory.connect(
     addresses.l2Token,
     mntSignerOrProvider
   );

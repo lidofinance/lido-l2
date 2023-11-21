@@ -126,8 +126,8 @@ async function ctxFactory() {
   const testingSetup = await mantle.testing(networkName).getE2ETestSetup();
 
   return {
-    depositAmount: wei`0.0025 ether`,
-    withdrawalAmount: wei`0.0025 ether`,
+    depositAmount: wei`0.000025 ether`,
+    withdrawalAmount: wei`0.0000025 ether`,
     l1Tester: testingSetup.l1Tester,
     l1Token: testingSetup.l1Token,
     l2Token: testingSetup.l2Token,
