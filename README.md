@@ -19,7 +19,7 @@ cd ./lido-l2
 2. Install dependencies:
 
 ```bash
-npm run install
+npm install
 ```
 
 3. Compile the contracts:
