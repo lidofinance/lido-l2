@@ -1,7 +1,7 @@
 import { assert } from "chai";
 import { Overrides, Wallet } from "ethers";
 import {
-  ERC20Bridged__factory,
+  ERC20BridgedPermit__factory,
   IERC20Metadata__factory,
   L1ERC20TokenBridge__factory,
   L2ERC20TokenBridge__factory,
@@ -97,7 +97,7 @@ export default function deployment(
         options?.logger
       )
         .addStep({
-          factory: ERC20Bridged__factory,
+          factory: ERC20BridgedPermit__factory,
           args: [
             l2TokenName,
             l2TokenSymbol,
@@ -113,7 +113,7 @@ export default function deployment(
           args: [
             expectedL2TokenImplAddress,
             l2Params.admins.proxy,
-            ERC20Bridged__factory.createInterface().encodeFunctionData(
+            ERC20BridgedPermit__factory.createInterface().encodeFunctionData(
               "initialize",
               [l2TokenName, l2TokenSymbol]
             ),

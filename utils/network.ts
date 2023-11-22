@@ -163,8 +163,8 @@ function getBlockExplorerBaseUrlByChainId(chainId: number) {
     // forked node
     31337: "https://etherscan.io",
     // mantle
-    5000: "https://rpc.mantle.xyz",
-    5001: "https://blockscout.com/mantle/goerli"
+    5000: "https://explorer.mantle.xyz/",
+    5001: "https://explorer.testnet.mantle.xyz/"
   };
   return baseUrlByChainId[chainId];
 }
