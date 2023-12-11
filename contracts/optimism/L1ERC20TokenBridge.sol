@@ -18,7 +18,11 @@ import {DepositDataCodec} from "./DepositDataCodec.sol";
 import {IERC20Wrapable} from "../token/interfaces/IERC20Wrapable.sol";
 import "hardhat/console.sol";
 
-/// @author psirex
+// Check if Optimism changed API for bridges. They could depricate methods.
+// Optimise gas usage with data transfer. Maybe cache rate and see if it changed.
+ 
+
+/// @author psirex, kovalgek
 /// @notice The L1 ERC20 token bridge locks bridged tokens on the L1 side, sends deposit messages
 ///     on the L2 side, and finalizes token withdrawals from L2. Additionally, adds the methods for
 ///     bridging management: enabling and disabling withdrawals/deposits
@@ -49,6 +53,11 @@ contract L1ERC20TokenBridge is
         address l2TokenRebasable_
     ) CrossDomainEnabled(messenger_) BridgeableTokens(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
         l2TokenBridge = l2TokenBridge_;
+    }
+
+    function pushTokenRate(address to_, uint32 l2Gas_) external {
+        bytes memory empty = new bytes(0);
+        _depositERC20To(l1TokenRebasable, l2TokenRebasable, to_, 0, l2Gas_, empty);
     }
 
     /// @inheritdoc IL1ERC20Bridge
@@ -127,30 +136,36 @@ contract L1ERC20TokenBridge is
         address to_,
         uint256 amount_,
         uint32 l2Gas_,
-        bytes calldata data_
+        bytes memory data_
     ) internal {
 
-        DepositData memory depositData = DepositData({
-            rate: IERC20Wrapable(l1TokenNonRebasable).tokensPerStEth(),
-            time: block.timestamp,
-            data: data_
-        });
-
-        bytes memory encodedDepositData = encodeDepositData(depositData);
-
-        if (amount_ == 0) {
-            _initiateERC20Deposit(l1Token_, l2Token_, msg.sender, to_, amount_, l2Gas_, encodedDepositData);
-            return;
-        }
-
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
+            console.log("isRebasableTokenFlow");
+            DepositData memory depositData = DepositData({
+                rate: IERC20Wrapable(l1TokenNonRebasable).tokensPerStEth(), // replace by stETHPerToken
+                time: block.timestamp,
+                data: data_
+            });
+
+            bytes memory encodedDepositData = encodeDepositData(depositData);
+
+            // probably need to add a new method for amount zero
+            if (amount_ == 0) {
+                _initiateERC20Deposit(l1Token_, l2Token_, msg.sender, to_, amount_, l2Gas_, encodedDepositData);
+                return;
+            }
+            
+            // maybe loosing 1 wei for stETH. Check another method
             IERC20(l1TokenRebasable).safeTransferFrom(msg.sender, address(this), amount_);
             IERC20(l1TokenRebasable).approve(l1TokenNonRebasable, amount_);
+            // when 1 wei wasnt't transfer, can this wrap be failed?
             uint256 wstETHAmount = IERC20Wrapable(l1TokenNonRebasable).wrap(amount_);
             _initiateERC20Deposit(l1TokenRebasable, l2TokenRebasable, msg.sender, to_, wstETHAmount, l2Gas_, encodedDepositData);
         } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
-            IERC20(l1TokenNonRebasable).safeTransferFrom(msg.sender, address(this), amount_);
-            _initiateERC20Deposit(l1TokenNonRebasable, l2TokenNonRebasable, msg.sender, to_, amount_, l2Gas_, encodedDepositData);
+            console.log("isNonRebasableTokenFlow");
+
+            // IERC20(l1TokenNonRebasable).safeTransferFrom(msg.sender, address(this), amount_);
+            _initiateERC20Deposit(l1TokenNonRebasable, l2TokenNonRebasable, msg.sender, to_, amount_, l2Gas_, data_);
         }
     }
 
@@ -182,7 +197,7 @@ contract L1ERC20TokenBridge is
             amount_,
             data_
         );
-
+        console.logBytes(data_);
         sendCrossDomainMessage(l2TokenBridge, l2Gas_, message);
 
         emit ERC20DepositInitiated(

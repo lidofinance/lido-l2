@@ -87,15 +87,13 @@ contract L2ERC20TokenBridge is
         bytes calldata data_
     ) internal {
         if (l2Token_ == l2TokenRebasable) {
-
+            // maybe loosing 1 wei her as well
             uint256 shares = ERC20Rebasable(l2TokenRebasable).getSharesByTokens(amount_);
             ERC20Rebasable(l2TokenRebasable).burnShares(msg.sender, shares);
             _initiateWithdrawal(l1TokenRebasable, l2TokenRebasable, msg.sender, to_, shares, l1Gas_, data_);
-
         } else if (l2Token_ == l2TokenNonRebasable) {
-            
             IERC20Bridged(l2TokenNonRebasable).bridgeBurn(msg.sender, amount_);
-            _initiateWithdrawal(l2TokenNonRebasable, l2TokenNonRebasable, msg.sender, to_, amount_, l1Gas_, data_);
+            _initiateWithdrawal(l1TokenNonRebasable, l2TokenNonRebasable, msg.sender, to_, amount_, l1Gas_, data_);
         }
     }
 

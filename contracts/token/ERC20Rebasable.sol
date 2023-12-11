@@ -79,10 +79,12 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         return 0;
     }
 
+    // allow call only bridge
     function mintShares(address account_, uint256 amount_) external returns (uint256) {
         return _mintShares(account_, amount_);
     }
 
+    // allow call only bridge
     function burnShares(address account_, uint256 amount_) external {
         _burnShares(account_, amount_);
     }
@@ -248,12 +250,7 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
     }
 
     function _getTokensByShares(uint256 sharesAmount_) internal view returns (uint256) {
-        console.log("_getTokensByShares");
         (uint256 tokensRate, uint256 decimals)  = _getTokensRateAndDecimal();
-        console.log("sharesAmount_=",sharesAmount_);
-        console.log("decimals=",decimals);
-        console.log("tokensRate=",tokensRate);
-
         return (sharesAmount_ * (10 ** decimals)) / tokensRate;
     }
 

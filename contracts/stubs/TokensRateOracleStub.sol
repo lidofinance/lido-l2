@@ -46,6 +46,7 @@ contract TokensRateOracleStub is ITokensRateOracle {
       }
 
     function updateRate(int256 rate, uint256 updatedAt) external {
+      // check timestamp not late as current one.
       latestRoundDataAnswer = rate;
       latestRoundDataUpdatedAt = updatedAt;
     }
