@@ -11,7 +11,7 @@ import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
 
 import {BridgingManager} from "../BridgingManager.sol";
-import {BridgeableTokens} from "../BridgeableTokens.sol";
+import {BridgeableTokensOptimism} from "./BridgeableTokensOptimism.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {DepositDataCodec} from "./DepositDataCodec.sol";
 
@@ -21,7 +21,6 @@ import "hardhat/console.sol";
 // Check if Optimism changed API for bridges. They could depricate methods.
 // Optimise gas usage with data transfer. Maybe cache rate and see if it changed.
  
-
 /// @author psirex, kovalgek
 /// @notice The L1 ERC20 token bridge locks bridged tokens on the L1 side, sends deposit messages
 ///     on the L2 side, and finalizes token withdrawals from L2. Additionally, adds the methods for
@@ -29,7 +28,7 @@ import "hardhat/console.sol";
 contract L1ERC20TokenBridge is
     IL1ERC20Bridge,
     BridgingManager,
-    BridgeableTokens,
+    BridgeableTokensOptimism,
     CrossDomainEnabled,
     DepositDataCodec
 {
@@ -51,7 +50,7 @@ contract L1ERC20TokenBridge is
         address l1TokenRebasable_,
         address l2TokenNonRebasable_,
         address l2TokenRebasable_
-    ) CrossDomainEnabled(messenger_) BridgeableTokens(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
+    ) CrossDomainEnabled(messenger_) BridgeableTokensOptimism(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
         l2TokenBridge = l2TokenBridge_;
     }
 
@@ -138,9 +137,8 @@ contract L1ERC20TokenBridge is
         uint32 l2Gas_,
         bytes memory data_
     ) internal {
-
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
-            console.log("isRebasableTokenFlow");
+
             DepositData memory depositData = DepositData({
                 rate: IERC20Wrapable(l1TokenNonRebasable).tokensPerStEth(), // replace by stETHPerToken
                 time: block.timestamp,
@@ -158,13 +156,13 @@ contract L1ERC20TokenBridge is
             // maybe loosing 1 wei for stETH. Check another method
             IERC20(l1TokenRebasable).safeTransferFrom(msg.sender, address(this), amount_);
             IERC20(l1TokenRebasable).approve(l1TokenNonRebasable, amount_);
+
             // when 1 wei wasnt't transfer, can this wrap be failed?
             uint256 wstETHAmount = IERC20Wrapable(l1TokenNonRebasable).wrap(amount_);
             _initiateERC20Deposit(l1TokenRebasable, l2TokenRebasable, msg.sender, to_, wstETHAmount, l2Gas_, encodedDepositData);
-        } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
-            console.log("isNonRebasableTokenFlow");
 
-            // IERC20(l1TokenNonRebasable).safeTransferFrom(msg.sender, address(this), amount_);
+        } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
+            IERC20(l1TokenNonRebasable).safeTransferFrom(msg.sender, address(this), amount_);
             _initiateERC20Deposit(l1TokenNonRebasable, l2TokenNonRebasable, msg.sender, to_, amount_, l2Gas_, data_);
         }
     }
@@ -197,7 +195,7 @@ contract L1ERC20TokenBridge is
             amount_,
             data_
         );
-        console.logBytes(data_);
+        
         sendCrossDomainMessage(l2TokenBridge, l2Gas_, message);
 
         emit ERC20DepositInitiated(

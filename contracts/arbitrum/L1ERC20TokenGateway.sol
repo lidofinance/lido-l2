@@ -32,17 +32,13 @@ contract L1ERC20TokenGateway is
         address router_,
         address counterpartGateway_,
         address l1Token_,
-        address l1TokenRebasable_,
-        address l2Token_,
-        address l2TokenRebasable_
+        address l2Token_
     )
         InterchainERC20TokenGateway(
             router_,
             counterpartGateway_,
             l1Token_,
-            l1TokenRebasable_,
-            l2Token_,
-            l2TokenRebasable_
+            l2Token_
         )
         L1CrossDomainEnabled(inbox_)
     {}
@@ -82,7 +78,7 @@ contract L1ERC20TokenGateway is
             })
         );
 
-        emit DepositInitiated(l1TokenNonRebasable, from, to_, retryableTicketId, amount_);
+        emit DepositInitiated(l1Token, from, to_, retryableTicketId, amount_);
 
         return abi.encode(retryableTicketId);
     }
@@ -117,7 +113,7 @@ contract L1ERC20TokenGateway is
             sendCrossDomainMessage(
                 from_,
                 counterpartGateway,
-                getOutboundCalldata(l1TokenNonRebasable, from_, to_, amount_, ""),
+                getOutboundCalldata(l1Token, from_, to_, amount_, ""),
                 messageOptions
             );
     }

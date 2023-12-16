@@ -456,7 +456,7 @@ unit("Optimism :: L1ERC20TokenBridge", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const [deployer, l2TokenBridgeEOA, stranger, recipient] =
+  const [deployer, l2TokenBridgeEOA, stranger, recipient, rebasableToken] =
     await hre.ethers.getSigners();
 
   const l1MessengerStub = await new CrossDomainMessengerStub__factory(
@@ -488,7 +488,9 @@ async function ctxFactory() {
     l1MessengerStub.address,
     l2TokenBridgeEOA.address,
     l1TokenStub.address,
-    l2TokenStub.address
+    rebasableToken.address,
+    l2TokenStub.address,
+    rebasableToken.address
   );
 
   const l1TokenBridgeProxy = await new OssifiableProxy__factory(
@@ -534,6 +536,8 @@ async function ctxFactory() {
     stubs: {
       l1Token: l1TokenStub,
       l2Token: l2TokenStub,
+      l1TokenRebasable: l1TokenStub,
+      l2TokenRebasable: l2TokenStub,
       l1Messenger: l1MessengerStub,
     },
     l1TokenBridge,

@@ -13,7 +13,7 @@ import {IERC20Wrapable} from "../token/interfaces/IERC20Wrapable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {BridgingManager} from "../BridgingManager.sol";
-import {BridgeableTokens} from "../BridgeableTokens.sol";
+import {BridgeableTokensOptimism} from "./BridgeableTokensOptimism.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {DepositDataCodec} from "./DepositDataCodec.sol";
 
@@ -28,7 +28,7 @@ import { console } from "hardhat/console.sol";
 contract L2ERC20TokenBridge is
     IL2ERC20Bridge,
     BridgingManager,
-    BridgeableTokens,
+    BridgeableTokensOptimism,
     CrossDomainEnabled,
     DepositDataCodec
 {
@@ -53,7 +53,7 @@ contract L2ERC20TokenBridge is
         address l2TokenNonRebasable_,
         address l2TokenRebasable_,
         address tokensRateOracle_
-    ) CrossDomainEnabled(messenger_) BridgeableTokens(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
+    ) CrossDomainEnabled(messenger_) BridgeableTokensOptimism(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
         l1TokenBridge = l1TokenBridge_;
         tokensRateOracle = tokensRateOracle_;
     }
@@ -112,16 +112,15 @@ contract L2ERC20TokenBridge is
         onlySupportedL2Token(l2Token_)
         onlyFromCrossDomainAccount(l1TokenBridge)
     {
-        DepositData memory depositData = decodeDepositData(data_);
-        ITokensRateOracle(tokensRateOracle).updateRate(int256(depositData.rate), depositData.time);
-
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
+            DepositData memory depositData = decodeDepositData(data_);
+            ITokensRateOracle(tokensRateOracle).updateRate(int256(depositData.rate), depositData.time);
             ERC20Rebasable(l2TokenRebasable).mintShares(to_, amount_);
+            emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, depositData.data);
         } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
             IERC20Bridged(l2TokenNonRebasable).bridgeMint(to_, amount_);
+            emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, data_);
         }
-        
-        emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, depositData.data);
     }
 
     /// @notice Performs the logic for withdrawals by burning the token and informing
