@@ -3,7 +3,7 @@ import { assert } from "chai";
 import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 
-import { ERC20Stub__factory, ERC20Rebasable__factory, TokensRateOracleStub__factory, OssifiableProxy__factory } from "../../typechain";
+import { ERC20Stub__factory, ERC20Rebasable__factory, TokenRateOracleStub__factory, OssifiableProxy__factory } from "../../typechain";
 import { BigNumber } from "ethers";
 
 
@@ -241,7 +241,7 @@ async function ctxFactory() {
 
     const wrappedTokenStub = await new ERC20Stub__factory(deployer).deploy(); 
 
-    const tokensRateOracleStub = await new TokensRateOracleStub__factory(deployer).deploy(); 
+    const tokensRateOracleStub = await new TokenRateOracleStub__factory(deployer).deploy(); 
 
     const rebasableTokenImpl = await new ERC20Rebasable__factory(deployer).deploy(
       wrappedTokenStub.address,

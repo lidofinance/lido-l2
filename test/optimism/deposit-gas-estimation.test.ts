@@ -142,8 +142,6 @@ async function ctxFactory() {
   const l1Snapshot = await l1Provider.send("evm_snapshot", []);
   const l2Snapshot = await l2Provider.send("evm_snapshot", []);
 
-  // await optimism.testing(networkName).stubL1CrossChainMessengerContract();
-
   const accountA = testing.accounts.accountA(l1Provider, l2Provider);
   const accountB = testing.accounts.accountB(l1Provider, l2Provider);
 

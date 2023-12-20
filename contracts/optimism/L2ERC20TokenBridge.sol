@@ -6,10 +6,10 @@ pragma solidity 0.8.10;
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
 import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
-import {ITokensRateOracle} from "../token/interfaces/ITokensRateOracle.sol";
+import {ITokenRateOracle} from "../token/interfaces/ITokenRateOracle.sol";
 import {ERC20Rebasable} from "../token/ERC20Rebasable.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Wrapable} from "../token/interfaces/IERC20Wrapable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {BridgingManager} from "../BridgingManager.sol";
@@ -37,8 +37,6 @@ contract L2ERC20TokenBridge is
     /// @inheritdoc IL2ERC20Bridge
     address public immutable l1TokenBridge;
 
-    address public immutable tokensRateOracle;
-
     /// @param messenger_ L2 messenger address being used for cross-chain communications
     /// @param l1TokenBridge_  Address of the corresponding L1 bridge
     /// @param l1TokenNonRebasable_ Address of the bridged token in the L1 chain
@@ -51,11 +49,9 @@ contract L2ERC20TokenBridge is
         address l1TokenNonRebasable_,
         address l1TokenRebasable_,
         address l2TokenNonRebasable_,
-        address l2TokenRebasable_,
-        address tokensRateOracle_
+        address l2TokenRebasable_
     ) CrossDomainEnabled(messenger_) BridgeableTokensOptimism(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
         l1TokenBridge = l1TokenBridge_;
-        tokensRateOracle = tokensRateOracle_;
     }
 
     /// @inheritdoc IL2ERC20Bridge
@@ -114,7 +110,8 @@ contract L2ERC20TokenBridge is
     {
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
             DepositData memory depositData = decodeDepositData(data_);
-            ITokensRateOracle(tokensRateOracle).updateRate(int256(depositData.rate), depositData.time);
+            ITokenRateOracle tokensRateOracle = ERC20Rebasable(l2TokenRebasable).tokensRateOracle();
+            tokensRateOracle.updateRate(int256(depositData.rate), depositData.time);
             ERC20Rebasable(l2TokenRebasable).mintShares(to_, amount_);
             emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, depositData.data);
         } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {

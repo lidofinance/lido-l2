@@ -3,9 +3,9 @@
 
 pragma solidity 0.8.10;
 
-import {ITokensRateOracle} from "../token/interfaces/ITokensRateOracle.sol";
+import {ITokenRateOracle} from "../token/interfaces/ITokenRateOracle.sol";
 
-contract TokensRateOracleStub is ITokensRateOracle {
+contract TokenRateOracleStub is ITokenRateOracle {
 
     uint8 public _decimals;
 
@@ -44,6 +44,10 @@ contract TokensRateOracleStub is ITokensRateOracle {
       ) {
         return (0,latestRoundDataAnswer,0,latestRoundDataUpdatedAt,0);
       }
+
+    function latestAnswer() external view returns (int256) {
+        return latestRoundDataAnswer;
+    }
 
     function updateRate(int256 rate, uint256 updatedAt) external {
       // check timestamp not late as current one.

@@ -5,7 +5,7 @@ pragma solidity 0.8.10;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Wrapable} from "./interfaces/IERC20Wrapable.sol";
-import {ITokensRateOracle} from "./interfaces/ITokensRateOracle.sol";
+import {ITokenRateOracle} from "./interfaces/ITokenRateOracle.sol";
 import {ERC20Metadata} from "./ERC20Metadata.sol";
 import { console } from "hardhat/console.sol";
 
@@ -25,7 +25,7 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
     error ErrorDecreasedAllowanceBelowZero();
 
     IERC20 public immutable wrappedToken;
-    ITokensRateOracle public immutable tokensRateOracle;
+    ITokenRateOracle public immutable tokensRateOracle;
 
     /// @param wrappedToken_ address of the ERC20 token to wrap
     /// @param tokensRateOracle_ address of oracle that returns tokens rate
@@ -33,14 +33,14 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
     /// @param symbol_ The symbol of the token
     /// @param decimals_ The decimals places of the token
     constructor(
-        IERC20 wrappedToken_,
-        ITokensRateOracle tokensRateOracle_,
+        address wrappedToken_,
+        address tokensRateOracle_,
         string memory name_,
         string memory symbol_,
         uint8 decimals_
     ) ERC20Metadata(name_, symbol_, decimals_) {
-        wrappedToken = wrappedToken_;
-        tokensRateOracle = tokensRateOracle_;
+        wrappedToken = IERC20(wrappedToken_);
+        tokensRateOracle = ITokenRateOracle(tokensRateOracle_);
     }
 
     /// @notice Sets the name and the symbol of the tokens if they both are empty
