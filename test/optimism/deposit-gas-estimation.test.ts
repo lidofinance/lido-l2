@@ -79,7 +79,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     } = ctx;
 
     const { accountA: tokenHolderA } = ctx.accounts;
-    const tokensPerStEth = await l1Token.tokensPerStEth();
+    const stETHPerToken = await l1Token.stETHPerToken();
     
     await l1TokenRebasable
       .connect(tokenHolderA.l1Signer)

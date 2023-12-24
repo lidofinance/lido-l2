@@ -219,7 +219,7 @@ async function ctxFactory() {
     "TTR"
   );
 
-  const tokensRateOracleStub = await new TokenRateOracle__factory(l2Deployer).deploy();
+  const tokenRateOracleStub = await new TokenRateOracle__factory(l2Deployer).deploy();
 
   const optAddresses = optimism.addresses(networkName);
 
@@ -243,7 +243,7 @@ async function ctxFactory() {
     .erc20TokenBridgeDeployScript(
       l1Token.address,
       l1TokenRebasable.address,
-      tokensRateOracleStub.address,
+      tokenRateOracleStub.address,
       {
         deployer: l1Deployer,
         admins: {

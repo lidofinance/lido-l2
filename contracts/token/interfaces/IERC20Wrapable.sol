@@ -34,5 +34,5 @@ interface IERC20Wrapable {
      * @notice Get amount of wstETH for a one stETH
      * @return Amount of wstETH for a 1 stETH
      */
-    function tokensPerStEth() external view returns (uint256);
+    function stETHPerToken() external view returns (uint256);
 }

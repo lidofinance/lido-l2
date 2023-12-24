@@ -26,5 +26,5 @@ interface ITokenRateOracle {
     function decimals() external view returns (uint8);
 
     /// @notice Updates token rate.
-    function updateRate(int256 rate, uint256 rateL1Timestamp) external;
+    function updateRate(int256 tokenRate_, uint256 rateL1Timestamp_, uint256 lastProcessingRefSlot_) external;
 }

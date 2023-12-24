@@ -71,7 +71,7 @@ contract L1ERC20TokenBridge is
         whenDepositsEnabled
         onlySupportedL1Token(l1Token_)
         onlySupportedL2Token(l2Token_)
-    {        
+    {
         if (Address.isContract(msg.sender)) {
             revert ErrorSenderNotEOA();
         }
@@ -140,7 +140,7 @@ contract L1ERC20TokenBridge is
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
 
             DepositData memory depositData = DepositData({
-                rate: IERC20Wrapable(l1TokenNonRebasable).tokensPerStEth(), // replace by stETHPerToken
+                rate: IERC20Wrapable(l1TokenNonRebasable).stETHPerToken(),
                 time: block.timestamp,
                 data: data_
             });

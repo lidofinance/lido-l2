@@ -10,7 +10,7 @@ import {
   ERC20Bridged__factory,
   ERC20BridgedStub__factory,
   ERC20WrapableStub__factory,
-  TokensRateOracleStub__factory,
+  TokenRateOracleStub__factory,
   L1ERC20TokenBridge__factory,
   L2ERC20TokenBridge__factory,
   CrossDomainMessengerStub__factory,
@@ -164,7 +164,7 @@ async function loadDeployedBridges(
       testingUtils.env.OPT_L1_TOKEN(),
       l1SignerOrProvider
     ),
-    tokensRateOracle: TokensRateOracleStub__factory.connect(
+    tokenRateOracle: TokenRateOracleStub__factory.connect(
       testingUtils.env.OPT_L1_TOKEN(),
       l1SignerOrProvider
     ),
@@ -201,17 +201,17 @@ async function deployTestBridge(
     "TT"
   );
 
-  const tokensRateOracleStub = await new TokensRateOracleStub__factory(optDeployer).deploy();
-  await tokensRateOracleStub.setLatestRoundDataAnswer(BigNumber.from("1000000000000000000"));
-  await tokensRateOracleStub.setDecimals(18);
-  await tokensRateOracleStub.setUpdatedAt(100);
+  const tokenRateOracleStub = await new TokenRateOracleStub__factory(optDeployer).deploy();
+  await tokenRateOracleStub.setLatestRoundDataAnswer(BigNumber.from("1000000000000000000"));
+  await tokenRateOracleStub.setDecimals(18);
+  await tokenRateOracleStub.setUpdatedAt(100);
 
   const [ethDeployScript, optDeployScript] = await deployment(
     networkName
   ).erc20TokenBridgeDeployScript(
     l1Token.address,
     l1TokenRebasable.address,
-    tokensRateOracleStub.address,
+    tokenRateOracleStub.address,
     {
       deployer: ethDeployer,
       admins: { proxy: ethDeployer.address, bridge: ethDeployer.address },
@@ -252,7 +252,7 @@ async function deployTestBridge(
   return {
     l1Token: l1Token.connect(ethProvider),
     l1TokenRebasable: l1TokenRebasable.connect(ethProvider),
-    tokensRateOracle: tokensRateOracleStub,
+    tokenRateOracle: tokenRateOracleStub,
     ...connectBridgeContracts(
       {
         l2Token: optDeployScript.getContractAddress(1),

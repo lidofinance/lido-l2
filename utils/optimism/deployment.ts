@@ -38,7 +38,7 @@ export default function deployment(
     async erc20TokenBridgeDeployScript(
       l1Token: string,
       l1TokenRebasable: string,
-      tokensRateOracleStub: string,
+      tokenRateOracleStub: string,
       l1Params: OptL1DeployScriptParams,
       l2Params: OptL2DeployScriptParams,
     ) {
@@ -141,7 +141,7 @@ export default function deployment(
           factory: ERC20Rebasable__factory,
           args: [
             expectedL2TokenProxyAddress,
-            tokensRateOracleStub,
+            tokenRateOracleStub,
             l2TokenRebasableName,
             l2TokenRebasableSymbol,
             decimals,
@@ -174,7 +174,6 @@ export default function deployment(
             l1TokenRebasable,
             expectedL2TokenProxyAddress,
             expectedL2TokenRebasableProxyAddress,
-            tokensRateOracleStub,
             options?.overrides,
           ],
           afterDeploy: (c) =>

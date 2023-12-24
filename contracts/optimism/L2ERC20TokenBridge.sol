@@ -110,8 +110,8 @@ contract L2ERC20TokenBridge is
     {
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
             DepositData memory depositData = decodeDepositData(data_);
-            ITokenRateOracle tokensRateOracle = ERC20Rebasable(l2TokenRebasable).tokensRateOracle();
-            tokensRateOracle.updateRate(int256(depositData.rate), depositData.time);
+            ITokenRateOracle tokenRateOracle = ERC20Rebasable(l2TokenRebasable).tokenRateOracle();
+            tokenRateOracle.updateRate(int256(depositData.rate), depositData.time, 0);
             ERC20Rebasable(l2TokenRebasable).mintShares(to_, amount_);
             emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, depositData.data);
         } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {

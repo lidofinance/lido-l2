@@ -49,9 +49,9 @@ contract TokenRateOracleStub is ITokenRateOracle {
         return latestRoundDataAnswer;
     }
 
-    function updateRate(int256 rate, uint256 updatedAt) external {
+    function updateRate(int256 tokenRate_, uint256 rateL1Timestamp_, uint256 lastProcessingRefSlot_) external {
       // check timestamp not late as current one.
-      latestRoundDataAnswer = rate;
-      latestRoundDataUpdatedAt = updatedAt;
+      latestRoundDataAnswer = tokenRate_;
+      latestRoundDataUpdatedAt = rateL1Timestamp_;
     }
 }

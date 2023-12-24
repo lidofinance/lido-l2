@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Wrapable} from "./interfaces/IERC20Wrapable.sol";
 import {ITokenRateOracle} from "./interfaces/ITokenRateOracle.sol";
 import {ERC20Metadata} from "./ERC20Metadata.sol";
-import { console } from "hardhat/console.sol";
+// import { console } from "hardhat/console.sol";
 
 /// @author kovalgek
 /// @notice Extends the ERC20Shared functionality
@@ -23,24 +23,43 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
     error ErrorNotEnoughAllowance();
     error ErrorAccountIsZeroAddress();
     error ErrorDecreasedAllowanceBelowZero();
+    error ErrorNotBridge();
 
+    /// @notice Bridge which can mint and burn tokens on L2.
+    address public immutable bridge;
+
+    /// @notice Contract of non-rebasable token to wrap.
     IERC20 public immutable wrappedToken;
-    ITokenRateOracle public immutable tokensRateOracle;
 
-    /// @param wrappedToken_ address of the ERC20 token to wrap
-    /// @param tokensRateOracle_ address of oracle that returns tokens rate
+    /// @notice Oracle contract used to get token rate for wrapping/unwrapping tokens.
+    ITokenRateOracle public immutable tokenRateOracle;
+    
+    /// @inheritdoc IERC20
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    /// @notice Basic unit representing the token holder's share in the total amount of ether controlled by the protocol.
+    mapping (address => uint256) private shares;
+
+    /// @notice The total amount of shares in existence.
+    uint256 private totalShares;
+
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
     /// @param decimals_ The decimals places of the token
+    /// @param wrappedToken_ address of the ERC20 token to wrap
+    /// @param tokenRateOracle_ address of oracle that returns tokens rate
+    /// @param bridge_ The bridge address which allowd to mint/burn tokens
     constructor(
-        address wrappedToken_,
-        address tokensRateOracle_,
         string memory name_,
         string memory symbol_,
-        uint8 decimals_
+        uint8 decimals_,
+        address wrappedToken_,
+        address tokenRateOracle_,
+        address bridge_
     ) ERC20Metadata(name_, symbol_, decimals_) {
         wrappedToken = IERC20(wrappedToken_);
-        tokensRateOracle = ITokenRateOracle(tokensRateOracle_);
+        tokenRateOracle = ITokenRateOracle(tokenRateOracle_);
+        bridge = bridge_;
     }
 
     /// @notice Sets the name and the symbol of the tokens if they both are empty
@@ -50,8 +69,6 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         _setERC20MetadataName(name_);
         _setERC20MetadataSymbol(symbol_);
     }
-
-    /// ------------IERC20Wrapable------------
 
     /// @inheritdoc IERC20Wrapable
     function wrap(uint256 sharesAmount_) external returns (uint256) {
@@ -75,25 +92,28 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         return sharesAmount;
     }
 
-    function tokensPerStEth() external pure returns (uint256) {
-        return 0;
+    /// @inheritdoc IERC20Wrapable
+    function stETHPerToken() external view returns (uint256) {
+        return uint256(tokenRateOracle.latestAnswer());
     }
 
     // allow call only bridge
-    function mintShares(address account_, uint256 amount_) external returns (uint256) {
+    function mintShares(address account_, uint256 amount_) external onlyBridge returns (uint256) {
         return _mintShares(account_, amount_);
     }
 
     // allow call only bridge
-    function burnShares(address account_, uint256 amount_) external {
+    function burnShares(address account_, uint256 amount_) external onlyBridge {
         _burnShares(account_, amount_);
     }
 
-
-    /// ------------ERC20------------
-
-    /// @inheritdoc IERC20
-    mapping(address => mapping(address => uint256)) public allowance;
+    /// @dev Validates that sender of the transaction is the bridge
+    modifier onlyBridge() {
+        if (msg.sender != bridge) {
+            revert ErrorNotBridge();
+        }
+        _;
+    }
 
     /// @inheritdoc IERC20
     function totalSupply() external view returns (uint256) {
@@ -212,34 +232,31 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         emit Approval(owner_, spender_, amount_);
     }
 
-
-    /// ------------Shares------------
-    // API
-    function sharesOf(address _account) external view returns (uint256) {
-        return _sharesOf(_account);
+    /// @notice Get shares amount of the provided account.
+    /// @param account_ provided account address.
+    /// @return amount of shares owned by `_account`.
+    function sharesOf(address account_) external view returns (uint256) {
+        return _sharesOf(account_);
     }
 
+    /// @return total amount of shares.
     function getTotalShares() external view returns (uint256) {
         return _getTotalShares();
     }
 
+    /// @notice Get amount of tokens for a given amount of shares.
+    /// @param sharesAmount_ amount of shares.
+    /// @return amount of tokens for a given shares amount.
     function getTokensByShares(uint256 sharesAmount_) external view returns (uint256) {
         return _getTokensByShares(sharesAmount_);
     }
 
+    /// @notice Get amount of shares for a given amount of tokens.
+    /// @param tokenAmount_ provided tokens amount.
+    /// @return amount of shares for a given tokens amount.
     function getSharesByTokens(uint256 tokenAmount_) external view returns (uint256) {
         return _getSharesByTokens(tokenAmount_);
     }
-
-    function getTokensRateAndDecimal() external view returns (uint256, uint256) {
-        return _getTokensRateAndDecimal();
-    }
-
-    // private/internal
-
-    mapping (address => uint256) private shares;
-    
-    uint256 private totalShares;
 
     function _sharesOf(address account_) internal view returns (uint256) {
         return shares[account_];
@@ -251,32 +268,28 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
 
     function _getTokensByShares(uint256 sharesAmount_) internal view returns (uint256) {
         (uint256 tokensRate, uint256 decimals)  = _getTokensRateAndDecimal();
-        return (sharesAmount_ * (10 ** decimals)) / tokensRate;
+        return (sharesAmount_ * tokensRate) / (10 ** decimals);
     }
 
     function _getSharesByTokens(uint256 tokenAmount_) internal view returns (uint256) {
         (uint256 tokensRate, uint256 decimals)  = _getTokensRateAndDecimal();
-        return (tokenAmount_ * tokensRate) / (10 ** decimals);
+        return (tokenAmount_ * (10 ** decimals)) / tokensRate;
     }
 
     function _getTokensRateAndDecimal() internal view returns (uint256, uint256) {
-        uint8 rateDecimals = tokensRateOracle.decimals();
-        console.log("_getTokensRateAndDecimal1");
+        uint8 rateDecimals = tokenRateOracle.decimals();
 
         if (rateDecimals == uint8(0) || rateDecimals > uint8(18)) revert ErrorInvalidRateDecimals(rateDecimals);
-        console.log("_getTokensRateAndDecimal2");
 
         (,
         int256 answer
         ,
         ,
         uint256 updatedAt
-        ,) = tokensRateOracle.latestRoundData();
-        console.log("_getTokensRateAndDecimal3");
+        ,) = tokenRateOracle.latestRoundData();
 
         if (updatedAt == 0) revert ErrorWrongOracleUpdateTime();
         if (answer <= 0) revert ErrorOracleAnswerIsNegative();
-        console.log("_getTokensRateAndDecimal4");
 
         return (uint256(answer), uint256(rateDecimals));
     }
@@ -290,6 +303,7 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
     ) internal onlyNonZeroAccount(recipient_) returns (uint256)  {
         totalShares = totalShares + amount_;
         shares[recipient_] = shares[recipient_] + amount_;
+        emit Transfer(address(0), recipient_, amount_);
         return totalShares;
     }
 
@@ -304,6 +318,7 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         if (accountShares < amount_) revert ErrorNotEnoughBalance();
         totalShares = totalShares - amount_;
         shares[account_] = accountShares - amount_;
+        emit Transfer(account_, address(0), amount_);
         return totalShares;
     }
 
