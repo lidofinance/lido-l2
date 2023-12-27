@@ -7,8 +7,6 @@ import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Wrapable} from "../token/interfaces/IERC20Wrapable.sol";
-// import {ERC20Core} from "../token/ERC20Core.sol";
-import { console } from "hardhat/console.sol";
 
 // represents wstETH on L1
 contract ERC20WrapableStub is IERC20Wrapable, ERC20 {

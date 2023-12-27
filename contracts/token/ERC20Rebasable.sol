@@ -5,13 +5,13 @@ pragma solidity 0.8.10;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Wrapable} from "./interfaces/IERC20Wrapable.sol";
+import {IERC20BridgedShares} from "./interfaces/IERC20BridgedShares.sol";
 import {ITokenRateOracle} from "./interfaces/ITokenRateOracle.sol";
 import {ERC20Metadata} from "./ERC20Metadata.sol";
-// import { console } from "hardhat/console.sol";
 
 /// @author kovalgek
 /// @notice Extends the ERC20Shared functionality
-contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
+contract ERC20Rebasable is IERC20, IERC20Wrapable, IERC20BridgedShares, ERC20Metadata {
 
     error ErrorZeroSharesWrap();
     error ErrorZeroTokensUnwrap();
@@ -25,7 +25,7 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
     error ErrorDecreasedAllowanceBelowZero();
     error ErrorNotBridge();
 
-    /// @notice Bridge which can mint and burn tokens on L2.
+    /// @inheritdoc IERC20BridgedShares
     address public immutable bridge;
 
     /// @notice Contract of non-rebasable token to wrap.
@@ -97,12 +97,12 @@ contract ERC20Rebasable is IERC20Wrapable, IERC20, ERC20Metadata {
         return uint256(tokenRateOracle.latestAnswer());
     }
 
-    // allow call only bridge
+    /// @inheritdoc IERC20BridgedShares
     function mintShares(address account_, uint256 amount_) external onlyBridge returns (uint256) {
         return _mintShares(account_, amount_);
     }
 
-    // allow call only bridge
+    /// @inheritdoc IERC20BridgedShares
     function burnShares(address account_, uint256 amount_) external onlyBridge {
         _burnShares(account_, amount_);
     }

@@ -17,8 +17,6 @@ import {BridgeableTokensOptimism} from "./BridgeableTokensOptimism.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {DepositDataCodec} from "./DepositDataCodec.sol";
 
-import { console } from "hardhat/console.sol";
-
 /// @author psirex
 /// @notice The L2 token bridge works with the L1 token bridge to enable ERC20 token bridging
 ///     between L1 and L2. It acts as a minter for new tokens when it hears about
@@ -111,7 +109,7 @@ contract L2ERC20TokenBridge is
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
             DepositData memory depositData = decodeDepositData(data_);
             ITokenRateOracle tokenRateOracle = ERC20Rebasable(l2TokenRebasable).tokenRateOracle();
-            tokenRateOracle.updateRate(int256(depositData.rate), depositData.time, 0);
+            tokenRateOracle.updateRate(depositData.rate, depositData.time);
             ERC20Rebasable(l2TokenRebasable).mintShares(to_, amount_);
             emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, depositData.data);
         } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {

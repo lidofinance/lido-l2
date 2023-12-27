@@ -17,9 +17,9 @@ contract TokenRateOracleStub is ITokenRateOracle {
         return _decimals;
     }
 
-    int256 public latestRoundDataAnswer;
+    uint256 public latestRoundDataAnswer;
 
-    function setLatestRoundDataAnswer(int256 answer_) external {
+    function setLatestRoundDataAnswer(uint256 answer_) external {
         latestRoundDataAnswer = answer_;
     }
 
@@ -42,14 +42,20 @@ contract TokenRateOracleStub is ITokenRateOracle {
         uint256 updatedAt,
         uint80 answeredInRound
       ) {
-        return (0,latestRoundDataAnswer,0,latestRoundDataUpdatedAt,0);
+        return (
+            0,
+            int256(latestRoundDataAnswer),
+            0,
+            latestRoundDataUpdatedAt,
+            0
+        );
       }
 
     function latestAnswer() external view returns (int256) {
-        return latestRoundDataAnswer;
+        return int256(latestRoundDataAnswer);
     }
 
-    function updateRate(int256 tokenRate_, uint256 rateL1Timestamp_, uint256 lastProcessingRefSlot_) external {
+    function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external {
       // check timestamp not late as current one.
       latestRoundDataAnswer = tokenRate_;
       latestRoundDataUpdatedAt = rateL1Timestamp_;

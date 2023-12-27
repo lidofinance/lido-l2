@@ -14,6 +14,7 @@
         "ignoreConstructors": true
       }
     ],
-    "lido/fixed-compiler-version": "error"
+    "lido/fixed-compiler-version": "error",
+    "const-name-snakecase": false
   }
 }

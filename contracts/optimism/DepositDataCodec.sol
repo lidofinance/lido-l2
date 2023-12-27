@@ -6,8 +6,8 @@ pragma solidity 0.8.10;
 contract DepositDataCodec {
     
     struct DepositData {
-        uint256 rate;
-        uint256 time;
+        uint96 rate;
+        uint40 time;
         bytes data;
     }
 
@@ -22,14 +22,14 @@ contract DepositDataCodec {
 
     function decodeDepositData(bytes calldata buffer) internal pure returns (DepositData memory) {
         
-        if (buffer.length < 32 * 2) {
+        if (buffer.length < 12 + 5) {
             revert ErrorDepositDataLength();
         }
         
         DepositData memory depositData = DepositData({
-            rate: uint256(bytes32(buffer[0:32])),
-            time: uint256(bytes32(buffer[32:64])),
-            data: buffer[64:]
+            rate: uint96(bytes12(buffer[0:12])),
+            time: uint40(bytes5(buffer[12:17])),
+            data: buffer[17:]
         });
 
         return depositData;

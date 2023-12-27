@@ -4,7 +4,6 @@
 pragma solidity 0.8.10;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { console } from "hardhat/console.sol";
 
 contract ERC20Stub is IERC20 {
 

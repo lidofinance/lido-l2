@@ -16,9 +16,8 @@ import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {DepositDataCodec} from "./DepositDataCodec.sol";
 
 import {IERC20Wrapable} from "../token/interfaces/IERC20Wrapable.sol";
-import "hardhat/console.sol";
 
-// Check if Optimism changed API for bridges. They could depricate methods.
+// Check if Optimism changed API for bridges. They could deprecate methods.
 // Optimise gas usage with data transfer. Maybe cache rate and see if it changed.
  
 /// @author psirex, kovalgek
@@ -54,9 +53,9 @@ contract L1ERC20TokenBridge is
         l2TokenBridge = l2TokenBridge_;
     }
 
-    function pushTokenRate(address to_, uint32 l2Gas_) external {
+    function pushTokenRate(uint32 l2Gas_) external {
         bytes memory empty = new bytes(0);
-        _depositERC20To(l1TokenRebasable, l2TokenRebasable, to_, 0, l2Gas_, empty);
+        _depositERC20To(l1TokenRebasable, l2TokenRebasable, l2TokenBridge, 0, l2Gas_, empty);
     }
 
     /// @inheritdoc IL1ERC20Bridge
@@ -140,8 +139,8 @@ contract L1ERC20TokenBridge is
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
 
             DepositData memory depositData = DepositData({
-                rate: IERC20Wrapable(l1TokenNonRebasable).stETHPerToken(),
-                time: block.timestamp,
+                rate: uint96(IERC20Wrapable(l1TokenNonRebasable).stETHPerToken()),
+                time: uint40(block.timestamp),
                 data: data_
             });
 

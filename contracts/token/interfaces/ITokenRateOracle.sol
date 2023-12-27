@@ -4,27 +4,32 @@
 pragma solidity 0.8.10;
 
 /// @author kovalgek
-/// @notice Oracle interface for two tokens rate. A subset of Chainlink data feed interface.
+/// @notice Oracle interface for token rate. A subset of Chainlink data feed interface.
 interface ITokenRateOracle {
 
-    /// @notice get data about the latest round.
+    /// @notice get the latest token rate data.
+    /// @return roundId_ is a unique id for each answer. The value is based on timestamp.
+    /// @return answer_ is wstETH/stETH token rate.
+    /// @return startedAt_ is time when rate was pushed on L1 side. 
+    /// @return updatedAt_ is the same as startedAt_.
+    /// @return answeredInRound_ is the same as roundId_.
     function latestRoundData()
         external
         view
         returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
+            uint80 roundId_,
+            int256 answer_,
+            uint256 startedAt_,
+            uint256 updatedAt_,
+            uint80 answeredInRound_
         );
 
-    /// @notice get answer about the latest round.
+    /// @notice get the lastest token rate.
     function latestAnswer() external view returns (int256);
 
     /// @notice represents the number of decimals the oracle responses represent.
     function decimals() external view returns (uint8);
 
     /// @notice Updates token rate.
-    function updateRate(int256 tokenRate_, uint256 rateL1Timestamp_, uint256 lastProcessingRefSlot_) external;
+    function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external;
 }

@@ -4,7 +4,6 @@
 pragma solidity 0.8.10;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { console } from "hardhat/console.sol";
 
 /// @author psirex
 /// @notice Contains the required logic of the ERC20 standard as defined in the EIP. Additionally
@@ -122,7 +121,6 @@ contract ERC20Core is IERC20 {
         address spender_,
         uint256 amount_
     ) internal virtual onlyNonZeroAccount(owner_) onlyNonZeroAccount(spender_) {
-        console.log("_approve %@ %@ %@", msg.sender, owner_, spender_);
         allowance[owner_][spender_] = amount_;
         emit Approval(owner_, spender_, amount_);
     }

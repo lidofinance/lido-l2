@@ -4,50 +4,34 @@
 pragma solidity 0.8.10;
 
 import {ITokenRateOracle} from "../token/interfaces/ITokenRateOracle.sol";
-// import { SafeCast } from "@openzeppelin/contracts-v4.4/utils/math/SafeCast.sol";
 
+/// @author kovalgek
+/// @notice Oracle for storing token rate.
 contract TokenRateOracle is ITokenRateOracle {
 
-    /// Chain specification
-    uint256 private immutable slotsPerEpoch;
-    uint256 private immutable secondsPerSlot;
-    uint256 private immutable genesisTime;
-    uint256 private immutable initialEpoch;
-    uint256 private immutable epochsPerFrame;
+    error NotAnOwner(address caller);
+    error IncorrectRateTimestamp();
 
-    error InvalidChainConfig();
-    error InitialEpochRefSlotCannotBeEarlierThanProcessingSlot();
-    error InitialEpochIsYetToArrive();
+    /// @notice wstETH/stETH token rate.
+    uint256 private tokenRate;
 
-    int256 private tokenRate;
-    uint8 private decimalsInAnswer;
+    /// @notice L1 time when token rate was pushed. 
     uint256 private rateL1Timestamp;
-    uint80 private answeredInRound;
 
-    constructor(
-        uint256 slotsPerEpoch_,
-        uint256 secondsPerSlot_,
-        uint256 genesisTime_,
-        uint256 initialEpoch_,
-        uint256 epochsPerFrame_
-    ) {
-        if (slotsPerEpoch_ == 0) revert InvalidChainConfig();
-        if (secondsPerSlot_ == 0) revert InvalidChainConfig();
+    /// @notice A bridge which can update oracle.
+    address public immutable bridge;
 
-        // Should I use toUint64();
-        slotsPerEpoch = slotsPerEpoch_; 
-        secondsPerSlot = secondsPerSlot_;
-        genesisTime = genesisTime_;
-        initialEpoch = initialEpoch_;
-        epochsPerFrame = epochsPerFrame_;
+    /// @notice An updater which can update oracle.
+    address public immutable tokenRateUpdater;
+
+    /// @param bridge_ the bridge address that has a right to updates oracle.
+    /// @param tokenRateUpdater_ address of oracle updater that has a right to updates oracle.
+    constructor(address bridge_, address tokenRateUpdater_) {
+        bridge = bridge_;
+        tokenRateUpdater = tokenRateUpdater_;
     }
-    
+
     /// @inheritdoc ITokenRateOracle
-    /// @return roundId_ is reference slot of HashConsensus
-    /// @return answer_ is wstETH/stETH token rate.
-    /// @return startedAt_ is HashConsensus frame start.
-    /// @return updatedAt_ is L2 timestamp of token rate update.
-    /// @return answeredInRound_ is the round ID of the round in which the answer was computed
     function latestRoundData() external view returns (
         uint80 roundId_,
         int256 answer_,
@@ -55,14 +39,13 @@ contract TokenRateOracle is ITokenRateOracle {
         uint256 updatedAt_,
         uint80 answeredInRound_
     ) {
-        uint256 refSlot = _getRefSlot(initialEpoch, epochsPerFrame);
-        uint80 roundId = uint80(refSlot);
-        uint256 startedAt = _computeTimestampAtSlot(refSlot);
+        uint80 roundId = uint80(rateL1Timestamp); // TODO: add solt
+        uint80 answeredInRound = roundId;
 
         return (
             roundId,
-            tokenRate,
-            startedAt,
+            int256(tokenRate),
+            rateL1Timestamp,
             rateL1Timestamp,
             answeredInRound
         );
@@ -70,89 +53,29 @@ contract TokenRateOracle is ITokenRateOracle {
 
     /// @inheritdoc ITokenRateOracle
     function latestAnswer() external view returns (int256) {
-        return tokenRate;
+        return int256(tokenRate);
     }
 
     /// @inheritdoc ITokenRateOracle
-    function decimals() external view returns (uint8) {
-        return decimalsInAnswer;
+    function decimals() external pure returns (uint8) {
+        return 18;
     }
 
     /// @inheritdoc ITokenRateOracle
-    function updateRate(int256 rate, uint256 rateL1Timestamp_) external {
-        // check timestamp not late as current one.
-        if (rateL1Timestamp_ < _getTime()) {
-            return;
+    function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external onlyOwner {
+        // reject rates from the future
+        if (rateL1Timestamp_ < rateL1Timestamp) {
+            revert IncorrectRateTimestamp();
         }
-        tokenRate = rate;
+        tokenRate = tokenRate_;
         rateL1Timestamp = rateL1Timestamp_;
-        answeredInRound = 666;
-        decimalsInAnswer = 10;
     }
 
-    /// Frame utilities
-
-    function _getTime() internal virtual view returns (uint256) {
-        return block.timestamp; // solhint-disable-line not-rely-on-time
-    }
-
-    function _getRefSlot(uint256 initialEpoch_, uint256 epochsPerFrame_) internal view returns (uint256) {
-        return _getRefSlotAtTimestamp(_getTime(), initialEpoch_, epochsPerFrame_);
-    }
-
-    function _getRefSlotAtTimestamp(uint256 timestamp_, uint256 initialEpoch_, uint256 epochsPerFrame_)
-        internal view returns (uint256)
-    {
-        return _getRefSlotAtIndex(_computeFrameIndex(timestamp_, initialEpoch_, epochsPerFrame_), initialEpoch_, epochsPerFrame_);
-    }
-
-    function _getRefSlotAtIndex(uint256 frameIndex_, uint256 initialEpoch_, uint256 epochsPerFrame_)
-        internal view returns (uint256)
-    {
-        uint256 frameStartEpoch = _computeStartEpochOfFrameWithIndex(frameIndex_, initialEpoch_, epochsPerFrame_);
-        uint256 frameStartSlot = _computeStartSlotAtEpoch(frameStartEpoch);
-        return uint64(frameStartSlot - 1);
-    }
-
-    function _computeStartSlotAtEpoch(uint256 epoch_) internal view returns (uint256) {
-        // See: github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#compute_start_slot_at_epoch
-        return epoch_ * slotsPerEpoch;
-    }
-
-    function _computeStartEpochOfFrameWithIndex(uint256 frameIndex_, uint256 initialEpoch_, uint256 epochsPerFrame_)
-        internal pure returns (uint256)
-    {
-        return initialEpoch_ + frameIndex_ * epochsPerFrame_;
-    }
-
-    function _computeFrameIndex(
-        uint256 timestamp_,
-        uint256 initialEpoch_,
-        uint256 epochsPerFrame_
-    )   internal view returns (uint256)
-    {
-        uint256 epoch = _computeEpochAtTimestamp(timestamp_);
-        if (epoch < initialEpoch_) {
-            revert InitialEpochIsYetToArrive();
+    /// @dev validates that method called by one of the owners
+    modifier onlyOwner() {
+        if (msg.sender != bridge || msg.sender !=  tokenRateUpdater) {
+            revert NotAnOwner(msg.sender);
         }
-        return (epoch - initialEpoch_) / epochsPerFrame_;
-    }
-
-    function _computeEpochAtTimestamp(uint256 timestamp_) internal view returns (uint256) {
-        return _computeEpochAtSlot(_computeSlotAtTimestamp(timestamp_));
-    }
-
-    function _computeEpochAtSlot(uint256 slot_) internal view returns (uint256) {
-        // See: github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#compute_epoch_at_slot
-        return slot_ / slotsPerEpoch;
-    }
-
-    function _computeSlotAtTimestamp(uint256 timestamp_) internal view returns (uint256) {
-        return (timestamp_ - genesisTime) / secondsPerSlot;
-    }
-
-    function _computeTimestampAtSlot(uint256 slot_) internal view returns (uint256) {
-        // See: github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md#compute_timestamp_at_slot
-        return genesisTime + slot_ * secondsPerSlot;
+        _;
     }
 }
