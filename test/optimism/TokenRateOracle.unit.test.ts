@@ -2,36 +2,17 @@ import hre from "hardhat";
 import { assert } from "chai";
 import { unit } from "../../utils/testing";
 import { TokenRateOracle__factory } from "../../typechain";
-import { ethers } from "ethers";
 
 unit("TokenRateOracle", ctxFactory)
 
-  .test("init zero slotsPerEpoch", async (ctx) => {
-    const [deployer] = await hre.ethers.getSigners();
-    await assert.revertsWith(new TokenRateOracle__factory(deployer).deploy(
-        0,
-        10,
-        1000,
-        100,
-        50
-    ), "InvalidChainConfig()");
-  })
-
-  .test("init zero secondsPerSlot", async (ctx) => {
-    const [deployer] = await hre.ethers.getSigners();
-    await assert.revertsWith(new TokenRateOracle__factory(deployer).deploy(
-        41,
-        0,
-        1000,
-        100,
-        50
-    ), "InvalidChainConfig()");
-  })
-
   .test("state after init", async (ctx) => {
-    const { tokensRateOracle } = ctx.contracts;
+    const { tokenRateOracle } = ctx.contracts;
+    const { bridge, updater } = ctx.accounts;
 
-    assert.equalBN(await tokensRateOracle.latestAnswer(), 0);
+    assert.equal(await tokenRateOracle.bridge(), bridge.address);
+    assert.equal(await tokenRateOracle.tokenRateUpdater(), updater.address);
+
+    assert.equalBN(await tokenRateOracle.latestAnswer(), 0);
 
     const {
         roundId_,
@@ -39,23 +20,42 @@ unit("TokenRateOracle", ctxFactory)
         startedAt_,
         updatedAt_,
         answeredInRound_
-    } = await tokensRateOracle.latestRoundData();
+    } = await tokenRateOracle.latestRoundData();
 
-    assert.equalBN(roundId_, 170307199);
+    assert.equalBN(roundId_, 0);
     assert.equalBN(answer_, 0);
-    assert.equalBN(startedAt_, 1703072990);
+    assert.equalBN(startedAt_, 0);
     assert.equalBN(updatedAt_, 0);
     assert.equalBN(answeredInRound_, 0);
+    assert.equalBN(await tokenRateOracle.decimals(), 18);
+  })
 
-    assert.equalBN(await tokensRateOracle.decimals(), 0);
+  .test("wrong owner", async (ctx) => {
+    const { tokenRateOracle } = ctx.contracts;
+    const { bridge, updater, stranger } = ctx.accounts;
+    tokenRateOracle.connect(bridge).updateRate(10, 20);
+    tokenRateOracle.connect(updater).updateRate(10, 23);
+    await assert.revertsWith(tokenRateOracle.connect(stranger).updateRate(10, 40), "NotAnOwner(\""+stranger.address+"\")");
+  })
+
+  .test("incorrect time", async (ctx) => {
+    const { tokenRateOracle } = ctx.contracts;
+    const { bridge } = ctx.accounts;
+    
+    tokenRateOracle.connect(bridge).updateRate(10, 1000);
+    await assert.revertsWith(tokenRateOracle.connect(bridge).updateRate(12, 20), "IncorrectRateTimestamp()");
   })
 
   .test("state after update token rate", async (ctx) => {
-    const { tokensRateOracle } = ctx.contracts;
+    const { tokenRateOracle } = ctx.contracts;
+    const { updater } = ctx.accounts;
 
-    await tokensRateOracle.updateRate(2, ethers.constants.MaxInt256 );
+    const currentTime = Date.now();
+    const tokenRate = 123;
 
-    assert.equalBN(await tokensRateOracle.latestAnswer(), 2);
+    await tokenRateOracle.connect(updater).updateRate(tokenRate, currentTime );
+
+    assert.equalBN(await tokenRateOracle.latestAnswer(), tokenRate);
 
     const {
         roundId_,
@@ -63,33 +63,29 @@ unit("TokenRateOracle", ctxFactory)
         startedAt_,
         updatedAt_,
         answeredInRound_
-    } = await tokensRateOracle.latestRoundData();
+    } = await tokenRateOracle.latestRoundData();
 
-    assert.equalBN(roundId_, 170307199);
-    assert.equalBN(answer_, 2);
-    assert.equalBN(startedAt_, 1703072990);
-    assert.equalBN(updatedAt_, ethers.constants.MaxInt256);
-    assert.equalBN(answeredInRound_, 666);
-
-    assert.equalBN(await tokensRateOracle.decimals(), 10);
+    assert.equalBN(roundId_, currentTime);
+    assert.equalBN(answer_, tokenRate);
+    assert.equalBN(startedAt_, currentTime);
+    assert.equalBN(updatedAt_, currentTime);
+    assert.equalBN(answeredInRound_, currentTime);
+    assert.equalBN(await tokenRateOracle.decimals(), 18);
   })
 
   .run();
 
 async function ctxFactory() {
 
-    const [deployer] = await hre.ethers.getSigners();
+    const [deployer, bridge, updater, stranger] = await hre.ethers.getSigners();
 
-    const tokensRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-        32,
-        10,
-        1000,
-        100,
-        50
+    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+        bridge.address,
+        updater.address
     ); 
     
     return {
-      accounts: { deployer },
-      contracts: { tokensRateOracle }
+      accounts: { deployer, bridge, updater, stranger },
+      contracts: { tokenRateOracle }
     };
 }

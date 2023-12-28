@@ -73,7 +73,7 @@ contract TokenRateOracle is ITokenRateOracle {
 
     /// @dev validates that method called by one of the owners
     modifier onlyOwner() {
-        if (msg.sender != bridge || msg.sender !=  tokenRateUpdater) {
+        if (msg.sender != bridge && msg.sender != tokenRateUpdater) {
             revert NotAnOwner(msg.sender);
         }
         _;
