@@ -25,6 +25,7 @@ async function main() {
     .deployment(networkName, { logger: console })
     .erc20TokenBridgeDeployScript(
       deploymentConfig.token,
+      deploymentConfig.token, // FIX
       {
         deployer: ethDeployer,
         admins: {

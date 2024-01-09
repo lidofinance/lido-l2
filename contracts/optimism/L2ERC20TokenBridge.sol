@@ -85,9 +85,11 @@ contract L2ERC20TokenBridge is
             uint256 shares = ERC20Rebasable(l2TokenRebasable).getSharesByTokens(amount_);
             ERC20Rebasable(l2TokenRebasable).burnShares(msg.sender, shares);
             _initiateWithdrawal(l1TokenRebasable, l2TokenRebasable, msg.sender, to_, shares, l1Gas_, data_);
+            emit WithdrawalInitiated(l1TokenRebasable, l2TokenRebasable, msg.sender, to_, amount_, data_);
         } else if (l2Token_ == l2TokenNonRebasable) {
             IERC20Bridged(l2TokenNonRebasable).bridgeBurn(msg.sender, amount_);
             _initiateWithdrawal(l1TokenNonRebasable, l2TokenNonRebasable, msg.sender, to_, amount_, l1Gas_, data_);
+            emit WithdrawalInitiated(l1TokenNonRebasable, l2TokenNonRebasable, msg.sender, to_, amount_, data_);
         }
     }
 
@@ -148,7 +150,5 @@ contract L2ERC20TokenBridge is
         );
 
         sendCrossDomainMessage(l1TokenBridge, l1Gas_, message);
-
-        emit WithdrawalInitiated(l1Token_, l2Token_, from_, to_, amount_, data_);
     }
 }

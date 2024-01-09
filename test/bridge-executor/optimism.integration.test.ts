@@ -243,7 +243,6 @@ async function ctxFactory() {
     .erc20TokenBridgeDeployScript(
       l1Token.address,
       l1TokenRebasable.address,
-      tokenRateOracleStub.address,
       {
         deployer: l1Deployer,
         admins: {

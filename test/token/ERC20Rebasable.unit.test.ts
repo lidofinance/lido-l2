@@ -41,8 +41,8 @@ unit("ERC20Rebasable", ctxFactory)
       owner.address
     );
     await assert.revertsWith(
-        rebasableTokenImpl.initialize("New Name", ""),
-        "ErrorNameAlreadySet()"
+      rebasableTokenImpl.initialize("New Name", ""),
+      "ErrorNameAlreadySet()"
     );
   })
 
@@ -61,7 +61,7 @@ unit("ERC20Rebasable", ctxFactory)
       owner.address
     );
     await assert.revertsWith(
-        rebasableTokenImpl.initialize("", "New Symbol"),
+      rebasableTokenImpl.initialize("", "New Symbol"),
       "ErrorSymbolAlreadySet()"
     );
   })

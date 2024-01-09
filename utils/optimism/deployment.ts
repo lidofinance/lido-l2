@@ -7,6 +7,8 @@ import {
   L1ERC20TokenBridge__factory,
   L2ERC20TokenBridge__factory,
   OssifiableProxy__factory,
+  TokenRateOracle,
+  TokenRateOracle__factory,
 } from "../../typechain";
 
 import addresses from "./addresses";
@@ -38,7 +40,6 @@ export default function deployment(
     async erc20TokenBridgeDeployScript(
       l1Token: string,
       l1TokenRebasable: string,
-      tokenRateOracleStub: string,
       l1Params: OptL1DeployScriptParams,
       l2Params: OptL2DeployScriptParams,
     ) {
@@ -49,14 +50,15 @@ export default function deployment(
       ] = await network.predictAddresses(l1Params.deployer, 2);
             
       const [
+        expectedL2TokenRateOracleImplAddress,
         expectedL2TokenImplAddress,
         expectedL2TokenProxyAddress,
         expectedL2TokenRebasableImplAddress,
         expectedL2TokenRebasableProxyAddress,
         expectedL2TokenBridgeImplAddress,
         expectedL2TokenBridgeProxyAddress,
-      ] = await network.predictAddresses(l2Params.deployer, 6);
-      
+      ] = await network.predictAddresses(l2Params.deployer, 7);
+
       const l1DeployScript = new DeployScript(
         l1Params.deployer,
         options?.logger
@@ -112,6 +114,17 @@ export default function deployment(
         options?.logger
       )
         .addStep({
+            factory: TokenRateOracle__factory,
+            args: [
+                expectedL2TokenBridgeProxyAddress,
+                expectedL2TokenBridgeProxyAddress,
+                options?.overrides,
+            ],
+            afterDeploy: (c) =>
+                assert.equal(c.address, expectedL2TokenRateOracleImplAddress),
+        })
+        
+        .addStep({
           factory: ERC20Bridged__factory,
           args: [
             l2TokenName,
@@ -140,11 +153,12 @@ export default function deployment(
         .addStep({
           factory: ERC20Rebasable__factory,
           args: [
-            expectedL2TokenProxyAddress,
-            tokenRateOracleStub,
             l2TokenRebasableName,
             l2TokenRebasableSymbol,
             decimals,
+            expectedL2TokenProxyAddress,
+            expectedL2TokenRateOracleImplAddress,
+            expectedL2TokenBridgeProxyAddress,
             options?.overrides,
           ],
           afterDeploy: (c) =>

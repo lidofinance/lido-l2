@@ -27,7 +27,7 @@ contract ERC20WrapableStub is IERC20Wrapable, ERC20 {
     function wrap(uint256 _stETHAmount) external returns (uint256) {
         require(_stETHAmount > 0, "wstETH: can't wrap zero stETH");
 
-        uint256 wstETHAmount = (_stETHAmount * tokensRate) / (10 ** uint256(decimals()));
+        uint256 wstETHAmount = (_stETHAmount * (10 ** uint256(decimals()))) / tokensRate;
 
         _mint(msg.sender, wstETHAmount);
         stETH.transferFrom(msg.sender, address(this), _stETHAmount);
@@ -38,7 +38,8 @@ contract ERC20WrapableStub is IERC20Wrapable, ERC20 {
     function unwrap(uint256 _wstETHAmount) external returns (uint256) {
         require(_wstETHAmount > 0, "wstETH: zero amount unwrap not allowed");
 
-        uint256 stETHAmount = (_wstETHAmount * (10 ** uint256(decimals()))) / tokensRate;
+        uint256 stETHAmount = (_wstETHAmount * tokensRate) / (10 ** uint256(decimals()));
+
         _burn(msg.sender, _wstETHAmount);
         stETH.transfer(msg.sender, stETHAmount);
 
