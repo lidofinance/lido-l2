@@ -40,14 +40,13 @@ contract TokenRateOracle is ITokenRateOracle {
         uint80 answeredInRound_
     ) {
         uint80 roundId = uint80(rateL1Timestamp); // TODO: add solt
-        uint80 answeredInRound = roundId;
 
         return (
             roundId,
             int256(tokenRate),
             rateL1Timestamp,
             rateL1Timestamp,
-            answeredInRound
+            roundId
         );
     }
 

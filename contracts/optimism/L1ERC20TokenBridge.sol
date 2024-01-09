@@ -158,7 +158,7 @@ contract L1ERC20TokenBridge is
             
             // maybe loosing 1 wei for stETH. Check another method
             IERC20(l1TokenRebasable).safeTransferFrom(msg.sender, address(this), amount_);
-            IERC20(l1TokenRebasable).approve(l1TokenNonRebasable, amount_);
+            if(!IERC20(l1TokenRebasable).approve(l1TokenNonRebasable, amount_)) revert ErrorRebasableTokenApprove();
 
             // when 1 wei wasnt't transfer, can this wrap be failed?
             uint256 wstETHAmount = IERC20Wrapable(l1TokenNonRebasable).wrap(amount_);
@@ -212,4 +212,5 @@ contract L1ERC20TokenBridge is
     }
 
     error ErrorSenderNotEOA();
+    error ErrorRebasableTokenApprove();
 }

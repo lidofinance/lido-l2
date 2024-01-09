@@ -112,6 +112,7 @@ contract L2ERC20TokenBridge is
             DepositData memory depositData = decodeDepositData(data_);
             ITokenRateOracle tokenRateOracle = ERC20Rebasable(l2TokenRebasable).tokenRateOracle();
             tokenRateOracle.updateRate(depositData.rate, depositData.time);
+            //slither-disable-next-line unused-return
             ERC20Rebasable(l2TokenRebasable).mintShares(to_, amount_);
             emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, depositData.data);
         } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {

@@ -24,6 +24,7 @@ contract ERC20Rebasable is IERC20, IERC20Wrapable, IERC20BridgedShares, ERC20Met
     error ErrorAccountIsZeroAddress();
     error ErrorDecreasedAllowanceBelowZero();
     error ErrorNotBridge();
+    error ErrorERC20Transfer();
 
     /// @inheritdoc IERC20BridgedShares
     address public immutable bridge;
@@ -73,9 +74,9 @@ contract ERC20Rebasable is IERC20, IERC20Wrapable, IERC20BridgedShares, ERC20Met
     /// @inheritdoc IERC20Wrapable
     function wrap(uint256 sharesAmount_) external returns (uint256) {
         if (sharesAmount_ == 0) revert ErrorZeroSharesWrap();
-        
+    
         _mintShares(msg.sender, sharesAmount_);
-        wrappedToken.transferFrom(msg.sender, address(this), sharesAmount_);
+        if(!wrappedToken.transferFrom(msg.sender, address(this), sharesAmount_)) revert ErrorERC20Transfer();
 
         return _getTokensByShares(sharesAmount_);
     }
@@ -85,9 +86,8 @@ contract ERC20Rebasable is IERC20, IERC20Wrapable, IERC20BridgedShares, ERC20Met
         if (tokenAmount_ == 0) revert ErrorZeroTokensUnwrap();
 
         uint256 sharesAmount = _getSharesByTokens(tokenAmount_);
-
         _burnShares(msg.sender, sharesAmount);
-        wrappedToken.transfer(msg.sender, sharesAmount);
+        if(!wrappedToken.transfer(msg.sender, sharesAmount)) revert ErrorERC20Transfer();
 
         return sharesAmount;
     }
@@ -281,6 +281,7 @@ contract ERC20Rebasable is IERC20, IERC20Wrapable, IERC20BridgedShares, ERC20Met
 
         if (rateDecimals == uint8(0) || rateDecimals > uint8(18)) revert ErrorInvalidRateDecimals(rateDecimals);
 
+        //slither-disable-next-line unused-return
         (,
         int256 answer
         ,
