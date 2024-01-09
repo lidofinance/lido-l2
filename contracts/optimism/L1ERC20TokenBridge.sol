@@ -53,9 +53,13 @@ contract L1ERC20TokenBridge is
         l2TokenBridge = l2TokenBridge_;
     }
 
-    function pushTokenRate(uint32 l2Gas_) external {
-        bytes memory empty = new bytes(0);
-        _depositERC20To(l1TokenRebasable, l2TokenRebasable, l2TokenBridge, 0, l2Gas_, empty);
+    /// @notice Pushes token rate to L2 by depositing zero tokens.
+    /// @param l2Gas_ Gas limit required to complete the deposit on L2.
+    function pushTokenRate(uint32 l2Gas_)
+        external
+        whenDepositsEnabled
+    {
+        _depositERC20To(l1TokenRebasable, l2TokenRebasable, l2TokenBridge, 0, l2Gas_, "");
     }
 
     /// @inheritdoc IL1ERC20Bridge

@@ -109,6 +109,75 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     );
   })
 
+  .step("Push token rate to L2", async (ctx) => {
+    const {
+        l1Token,
+        l1TokenRebasable,
+        l1ERC20TokenBridge,
+        l2TokenRebasable,
+        l1CrossDomainMessenger,
+        l2ERC20TokenBridge,
+        l1Provider
+      } = ctx;
+  
+    const { l1Stranger } = ctx.accounts;
+
+    const tokenHolderStrangerBalanceBefore = await l1TokenRebasable.balanceOf(
+      l1Stranger.address
+    );
+  
+    const l1ERC20TokenBridgeBalanceBefore = await l1TokenRebasable.balanceOf(
+      l1ERC20TokenBridge.address
+    );
+
+    const tx = await l1ERC20TokenBridge
+      .connect(l1Stranger)
+      .pushTokenRate(200_000);
+
+      const dataToSend = await packedTokenRateAndTimestamp(l1Provider, l1Token);
+
+      await assert.emits(l1ERC20TokenBridge, tx, "ERC20DepositInitiated", [
+        l1TokenRebasable.address,
+        l2TokenRebasable.address,
+        l1Stranger.address,
+        l2ERC20TokenBridge.address,
+        0,
+        dataToSend,
+      ]);
+  
+      const l2DepositCalldata = l2ERC20TokenBridge.interface.encodeFunctionData(
+        "finalizeDeposit",
+        [
+          l1TokenRebasable.address,
+          l2TokenRebasable.address,
+          l1Stranger.address,
+          l2ERC20TokenBridge.address,
+          0,
+          dataToSend,
+        ]
+      );
+  
+      const messageNonce = await l1CrossDomainMessenger.messageNonce();
+  
+      await assert.emits(l1CrossDomainMessenger, tx, "SentMessage", [
+        l2ERC20TokenBridge.address,
+        l1ERC20TokenBridge.address,
+        l2DepositCalldata,
+        messageNonce,
+        200_000,
+      ]);
+  
+      assert.equalBN(
+        await l1Token.balanceOf(l1ERC20TokenBridge.address),
+        l1ERC20TokenBridgeBalanceBefore
+      );
+  
+      assert.equalBN(
+        await l1TokenRebasable.balanceOf(l1Stranger.address),
+        tokenHolderStrangerBalanceBefore
+      );
+  })
+
   .step("L1 -> L2 deposit zero tokens via depositERC20() method", async (ctx) => {
     const {
       l1Token,
