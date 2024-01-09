@@ -16,6 +16,8 @@
     "fork:arb:mainnet": "hardhat node:fork arb_mainnet 8546",
     "fork:opt:goerli": "hardhat node:fork opt_goerli 9545",
     "fork:opt:mainnet": "hardhat node:fork opt_mainnet 9545",
+    "fork:mnt:goerli": "hardhat node:fork mnt_goerli 9545",
+    "fork:mnt:mainnet": "hardhat node:fork mnt_mainnet 9545",
     "arbitrum:deploy": "ts-node --files ./scripts/arbitrum/deploy-gateway.ts",
     "arbitrum:finalize-message": "ts-node --files ./scripts/arbitrum/finalize-message.ts",
     "arbitrum:test:e2e": "hardhat test ./test/arbitrum/*.e2e.test.ts",
@@ -31,7 +33,17 @@
     "optimism:test:integration": "hardhat test ./test/optimism/*.integration.test.ts",
     "optimism:test:acceptance": "hardhat test ./test/optimism/*.acceptance.test.ts",
     "optimism:test:executor": "hardhat test ./test/bridge-executor/optimism.integration.test.ts",
-    "optimism:test:launch": "REVERT=false hardhat test ./test/optimism/{_launch.test.ts,bridging.integration.test.ts}"
+    "optimism:test:launch": "REVERT=false hardhat test ./test/optimism/{_launch.test.ts,bridging.integration.test.ts}",
+    "mantle:deploy": "ts-node --files ./scripts/mantle/deploy-bridge.ts",
+    "mantle:test:permit": "hardhat test ./test/token/ERC20BridgedPermit.unit.test.ts",
+    "mantle:finalize-message": "ts-node --files ./scripts/mantle/finalize-message.ts",
+    "mantle:test:e2e": "hardhat test ./test/mantle/*.e2e.test.ts",
+    "mantle:test:bridginge2e": "hardhat test ./test/mantle/bridging.e2e.test.ts",
+    "mantle:test:proxye2e": "hardhat test ./test/mantle/managing-proxy.e2e.test.ts",
+    "mantle:test:unit": "hardhat test ./test/mantle/*.unit.test.ts",
+    "mantle:test:integration": "hardhat test ./test/mantle/*.integration.test.ts",
+    "mantle:test:acceptance": "hardhat test ./test/mantle/*.acceptance.test.ts",
+    "mantle:test:executor": "hardhat test ./test/bridge-executor/mantle.integration.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -73,6 +85,7 @@
     "@eth-optimism/sdk": "3.0.0",
     "@ethersproject/providers": "^5.6.8",
     "@lidofinance/evm-script-decoder": "^0.2.2",
+    "@mantleio/sdk": "^0.2.2",
     "@openzeppelin/contracts": "4.6.0",
     "chalk": "4.1.2"
   }

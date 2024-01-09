@@ -21,6 +21,24 @@ export const E2E_TEST_CONTRACTS_OPTIMISM = {
   },
 };
 
+export const E2E_TEST_CONTRACTS_MANTLE = {
+  l1: {
+    l1Token: "0x6320cD32aA674d2898A68ec82e869385Fc5f7E2f",
+    l1LDOToken: "0xcAdf242b97BFdD1Cb4Fd282E5FcADF965883065f",
+    l1ERC20TokenBridge: "0x67fa6217C48BAd4777BF2C742c728a7200CE971E",
+    aragonVoting: "0xfDdA522eF6626e155d47Be0aeF74c204CfB3d2c4",
+    tokenManager: "0xF3BfaD8a6960ad130e02c9d14262788dea2C3Cd5",
+    agent: "0x45B1F6E7ABFf8A8bf516554634Abf37D73C79fBC",
+    l1CrossDomainMessenger: "0x7Bfe603647d5380ED3909F6f87580D0Af1B228B4",
+  },
+  l2: {
+    l2Token: "0xf53f81Ef9F9291Ce714d5691edb13b40C31F8781",
+    l2ERC20TokenBridge: "0x081299187587cBA30Bc29f4Ac4a4c6987C575f5f",
+    govBridgeExecutor: "0x970Dcbd7eA1fd378462Ef0C82B0BE7f2083DD7fE",
+  },
+};
+
+
 export const E2E_TEST_CONTRACTS_ARBITRUM = {
   l1: {
     l1Token: "0x7AEE39c46f20135114e85A03C02aB4FE73fB8127",
@@ -41,6 +59,35 @@ export const E2E_TEST_CONTRACTS_ARBITRUM = {
 };
 
 export const createOptimismVoting = async (
+  ctx: any,
+  executorCalldata: string
+) => {
+  const messageCalldata =
+    await ctx.l1CrossDomainMessenger.interface.encodeFunctionData(
+      "sendMessage",
+      [ctx.govBridgeExecutor.address, executorCalldata, 1000000]
+    );
+  const messageEvmScript = encodeEVMScript(
+    ctx.l1CrossDomainMessenger.address,
+    messageCalldata
+  );
+
+  const agentCalldata = ctx.agent.interface.encodeFunctionData("forward", [
+    messageEvmScript,
+  ]);
+  const agentEvmScript = encodeEVMScript(ctx.agent.address, agentCalldata);
+
+  const newVoteCalldata =
+    "0xd5db2c80" +
+    abiCoder.encode(["bytes", "string"], [agentEvmScript, ""]).substring(2);
+  const votingEvmScript = encodeEVMScript(ctx.voting.address, newVoteCalldata);
+
+  const newVotingTx = await ctx.tokenMnanager.forward(votingEvmScript);
+
+  await newVotingTx.wait();
+};
+
+export const createMantleVoting = async (
   ctx: any,
   executorCalldata: string
 ) => {
