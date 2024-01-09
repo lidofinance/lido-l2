@@ -25,7 +25,7 @@ async function main() {
     .deployment(networkName, { logger: console })
     .erc20TokenBridgeDeployScript(
       deploymentConfig.token,
-      deploymentConfig.token, // FIX
+      deploymentConfig.stETHToken,
       {
         deployer: ethDeployer,
         admins: {
@@ -63,15 +63,15 @@ async function main() {
     { logger: console }
   );
 
-  const l2ERC20TokenBridgeProxyDeployStepIndex = 3;
+  const l2ERC20TokenBridgeProxyDeployStepIndex = 6;
   const l2BridgingManagement = new BridgingManagement(
     l2DeployScript.getContractAddress(l2ERC20TokenBridgeProxyDeployStepIndex),
     optDeployer,
     { logger: console }
   );
 
-  await l1BridgingManagement.setup(deploymentConfig.l1);
-  await l2BridgingManagement.setup(deploymentConfig.l2);
+   await l1BridgingManagement.setup(deploymentConfig.l1);
+   await l2BridgingManagement.setup(deploymentConfig.l2);
 }
 
 main().catch((error) => {

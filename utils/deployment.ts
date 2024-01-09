@@ -11,6 +11,7 @@ interface ChainDeploymentConfig extends BridgingManagerSetupConfig {
 
 interface MultiChainDeploymentConfig {
   token: string;
+  stETHToken: string;
   l1: ChainDeploymentConfig;
   l2: ChainDeploymentConfig;
 }
@@ -18,6 +19,7 @@ interface MultiChainDeploymentConfig {
 export function loadMultiChainDeploymentConfig(): MultiChainDeploymentConfig {
   return {
     token: env.address("TOKEN"),
+    stETHToken: env.address("STETH_TOKEN"),
     l1: {
       proxyAdmin: env.address("L1_PROXY_ADMIN"),
       bridgeAdmin: env.address("L1_BRIDGE_ADMIN"),
@@ -49,8 +51,8 @@ export async function printMultiChainDeploymentConfig(
   l1DeployScript: DeployScript,
   l2DeployScript: DeployScript
 ) {
-  const { token, l1, l2 } = deploymentParams;
-  console.log(chalk.bold(`${title} :: ${chalk.underline(token)}\n`));
+  const { token, stETHToken, l1, l2 } = deploymentParams;
+  console.log(chalk.bold(`${title} :: ${chalk.underline(token)} :: ${chalk.underline(stETHToken)}\n`));
   console.log(chalk.bold("  · L1 Deployment Params:"));
   await printChainDeploymentConfig(l1Deployer, l1);
   console.log();
