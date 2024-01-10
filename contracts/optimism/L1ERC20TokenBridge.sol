@@ -55,10 +55,7 @@ contract L1ERC20TokenBridge is
 
     /// @notice Pushes token rate to L2 by depositing zero tokens.
     /// @param l2Gas_ Gas limit required to complete the deposit on L2.
-    function pushTokenRate(uint32 l2Gas_)
-        external
-        whenDepositsEnabled
-    {
+    function pushTokenRate(uint32 l2Gas_) external {
         _depositERC20To(l1TokenRebasable, l2TokenRebasable, l2TokenBridge, 0, l2Gas_, "");
     }
 

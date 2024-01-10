@@ -24,11 +24,16 @@ contract TokenRateOracle is ITokenRateOracle {
     /// @notice An updater which can update oracle.
     address public immutable tokenRateUpdater;
 
+    /// @notice A time period when token rate can be considered outdated.
+    uint256 public immutable heartbeatPeriodTime;
+
     /// @param bridge_ the bridge address that has a right to updates oracle.
     /// @param tokenRateUpdater_ address of oracle updater that has a right to updates oracle.
-    constructor(address bridge_, address tokenRateUpdater_) {
+    /// @param heartbeatPeriodTime_ time period when token rate can be considered outdated.
+    constructor(address bridge_, address tokenRateUpdater_, uint256 heartbeatPeriodTime_) {
         bridge = bridge_;
         tokenRateUpdater = tokenRateUpdater_;
+        heartbeatPeriodTime = heartbeatPeriodTime_;
     }
 
     /// @inheritdoc ITokenRateOracle
@@ -68,6 +73,11 @@ contract TokenRateOracle is ITokenRateOracle {
         }
         tokenRate = tokenRate_;
         rateL1Timestamp = rateL1Timestamp_;
+    }
+
+    /// @notice Returns flag that shows that token rate can be considered outdated.
+    function isLikelyOutdated() external view returns (bool) {
+        return block.timestamp - rateL1Timestamp > heartbeatPeriodTime;
     }
 
     /// @dev validates that method called by one of the owners

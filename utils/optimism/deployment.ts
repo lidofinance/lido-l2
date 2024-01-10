@@ -118,6 +118,7 @@ export default function deployment(
             args: [
                 expectedL2TokenBridgeProxyAddress,
                 expectedL2TokenBridgeProxyAddress,
+                86400,
                 options?.overrides,
             ],
             afterDeploy: (c) =>

@@ -81,7 +81,8 @@ async function ctxFactory() {
 
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
         bridge.address,
-        updater.address
+        updater.address,
+        86400
     ); 
     
     return {

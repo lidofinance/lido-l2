@@ -25,11 +25,15 @@ interface ITokenRateOracle {
         );
 
     /// @notice get the lastest token rate.
+    /// @return wstETH/stETH token rate.
     function latestAnswer() external view returns (int256);
 
     /// @notice represents the number of decimals the oracle responses represent.
+    /// @return decimals of the oracle response.
     function decimals() external view returns (uint8);
 
     /// @notice Updates token rate.
+    /// @param tokenRate_ wstETH/stETH token rate.
+    /// @param rateL1Timestamp_ L1 time when rate was pushed on L1 side. 
     function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external;
 }
