@@ -1,3 +1,0 @@
-node_modules
-contracts/**/interfaces/**/*.sol
-contracts/**/stubs/**/*.sol
