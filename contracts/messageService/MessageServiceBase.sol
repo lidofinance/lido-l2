@@ -3,14 +3,12 @@ pragma solidity 0.8.19;
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { IMessageService } from "../interfaces/IMessageService.sol";
-import { IGenericErrors } from "../interfaces/IGenericErrors.sol";
 
 /**
  * @title Base contract to manage cross-chain messaging.
  * @author ConsenSys Software Inc.
- * @custom:security-contact security-report@linea.build
  */
-abstract contract MessageServiceBase is Initializable, IGenericErrors {
+abstract contract MessageServiceBase is Initializable {
   IMessageService public messageService;
   address public remoteSender;
 
@@ -25,6 +23,11 @@ abstract contract MessageServiceBase is Initializable, IGenericErrors {
    * @dev Thrown when remote sender address is not authorized.
    */
   error SenderNotAuthorized();
+
+  /**
+   * @dev Thrown when an address is the default zero address.
+   */
+  error ZeroAddressNotAllowed();
 
   /**
    * @dev Modifier to make sure the caller is the known message service.
@@ -58,7 +61,7 @@ abstract contract MessageServiceBase is Initializable, IGenericErrors {
    * @notice Initializes the message service
    * @dev Must be initialized in the initialize function of the main contract or constructor
    * @param _messageService The message service address, cannot be empty.
-   */
+   **/
   function __MessageServiceBase_init(address _messageService) internal onlyInitializing {
     if (_messageService == address(0)) {
       revert ZeroAddressNotAllowed();
@@ -70,7 +73,7 @@ abstract contract MessageServiceBase is Initializable, IGenericErrors {
   /**
    * @notice Sets the remote sender
    * @param _remoteSender The authorized remote sender address, cannot be empty.
-   */
+   **/
   function _setRemoteSender(address _remoteSender) internal {
     if (_remoteSender == address(0)) {
       revert ZeroAddressNotAllowed();

@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { CodecV2 } from "../lib/Codec.sol";
 import { IMessageService } from "../../interfaces/IMessageService.sol";
 import { IGenericErrors } from "../../interfaces/IGenericErrors.sol";
 import { RateLimiter } from "../lib/RateLimiter.sol";
@@ -11,7 +12,6 @@ import { L2MessageManager } from "./L2MessageManager.sol";
 /**
  * @title Contract to manage cross-chain messaging on L2.
  * @author ConsenSys Software Inc.
- * @custom:security-contact security-report@linea.build
  */
 contract L2MessageService is
   Initializable,
@@ -22,8 +22,6 @@ contract L2MessageService is
   IGenericErrors
 {
   // Keep free storage slots for future implementation updates to avoid storage collision.
-  // @dev NB: Take note that this is at the beginning of the file where other storage gaps,
-  // are at the end of files. Be careful with how storage is adjusted on upgrades.
   uint256[50] private __gap_L2MessageService;
 
   bytes32 public constant MINIMUM_FEE_SETTER_ROLE = keccak256("MINIMUM_FEE_SETTER_ROLE");
@@ -39,8 +37,6 @@ contract L2MessageService is
   // @dev adding these should not affect storage as they are constants and are store in bytecode
   uint256 private constant REFUND_OVERHEAD_IN_GAS = 47500;
 
-  address private constant DEFAULT_SENDER_ADDRESS = address(123456789);
-
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
     _disableInitializers();
@@ -52,7 +48,7 @@ contract L2MessageService is
    * @param _l1l2MessageSetter The address owning the add L1L2MessageHashes functionality.
    * @param _rateLimitPeriod The period to rate limit against.
    * @param _rateLimitAmount The limit allowed for withdrawing the period.
-   */
+   **/
   function initialize(
     address _securityCouncil,
     address _l1l2MessageSetter,
@@ -80,7 +76,7 @@ contract L2MessageService is
     _grantRole(RATE_LIMIT_SETTER_ROLE, _securityCouncil);
     _grantRole(PAUSE_MANAGER_ROLE, _securityCouncil);
 
-    _messageSender = DEFAULT_SENDER_ADDRESS;
+    _messageSender = address(123456789);
   }
 
   /**
@@ -89,7 +85,7 @@ contract L2MessageService is
    * @param _to The address the message is intended for.
    * @param _fee The fee being paid for the message delivery.
    * @param _calldata The calldata to pass to the recipient.
-   */
+   **/
   function sendMessage(address _to, uint256 _fee, bytes calldata _calldata) external payable {
     _requireTypeNotPaused(L2_L1_PAUSE_TYPE);
     _requireTypeNotPaused(GENERAL_PAUSE_TYPE);
@@ -143,7 +139,7 @@ contract L2MessageService is
    * @param _feeRecipient The recipient for the fee.
    * @param _calldata The calldata to pass to the recipient.
    * @param _nonce The unique auto generated message number used when sending the message.
-   */
+   **/
   function claimMessage(
     address _from,
     address _to,
@@ -175,14 +171,14 @@ contract L2MessageService is
       }
     }
 
-    _messageSender = DEFAULT_SENDER_ADDRESS;
+    _messageSender = address(123456789);
     emit MessageClaimed(messageHash);
   }
 
   /**
    * @notice The Fee Manager sets a minimum fee to address DOS protection.
    * @param _feeInWei New minimum fee in Wei.
-   */
+   **/
   function setMinimumFee(uint256 _feeInWei) external onlyRole(MINIMUM_FEE_SETTER_ROLE) {
     minimumFeeInWei = _feeInWei;
   }
@@ -190,14 +186,14 @@ contract L2MessageService is
   /**
    * @dev The _messageSender address is set temporarily when claiming.
    * @return _messageSender address.
-   */
+   **/
   function sender() external view returns (address) {
     return _messageSender;
   }
 
   /**
    * @notice Function to receive funds for liquidity purposes.
-   */
+   **/
   receive() external payable virtual {}
 
   /**
@@ -205,7 +201,7 @@ contract L2MessageService is
    * @param _feeInWei The fee paid for delivery in Wei.
    * @param _to The recipient of the message and gas refund.
    * @param _calldata The calldata of the message.
-   */
+   **/
   modifier distributeFees(
     uint256 _feeInWei,
     address _to,

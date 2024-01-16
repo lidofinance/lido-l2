@@ -13,7 +13,6 @@ import { L1MessageManager } from "./L1MessageManager.sol";
 /**
  * @title Contract to manage cross-chain messaging on L1.
  * @author ConsenSys Software Inc.
- * @custom:security-contact security-report@linea.build
  */
 abstract contract L1MessageService is
   Initializable,
@@ -32,10 +31,8 @@ abstract contract L1MessageService is
   // Keep free storage slots for future implementation updates to avoid storage collision.
   uint256[50] private __gap;
 
-  // @dev adding these should not affect storage as they are constants and are stored in bytecode.
+  // @dev adding these should not affect storage as they are constants and are store in bytecode
   uint256 private constant REFUND_OVERHEAD_IN_GAS = 42000;
-
-  address private constant DEFAULT_SENDER_ADDRESS = address(123456789);
 
   /**
    * @notice Initialises underlying message service dependencies.
@@ -44,7 +41,7 @@ abstract contract L1MessageService is
    * @param _pauseManagerAddress The address owning the pause management role.
    * @param _rateLimitPeriod The period to rate limit against.
    * @param _rateLimitAmount The limit allowed for withdrawing the period.
-   */
+   **/
   function __MessageService_init(
     address _limitManagerAddress,
     address _pauseManagerAddress,
@@ -68,7 +65,7 @@ abstract contract L1MessageService is
     _grantRole(PAUSE_MANAGER_ROLE, _pauseManagerAddress);
 
     nextMessageNumber = 1;
-    _messageSender = DEFAULT_SENDER_ADDRESS;
+    _messageSender = address(123456789);
   }
 
   /**
@@ -78,7 +75,7 @@ abstract contract L1MessageService is
    * @param _to The address the message is intended for.
    * @param _fee The fee being paid for the message delivery.
    * @param _calldata The calldata to pass to the recipient.
-   */
+   **/
   function sendMessage(
     address _to,
     uint256 _fee,
@@ -109,7 +106,7 @@ abstract contract L1MessageService is
    * @notice Claims and delivers a cross-chain message.
    * @dev _feeRecipient can be set to address(0) to receive as msg.sender.
    * @dev _messageSender is set temporarily when claiming and reset post. Used in sender().
-   * @dev _messageSender is reset to DEFAULT_SENDER_ADDRESS to be more gas efficient.
+   * @dev _messageSender is reset to address(123456789) to be more gas efficient.
    * @param _from The address of the original sender.
    * @param _to The address the message is intended for.
    * @param _fee The fee being paid for the message delivery.
@@ -117,7 +114,7 @@ abstract contract L1MessageService is
    * @param _feeRecipient The recipient for the fee.
    * @param _calldata The calldata to pass to the recipient.
    * @param _nonce The unique auto generated nonce used when sending the message.
-   */
+   **/
   function claimMessage(
     address _from,
     address _to,
@@ -151,7 +148,7 @@ abstract contract L1MessageService is
       }
     }
 
-    _messageSender = DEFAULT_SENDER_ADDRESS;
+    _messageSender = address(123456789);
 
     emit MessageClaimed(messageHash);
   }
@@ -159,14 +156,14 @@ abstract contract L1MessageService is
   /**
    * @notice Claims and delivers a cross-chain message.
    * @dev _messageSender is set temporarily when claiming.
-   */
+   **/
   function sender() external view returns (address) {
     return _messageSender;
   }
 
   /**
    * @notice Function to receive funds for liquidity purposes.
-   */
+   **/
   receive() external payable virtual {}
 
   /**
@@ -174,7 +171,7 @@ abstract contract L1MessageService is
    * @param _feeInWei The fee paid for delivery in Wei.
    * @param _to The recipient of the message and gas refund.
    * @param _calldata The calldata of the message.
-   */
+   **/
   modifier distributeFees(
     uint256 _feeInWei,
     address _to,

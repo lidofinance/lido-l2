@@ -6,7 +6,6 @@ import { ERC20PermitUpgradeable } from "@openzeppelin/contracts-upgradeable/toke
 /**
  * @title BridgedToken Contract
  * @notice ERC20 token created when a native token is bridged to a target chain.
- * @custom:security-contact security-report@linea.build
  */
 contract BridgedToken is ERC20PermitUpgradeable {
   address public bridge;

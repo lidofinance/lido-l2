@@ -43,7 +43,7 @@ interface IMessageService {
   error MessageSendingFailed(address destination);
 
   /**
-   * @dev Thrown when the recipient address reverts.
+   * @dev Thrown when the destination address reverts.
    */
   error FeePaymentFailed(address recipient);
 

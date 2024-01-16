@@ -20,7 +20,6 @@ import { MessageServiceBase } from "../messageService/MessageServiceBase.sol";
  * @title Linea Canonical Token Bridge
  * @notice Contract to manage cross-chain ERC20 bridging.
  * @author ConsenSys Software Inc.
- * @custom:security-contact security-report@linea.build
  */
 contract TokenBridge is
   ITokenBridge,
@@ -32,7 +31,8 @@ contract TokenBridge is
   using SafeERC20Upgradeable for IERC20Upgradeable;
 
   // solhint-disable-next-line var-name-mixedcase
-  bytes4 internal constant _PERMIT_SELECTOR = IERC20PermitUpgradeable.permit.selector;
+  bytes4 internal constant _PERMIT_SELECTOR =
+    bytes4(keccak256(bytes("permit(address,address,uint256,uint256,uint8,bytes32,bytes32)")));
 
   /// @notice used for the token metadata
   bytes private constant METADATA_NAME = abi.encodeCall(IERC20MetadataUpgradeable.name, ());

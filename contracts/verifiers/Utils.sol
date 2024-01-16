@@ -18,7 +18,6 @@
 
 pragma solidity 0.8.19;
 
-/// @custom:security-contact security-report@linea.build
 library Utils {
   uint256 private constant r_mod = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
   uint256 private constant bb = 340282366920938463463374607431768211456; // 2**128

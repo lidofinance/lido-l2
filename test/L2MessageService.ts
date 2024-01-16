@@ -574,20 +574,6 @@ describe("L2MessageService", () => {
       });
 
       it("Should fail when the message hash does not exist", async () => {
-        const expectedBytes = await encodeSendMessage(
-          l2MessageService.address,
-          notAuthorizedAccount.address,
-          MESSAGE_FEE,
-          MESSAGE_VALUE_1ETH,
-          BigNumber.from(1),
-          EMPTY_CALLDATA,
-        );
-
-        const messageHash = ethers.utils.keccak256(expectedBytes);
-       
-        await l2MessageService.addFunds({ value: INITIAL_WITHDRAW_LIMIT });
-
-        
         await expect(
           l2MessageService.claimMessage(
             l2MessageService.address,
@@ -598,7 +584,7 @@ describe("L2MessageService", () => {
             EMPTY_CALLDATA,
             1,
           ),
-        ).to.be.revertedWithCustomError(l2MessageService, "MessageDoesNotExistOrHasAlreadyBeenClaimed").withArgs(messageHash);
+        ).to.be.revertedWithCustomError(l2MessageService, "MessageDoesNotExistOrHasAlreadyBeenClaimed");
       });
 
       it("Should execute the claim message and send fees to recipient, left over fee to destination", async () => {
@@ -824,8 +810,6 @@ describe("L2MessageService", () => {
           "0x",
         );
 
-        const messageHash = ethers.utils.keccak256(expectedBytes);
-       
         await l2MessageService.addFunds({ value: INITIAL_WITHDRAW_LIMIT });
 
         const expectedBytesArray = [ethers.utils.keccak256(expectedBytes)];
@@ -850,7 +834,7 @@ describe("L2MessageService", () => {
             "0x",
             1,
           ),
-        ).to.be.revertedWithCustomError(l2MessageService, "MessageDoesNotExistOrHasAlreadyBeenClaimed").withArgs(messageHash);
+        ).to.be.revertedWithCustomError(l2MessageService, "MessageDoesNotExistOrHasAlreadyBeenClaimed");
       });
 
       it("Should execute the claim message and send the fees to msg.sender", async () => {
@@ -1097,7 +1081,6 @@ describe("L2MessageService", () => {
       });
     });
   });
-
 
   describe("Set minimum fee", () => {
     it("Should fail when caller is not allowed", async () => {

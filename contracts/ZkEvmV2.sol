@@ -12,7 +12,6 @@ import { CodecV2 } from "./messageService/lib/Codec.sol";
 /**
  * @title Contract to manage cross-chain messaging on L1 and rollup proving.
  * @author ConsenSys Software Inc.
- * @custom:security-contact security-report@linea.build
  */
 contract ZkEvmV2 is IZkEvmV2, Initializable, AccessControlUpgradeable, L1MessageService {
   using TransactionDecoder for *;
@@ -45,7 +44,7 @@ contract ZkEvmV2 is IZkEvmV2, Initializable, AccessControlUpgradeable, L1Message
    * @param _operators The allowed rollup operators at initialization.
    * @param _rateLimitPeriodInSeconds The period in which withdrawal amounts and fees will be accumulated.
    * @param _rateLimitAmountInWei The limit allowed for withdrawing in the period.
-   */
+   **/
   function initialize(
     bytes32 _initialStateRootHash,
     uint256 _initialL2BlockNumber,
@@ -83,13 +82,13 @@ contract ZkEvmV2 is IZkEvmV2, Initializable, AccessControlUpgradeable, L1Message
    * @dev DEFAULT_ADMIN_ROLE is required to execute.
    * @param _newVerifierAddress The address for the verifier contract.
    * @param _proofType The proof type being set/updated.
-   */
+   **/
   function setVerifierAddress(address _newVerifierAddress, uint256 _proofType) external onlyRole(DEFAULT_ADMIN_ROLE) {
     if (_newVerifierAddress == address(0)) {
       revert ZeroAddressNotAllowed();
     }
 
-    emit VerifierAddressChanged(_newVerifierAddress, _proofType, msg.sender, verifiers[_proofType]);
+    emit VerifierAddressChanged(_newVerifierAddress, _proofType, msg.sender);
 
     verifiers[_proofType] = _newVerifierAddress;
   }
@@ -99,7 +98,7 @@ contract ZkEvmV2 is IZkEvmV2, Initializable, AccessControlUpgradeable, L1Message
    * @dev DEFAULT_ADMIN_ROLE is required to execute.
    * @dev _blocksData[0].fromAddresses is a temporary workaround to pass bytes calldata
    * @param _blocksData The full BlockData collection - block, transaction and log data.
-   */
+   **/
   function finalizeBlocksWithoutProof(
     BlockData[] calldata _blocksData
   ) external whenTypeNotPaused(GENERAL_PAUSE_TYPE) onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -114,7 +113,7 @@ contract ZkEvmV2 is IZkEvmV2, Initializable, AccessControlUpgradeable, L1Message
    * @param _proof The proof to be verified with the proof type verifier contract.
    * @param _proofType The proof type to determine which verifier contract to use.
    * @param _parentStateRootHash The starting roothash for the last known block.
-   */
+   **/
   function finalizeBlocks(
     BlockData[] calldata _blocksData,
     bytes calldata _proof,
@@ -134,14 +133,13 @@ contract ZkEvmV2 is IZkEvmV2, Initializable, AccessControlUpgradeable, L1Message
   }
 
   /**
-   * @notice Finalizes blocks using a proof.
-   * @dev OPERATOR_ROLE is required to execute.
+   * @notice Finalizes blocks with or without using a proof depending on _shouldProve
    * @dev If the verifier based on proof type is not found, it reverts.
    * @param _blocksData The full BlockData collection - block, transaction and log data.
    * @param _proof The proof to be verified with the proof type verifier contract.
    * @param _proofType The proof type to determine which verifier contract to use.
    * @param _parentStateRootHash The starting roothash for the last known block.
-   */
+   **/
   function _finalizeBlocks(
     BlockData[] calldata _blocksData,
     bytes calldata _proof,
@@ -162,13 +160,13 @@ contract ZkEvmV2 is IZkEvmV2, Initializable, AccessControlUpgradeable, L1Message
 
     uint256[] memory timestamps = new uint256[](_blocksData.length);
     bytes32[] memory blockHashes = new bytes32[](_blocksData.length);
-    bytes32[] memory rootHashes;
+    bytes32[] memory hashOfRootHashes;
 
     unchecked {
-      rootHashes = new bytes32[](_blocksData.length + 1);
+      hashOfRootHashes = new bytes32[](_blocksData.length + 1);
     }
 
-    rootHashes[0] = _parentStateRootHash;
+    hashOfRootHashes[0] = _parentStateRootHash;
 
     bytes32 hashOfTxHashes;
     bytes32 hashOfMessageHashes;
@@ -177,7 +175,7 @@ contract ZkEvmV2 is IZkEvmV2, Initializable, AccessControlUpgradeable, L1Message
       BlockData calldata blockInfo = _blocksData[i];
 
       if (blockInfo.l2BlockTimestamp >= block.timestamp) {
-        revert BlockTimestampError(blockInfo.l2BlockTimestamp, block.timestamp);
+        revert BlockTimestampError();
       }
 
       hashOfTxHashes = _processBlockTransactions(blockInfo.transactions, blockInfo.batchReceptionIndices);
@@ -199,7 +197,7 @@ contract ZkEvmV2 is IZkEvmV2, Initializable, AccessControlUpgradeable, L1Message
       timestamps[i] = blockInfo.l2BlockTimestamp;
 
       unchecked {
-        rootHashes[i + 1] = blockInfo.blockRootHash;
+        hashOfRootHashes[i + 1] = blockInfo.blockRootHash;
       }
 
       emit BlockFinalized(currentBlockNumberTemp, blockInfo.blockRootHash);
@@ -223,7 +221,7 @@ contract ZkEvmV2 is IZkEvmV2, Initializable, AccessControlUpgradeable, L1Message
             keccak256(abi.encodePacked(blockHashes)),
             firstBlockNumber,
             keccak256(abi.encodePacked(timestamps)),
-            keccak256(abi.encodePacked(rootHashes))
+            keccak256(abi.encodePacked(hashOfRootHashes))
           )
         )
       );
@@ -241,7 +239,7 @@ contract ZkEvmV2 is IZkEvmV2, Initializable, AccessControlUpgradeable, L1Message
    * @dev Updates the outbox status on L1 as received.
    * @param _transactions The transactions in a particular block.
    * @param _batchReceptionIndices The indexes where the transaction type is the L1->L2 achoring message hashes transaction.
-   */
+   **/
   function _processBlockTransactions(
     bytes[] calldata _transactions,
     uint16[] calldata _batchReceptionIndices
@@ -276,7 +274,7 @@ contract ZkEvmV2 is IZkEvmV2, Initializable, AccessControlUpgradeable, L1Message
    * @notice Anchors message hashes and hashes the packed hash array.
    * @dev Also adds L2->L1 sent message hashes for later claiming.
    * @param _messageHashes The hashes in the message sent event logs.
-   */
+   **/
   function _processMessageHashes(bytes32[] calldata _messageHashes) internal returns (bytes32 hashOfLogHashes) {
     for (uint256 i; i < _messageHashes.length; ) {
       _addL2L1MessageHash(_messageHashes[i]);
@@ -295,7 +293,7 @@ contract ZkEvmV2 is IZkEvmV2, Initializable, AccessControlUpgradeable, L1Message
    * @param _proofType The proof type to determine which verifier contract to use.
    * @param _proof The proof to be verified with the proof type verifier contract.
    * @param _parentStateRootHash The beginning roothash to start with.
-   */
+   **/
   function _verifyProof(
     uint256 _publicInputHash,
     uint256 _proofType,

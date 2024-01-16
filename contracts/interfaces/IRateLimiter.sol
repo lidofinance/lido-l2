@@ -35,7 +35,7 @@ interface IRateLimiter {
 
   /**
    * @notice Resets the rate limit amount to the amount specified.
-   * @param _amount sets the new limit amount.
+   * @param _amount New message hashes.
    */
   function resetRateLimitAmount(uint256 _amount) external;
 

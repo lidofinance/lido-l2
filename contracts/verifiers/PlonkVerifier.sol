@@ -22,7 +22,6 @@ pragma experimental ABIEncoderV2;
 
 import { Utils } from "./Utils.sol";
 
-/// @custom:security-contact security-report@linea.build
 contract PlonkVerifier {
   using Utils for *;
   uint256 private constant r_mod = 21888242871839275222246405745257275088548364400416034343698204186575808495617;

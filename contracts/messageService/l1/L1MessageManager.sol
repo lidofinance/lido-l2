@@ -6,7 +6,6 @@ import { IL1MessageManager } from "../../interfaces/IL1MessageManager.sol";
 /**
  * @title Contract to manage cross-chain message hashes storage and status on L1.
  * @author ConsenSys Software Inc.
- * @custom:security-contact security-report@linea.build
  */
 abstract contract L1MessageManager is IL1MessageManager {
   uint8 public constant INBOX_STATUS_UNKNOWN = 0;
@@ -15,6 +14,8 @@ abstract contract L1MessageManager is IL1MessageManager {
   uint8 public constant OUTBOX_STATUS_UNKNOWN = 0;
   uint8 public constant OUTBOX_STATUS_SENT = 1;
   uint8 public constant OUTBOX_STATUS_RECEIVED = 2;
+
+  /// @dev There is a uint216 worth of storage layout here.
 
   /// @dev Mapping to store L1->L2 message hashes status.
   /// @dev messageHash => messageStatus (0: unknown, 1: sent, 2: received).
@@ -54,7 +55,7 @@ abstract contract L1MessageManager is IL1MessageManager {
    */
   function _updateL2L1MessageStatusToClaimed(bytes32 _messageHash) internal {
     if (inboxL2L1MessageStatus[_messageHash] != INBOX_STATUS_RECEIVED) {
-      revert MessageDoesNotExistOrHasAlreadyBeenClaimed(_messageHash);
+      revert MessageDoesNotExistOrHasAlreadyBeenClaimed();
     }
 
     delete inboxL2L1MessageStatus[_messageHash];

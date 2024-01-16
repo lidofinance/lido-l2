@@ -2,14 +2,6 @@
 pragma solidity 0.8.19;
 
 interface IZkEvmV2 {
-  /*
-   * @dev blockRootHash is the calculated root hash of the block.
-   * @dev l2BlockTimestamp corresponds to the time the block was produced.
-   * @dev transactions is the transaction collection on the block RLP encoded.
-   * @dev l2ToL1MsgHashes collection contains all the hashes for L2 to L1 anchoring.
-   * @dev fromAddresses is a concatonation of all the from addresses for the transactions.
-   * @dev batchReceptionIndices defines which transactions in the collection are L2 to L1 messages.
-   */
   struct BlockData {
     bytes32 blockRootHash;
     uint32 l2BlockTimestamp;
@@ -34,14 +26,13 @@ interface IZkEvmV2 {
   event VerifierAddressChanged(
     address indexed verifierAddress,
     uint256 indexed proofType,
-    address indexed verifierSetBy,
-    address oldVerifierAddress
+    address indexed verifierSetBy
   );
 
   /**
    * @dev Thrown when l2 block timestamp is not correct
    */
-  error BlockTimestampError(uint256 l2BlockTimestamp, uint256 currentBlockTimestamp);
+  error BlockTimestampError();
 
   /**
    * @dev Thrown when the starting rootHash does not match the existing state
@@ -78,27 +69,27 @@ interface IZkEvmV2 {
    * @dev DEFAULT_ADMIN_ROLE is required to execute
    * @param _newVerifierAddress The address for the verifier contract
    * @param _proofType The proof type being set/updated
-   */
+   **/
   function setVerifierAddress(address _newVerifierAddress, uint256 _proofType) external;
 
   /**
    * @notice Finalizes blocks without using a proof
    * @dev DEFAULT_ADMIN_ROLE is required to execute
    * @param _calldata The full BlockData collection - block, transaction and log data
-   */
+   **/
   function finalizeBlocksWithoutProof(BlockData[] calldata _calldata) external;
 
   /**
-   * @notice Finalizes blocks using a proof.
-   * @dev OPERATOR_ROLE is required to execute.
-   * @dev If the verifier based on proof type is not found, it reverts.
-   * @param _blocksData The full BlockData collection - block, transaction and log data.
-   * @param _proof The proof to be verified with the proof type verifier contract.
-   * @param _proofType The proof type to determine which verifier contract to use.
-   * @param _parentStateRootHash The starting roothash for the last known block.
+   * @notice Finalizes blocks without using a proof
+   * @dev OPERATOR_ROLE is required to execute
+   * @dev If the verifier based on proof type is not found, it defaults to the default verifier type
+   * @param _calldata The full BlockData collection - block, transaction and log data
+   * @param _proof The proof to verified with the proof type verifier contract
+   * @param _proofType The proof type to determine which verifier contract to use
+   * @param _parentStateRootHash The beginning roothash to start with
    **/
   function finalizeBlocks(
-    BlockData[] calldata _blocksData,
+    BlockData[] calldata _calldata,
     bytes calldata _proof,
     uint256 _proofType,
     bytes32 _parentStateRootHash

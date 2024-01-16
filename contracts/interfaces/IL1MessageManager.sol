@@ -18,9 +18,9 @@ interface IL1MessageManager {
   error MessageAlreadySent();
 
   /**
-   * @dev Thrown when the message has already been claimed or does not exist.
+   * @dev Thrown when the message has already been claimed.
    */
-  error MessageDoesNotExistOrHasAlreadyBeenClaimed(bytes32 messageHash);
+  error MessageDoesNotExistOrHasAlreadyBeenClaimed();
 
   /**
    * @dev Thrown when the message has already been received.
