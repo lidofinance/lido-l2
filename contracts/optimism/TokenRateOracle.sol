@@ -9,31 +9,28 @@ import {ITokenRateOracle} from "../token/interfaces/ITokenRateOracle.sol";
 /// @notice Oracle for storing token rate.
 contract TokenRateOracle is ITokenRateOracle {
 
-    error NotAnOwner(address caller);
-    error IncorrectRateTimestamp();
-
     /// @notice wstETH/stETH token rate.
     uint256 private tokenRate;
 
-    /// @notice L1 time when token rate was pushed. 
+    /// @notice L1 time when token rate was pushed.
     uint256 private rateL1Timestamp;
 
     /// @notice A bridge which can update oracle.
-    address public immutable bridge;
+    address public immutable BRIDGE;
 
     /// @notice An updater which can update oracle.
-    address public immutable tokenRateUpdater;
+    address public immutable TOKEN_RATE_UPDATER;
 
     /// @notice A time period when token rate can be considered outdated.
-    uint256 public immutable heartbeatPeriodTime;
+    uint256 public immutable RATE_VALIDITY_PERIOD;
 
     /// @param bridge_ the bridge address that has a right to updates oracle.
     /// @param tokenRateUpdater_ address of oracle updater that has a right to updates oracle.
-    /// @param heartbeatPeriodTime_ time period when token rate can be considered outdated.
-    constructor(address bridge_, address tokenRateUpdater_, uint256 heartbeatPeriodTime_) {
-        bridge = bridge_;
-        tokenRateUpdater = tokenRateUpdater_;
-        heartbeatPeriodTime = heartbeatPeriodTime_;
+    /// @param rateValidityPeriod_ time period when token rate can be considered outdated.
+    constructor(address bridge_, address tokenRateUpdater_, uint256 rateValidityPeriod_) {
+        BRIDGE = bridge_;
+        TOKEN_RATE_UPDATER = tokenRateUpdater_;
+        RATE_VALIDITY_PERIOD = rateValidityPeriod_;
     }
 
     /// @inheritdoc ITokenRateOracle
@@ -69,7 +66,7 @@ contract TokenRateOracle is ITokenRateOracle {
     function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external onlyOwner {
         // reject rates from the future
         if (rateL1Timestamp_ < rateL1Timestamp) {
-            revert IncorrectRateTimestamp();
+            revert ErrorIncorrectRateTimestamp();
         }
         tokenRate = tokenRate_;
         rateL1Timestamp = rateL1Timestamp_;
@@ -77,14 +74,17 @@ contract TokenRateOracle is ITokenRateOracle {
 
     /// @notice Returns flag that shows that token rate can be considered outdated.
     function isLikelyOutdated() external view returns (bool) {
-        return block.timestamp - rateL1Timestamp > heartbeatPeriodTime;
+        return block.timestamp - rateL1Timestamp > RATE_VALIDITY_PERIOD;
     }
 
     /// @dev validates that method called by one of the owners
     modifier onlyOwner() {
-        if (msg.sender != bridge && msg.sender != tokenRateUpdater) {
-            revert NotAnOwner(msg.sender);
+        if (msg.sender != BRIDGE && msg.sender != TOKEN_RATE_UPDATER) {
+            revert ErrorNotAnOwner(msg.sender);
         }
         _;
     }
+
+    error ErrorNotAnOwner(address caller);
+    error ErrorIncorrectRateTimestamp();
 }

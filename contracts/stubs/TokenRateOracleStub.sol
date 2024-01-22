@@ -29,9 +29,6 @@ contract TokenRateOracleStub is ITokenRateOracle {
         latestRoundDataUpdatedAt = updatedAt_;
     }
 
-    /**
-     * @notice get data about the latest round.
-     */
     function latestRoundData()
       external
       view
@@ -56,8 +53,7 @@ contract TokenRateOracleStub is ITokenRateOracle {
     }
 
     function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external {
-      // check timestamp not late as current one.
-      latestRoundDataAnswer = tokenRate_;
-      latestRoundDataUpdatedAt = rateL1Timestamp_;
+        latestRoundDataAnswer = tokenRate_;
+        latestRoundDataUpdatedAt = rateL1Timestamp_;
     }
 }

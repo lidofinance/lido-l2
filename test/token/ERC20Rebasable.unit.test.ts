@@ -87,7 +87,7 @@ unit("ERC20Rebasable", ctxFactory)
     await assert.revertsWith(rebasableProxied.connect(user1).unwrap(0), "ErrorZeroTokensUnwrap()");
   })
 
-  .test("wrap() positive scenario", async (ctx) => {
+  .test("wrap() happy path", async (ctx) => {
     
     const { rebasableProxied, wrappedTokenStub } = ctx.contracts;
     const {user1, user2 } = ctx.accounts;
@@ -170,7 +170,7 @@ unit("ERC20Rebasable", ctxFactory)
     await assert.revertsWith(rebasableProxied.connect(user1).wrap(21), "ErrorOracleAnswerIsNegative()");
   })
 
-  .test("unwrap() positive scenario", async (ctx) => {
+  .test("unwrap() happy path", async (ctx) => {
 
     const { rebasableProxied, wrappedTokenStub } = ctx.contracts;
     const {user1, user2 } = ctx.accounts;
@@ -261,7 +261,7 @@ unit("ERC20Rebasable", ctxFactory)
     await assert.revertsWith(rebasableProxied.connect(user1).unwrap(wei`4 ether`), "ErrorNotEnoughBalance()");
   })
 
-  .test("mintShares() positive scenario", async (ctx) => {
+  .test("mintShares() happy path", async (ctx) => {
 
     const { rebasableProxied } = ctx.contracts;
     const {user1, user2, owner } = ctx.accounts;
@@ -308,9 +308,9 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.totalSupply(), premintTokens.add(user1TokensMinted).add(user2TokensMinted));
   })
 
-  .test("burnShares() positive scenario", async (ctx) => {
+  .test("burnShares() happy path", async (ctx) => {
 
-    const { rebasableProxied, tokenRateOracleStub } = ctx.contracts;
+    const { rebasableProxied } = ctx.contracts;
     const {user1, user2, owner } = ctx.accounts;
     const { rate, decimals, premintShares, premintTokens } = ctx.constants;
 

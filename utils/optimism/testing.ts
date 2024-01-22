@@ -9,7 +9,7 @@ import {
   L2ERC20TokenBridge,
   ERC20Bridged__factory,
   ERC20BridgedStub__factory,
-  ERC20WrapableStub__factory,
+  ERC20WrappableStub__factory,
   TokenRateOracle__factory,
   L1ERC20TokenBridge__factory,
   L2ERC20TokenBridge__factory,
@@ -156,7 +156,7 @@ async function loadDeployedBridges(
   l2SignerOrProvider: SignerOrProvider
 ) {
   return {
-    l1Token: ERC20WrapableStub__factory.connect(
+    l1Token: ERC20WrappableStub__factory.connect(
       testingUtils.env.OPT_L1_TOKEN(),
       l1SignerOrProvider
     ),
@@ -192,7 +192,7 @@ async function deployTestBridge(
     "TTR"
   );
 
-  const l1Token = await new ERC20WrapableStub__factory(ethDeployer).deploy(
+  const l1Token = await new ERC20WrappableStub__factory(ethDeployer).deploy(
     l1TokenRebasable.address,
     "Test Token",
     "TT"

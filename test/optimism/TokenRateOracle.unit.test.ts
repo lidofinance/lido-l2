@@ -9,8 +9,8 @@ unit("TokenRateOracle", ctxFactory)
     const { tokenRateOracle } = ctx.contracts;
     const { bridge, updater } = ctx.accounts;
 
-    assert.equal(await tokenRateOracle.bridge(), bridge.address);
-    assert.equal(await tokenRateOracle.tokenRateUpdater(), updater.address);
+    assert.equal(await tokenRateOracle.BRIDGE(), bridge.address);
+    assert.equal(await tokenRateOracle.TOKEN_RATE_UPDATER(), updater.address);
 
     assert.equalBN(await tokenRateOracle.latestAnswer(), 0);
 
@@ -35,7 +35,7 @@ unit("TokenRateOracle", ctxFactory)
     const { bridge, updater, stranger } = ctx.accounts;
     tokenRateOracle.connect(bridge).updateRate(10, 20);
     tokenRateOracle.connect(updater).updateRate(10, 23);
-    await assert.revertsWith(tokenRateOracle.connect(stranger).updateRate(10, 40), "NotAnOwner(\""+stranger.address+"\")");
+    await assert.revertsWith(tokenRateOracle.connect(stranger).updateRate(10, 40), "ErrorNotAnOwner(\""+stranger.address+"\")");
   })
 
   .test("incorrect time", async (ctx) => {
@@ -43,7 +43,7 @@ unit("TokenRateOracle", ctxFactory)
     const { bridge } = ctx.accounts;
     
     tokenRateOracle.connect(bridge).updateRate(10, 1000);
-    await assert.revertsWith(tokenRateOracle.connect(bridge).updateRate(12, 20), "IncorrectRateTimestamp()");
+    await assert.revertsWith(tokenRateOracle.connect(bridge).updateRate(12, 20), "ErrorIncorrectRateTimestamp()");
   })
 
   .test("state after update token rate", async (ctx) => {

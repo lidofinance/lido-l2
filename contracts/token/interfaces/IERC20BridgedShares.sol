@@ -9,7 +9,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @notice Extends the ERC20 functionality that allows the bridge to mint/burn tokens
 interface IERC20BridgedShares is IERC20 {
     /// @notice Returns bridge which can mint and burn tokens on L2
-    function bridge() external view returns (address);
+    function BRIDGE() external view returns (address);
 
     /// @notice Creates amount_ tokens and assigns them to account_, increasing the total supply
     /// @param account_ An address of the account to mint tokens

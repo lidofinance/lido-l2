@@ -5,7 +5,7 @@ pragma solidity 0.8.10;
 
 /// @author kovalgek
 /// @notice Extends the ERC20 functionality that allows the bridge to mint/burn tokens
-interface IERC20Wrapable {
+interface IERC20Wrappable {
 
     /**
      * @notice Exchanges wstETH to stETH
@@ -22,13 +22,13 @@ interface IERC20Wrapable {
 
     /**
      * @notice Exchanges stETH to wstETH
-     * @param wrapableTokenAmount_ amount of stETH to uwrap in exchange for wstETH
+     * @param wrappableTokenAmount_ amount of stETH to uwrap in exchange for wstETH
      * @dev Requirements:
      *  - `stETHAmount_` must be non-zero
      *  - msg.sender must have at least `stETHAmount_` stETH.
      * @return Amount of wstETH user receives after unwrap
      */
-    function unwrap(uint256 wrapableTokenAmount_) external returns (uint256);
+    function unwrap(uint256 wrappableTokenAmount_) external returns (uint256);
 
     /**
      * @notice Get amount of wstETH for a one stETH

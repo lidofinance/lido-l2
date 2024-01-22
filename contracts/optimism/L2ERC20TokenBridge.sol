@@ -8,7 +8,7 @@ import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
 import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
 import {ITokenRateOracle} from "../token/interfaces/ITokenRateOracle.sol";
 import {ERC20Rebasable} from "../token/ERC20Rebasable.sol";
-import {IERC20Wrapable} from "../token/interfaces/IERC20Wrapable.sol";
+import {IERC20Wrappable} from "../token/interfaces/IERC20Wrappable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -32,8 +32,7 @@ contract L2ERC20TokenBridge is
 {
     using SafeERC20 for IERC20;
 
-    /// @inheritdoc IL2ERC20Bridge
-    address public immutable l1TokenBridge;
+    address public immutable L1_TOKEN_BRIDGE;
 
     /// @param messenger_ L2 messenger address being used for cross-chain communications
     /// @param l1TokenBridge_  Address of the corresponding L1 bridge
@@ -49,7 +48,12 @@ contract L2ERC20TokenBridge is
         address l2TokenNonRebasable_,
         address l2TokenRebasable_
     ) CrossDomainEnabled(messenger_) BridgeableTokensOptimism(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
-        l1TokenBridge = l1TokenBridge_;
+        L1_TOKEN_BRIDGE = l1TokenBridge_;
+    }
+
+    /// @inheritdoc IL2ERC20Bridge
+    function l1TokenBridge() external view returns (address) {
+        return L1_TOKEN_BRIDGE;
     }
 
     /// @inheritdoc IL2ERC20Bridge
@@ -69,28 +73,8 @@ contract L2ERC20TokenBridge is
         uint256 amount_,
         uint32 l1Gas_,
         bytes calldata data_
-    ) external whenWithdrawalsEnabled onlySupportedL2Token(l2Token_) {        
+    ) external whenWithdrawalsEnabled onlySupportedL2Token(l2Token_) {
         _withdrawTo(l2Token_, to_, amount_, l1Gas_, data_);
-    }
-
-    function _withdrawTo(
-        address l2Token_,
-        address to_,
-        uint256 amount_,
-        uint32 l1Gas_,
-        bytes calldata data_
-    ) internal {
-        if (l2Token_ == l2TokenRebasable) {
-            // maybe loosing 1 wei her as well
-            uint256 shares = ERC20Rebasable(l2TokenRebasable).getSharesByTokens(amount_);
-            ERC20Rebasable(l2TokenRebasable).burnShares(msg.sender, shares);
-            _initiateWithdrawal(l1TokenRebasable, l2TokenRebasable, msg.sender, to_, shares, l1Gas_, data_);
-            emit WithdrawalInitiated(l1TokenRebasable, l2TokenRebasable, msg.sender, to_, amount_, data_);
-        } else if (l2Token_ == l2TokenNonRebasable) {
-            IERC20Bridged(l2TokenNonRebasable).bridgeBurn(msg.sender, amount_);
-            _initiateWithdrawal(l1TokenNonRebasable, l2TokenNonRebasable, msg.sender, to_, amount_, l1Gas_, data_);
-            emit WithdrawalInitiated(l1TokenNonRebasable, l2TokenNonRebasable, msg.sender, to_, amount_, data_);
-        }
     }
 
     /// @inheritdoc IL2ERC20Bridge
@@ -106,18 +90,39 @@ contract L2ERC20TokenBridge is
         whenDepositsEnabled
         onlySupportedL1Token(l1Token_)
         onlySupportedL2Token(l2Token_)
-        onlyFromCrossDomainAccount(l1TokenBridge)
+        onlyFromCrossDomainAccount(L1_TOKEN_BRIDGE)
     {
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
             DepositData memory depositData = decodeDepositData(data_);
-            ITokenRateOracle tokenRateOracle = ERC20Rebasable(l2TokenRebasable).tokenRateOracle();
-            tokenRateOracle.updateRate(depositData.rate, depositData.time);
+            ITokenRateOracle tokenRateOracle = ERC20Rebasable(L2_TOKEN_REBASABLE).TOKEN_RATE_ORACLE();
+            tokenRateOracle.updateRate(depositData.rate, depositData.timestamp);
             //slither-disable-next-line unused-return
-            ERC20Rebasable(l2TokenRebasable).mintShares(to_, amount_);
-            emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, depositData.data);
+            ERC20Rebasable(L2_TOKEN_REBASABLE).mintShares(to_, amount_);
+            uint256 rebasableTokenAmount = ERC20Rebasable(L2_TOKEN_REBASABLE).getTokensByShares(amount_);
+            emit DepositFinalized(l1Token_, l2Token_, from_, to_, rebasableTokenAmount, depositData.data);
         } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
-            IERC20Bridged(l2TokenNonRebasable).bridgeMint(to_, amount_);
+            IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeMint(to_, amount_);
             emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, data_);
+        }
+    }
+
+    function _withdrawTo(
+        address l2Token_,
+        address to_,
+        uint256 amount_,
+        uint32 l1Gas_,
+        bytes calldata data_
+    ) internal {
+        if (l2Token_ == L2_TOKEN_REBASABLE) {
+            // maybe loosing 1 wei here as well
+            uint256 shares = ERC20Rebasable(L2_TOKEN_REBASABLE).getSharesByTokens(amount_);
+            ERC20Rebasable(L2_TOKEN_REBASABLE).burnShares(msg.sender, shares);
+            _initiateWithdrawal(L2_TOKEN_REBASABLE, L2_TOKEN_REBASABLE, msg.sender, to_, shares, l1Gas_, data_);
+            emit WithdrawalInitiated(L1_TOKEN_REBASABLE, L2_TOKEN_REBASABLE, msg.sender, to_, amount_, data_);
+        } else if (l2Token_ == L2_TOKEN_NON_REBASABLE) {
+            IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeBurn(msg.sender, amount_);
+            _initiateWithdrawal(L1_TOKEN_NON_REBASABLE, L2_TOKEN_NON_REBASABLE, msg.sender, to_, amount_, l1Gas_, data_);
+            emit WithdrawalInitiated(L1_TOKEN_NON_REBASABLE, L2_TOKEN_NON_REBASABLE, msg.sender, to_, amount_, data_);
         }
     }
 
@@ -150,6 +155,6 @@ contract L2ERC20TokenBridge is
             data_
         );
 
-        sendCrossDomainMessage(l1TokenBridge, l1Gas_, message);
+        sendCrossDomainMessage(L1_TOKEN_BRIDGE, l1Gas_, message);
     }
 }

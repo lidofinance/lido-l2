@@ -7,7 +7,7 @@ import testing, { scenario } from "../../utils/testing";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { ERC20WrapableStub } from "../../typechain";
+import { ERC20WrappableStub } from "../../typechain";
 
 scenario("Optimism :: Bridging integration test", ctxFactory)
   .after(async (ctx) => {
@@ -442,7 +442,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       l2TokenRebasable.address,
       tokenHolderA.address,
       tokenHolderA.address,
-      depositAmountNonRebasable,
+      depositAmountRebasable,
       "0x",
     ]);
 
@@ -700,7 +700,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       l2TokenRebasable.address,
       tokenHolderA.address,
       tokenHolderB.address,
-      depositAmountNonRebasable,
+      depositAmountRebasable,
       "0x",
     ]);
 
@@ -917,7 +917,7 @@ async function ctxFactory() {
   };
 }
 
-async function packedTokenRateAndTimestamp(l1Provider: JsonRpcProvider, l1Token: ERC20WrapableStub) {
+async function packedTokenRateAndTimestamp(l1Provider: JsonRpcProvider, l1Token: ERC20WrappableStub) {
     const stETHPerToken = await l1Token.stETHPerToken();
     const blockNumber = await l1Provider.getBlockNumber();
     const blockTimestamp = (await l1Provider.getBlock(blockNumber)).timestamp;

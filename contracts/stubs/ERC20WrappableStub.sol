@@ -6,10 +6,10 @@ pragma solidity 0.8.10;
 import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Wrapable} from "../token/interfaces/IERC20Wrapable.sol";
+import {IERC20Wrappable} from "../token/interfaces/IERC20Wrappable.sol";
 
 // represents wstETH on L1
-contract ERC20WrapableStub is IERC20Wrapable, ERC20 {
+contract ERC20WrappableStub is IERC20Wrappable, ERC20 {
 
     IERC20 public stETH;
     address public bridge;

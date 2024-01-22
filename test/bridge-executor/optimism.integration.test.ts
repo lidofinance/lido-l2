@@ -7,6 +7,7 @@ import {
   ERC20Bridged__factory,
   ERC20Rebasable__factory,
   TokenRateOracle__factory,
+  ERC20WrappableStub__factory,
 } from "../../typechain";
 import { wei } from "../../utils/wei";
 import optimism from "../../utils/optimism";
@@ -214,12 +215,11 @@ async function ctxFactory() {
     "TT"
   );
 
-  const l1TokenRebasable = await new ERC20Rebasable__factory(l1Deployer).deploy(
-    "Test Token Rebasable",
-    "TTR"
+  const l1TokenRebasable = await new ERC20WrappableStub__factory(l1Deployer).deploy(
+    l1Token.address,
+    "Test Token",
+    "TT"
   );
-
-  const tokenRateOracleStub = await new TokenRateOracle__factory(l2Deployer).deploy();
 
   const optAddresses = optimism.addresses(networkName);
 

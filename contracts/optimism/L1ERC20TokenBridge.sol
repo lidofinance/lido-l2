@@ -15,11 +15,8 @@ import {BridgeableTokensOptimism} from "./BridgeableTokensOptimism.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {DepositDataCodec} from "./DepositDataCodec.sol";
 
-import {IERC20Wrapable} from "../token/interfaces/IERC20Wrapable.sol";
+import {IERC20Wrappable} from "../token/interfaces/IERC20Wrappable.sol";
 
-// Check if Optimism changed API for bridges. They could deprecate methods.
-// Optimise gas usage with data transfer. Maybe cache rate and see if it changed.
- 
 /// @author psirex, kovalgek
 /// @notice The L1 ERC20 token bridge locks bridged tokens on the L1 side, sends deposit messages
 ///     on the L2 side, and finalizes token withdrawals from L2. Additionally, adds the methods for
@@ -33,8 +30,7 @@ contract L1ERC20TokenBridge is
 {
     using SafeERC20 for IERC20;
 
-    /// @inheritdoc IL1ERC20Bridge
-    address public immutable l2TokenBridge;
+    address public immutable L2_TOKEN_BRIDGE;
 
     /// @param messenger_ L1 messenger address being used for cross-chain communications
     /// @param l2TokenBridge_ Address of the corresponding L2 bridge
@@ -50,13 +46,18 @@ contract L1ERC20TokenBridge is
         address l2TokenNonRebasable_,
         address l2TokenRebasable_
     ) CrossDomainEnabled(messenger_) BridgeableTokensOptimism(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
-        l2TokenBridge = l2TokenBridge_;
+        L2_TOKEN_BRIDGE = l2TokenBridge_;
     }
 
     /// @notice Pushes token rate to L2 by depositing zero tokens.
     /// @param l2Gas_ Gas limit required to complete the deposit on L2.
     function pushTokenRate(uint32 l2Gas_) external {
-        _depositERC20To(l1TokenRebasable, l2TokenRebasable, l2TokenBridge, 0, l2Gas_, "");
+        _depositERC20To(L1_TOKEN_REBASABLE, L2_TOKEN_REBASABLE, L2_TOKEN_BRIDGE, 0, l2Gas_, "");
+    }
+
+    /// @inheritdoc IL1ERC20Bridge
+    function l2TokenBridge() external view returns (address) {
+        return L2_TOKEN_BRIDGE;
     }
 
     /// @inheritdoc IL1ERC20Bridge
@@ -75,7 +76,7 @@ contract L1ERC20TokenBridge is
         if (Address.isContract(msg.sender)) {
             revert ErrorSenderNotEOA();
         }
-        
+
         _depositERC20To(l1Token_, l2Token_, msg.sender, amount_, l2Gas_, data_);
     }
 
@@ -110,13 +111,13 @@ contract L1ERC20TokenBridge is
         whenWithdrawalsEnabled
         onlySupportedL1Token(l1Token_)
         onlySupportedL2Token(l2Token_)
-        onlyFromCrossDomainAccount(l2TokenBridge)
+        onlyFromCrossDomainAccount(L2_TOKEN_BRIDGE)
     {
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
-            uint256 stETHAmount = IERC20Wrapable(l1TokenNonRebasable).unwrap(amount_);
-            IERC20(l1TokenRebasable).safeTransfer(to_, stETHAmount);
+            uint256 stETHAmount = IERC20Wrappable(L1_TOKEN_NON_REBASABLE).unwrap(amount_);
+            IERC20(L1_TOKEN_REBASABLE).safeTransfer(to_, stETHAmount);
         } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
-            IERC20(l1TokenNonRebasable).safeTransfer(to_, amount_);
+            IERC20(L1_TOKEN_NON_REBASABLE).safeTransfer(to_, amount_);
         }
 
         emit ERC20WithdrawalFinalized(
@@ -140,8 +141,8 @@ contract L1ERC20TokenBridge is
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
 
             DepositData memory depositData = DepositData({
-                rate: uint96(IERC20Wrapable(l1TokenNonRebasable).stETHPerToken()),
-                time: uint40(block.timestamp),
+                rate: uint96(IERC20Wrappable(L1_TOKEN_NON_REBASABLE).stETHPerToken()),
+                timestamp: uint40(block.timestamp),
                 data: data_
             });
 
@@ -152,18 +153,18 @@ contract L1ERC20TokenBridge is
                 _initiateERC20Deposit(l1Token_, l2Token_, msg.sender, to_, amount_, l2Gas_, encodedDepositData);
                 return;
             }
-            
+
             // maybe loosing 1 wei for stETH. Check another method
-            IERC20(l1TokenRebasable).safeTransferFrom(msg.sender, address(this), amount_);
-            if(!IERC20(l1TokenRebasable).approve(l1TokenNonRebasable, amount_)) revert ErrorRebasableTokenApprove();
+            IERC20(L1_TOKEN_REBASABLE).safeTransferFrom(msg.sender, address(this), amount_);
+            if(!IERC20(L1_TOKEN_REBASABLE).approve(L1_TOKEN_NON_REBASABLE, amount_)) revert ErrorRebasableTokenApprove();
 
             // when 1 wei wasnt't transfer, can this wrap be failed?
-            uint256 wstETHAmount = IERC20Wrapable(l1TokenNonRebasable).wrap(amount_);
-            _initiateERC20Deposit(l1TokenRebasable, l2TokenRebasable, msg.sender, to_, wstETHAmount, l2Gas_, encodedDepositData);
+            uint256 wstETHAmount = IERC20Wrappable(L1_TOKEN_NON_REBASABLE).wrap(amount_);
+            _initiateERC20Deposit(L1_TOKEN_REBASABLE, L2_TOKEN_REBASABLE, msg.sender, to_, wstETHAmount, l2Gas_, encodedDepositData);
 
         } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
-            IERC20(l1TokenNonRebasable).safeTransferFrom(msg.sender, address(this), amount_);
-            _initiateERC20Deposit(l1TokenNonRebasable, l2TokenNonRebasable, msg.sender, to_, amount_, l2Gas_, data_);
+            IERC20(L1_TOKEN_NON_REBASABLE).safeTransferFrom(msg.sender, address(this), amount_);
+            _initiateERC20Deposit(L1_TOKEN_NON_REBASABLE, L2_TOKEN_NON_REBASABLE, msg.sender, to_, amount_, l2Gas_, data_);
         }
     }
 
@@ -195,8 +196,8 @@ contract L1ERC20TokenBridge is
             amount_,
             data_
         );
-        
-        sendCrossDomainMessage(l2TokenBridge, l2Gas_, message);
+
+        sendCrossDomainMessage(L2_TOKEN_BRIDGE, l2Gas_, message);
 
         emit ERC20DepositInitiated(
             l1Token_,
