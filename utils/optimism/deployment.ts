@@ -9,6 +9,7 @@ import {
   OssifiableProxy__factory,
   TokenRateOracle,
   TokenRateOracle__factory,
+  TokenRateUpdater__factory,
 } from "../../typechain";
 
 import addresses from "./addresses";
@@ -48,16 +49,17 @@ export default function deployment(
         expectedL1TokenBridgeImplAddress,
         expectedL1TokenBridgeProxyAddress,
       ] = await network.predictAddresses(l1Params.deployer, 2);
-            
+
       const [
         expectedL2TokenRateOracleImplAddress,
+        expectedL2TokenRateUpdaterImplAddress,
         expectedL2TokenImplAddress,
         expectedL2TokenProxyAddress,
         expectedL2TokenRebasableImplAddress,
         expectedL2TokenRebasableProxyAddress,
         expectedL2TokenBridgeImplAddress,
         expectedL2TokenBridgeProxyAddress,
-      ] = await network.predictAddresses(l2Params.deployer, 7);
+      ] = await network.predictAddresses(l2Params.deployer, 8);
 
       const l1DeployScript = new DeployScript(
         l1Params.deployer,
@@ -117,14 +119,24 @@ export default function deployment(
             factory: TokenRateOracle__factory,
             args: [
                 expectedL2TokenBridgeProxyAddress,
-                expectedL2TokenBridgeProxyAddress,
+                expectedL2TokenRateUpdaterImplAddress,
                 86400,
                 options?.overrides,
             ],
             afterDeploy: (c) =>
                 assert.equal(c.address, expectedL2TokenRateOracleImplAddress),
         })
-        
+
+        .addStep({
+            factory: TokenRateUpdater__factory,
+            args: [
+                expectedL2TokenRateOracleImplAddress,
+                options?.overrides,
+            ],
+            afterDeploy: (c) =>
+                assert.equal(c.address, expectedL2TokenRateUpdaterImplAddress),
+        })
+
         .addStep({
           factory: ERC20Bridged__factory,
           args: [

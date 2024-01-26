@@ -15,6 +15,7 @@ import {
   L2ERC20TokenBridge__factory,
   CrossDomainMessengerStub__factory,
   ERC20Rebasable__factory,
+  TokenRateUpdater__factory,
 } from "../../typechain";
 import addresses from "./addresses";
 import contracts from "./contracts";
@@ -140,10 +141,15 @@ export default function testing(networkName: NetworkName) {
         deployer
       ).deploy();
       const stubBytecode = await ethProvider.send("eth_getCode", [
-        stub.address,
+        stub.address, "latest"
       ]);
 
-      await ethProvider.send("hardhat_setCode", [
+    //   await ethProvider.send("hardhat_setCode", [
+    //     optAddresses.L1CrossDomainMessenger,
+    //     stubBytecode,
+    //   ]);
+
+      await ethProvider.send("anvil_setCode", [
         optAddresses.L1CrossDomainMessenger,
         stubBytecode,
       ]);
@@ -168,6 +174,7 @@ async function loadDeployedBridges(
     ...connectBridgeContracts(
       {
         tokenRateOracle: testingUtils.env.OPT_L2_TOKEN(), // fix
+        tokenRateUpdater: testingUtils.env.OPT_L2_TOKEN(), // fix
         l2Token: testingUtils.env.OPT_L2_TOKEN(),
         l2TokenRebasable: testingUtils.env.OPT_L2_TOKEN(), // fix
         l1ERC20TokenBridge: testingUtils.env.OPT_L1_ERC20_TOKEN_BRIDGE(),
@@ -222,7 +229,7 @@ async function deployTestBridge(
     ethDeployer
   );
 
-  const l2ERC20TokenBridgeProxyDeployStepIndex = 6;
+  const l2ERC20TokenBridgeProxyDeployStepIndex = 7;
   const l2BridgingManagement = new BridgingManagement(
     optDeployScript.getContractAddress(l2ERC20TokenBridgeProxyDeployStepIndex),
     optDeployer
@@ -246,10 +253,11 @@ async function deployTestBridge(
     ...connectBridgeContracts(
       {
         tokenRateOracle: optDeployScript.getContractAddress(0),
-        l2Token: optDeployScript.getContractAddress(2),
-        l2TokenRebasable: optDeployScript.getContractAddress(4),
+        tokenRateUpdater: optDeployScript.getContractAddress(1),
+        l2Token: optDeployScript.getContractAddress(3),
+        l2TokenRebasable: optDeployScript.getContractAddress(5),
         l1ERC20TokenBridge: ethDeployScript.getContractAddress(1),
-        l2ERC20TokenBridge: optDeployScript.getContractAddress(6)
+        l2ERC20TokenBridge: optDeployScript.getContractAddress(7)
       },
       ethProvider,
       optProvider
@@ -260,6 +268,7 @@ async function deployTestBridge(
 function connectBridgeContracts(
   addresses: {
     tokenRateOracle: string;
+    tokenRateUpdater: string;
     l2Token: string;
     l2TokenRebasable: string;
     l1ERC20TokenBridge: string;
@@ -289,8 +298,13 @@ function connectBridgeContracts(
     addresses.tokenRateOracle,
     optSignerOrProvider
   );
+  const tokenRateUpdater = TokenRateUpdater__factory.connect(
+    addresses.tokenRateUpdater,
+    optSignerOrProvider
+  );
   return {
     tokenRateOracle,
+    tokenRateUpdater,
     l2Token,
     l2TokenRebasable,
     l1ERC20TokenBridge,
