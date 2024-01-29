@@ -30,23 +30,23 @@ unit("TokenRateOracle", ctxFactory)
     assert.equalBN(await tokenRateOracle.decimals(), 18);
   })
 
-  .test("wrong owner", async (ctx) => {
+  .test("updateRate() :: no rights to call", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
     const { bridge, updater, stranger } = ctx.accounts;
     tokenRateOracle.connect(bridge).updateRate(10, 20);
     tokenRateOracle.connect(updater).updateRate(10, 23);
-    await assert.revertsWith(tokenRateOracle.connect(stranger).updateRate(10, 40), "ErrorNotAnOwner(\""+stranger.address+"\")");
+    await assert.revertsWith(tokenRateOracle.connect(stranger).updateRate(10, 40), "ErrorNoRights(\""+stranger.address+"\")");
   })
 
-  .test("incorrect time", async (ctx) => {
+  .test("updateRate() :: incorrect time", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
     const { bridge } = ctx.accounts;
-    
+
     tokenRateOracle.connect(bridge).updateRate(10, 1000);
     await assert.revertsWith(tokenRateOracle.connect(bridge).updateRate(12, 20), "ErrorIncorrectRateTimestamp()");
   })
 
-  .test("state after update token rate", async (ctx) => {
+  .test("updateRate() :: happy path", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
     const { updater } = ctx.accounts;
 
@@ -83,8 +83,8 @@ async function ctxFactory() {
         bridge.address,
         updater.address,
         86400
-    ); 
-    
+    );
+
     return {
       accounts: { deployer, bridge, updater, stranger },
       contracts: { tokenRateOracle }

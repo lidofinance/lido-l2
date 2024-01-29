@@ -7,7 +7,7 @@ import testing, { scenario } from "../../utils/testing";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { ERC20WrappableStub } from "../../typechain";
+import { ERC20WrapperStub } from "../../typechain";
 
 scenario("Optimism :: Bridging integration test", ctxFactory)
   .after(async (ctx) => {
@@ -119,13 +119,13 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         l2ERC20TokenBridge,
         l1Provider
       } = ctx;
-  
+
     const { l1Stranger } = ctx.accounts;
 
     const tokenHolderStrangerBalanceBefore = await l1TokenRebasable.balanceOf(
       l1Stranger.address
     );
-  
+
     const l1ERC20TokenBridgeBalanceBefore = await l1TokenRebasable.balanceOf(
       l1ERC20TokenBridge.address
     );
@@ -144,7 +144,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         0,
         dataToSend,
       ]);
-  
+
       const l2DepositCalldata = l2ERC20TokenBridge.interface.encodeFunctionData(
         "finalizeDeposit",
         [
@@ -156,9 +156,9 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
           dataToSend,
         ]
       );
-  
+
       const messageNonce = await l1CrossDomainMessenger.messageNonce();
-  
+
       await assert.emits(l1CrossDomainMessenger, tx, "SentMessage", [
         l2ERC20TokenBridge.address,
         l1ERC20TokenBridge.address,
@@ -166,12 +166,12 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         messageNonce,
         200_000,
       ]);
-  
+
       assert.equalBN(
         await l1Token.balanceOf(l1ERC20TokenBridge.address),
         l1ERC20TokenBridgeBalanceBefore
       );
-  
+
       assert.equalBN(
         await l1TokenRebasable.balanceOf(l1Stranger.address),
         tokenHolderStrangerBalanceBefore
@@ -190,7 +190,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     } = ctx;
 
     const { accountA: tokenHolderA } = ctx.accounts;
-    
+
     await l1TokenRebasable
       .connect(tokenHolderA.l1Signer)
       .approve(l1ERC20TokenBridge.address, 0);
@@ -269,16 +269,16 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     } = ctx;
 
     const dataToReceive = await packedTokenRateAndTimestamp(l2Provider, l1Token);
-    
+
     const { accountA: tokenHolderA, l1CrossDomainMessengerAliased } =
       ctx.accounts;
 
     const tokenHolderABalanceBefore = await l2TokenRebasable.balanceOf(
       tokenHolderA.address
     );
-    
+
     const l2TokenRebasableTotalSupplyBefore = await l2TokenRebasable.totalSupply();
-        
+
     const tx = await l2CrossDomainMessenger
       .connect(l1CrossDomainMessengerAliased)
       .relayMessage(
@@ -329,7 +329,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     } = ctx;
     const { accountA: tokenHolderA } = ctx.accounts;
     const { depositAmountNonRebasable, depositAmountRebasable } = ctx.common;
-    
+
     await l1TokenRebasable
       .connect(tokenHolderA.l1Signer)
       .approve(l1ERC20TokenBridge.address, depositAmountRebasable);
@@ -414,7 +414,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     const tokenHolderABalanceBefore = await l2TokenRebasable.balanceOf(
       tokenHolderA.address
     );
-    
+
     const l2TokenRebasableTotalSupplyBefore = await l2TokenRebasable.totalSupply();
     const dataToReceive = await packedTokenRateAndTimestamp(l2Provider, l1Token);
 
@@ -601,7 +601,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         200_000,
         "0x"
       );
-  
+
       const dataToSend = await packedTokenRateAndTimestamp(l1Provider, l1Token);
 
       await assert.emits(l1ERC20TokenBridge, tx, "ERC20DepositInitiated", [
@@ -612,7 +612,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         depositAmountNonRebasable,
         dataToSend,
       ]);
-  
+
       const l2DepositCalldata = l2ERC20TokenBridge.interface.encodeFunctionData(
         "finalizeDeposit",
         [
@@ -624,9 +624,9 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
           dataToSend,
         ]
       );
-  
+
       const messageNonce = await l1CrossDomainMessenger.messageNonce();
-  
+
       await assert.emits(l1CrossDomainMessenger, tx, "SentMessage", [
         l2ERC20TokenBridge.address,
         l1ERC20TokenBridge.address,
@@ -639,7 +639,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         await l1Token.balanceOf(l1ERC20TokenBridge.address),
         l1ERC20TokenBridgeBalanceBefore.add(depositAmountNonRebasable)
       );
-  
+
       assert.equalBN(
         await l1TokenRebasable.balanceOf(tokenHolderA.address), // stETH
         tokenHolderABalanceBefore.sub(depositAmountRebasable)
@@ -664,7 +664,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     } = ctx.accounts;
 
     const { exchangeRate } = ctx.common;
-    
+
     const depositAmountNonRebasable = wei`0.03 ether`;
     const depositAmountRebasable = wei.toBigNumber(depositAmountNonRebasable).mul(exchangeRate);
 
@@ -832,7 +832,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
 
 async function ctxFactory() {
   const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
-  
+
   const {
     l1Provider,
     l2Provider,
@@ -917,7 +917,7 @@ async function ctxFactory() {
   };
 }
 
-async function packedTokenRateAndTimestamp(l1Provider: JsonRpcProvider, l1Token: ERC20WrappableStub) {
+async function packedTokenRateAndTimestamp(l1Provider: JsonRpcProvider, l1Token: ERC20WrapperStub) {
     const stETHPerToken = await l1Token.stETHPerToken();
     const blockNumber = await l1Provider.getBlockNumber();
     const blockTimestamp = (await l1Provider.getBlock(blockNumber)).timestamp;

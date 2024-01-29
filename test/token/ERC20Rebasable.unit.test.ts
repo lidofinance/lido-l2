@@ -8,21 +8,21 @@ import { BigNumber } from "ethers";
 
 unit("ERC20Rebasable", ctxFactory)
 
-  .test("wrappedToken", async (ctx) => {
+  .test("wrappedToken() :: has the same address is in constructor", async (ctx) => {
       const { rebasableProxied, wrappedTokenStub } = ctx.contracts;
-      assert.equal(await rebasableProxied.wrappedToken(), wrappedTokenStub.address)
+      assert.equal(await rebasableProxied.WRAPPED_TOKEN(), wrappedTokenStub.address)
   })
 
-  .test("tokenRateOracle", async (ctx) => {
+  .test("tokenRateOracle() :: has the same address is in constructor", async (ctx) => {
     const { rebasableProxied, tokenRateOracleStub } = ctx.contracts;
-    assert.equal(await rebasableProxied.tokenRateOracle(), tokenRateOracleStub.address)
+    assert.equal(await rebasableProxied.TOKEN_RATE_ORACLE(), tokenRateOracleStub.address)
   })
 
-  .test("name()", async (ctx) =>
+  .test("name() :: has the same value is in constructor", async (ctx) =>
     assert.equal(await ctx.contracts.rebasableProxied.name(), ctx.constants.name)
   )
 
-  .test("symbol()", async (ctx) =>
+  .test("symbol() :: has the same value is in constructor", async (ctx) =>
     assert.equal(await ctx.contracts.rebasableProxied.symbol(), ctx.constants.symbol)
   )
 
@@ -30,8 +30,8 @@ unit("ERC20Rebasable", ctxFactory)
     const { deployer, owner } = ctx.accounts;
 
     // deploy new implementation
-    const wrappedTokenStub = await new ERC20Stub__factory(deployer).deploy(); 
-    const tokenRateOracleStub = await new TokenRateOracleStub__factory(deployer).deploy(); 
+    const wrappedTokenStub = await new ERC20Stub__factory(deployer).deploy();
+    const tokenRateOracleStub = await new TokenRateOracleStub__factory(deployer).deploy();
     const rebasableTokenImpl = await new ERC20Rebasable__factory(deployer).deploy(
       "name",
       "",
@@ -50,8 +50,8 @@ unit("ERC20Rebasable", ctxFactory)
     const { deployer, owner } = ctx.accounts;
 
     // deploy new implementation
-    const wrappedTokenStub = await new ERC20Stub__factory(deployer).deploy(); 
-    const tokenRateOracleStub = await new TokenRateOracleStub__factory(deployer).deploy(); 
+    const wrappedTokenStub = await new ERC20Stub__factory(deployer).deploy();
+    const tokenRateOracleStub = await new TokenRateOracleStub__factory(deployer).deploy();
     const rebasableTokenImpl = await new ERC20Rebasable__factory(deployer).deploy(
       "",
       "symbol",
@@ -66,29 +66,29 @@ unit("ERC20Rebasable", ctxFactory)
     );
   })
 
-  .test("decimals", async (ctx) =>
+  .test("decimals() :: has the same value is in constructor", async (ctx) =>
     assert.equal(await ctx.contracts.rebasableProxied.decimals(), ctx.constants.decimalsToSet)
   )
 
-  .test("totalShares", async (ctx) => {
+  .test("getTotalShares() :: returns preminted amount", async (ctx) => {
     const { premintShares } = ctx.constants;
     assert.equalBN(await ctx.contracts.rebasableProxied.getTotalShares(), premintShares);
   })
 
-  .test("wrap(0)", async (ctx) => {
+  .test("wrap() :: revert if wrap 0 wstETH", async (ctx) => {
     const { rebasableProxied } = ctx.contracts;
     const { user1 } = ctx.accounts;
     await assert.revertsWith(rebasableProxied.connect(user1).wrap(0), "ErrorZeroSharesWrap()");
   })
 
-  .test("unwrap(0)", async (ctx) => {
+  .test("unwrap() :: revert if unwrap 0 wstETH", async (ctx) => {
     const { rebasableProxied } = ctx.contracts;
     const { user1 } = ctx.accounts;
     await assert.revertsWith(rebasableProxied.connect(user1).unwrap(0), "ErrorZeroTokensUnwrap()");
   })
 
-  .test("wrap() happy path", async (ctx) => {
-    
+  .test("wrap() :: happy path", async (ctx) => {
+
     const { rebasableProxied, wrappedTokenStub } = ctx.contracts;
     const {user1, user2 } = ctx.accounts;
     const { rate, decimals, premintShares } = ctx.constants;
@@ -114,7 +114,7 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equal(await wrappedTokenStub.transferFromAddress(), user1.address);
     assert.equal(await wrappedTokenStub.transferFromTo(), rebasableProxied.address);
     assert.equalBN(await wrappedTokenStub.transferFromAmount(), user1Shares);
-    
+
     // common state changes
     assert.equalBN(await rebasableProxied.getTotalShares(), BigNumber.from(premintShares).add(user1Shares));
     assert.equalBN(await rebasableProxied.totalSupply(), totalSupply.add(user1Tokens));
@@ -140,19 +140,16 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.totalSupply(), totalSupply.add(user1Tokens).add(user2Tokens));
   })
 
-  .test("wrap() with wrong oracle decimals", async (ctx) => {
+  .test("wrap() :: wrong oracle decimals", async (ctx) => {
 
     const { rebasableProxied, tokenRateOracleStub } = ctx.contracts;
     const { user1 } = ctx.accounts;
 
     await tokenRateOracleStub.setDecimals(0);
-    await assert.revertsWith(rebasableProxied.connect(user1).wrap(23), "ErrorInvalidRateDecimals(0)");
-
-    await tokenRateOracleStub.setDecimals(19);
-    await assert.revertsWith(rebasableProxied.connect(user1).wrap(23), "ErrorInvalidRateDecimals(19)");
+    await assert.revertsWith(rebasableProxied.connect(user1).wrap(23), "ErrorTokenRateDecimalsIsZero()");
   })
 
-  .test("wrap() with wrong oracle update time", async (ctx) => {
+  .test("wrap() :: wrong oracle update time", async (ctx) => {
 
     const { rebasableProxied, tokenRateOracleStub } = ctx.contracts;
     const { user1 } = ctx.accounts;
@@ -161,7 +158,7 @@ unit("ERC20Rebasable", ctxFactory)
     await assert.revertsWith(rebasableProxied.connect(user1).wrap(5), "ErrorWrongOracleUpdateTime()");
   })
 
-  .test("wrap() with wrong oracle answer", async (ctx) => {
+  .test("wrap() :: wrong oracle answer", async (ctx) => {
 
     const { rebasableProxied, tokenRateOracleStub } = ctx.contracts;
     const { user1 } = ctx.accounts;
@@ -170,7 +167,7 @@ unit("ERC20Rebasable", ctxFactory)
     await assert.revertsWith(rebasableProxied.connect(user1).wrap(21), "ErrorOracleAnswerIsNegative()");
   })
 
-  .test("unwrap() happy path", async (ctx) => {
+  .test("unwrap() :: happy path", async (ctx) => {
 
     const { rebasableProxied, wrappedTokenStub } = ctx.contracts;
     const {user1, user2 } = ctx.accounts;
@@ -230,7 +227,7 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.totalSupply(), totalSupply.add(user1Tokens).add(user2Tokens));
   })
 
-  .test("unwrap() with wrong oracle decimals", async (ctx) => {
+  .test("unwrap() :: with wrong oracle decimals", async (ctx) => {
 
     const { rebasableProxied, tokenRateOracleStub } = ctx.contracts;
     const { user1 } = ctx.accounts;
@@ -238,13 +235,10 @@ unit("ERC20Rebasable", ctxFactory)
     await rebasableProxied.connect(user1).wrap(wei`2 ether`);
 
     await tokenRateOracleStub.setDecimals(0);
-    await assert.revertsWith(rebasableProxied.connect(user1).unwrap(23), "ErrorInvalidRateDecimals(0)");
-
-    await tokenRateOracleStub.setDecimals(19);
-    await assert.revertsWith(rebasableProxied.connect(user1).unwrap(23), "ErrorInvalidRateDecimals(19)");
+    await assert.revertsWith(rebasableProxied.connect(user1).unwrap(23), "ErrorTokenRateDecimalsIsZero()");
   })
 
-  .test("unwrap() with wrong oracle update time", async (ctx) => {
+  .test("unwrap() :: with wrong oracle update time", async (ctx) => {
 
     const { rebasableProxied, tokenRateOracleStub } = ctx.contracts;
     const { user1 } = ctx.accounts;
@@ -254,14 +248,14 @@ unit("ERC20Rebasable", ctxFactory)
     await assert.revertsWith(rebasableProxied.connect(user1).unwrap(wei`1 ether`), "ErrorWrongOracleUpdateTime()");
   })
 
-  .test("unwrap() when no balance", async (ctx) => {
+  .test("unwrap() :: when no balance", async (ctx) => {
     const { rebasableProxied } = ctx.contracts;
     const { user1 } = ctx.accounts;
 
     await assert.revertsWith(rebasableProxied.connect(user1).unwrap(wei`4 ether`), "ErrorNotEnoughBalance()");
   })
 
-  .test("mintShares() happy path", async (ctx) => {
+  .test("mintShares() :: happy path", async (ctx) => {
 
     const { rebasableProxied } = ctx.contracts;
     const {user1, user2, owner } = ctx.accounts;
@@ -308,7 +302,7 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.totalSupply(), premintTokens.add(user1TokensMinted).add(user2TokensMinted));
   })
 
-  .test("burnShares() happy path", async (ctx) => {
+  .test("burnShares() :: happy path", async (ctx) => {
 
     const { rebasableProxied } = ctx.contracts;
     const {user1, user2, owner } = ctx.accounts;
@@ -367,7 +361,7 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.totalSupply(), premintTokens.add(user1Tokens).add(user2Tokens));
   })
 
-  .test("approve()", async (ctx) => {
+  .test("approve() :: happy path", async (ctx) => {
     const { rebasableProxied } = ctx.contracts;
     const { holder, spender } = ctx.accounts;
 
@@ -453,7 +447,7 @@ unit("ERC20Rebasable", ctxFactory)
     );
   })
 
-  .test("transfer()", async (ctx) => {
+  .test("transfer() :: happy path", async (ctx) => {
     const { rebasableProxied } = ctx.contracts;
     const { premintTokens } = ctx.constants;
     const { recipient, holder } = ctx.accounts;
@@ -485,7 +479,7 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.totalSupply(), premintTokens);
   })
 
-  .test("transferFrom()", async (ctx) => {
+  .test("transferFrom() :: happy path", async (ctx) => {
     const { rebasableProxied } = ctx.contracts;
     const { premintTokens } = ctx.constants;
     const { recipient, holder, spender } = ctx.accounts;
@@ -937,8 +931,8 @@ async function ctxFactory() {
         user2
     ] = await hre.ethers.getSigners();
 
-    const wrappedTokenStub = await new ERC20Stub__factory(deployer).deploy(); 
-    const tokenRateOracleStub = await new TokenRateOracleStub__factory(deployer).deploy(); 
+    const wrappedTokenStub = await new ERC20Stub__factory(deployer).deploy();
+    const tokenRateOracleStub = await new TokenRateOracleStub__factory(deployer).deploy();
     const rebasableTokenImpl = await new ERC20Rebasable__factory(deployer).deploy(
       name,
       symbol,
@@ -963,7 +957,7 @@ async function ctxFactory() {
         symbol,
       ])
     );
-  
+
     const rebasableProxied = ERC20Rebasable__factory.connect(
       l2TokensProxy.address,
       holder

@@ -9,13 +9,12 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
-
+import {IERC20Wrapper} from "../token/interfaces/IERC20Wrapper.sol";
+import {L1TokenNonRebasableAdapter} from "../token/L1TokenNonRebasableAdapter.sol";
 import {BridgingManager} from "../BridgingManager.sol";
-import {BridgeableTokensOptimism} from "./BridgeableTokensOptimism.sol";
+import {RebasableAndNonRebasableTokens} from "./RebasableAndNonRebasableTokens.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {DepositDataCodec} from "./DepositDataCodec.sol";
-
-import {IERC20Wrappable} from "../token/interfaces/IERC20Wrappable.sol";
 
 /// @author psirex, kovalgek
 /// @notice The L1 ERC20 token bridge locks bridged tokens on the L1 side, sends deposit messages
@@ -24,13 +23,15 @@ import {IERC20Wrappable} from "../token/interfaces/IERC20Wrappable.sol";
 contract L1ERC20TokenBridge is
     IL1ERC20Bridge,
     BridgingManager,
-    BridgeableTokensOptimism,
+    RebasableAndNonRebasableTokens,
     CrossDomainEnabled,
     DepositDataCodec
 {
     using SafeERC20 for IERC20;
 
     address public immutable L2_TOKEN_BRIDGE;
+
+    L1TokenNonRebasableAdapter public immutable L1_TOKEN_NON_REBASABLE_ADAPTER;
 
     /// @param messenger_ L1 messenger address being used for cross-chain communications
     /// @param l2TokenBridge_ Address of the corresponding L2 bridge
@@ -45,8 +46,9 @@ contract L1ERC20TokenBridge is
         address l1TokenRebasable_,
         address l2TokenNonRebasable_,
         address l2TokenRebasable_
-    ) CrossDomainEnabled(messenger_) BridgeableTokensOptimism(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
+    ) CrossDomainEnabled(messenger_) RebasableAndNonRebasableTokens(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
         L2_TOKEN_BRIDGE = l2TokenBridge_;
+        L1_TOKEN_NON_REBASABLE_ADAPTER = new L1TokenNonRebasableAdapter(l1TokenNonRebasable_);
     }
 
     /// @notice Pushes token rate to L2 by depositing zero tokens.
@@ -114,20 +116,13 @@ contract L1ERC20TokenBridge is
         onlyFromCrossDomainAccount(L2_TOKEN_BRIDGE)
     {
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
-            uint256 stETHAmount = IERC20Wrappable(L1_TOKEN_NON_REBASABLE).unwrap(amount_);
+            uint256 stETHAmount = IERC20Wrapper(L1_TOKEN_NON_REBASABLE).unwrap(amount_);
             IERC20(L1_TOKEN_REBASABLE).safeTransfer(to_, stETHAmount);
+            emit ERC20WithdrawalFinalized(l1Token_, l2Token_, from_, to_, amount_, data_);
         } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
             IERC20(L1_TOKEN_NON_REBASABLE).safeTransfer(to_, amount_);
+            emit ERC20WithdrawalFinalized(l1Token_, l2Token_, from_, to_, amount_, data_);
         }
-
-        emit ERC20WithdrawalFinalized(
-            l1Token_,
-            l2Token_,
-            from_,
-            to_,
-            amount_,
-            data_
-        );
     }
 
     function _depositERC20To(
@@ -141,14 +136,13 @@ contract L1ERC20TokenBridge is
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
 
             DepositData memory depositData = DepositData({
-                rate: uint96(IERC20Wrappable(L1_TOKEN_NON_REBASABLE).stETHPerToken()),
+                rate: uint96(L1_TOKEN_NON_REBASABLE_ADAPTER.tokenRate()),
                 timestamp: uint40(block.timestamp),
                 data: data_
             });
 
             bytes memory encodedDepositData = encodeDepositData(depositData);
 
-            // probably need to add a new method for amount zero
             if (amount_ == 0) {
                 _initiateERC20Deposit(l1Token_, l2Token_, msg.sender, to_, amount_, l2Gas_, encodedDepositData);
                 return;
@@ -159,7 +153,7 @@ contract L1ERC20TokenBridge is
             if(!IERC20(L1_TOKEN_REBASABLE).approve(L1_TOKEN_NON_REBASABLE, amount_)) revert ErrorRebasableTokenApprove();
 
             // when 1 wei wasnt't transfer, can this wrap be failed?
-            uint256 wstETHAmount = IERC20Wrappable(L1_TOKEN_NON_REBASABLE).wrap(amount_);
+            uint256 wstETHAmount = IERC20Wrapper(L1_TOKEN_NON_REBASABLE).wrap(amount_);
             _initiateERC20Deposit(L1_TOKEN_REBASABLE, L2_TOKEN_REBASABLE, msg.sender, to_, wstETHAmount, l2Gas_, encodedDepositData);
 
         } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {

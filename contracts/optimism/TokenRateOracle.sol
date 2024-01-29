@@ -9,12 +9,6 @@ import {ITokenRateOracle} from "../token/interfaces/ITokenRateOracle.sol";
 /// @notice Oracle for storing token rate.
 contract TokenRateOracle is ITokenRateOracle {
 
-    /// @notice wstETH/stETH token rate.
-    uint256 private tokenRate;
-
-    /// @notice L1 time when token rate was pushed.
-    uint256 private rateL1Timestamp;
-
     /// @notice A bridge which can update oracle.
     address public immutable BRIDGE;
 
@@ -22,15 +16,24 @@ contract TokenRateOracle is ITokenRateOracle {
     address public immutable TOKEN_RATE_UPDATER;
 
     /// @notice A time period when token rate can be considered outdated.
-    uint256 public immutable RATE_VALIDITY_PERIOD;
+    uint256 public immutable RATE_OUTDATED_DELAY;
+
+    /// @notice wstETH/stETH token rate.
+    uint256 private tokenRate;
+
+    /// @notice L1 time when token rate was pushed.
+    uint256 private rateL1Timestamp;
+
+    /// @notice Decimals of the oracle response.
+    uint8 private constant DECIMALS = 18;
 
     /// @param bridge_ the bridge address that has a right to updates oracle.
     /// @param tokenRateUpdater_ address of oracle updater that has a right to updates oracle.
-    /// @param rateValidityPeriod_ time period when token rate can be considered outdated.
-    constructor(address bridge_, address tokenRateUpdater_, uint256 rateValidityPeriod_) {
+    /// @param rateOutdatedDelay_ time period when token rate can be considered outdated.
+    constructor(address bridge_, address tokenRateUpdater_, uint256 rateOutdatedDelay_) {
         BRIDGE = bridge_;
         TOKEN_RATE_UPDATER = tokenRateUpdater_;
-        RATE_VALIDITY_PERIOD = rateValidityPeriod_;
+        RATE_OUTDATED_DELAY = rateOutdatedDelay_;
     }
 
     /// @inheritdoc ITokenRateOracle
@@ -59,32 +62,37 @@ contract TokenRateOracle is ITokenRateOracle {
 
     /// @inheritdoc ITokenRateOracle
     function decimals() external pure returns (uint8) {
-        return 18;
+        return DECIMALS;
     }
 
     /// @inheritdoc ITokenRateOracle
-    function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external onlyOwner {
-        // reject rates from the future
+    function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external {
+
+        if (msg.sender != BRIDGE && msg.sender != TOKEN_RATE_UPDATER) {
+            revert ErrorNoRights(msg.sender);
+        }
+
         if (rateL1Timestamp_ < rateL1Timestamp) {
             revert ErrorIncorrectRateTimestamp();
         }
+
+        if (tokenRate_ == tokenRate && rateL1Timestamp_ == rateL1Timestamp) {
+            return;
+        }
+
         tokenRate = tokenRate_;
         rateL1Timestamp = rateL1Timestamp_;
+
+        emit RateUpdated(tokenRate, rateL1Timestamp);
     }
 
     /// @notice Returns flag that shows that token rate can be considered outdated.
     function isLikelyOutdated() external view returns (bool) {
-        return block.timestamp - rateL1Timestamp > RATE_VALIDITY_PERIOD;
+        return block.timestamp - rateL1Timestamp > RATE_OUTDATED_DELAY;
     }
 
-    /// @dev validates that method called by one of the owners
-    modifier onlyOwner() {
-        if (msg.sender != BRIDGE && msg.sender != TOKEN_RATE_UPDATER) {
-            revert ErrorNotAnOwner(msg.sender);
-        }
-        _;
-    }
+    event RateUpdated(uint256 tokenRate_, uint256 rateL1Timestamp_);
 
-    error ErrorNotAnOwner(address caller);
+    error ErrorNoRights(address caller);
     error ErrorIncorrectRateTimestamp();
 }

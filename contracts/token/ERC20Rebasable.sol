@@ -4,7 +4,7 @@
 pragma solidity 0.8.10;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Wrappable} from "./interfaces/IERC20Wrappable.sol";
+import {IERC20Wrapper} from "./interfaces/IERC20Wrapper.sol";
 import {IERC20BridgedShares} from "./interfaces/IERC20BridgedShares.sol";
 import {ITokenRateOracle} from "./interfaces/ITokenRateOracle.sol";
 import {ERC20Metadata} from "./ERC20Metadata.sol";
@@ -13,7 +13,7 @@ import {UnstructuredStorage} from "./UnstructuredStorage.sol";
 
 /// @author kovalgek
 /// @notice Rebasable token that wraps/unwraps non-rebasable token and allow to mint/burn tokens by bridge.
-contract ERC20Rebasable is IERC20, IERC20Wrappable, IERC20BridgedShares, ERC20Metadata {
+contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Metadata {
 
     using UnstructuredRefStorage for bytes32;
     using UnstructuredStorage for bytes32;
@@ -26,7 +26,7 @@ contract ERC20Rebasable is IERC20, IERC20Wrappable, IERC20BridgedShares, ERC20Me
 
     /// @notice Oracle contract used to get token rate for wrapping/unwrapping tokens.
     ITokenRateOracle public immutable TOKEN_RATE_ORACLE;
-    
+
     /// @dev token allowance slot position.
     bytes32 internal constant TOKEN_ALLOWANCE_POSITION = keccak256("ERC20Rebasable.TOKEN_ALLOWANCE_POSITION");
 
@@ -63,17 +63,17 @@ contract ERC20Rebasable is IERC20, IERC20Wrappable, IERC20BridgedShares, ERC20Me
         _setERC20MetadataSymbol(symbol_);
     }
 
-    /// @inheritdoc IERC20Wrappable
+    /// @inheritdoc IERC20Wrapper
     function wrap(uint256 sharesAmount_) external returns (uint256) {
         if (sharesAmount_ == 0) revert ErrorZeroSharesWrap();
-    
+
         _mintShares(msg.sender, sharesAmount_);
         if(!WRAPPED_TOKEN.transferFrom(msg.sender, address(this), sharesAmount_)) revert ErrorERC20Transfer();
 
         return _getTokensByShares(sharesAmount_);
     }
 
-    /// @inheritdoc IERC20Wrappable
+    /// @inheritdoc IERC20Wrapper
     function unwrap(uint256 tokenAmount_) external returns (uint256) {
         if (tokenAmount_ == 0) revert ErrorZeroTokensUnwrap();
 
@@ -84,14 +84,9 @@ contract ERC20Rebasable is IERC20, IERC20Wrappable, IERC20BridgedShares, ERC20Me
         return sharesAmount;
     }
 
-    /// @inheritdoc IERC20Wrappable
-    function stETHPerToken() external view returns (uint256) {
-        return uint256(TOKEN_RATE_ORACLE.latestAnswer());
-    }
-
     /// @inheritdoc IERC20BridgedShares
-    function mintShares(address account_, uint256 amount_) external onlyBridge returns (uint256) {
-        return _mintShares(account_, amount_);
+    function mintShares(address account_, uint256 amount_) external onlyBridge {
+        _mintShares(account_, amount_);
     }
 
     /// @inheritdoc IERC20BridgedShares
@@ -206,7 +201,7 @@ contract ERC20Rebasable is IERC20, IERC20Wrappable, IERC20BridgedShares, ERC20Me
     function _getShares() internal pure returns (mapping(address => uint256) storage) {
         return SHARES_POSITION.storageMapAddressAddressUint256();
     }
-    
+
     /// @notice The total amount of shares in existence.
     function _getTotalShares() internal view returns (uint256) {
         return TOTAL_SHARES_POSITION.getStorageUint256();
@@ -271,19 +266,19 @@ contract ERC20Rebasable is IERC20, IERC20Wrappable, IERC20BridgedShares, ERC20Me
     }
 
     function _getTokensByShares(uint256 sharesAmount_) internal view returns (uint256) {
-        (uint256 tokensRate, uint256 decimals)  = _getTokensRateAndDecimal();
+        (uint256 tokensRate, uint256 decimals) = _getTokensRateAndDecimal();
         return (sharesAmount_ * tokensRate) / (10 ** decimals);
     }
 
     function _getSharesByTokens(uint256 tokenAmount_) internal view returns (uint256) {
-        (uint256 tokensRate, uint256 decimals)  = _getTokensRateAndDecimal();
+        (uint256 tokensRate, uint256 decimals) = _getTokensRateAndDecimal();
         return (tokenAmount_ * (10 ** decimals)) / tokensRate;
     }
 
     function _getTokensRateAndDecimal() internal view returns (uint256, uint256) {
         uint8 rateDecimals = TOKEN_RATE_ORACLE.decimals();
 
-        if (rateDecimals == uint8(0) || rateDecimals > uint8(18)) revert ErrorInvalidRateDecimals(rateDecimals);
+        if (rateDecimals == uint8(0)) revert ErrorTokenRateDecimalsIsZero();
 
         //slither-disable-next-line unused-return
         (,
@@ -305,11 +300,10 @@ contract ERC20Rebasable is IERC20, IERC20Wrappable, IERC20BridgedShares, ERC20Me
     function _mintShares(
         address recipient_,
         uint256 amount_
-    ) internal onlyNonZeroAccount(recipient_) returns (uint256)  {
+    ) internal onlyNonZeroAccount(recipient_) {
         _setTotalShares(_getTotalShares() + amount_);
         _getShares()[recipient_] = _getShares()[recipient_] + amount_;
         emit Transfer(address(0), recipient_, amount_);
-        return _getTotalShares();
     }
 
     /// @dev Destroys amount_ shares from account_, reducing the total shares supply.
@@ -318,13 +312,12 @@ contract ERC20Rebasable is IERC20, IERC20Wrappable, IERC20BridgedShares, ERC20Me
     function _burnShares(
         address account_,
         uint256 amount_
-    ) internal onlyNonZeroAccount(account_) returns (uint256) {
+    ) internal onlyNonZeroAccount(account_) {
         uint256 accountShares = _getShares()[account_];
         if (accountShares < amount_) revert ErrorNotEnoughBalance();
         _setTotalShares(_getTotalShares() - amount_);
         _getShares()[account_] = accountShares - amount_;
         emit Transfer(account_, address(0), amount_);
-        return _getTotalShares();
     }
 
     /// @dev  Moves `sharesAmount_` shares from `sender_` to `recipient_`.
@@ -336,7 +329,7 @@ contract ERC20Rebasable is IERC20, IERC20Wrappable, IERC20BridgedShares, ERC20Me
         address recipient_,
         uint256 sharesAmount_
     ) internal onlyNonZeroAccount(sender_) onlyNonZeroAccount(recipient_) {
-        
+
         if (recipient_ == address(this)) revert ErrorTrasferToRebasableContract();
 
         uint256 currentSenderShares = _getShares()[sender_];
@@ -364,7 +357,7 @@ contract ERC20Rebasable is IERC20, IERC20Wrappable, IERC20BridgedShares, ERC20Me
 
     error ErrorZeroSharesWrap();
     error ErrorZeroTokensUnwrap();
-    error ErrorInvalidRateDecimals(uint8);
+    error ErrorTokenRateDecimalsIsZero();
     error ErrorWrongOracleUpdateTime();
     error ErrorOracleAnswerIsNegative();
     error ErrorTrasferToRebasableContract();

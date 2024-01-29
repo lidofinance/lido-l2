@@ -3,17 +3,18 @@
 
 pragma solidity 0.8.10;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
 import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
 import {ITokenRateOracle} from "../token/interfaces/ITokenRateOracle.sol";
-import {ERC20Rebasable} from "../token/ERC20Rebasable.sol";
-import {IERC20Wrappable} from "../token/interfaces/IERC20Wrappable.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20Wrapper} from "../token/interfaces/IERC20Wrapper.sol";
 
+import {ERC20Rebasable} from "../token/ERC20Rebasable.sol";
 import {BridgingManager} from "../BridgingManager.sol";
-import {BridgeableTokensOptimism} from "./BridgeableTokensOptimism.sol";
+import {RebasableAndNonRebasableTokens} from "./RebasableAndNonRebasableTokens.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {DepositDataCodec} from "./DepositDataCodec.sol";
 
@@ -26,7 +27,7 @@ import {DepositDataCodec} from "./DepositDataCodec.sol";
 contract L2ERC20TokenBridge is
     IL2ERC20Bridge,
     BridgingManager,
-    BridgeableTokensOptimism,
+    RebasableAndNonRebasableTokens,
     CrossDomainEnabled,
     DepositDataCodec
 {
@@ -47,7 +48,7 @@ contract L2ERC20TokenBridge is
         address l1TokenRebasable_,
         address l2TokenNonRebasable_,
         address l2TokenRebasable_
-    ) CrossDomainEnabled(messenger_) BridgeableTokensOptimism(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
+    ) CrossDomainEnabled(messenger_) RebasableAndNonRebasableTokens(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
         L1_TOKEN_BRIDGE = l1TokenBridge_;
     }
 
@@ -96,7 +97,6 @@ contract L2ERC20TokenBridge is
             DepositData memory depositData = decodeDepositData(data_);
             ITokenRateOracle tokenRateOracle = ERC20Rebasable(L2_TOKEN_REBASABLE).TOKEN_RATE_ORACLE();
             tokenRateOracle.updateRate(depositData.rate, depositData.timestamp);
-            //slither-disable-next-line unused-return
             ERC20Rebasable(L2_TOKEN_REBASABLE).mintShares(to_, amount_);
             uint256 rebasableTokenAmount = ERC20Rebasable(L2_TOKEN_REBASABLE).getTokensByShares(amount_);
             emit DepositFinalized(l1Token_, l2Token_, from_, to_, rebasableTokenAmount, depositData.data);
@@ -114,7 +114,7 @@ contract L2ERC20TokenBridge is
         bytes calldata data_
     ) internal {
         if (l2Token_ == L2_TOKEN_REBASABLE) {
-            // maybe loosing 1 wei here as well
+            // TODO: maybe loosing 1 wei here as well
             uint256 shares = ERC20Rebasable(L2_TOKEN_REBASABLE).getSharesByTokens(amount_);
             ERC20Rebasable(L2_TOKEN_REBASABLE).burnShares(msg.sender, shares);
             _initiateWithdrawal(L2_TOKEN_REBASABLE, L2_TOKEN_REBASABLE, msg.sender, to_, shares, l1Gas_, data_);
