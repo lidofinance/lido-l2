@@ -7,10 +7,9 @@ unit("TokenRateOracle", ctxFactory)
 
   .test("state after init", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
-    const { bridge, updater } = ctx.accounts;
+    const { bridge } = ctx.accounts;
 
     assert.equal(await tokenRateOracle.BRIDGE(), bridge.address);
-    assert.equal(await tokenRateOracle.TOKEN_RATE_UPDATER(), updater.address);
 
     assert.equalBN(await tokenRateOracle.latestAnswer(), 0);
 
@@ -32,9 +31,8 @@ unit("TokenRateOracle", ctxFactory)
 
   .test("updateRate() :: no rights to call", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
-    const { bridge, updater, stranger } = ctx.accounts;
+    const { bridge, stranger } = ctx.accounts;
     tokenRateOracle.connect(bridge).updateRate(10, 20);
-    tokenRateOracle.connect(updater).updateRate(10, 23);
     await assert.revertsWith(tokenRateOracle.connect(stranger).updateRate(10, 40), "ErrorNoRights(\""+stranger.address+"\")");
   })
 
@@ -48,12 +46,12 @@ unit("TokenRateOracle", ctxFactory)
 
   .test("updateRate() :: happy path", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
-    const { updater } = ctx.accounts;
+    const { bridge } = ctx.accounts;
 
     const currentTime = Date.now();
     const tokenRate = 123;
 
-    await tokenRateOracle.connect(updater).updateRate(tokenRate, currentTime );
+    await tokenRateOracle.connect(bridge).updateRate(tokenRate, currentTime );
 
     assert.equalBN(await tokenRateOracle.latestAnswer(), tokenRate);
 
@@ -77,16 +75,15 @@ unit("TokenRateOracle", ctxFactory)
 
 async function ctxFactory() {
 
-    const [deployer, bridge, updater, stranger] = await hre.ethers.getSigners();
+    const [deployer, bridge, stranger] = await hre.ethers.getSigners();
 
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
         bridge.address,
-        updater.address,
         86400
     );
 
     return {
-      accounts: { deployer, bridge, updater, stranger },
+      accounts: { deployer, bridge, stranger },
       contracts: { tokenRateOracle }
     };
 }

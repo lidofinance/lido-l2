@@ -266,16 +266,16 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
     }
 
     function _getTokensByShares(uint256 sharesAmount_) internal view returns (uint256) {
-        (uint256 tokensRate, uint256 decimals) = _getTokensRateAndDecimal();
+        (uint256 tokensRate, uint256 decimals) = _getTokenRateAndDecimal();
         return (sharesAmount_ * tokensRate) / (10 ** decimals);
     }
 
     function _getSharesByTokens(uint256 tokenAmount_) internal view returns (uint256) {
-        (uint256 tokensRate, uint256 decimals) = _getTokensRateAndDecimal();
+        (uint256 tokensRate, uint256 decimals) = _getTokenRateAndDecimal();
         return (tokenAmount_ * (10 ** decimals)) / tokensRate;
     }
 
-    function _getTokensRateAndDecimal() internal view returns (uint256, uint256) {
+    function _getTokenRateAndDecimal() internal view returns (uint256, uint256) {
         uint8 rateDecimals = TOKEN_RATE_ORACLE.decimals();
 
         if (rateDecimals == uint8(0)) revert ErrorTokenRateDecimalsIsZero();
@@ -289,7 +289,7 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
         ,) = TOKEN_RATE_ORACLE.latestRoundData();
 
         if (updatedAt == 0) revert ErrorWrongOracleUpdateTime();
-        if (answer <= 0) revert ErrorOracleAnswerIsNegative();
+        if (answer <= 0) revert ErrorOracleAnswerIsNotPositive();
 
         return (uint256(answer), uint256(rateDecimals));
     }
@@ -359,7 +359,7 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
     error ErrorZeroTokensUnwrap();
     error ErrorTokenRateDecimalsIsZero();
     error ErrorWrongOracleUpdateTime();
-    error ErrorOracleAnswerIsNegative();
+    error ErrorOracleAnswerIsNotPositive();
     error ErrorTrasferToRebasableContract();
     error ErrorNotEnoughBalance();
     error ErrorNotEnoughAllowance();

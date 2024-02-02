@@ -48,7 +48,7 @@ export default function deployment(
         expectedL1TokenBridgeImplAddress,
         expectedL1TokenBridgeProxyAddress,
       ] = await network.predictAddresses(l1Params.deployer, 2);
-            
+
       const [
         expectedL2TokenRateOracleImplAddress,
         expectedL2TokenImplAddress,
@@ -117,14 +117,13 @@ export default function deployment(
             factory: TokenRateOracle__factory,
             args: [
                 expectedL2TokenBridgeProxyAddress,
-                expectedL2TokenBridgeProxyAddress,
                 86400,
                 options?.overrides,
             ],
             afterDeploy: (c) =>
                 assert.equal(c.address, expectedL2TokenRateOracleImplAddress),
         })
-        
+
         .addStep({
           factory: ERC20Bridged__factory,
           args: [

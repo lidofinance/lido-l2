@@ -12,9 +12,6 @@ contract TokenRateOracle is ITokenRateOracle {
     /// @notice A bridge which can update oracle.
     address public immutable BRIDGE;
 
-    /// @notice An updater which can update oracle.
-    address public immutable TOKEN_RATE_UPDATER;
-
     /// @notice A time period when token rate can be considered outdated.
     uint256 public immutable RATE_OUTDATED_DELAY;
 
@@ -28,11 +25,9 @@ contract TokenRateOracle is ITokenRateOracle {
     uint8 private constant DECIMALS = 18;
 
     /// @param bridge_ the bridge address that has a right to updates oracle.
-    /// @param tokenRateUpdater_ address of oracle updater that has a right to updates oracle.
     /// @param rateOutdatedDelay_ time period when token rate can be considered outdated.
-    constructor(address bridge_, address tokenRateUpdater_, uint256 rateOutdatedDelay_) {
+    constructor(address bridge_, uint256 rateOutdatedDelay_) {
         BRIDGE = bridge_;
-        TOKEN_RATE_UPDATER = tokenRateUpdater_;
         RATE_OUTDATED_DELAY = rateOutdatedDelay_;
     }
 
@@ -68,7 +63,7 @@ contract TokenRateOracle is ITokenRateOracle {
     /// @inheritdoc ITokenRateOracle
     function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external {
 
-        if (msg.sender != BRIDGE && msg.sender != TOKEN_RATE_UPDATER) {
+        if (msg.sender != BRIDGE) {
             revert ErrorNoRights(msg.sender);
         }
 
