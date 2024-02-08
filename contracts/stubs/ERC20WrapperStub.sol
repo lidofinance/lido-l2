@@ -7,9 +7,10 @@ import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20WstETH} from "../token/interfaces/IERC20WstETH.sol";
+import {IERC20Wrapper} from "../token/interfaces/IERC20Wrapper.sol";
 
 // represents wstETH on L1
-contract ERC20WrapperStub is IERC20WstETH, ERC20 {
+contract ERC20WrapperStub is IERC20Wrapper, IERC20WstETH, ERC20 {
 
     IERC20 public stETH;
     address public bridge;

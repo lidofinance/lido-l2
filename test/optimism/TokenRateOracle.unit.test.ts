@@ -44,6 +44,17 @@ unit("TokenRateOracle", ctxFactory)
     await assert.revertsWith(tokenRateOracle.connect(bridge).updateRate(12, 20), "ErrorIncorrectRateTimestamp()");
   })
 
+  .test("updateRate() :: dont update state if values are the same", async (ctx) => {
+    const { tokenRateOracle } = ctx.contracts;
+    const { bridge } = ctx.accounts;
+
+    const tx1 = await tokenRateOracle.connect(bridge).updateRate(10, 1000);
+    await assert.emits(tokenRateOracle, tx1, "RateUpdated", [10, 1000]);
+
+    const tx2 = await tokenRateOracle.connect(bridge).updateRate(10, 1000);
+    await assert.notEmits(tokenRateOracle, tx2, "RateUpdated");
+  })
+
   .test("updateRate() :: happy path", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
     const { bridge } = ctx.accounts;
