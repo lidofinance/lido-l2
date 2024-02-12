@@ -47,7 +47,7 @@ scenario("Optimism :: AAVE governance crosschain bridge management", ctxFactory)
         [false],
       ]);
 
-    const optAddresses = optimism.addresses("goerli");
+    const optAddresses = optimism.addresses("sepolia");
 
     const { calldata, callvalue } = await ctx.messaging.prepareL2Message({
       sender: ctx.lidoAragonDAO.agent.address,
@@ -115,7 +115,7 @@ scenario("Optimism :: AAVE governance crosschain bridge management", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const ethOptNetwork = network.multichain(["eth", "opt"], "goerli");
+  const ethOptNetwork = network.multichain(["eth", "opt"], "sepolia");
 
   const [l1Provider] = ethOptNetwork.getProviders({ forking: false });
   const [, l2Tester] = ethOptNetwork.getSigners(
@@ -129,8 +129,8 @@ async function ctxFactory() {
   );
 
   return {
-    lidoAragonDAO: lido("goerli", l1Provider),
-    messaging: optimism.messaging("goerli", { forking: false }),
+    lidoAragonDAO: lido("sepolia", l1Provider),
+    messaging: optimism.messaging("sepolia", { forking: false }),
     gasAmount: wei`0.1 ether`,
     l2Tester,
     l1LDOHolder,

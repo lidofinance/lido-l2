@@ -132,7 +132,7 @@ scenario("Optimism :: Bridging via depositTo/withdrawTo E2E test", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const networkName = env.network("TESTING_OPT_NETWORK", "goerli");
+  const networkName = env.network("TESTING_OPT_NETWORK", "sepolia");
   const testingSetup = await optimism.testing(networkName).getE2ETestSetup();
 
   return {

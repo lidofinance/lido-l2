@@ -40,15 +40,15 @@ const config: HardhatUserConfig = {
     eth_mainnet: {
       url: env.string("RPC_ETH_MAINNET", ""),
     },
-    eth_goerli: {
-      url: env.string("RPC_ETH_GOERLI", ""),
+    eth_sepolia: {
+      url: env.string("RPC_ETH_SEPOLIA", ""),
     },
 
     // Ethereum Fork Chains
     eth_mainnet_fork: {
       url: "http://localhost:8545",
     },
-    eth_goerli_fork: {
+    eth_sepolia_fork: {
       url: "http://localhost:8545",
     },
 
@@ -56,15 +56,15 @@ const config: HardhatUserConfig = {
     arb_mainnet: {
       url: env.string("RPC_ARB_MAINNET", ""),
     },
-    arb_goerli: {
-      url: env.string("RPC_ARB_GOERLI", ""),
+    arb_sepolia: {
+      url: env.string("RPC_ARB_SEPOLIA", ""),
     },
 
     // Arbitrum Fork Chains
     arb_mainnet_fork: {
       url: "http://localhost:8546",
     },
-    arb_goerli_fork: {
+    arb_sepolia_fork: {
       url: "http://localhost:8546",
     },
 
@@ -72,15 +72,15 @@ const config: HardhatUserConfig = {
     opt_mainnet: {
       url: env.string("RPC_OPT_MAINNET", ""),
     },
-    opt_goerli: {
-      url: env.string("RPC_OPT_GOERLI", ""),
+    opt_sepolia: {
+      url: env.string("RPC_OPT_SEPOLIA", ""),
     },
 
     // Optimism Fork Chains
     opt_mainnet_fork: {
       url: "http://localhost:9545",
     },
-    opt_goerli_fork: {
+    opt_sepolia_fork: {
       url: "http://localhost:9545",
     },
   },
@@ -91,12 +91,31 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: {
       mainnet: env.string("ETHERSCAN_API_KEY_ETH", ""),
-      goerli: env.string("ETHERSCAN_API_KEY_ETH", ""),
-      arbitrumGoerli: env.string("ETHERSCAN_API_KEY_ARB", ""),
+      sepolia: env.string("ETHERSCAN_API_KEY_ETH", ""),
+      // arbitrumSepolia: env.string("ETHERSCAN_API_KEY_ARB", ""),
       arbitrumOne: env.string("ETHERSCAN_API_KEY_ARB", ""),
       optimisticEthereum: env.string("ETHERSCAN_API_KEY_OPT", ""),
-      optimisticGoerli: env.string("ETHERSCAN_API_KEY_OPT", ""),
+      "opt_sepolia": env.string("ETHERSCAN_API_KEY_OPT", ""),
     },
+
+    customChains: [
+        {
+          network: 'sepolia',
+          chainId: 11155111,
+          urls: {
+            apiURL: 'https://api-sepolia.etherscan.io/api',
+            browserURL: 'https://sepolia.etherscan.io',
+          },
+        },
+        {
+            network: 'opt_sepolia',
+            chainId: 11155420,
+            urls: {
+              apiURL: 'https://api-sepolia-optimism.etherscan.io/api',
+              browserURL: 'https://sepolia-optimism.etherscan.io',
+            },
+          },
+      ],
   },
   typechain: {
     externalArtifacts: [

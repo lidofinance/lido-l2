@@ -48,7 +48,7 @@ function getAddressList(variableName: string, defaultValue?: string[]) {
 }
 
 function getNetwork(name: string = "NETWORK", defaultNetwork?: NetworkName) {
-  return getEnum(name, ["mainnet", "goerli"], defaultNetwork);
+  return getEnum(name, ["mainnet", "sepolia"], defaultNetwork);
 }
 
 function getPrivateKey() {

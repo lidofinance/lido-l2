@@ -1,7 +1,6 @@
 export type OptContractNames =
   | "L1CrossDomainMessenger"
-  | "L2CrossDomainMessenger"
-  | "CanonicalTransactionChain";
+  | "L2CrossDomainMessenger";
 
 export type OptContractAddresses = Record<OptContractNames, string>;
 export type CustomOptContractAddresses = Partial<OptContractAddresses>;

@@ -59,7 +59,7 @@ scenario("Arbitrum :: Update guardian", ctxFactory)
         [false],
       ]);
 
-    const arbAddresses = arbitrum.addresses("goerli");
+    const arbAddresses = arbitrum.addresses("sepolia");
 
     const { calldata, callvalue } =
       await ctx.messaging.prepareRetryableTicketTx({
@@ -134,7 +134,7 @@ scenario("Arbitrum :: Update guardian", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const ethArbNetwork = network.multichain(["eth", "arb"], "goerli");
+  const ethArbNetwork = network.multichain(["eth", "arb"], "sepolia");
 
   const [l1Provider] = ethArbNetwork.getProviders({
     forking: false,
@@ -150,8 +150,8 @@ async function ctxFactory() {
   );
 
   return {
-    lidoAragonDAO: lido("goerli", l1Provider),
-    messaging: arbitrum.messaging("goerli", { forking: false }),
+    lidoAragonDAO: lido("sepolia", l1Provider),
+    messaging: arbitrum.messaging("sepolia", { forking: false }),
     gasAmount: wei`0.1 ether`,
     l2Tester,
     l1Provider,

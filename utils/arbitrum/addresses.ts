@@ -26,7 +26,7 @@ export default function addresses(
   switch (networkName) {
     case "mainnet":
       return { ...ArbitrumMainnetAddresses, ...options.customAddresses };
-    case "goerli":
+    case "sepolia":
       return { ...ArbitrumGoerliAddresses, ...options.customAddresses };
     default:
       throw new Error(`Network "${networkName}" is not supported`);
