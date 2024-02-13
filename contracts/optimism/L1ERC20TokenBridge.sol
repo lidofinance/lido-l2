@@ -116,12 +116,28 @@ contract L1ERC20TokenBridge is
         onlyFromCrossDomainAccount(L2_TOKEN_BRIDGE)
     {
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
-            uint256 stETHAmount = IERC20Wrapper(L1_TOKEN_NON_REBASABLE).unwrap(amount_);
-            IERC20(L1_TOKEN_REBASABLE).safeTransfer(to_, stETHAmount);
-            emit ERC20WithdrawalFinalized(l1Token_, l2Token_, from_, to_, amount_, data_);
+            uint256 rebasableTokenAmount = IERC20Wrapper(L1_TOKEN_NON_REBASABLE).unwrap(amount_);
+            IERC20(L1_TOKEN_REBASABLE).safeTransfer(to_, rebasableTokenAmount);
+
+            emit ERC20WithdrawalFinalized(
+                L1_TOKEN_REBASABLE,
+                L2_TOKEN_REBASABLE,
+                from_,
+                to_,
+                rebasableTokenAmount,
+                data_
+            );
         } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
             IERC20(L1_TOKEN_NON_REBASABLE).safeTransfer(to_, amount_);
-            emit ERC20WithdrawalFinalized(l1Token_, l2Token_, from_, to_, amount_, data_);
+
+            emit ERC20WithdrawalFinalized(
+                L1_TOKEN_NON_REBASABLE,
+                L2_TOKEN_NON_REBASABLE,
+                from_,
+                to_,
+                amount_,
+                data_
+            );
         }
     }
 
@@ -134,31 +150,81 @@ contract L1ERC20TokenBridge is
         bytes memory data_
     ) internal {
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
-
             DepositData memory depositData = DepositData({
                 rate: uint96(L1_TOKEN_NON_REBASABLE_ADAPTER.tokenRate()),
                 timestamp: uint40(block.timestamp),
                 data: data_
             });
-
             bytes memory encodedDepositData = encodeDepositData(depositData);
 
             if (amount_ == 0) {
-                _initiateERC20Deposit(l1Token_, l2Token_, msg.sender, to_, amount_, l2Gas_, encodedDepositData);
+                _initiateERC20Deposit(
+                    L1_TOKEN_REBASABLE,
+                    L2_TOKEN_REBASABLE,
+                    msg.sender,
+                    to_,
+                    0,
+                    l2Gas_,
+                    encodedDepositData
+                );
+
+                emit ERC20DepositInitiated(
+                    L1_TOKEN_REBASABLE,
+                    L2_TOKEN_REBASABLE,
+                    msg.sender,
+                    to_,
+                    0,
+                    encodedDepositData
+                );
+
                 return;
             }
 
-            // maybe loosing 1 wei for stETH. Check another method
             IERC20(L1_TOKEN_REBASABLE).safeTransferFrom(msg.sender, address(this), amount_);
-            if(!IERC20(L1_TOKEN_REBASABLE).approve(L1_TOKEN_NON_REBASABLE, amount_)) revert ErrorRebasableTokenApprove();
+            if(!IERC20(L1_TOKEN_REBASABLE).approve(L1_TOKEN_NON_REBASABLE, amount_)) {
+                revert ErrorRebasableTokenApprove();
+            }
+            uint256 nonRebasableTokenAmount = IERC20Wrapper(L1_TOKEN_NON_REBASABLE).wrap(amount_);
 
-            // when 1 wei wasnt't transfer, can this wrap be failed?
-            uint256 wstETHAmount = IERC20Wrapper(L1_TOKEN_NON_REBASABLE).wrap(amount_);
-            _initiateERC20Deposit(L1_TOKEN_REBASABLE, L2_TOKEN_REBASABLE, msg.sender, to_, wstETHAmount, l2Gas_, encodedDepositData);
+            _initiateERC20Deposit(
+                L1_TOKEN_REBASABLE,
+                L2_TOKEN_REBASABLE,
+                msg.sender,
+                to_,
+                nonRebasableTokenAmount,
+                l2Gas_,
+                encodedDepositData
+            );
 
+            emit ERC20DepositInitiated(
+                L1_TOKEN_REBASABLE,
+                L2_TOKEN_REBASABLE,
+                msg.sender,
+                to_,
+                amount_,
+                encodedDepositData
+            );
         } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
             IERC20(L1_TOKEN_NON_REBASABLE).safeTransferFrom(msg.sender, address(this), amount_);
-            _initiateERC20Deposit(L1_TOKEN_NON_REBASABLE, L2_TOKEN_NON_REBASABLE, msg.sender, to_, amount_, l2Gas_, data_);
+
+            _initiateERC20Deposit(
+                L1_TOKEN_NON_REBASABLE,
+                L2_TOKEN_NON_REBASABLE,
+                msg.sender,
+                to_,
+                amount_,
+                l2Gas_,
+                data_
+            );
+
+            emit ERC20DepositInitiated(
+                L1_TOKEN_NON_REBASABLE,
+                L2_TOKEN_NON_REBASABLE,
+                msg.sender,
+                to_,
+                amount_,
+                data_
+            );
         }
     }
 
@@ -180,7 +246,6 @@ contract L1ERC20TokenBridge is
         uint32 l2Gas_,
         bytes memory data_
     ) internal {
-
         bytes memory message = abi.encodeWithSelector(
             IL2ERC20Bridge.finalizeDeposit.selector,
             l1Token_,
@@ -192,15 +257,6 @@ contract L1ERC20TokenBridge is
         );
 
         sendCrossDomainMessage(L2_TOKEN_BRIDGE, l2Gas_, message);
-
-        emit ERC20DepositInitiated(
-            l1Token_,
-            l2Token_,
-            from_,
-            to_,
-            amount_,
-            data_
-        );
     }
 
     error ErrorSenderNotEOA();

@@ -359,7 +359,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       l2TokenRebasable.address,
       tokenHolderA.address,
       tokenHolderA.address,
-      depositAmountNonRebasable,
+      depositAmountRebasable,
       dataToSend,
     ]);
 
@@ -546,7 +546,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       l2TokenRebasable.address,
       tokenHolderA.address,
       tokenHolderA.address,
-      withdrawalAmountNonRebasable,
+      withdrawalAmountRebasable,
       "0x",
     ]);
 
@@ -609,7 +609,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         l2TokenRebasable.address,
         tokenHolderA.address,
         tokenHolderB.address,
-        depositAmountNonRebasable,
+        depositAmountRebasable,
         dataToSend,
       ]);
 
@@ -813,7 +813,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       l2TokenRebasable.address,
       tokenHolderB.address,
       tokenHolderA.address,
-      withdrawalAmountNonRebasable,
+      withdrawalAmountRebasable,
       "0x",
     ]);
 

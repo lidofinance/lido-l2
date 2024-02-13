@@ -97,12 +97,28 @@ contract L2ERC20TokenBridge is
             DepositData memory depositData = decodeDepositData(data_);
             ITokenRateOracle tokenRateOracle = ERC20Rebasable(L2_TOKEN_REBASABLE).TOKEN_RATE_ORACLE();
             tokenRateOracle.updateRate(depositData.rate, depositData.timestamp);
+
             ERC20Rebasable(L2_TOKEN_REBASABLE).mintShares(to_, amount_);
+
             uint256 rebasableTokenAmount = ERC20Rebasable(L2_TOKEN_REBASABLE).getTokensByShares(amount_);
-            emit DepositFinalized(l1Token_, l2Token_, from_, to_, rebasableTokenAmount, depositData.data);
+            emit DepositFinalized(
+                L1_TOKEN_REBASABLE,
+                L2_TOKEN_REBASABLE,
+                from_,
+                to_,
+                rebasableTokenAmount,
+                depositData.data
+            );
         } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
             IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeMint(to_, amount_);
-            emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, data_);
+            emit DepositFinalized(
+                L1_TOKEN_NON_REBASABLE,
+                L2_TOKEN_NON_REBASABLE,
+                from_,
+                to_,
+                amount_,
+                data_
+            );
         }
     }
 
@@ -114,19 +130,46 @@ contract L2ERC20TokenBridge is
         bytes calldata data_
     ) internal {
         if (l2Token_ == L2_TOKEN_REBASABLE) {
-
-            // TODO: maybe loosing 1 wei here as well
             uint256 shares = ERC20Rebasable(L2_TOKEN_REBASABLE).getSharesByTokens(amount_);
             ERC20Rebasable(L2_TOKEN_REBASABLE).burnShares(msg.sender, shares);
 
-            _initiateWithdrawal(L1_TOKEN_REBASABLE, L2_TOKEN_REBASABLE, msg.sender, to_, shares, l1Gas_, data_);
-            emit WithdrawalInitiated(L1_TOKEN_REBASABLE, L2_TOKEN_REBASABLE, msg.sender, to_, amount_, data_);
+            _initiateWithdrawal(
+                L1_TOKEN_REBASABLE,
+                L2_TOKEN_REBASABLE,
+                msg.sender,
+                to_,
+                shares,
+                l1Gas_,
+                data_
+            );
+            emit WithdrawalInitiated(
+                L1_TOKEN_REBASABLE,
+                L2_TOKEN_REBASABLE,
+                msg.sender,
+                to_,
+                amount_,
+                data_
+            );
         } else if (l2Token_ == L2_TOKEN_NON_REBASABLE) {
-
             IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeBurn(msg.sender, amount_);
 
-            _initiateWithdrawal(L1_TOKEN_NON_REBASABLE, L2_TOKEN_NON_REBASABLE, msg.sender, to_, amount_, l1Gas_, data_);
-            emit WithdrawalInitiated(L1_TOKEN_NON_REBASABLE, L2_TOKEN_NON_REBASABLE, msg.sender, to_, amount_, data_);
+            _initiateWithdrawal(
+                L1_TOKEN_NON_REBASABLE,
+                L2_TOKEN_NON_REBASABLE,
+                msg.sender,
+                to_,
+                amount_,
+                l1Gas_,
+                data_
+            );
+            emit WithdrawalInitiated(
+                L1_TOKEN_NON_REBASABLE,
+                L2_TOKEN_NON_REBASABLE,
+                msg.sender,
+                to_,
+                amount_,
+                data_
+            );
         }
     }
 
@@ -148,7 +191,6 @@ contract L2ERC20TokenBridge is
         uint32 l1Gas_,
         bytes memory data_
     ) internal {
-
         bytes memory message = abi.encodeWithSelector(
             IL1ERC20Bridge.finalizeERC20Withdrawal.selector,
             l1Token_,

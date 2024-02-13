@@ -222,7 +222,7 @@ unit("Optimism :: L1ERC20TokenBridge", ctxFactory)
       l2TokenRebasable.address,
       deployer.address,
       deployer.address,
-      amountWrapped,
+      amount,
       dataToReceive,
     ]);
 
@@ -474,8 +474,8 @@ unit("Optimism :: L1ERC20TokenBridge", ctxFactory)
     const bridgeBalanceBefore = await l1TokenNonRebasable.balanceOf(l1TokenBridge.address);
 
     const tx = await l1TokenBridge.depositERC20To(
-        l1TokenRebasable.address,
-        l2TokenRebasable.address,
+      l1TokenRebasable.address,
+      l2TokenRebasable.address,
       recipient.address,
       amount,
       l2Gas,
@@ -490,7 +490,7 @@ unit("Optimism :: L1ERC20TokenBridge", ctxFactory)
       l2TokenRebasable.address,
       deployer.address,
       recipient.address,
-      amountWrapped,
+      amount,
       dataToReceive,
     ]);
 
@@ -790,7 +790,7 @@ unit("Optimism :: L1ERC20TokenBridge", ctxFactory)
       l2TokenRebasable.address,
       deployer.address,
       recipient.address,
-      amount,
+      amountUnwrapped,
       data,
     ]);
 
