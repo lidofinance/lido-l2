@@ -43,12 +43,18 @@ const config: HardhatUserConfig = {
     eth_goerli: {
       url: env.string("RPC_ETH_GOERLI", ""),
     },
+    eth_sepolia: {
+      url: env.string("RPC_ETH_SEPOLIA", ""),
+    },
 
     // Ethereum Fork Chains
     eth_mainnet_fork: {
       url: "http://localhost:8545",
     },
     eth_goerli_fork: {
+      url: "http://localhost:8545",
+    },
+    eth_sepolia_fork: {
       url: "http://localhost:8545",
     },
 
@@ -75,12 +81,18 @@ const config: HardhatUserConfig = {
     opt_goerli: {
       url: env.string("RPC_OPT_GOERLI", ""),
     },
+    lisk_sepolia: {
+      url: env.string("RPC_LISK_SEPOLIA", ""),
+    },
 
     // Optimism Fork Chains
     opt_mainnet_fork: {
       url: "http://localhost:9545",
     },
     opt_goerli_fork: {
+      url: "http://localhost:9545",
+    },
+    lisk_sepolia_fork: {
       url: "http://localhost:9545",
     },
   },
@@ -92,12 +104,25 @@ const config: HardhatUserConfig = {
     apiKey: {
       mainnet: env.string("ETHERSCAN_API_KEY_ETH", ""),
       goerli: env.string("ETHERSCAN_API_KEY_ETH", ""),
+      sepolia: env.string("ETHERSCAN_API_KEY_ETH", ""),
       arbitrumGoerli: env.string("ETHERSCAN_API_KEY_ARB", ""),
       arbitrumOne: env.string("ETHERSCAN_API_KEY_ARB", ""),
       optimisticEthereum: env.string("ETHERSCAN_API_KEY_OPT", ""),
       optimisticGoerli: env.string("ETHERSCAN_API_KEY_OPT", ""),
+      "lisk-sepolia": "123",
     },
+    customChains: [
+      {
+        network: "lisk-sepolia",
+        chainId: 4202,
+        urls: {
+          apiURL: "https://sepolia-blockscout.lisk.com/api",
+          browserURL: "https://sepolia-blockscout.lisk.com",
+        },
+      },
+    ],
   },
+
   typechain: {
     externalArtifacts: [
       "./interfaces/**/*.json",

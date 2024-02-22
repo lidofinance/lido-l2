@@ -1,6 +1,6 @@
 import { CtxFactory, StepTest, CtxFn } from "./types";
 
-class ScenarioTest<T> {
+class ScenarioTest<T extends object> {
   private afterFn?: CtxFn<T>;
   private beforeFn?: CtxFn<T>;
 
@@ -68,6 +68,9 @@ class ScenarioTest<T> {
   }
 }
 
-export function scenario<T>(title: string, ctxFactory: CtxFactory<T>) {
+export function scenario<T extends object>(
+  title: string,
+  ctxFactory: CtxFactory<T>
+) {
   return new ScenarioTest(title, ctxFactory);
 }

@@ -6,22 +6,30 @@ import { HardhatRuntimeEnvironment, HttpNetworkConfig } from "hardhat/types";
 
 import env from "./env";
 
-type ChainNameShort = "arb" | "opt" | "eth";
-export type NetworkName = "goerli" | "mainnet";
+type ChainNameShort = "arb" | "opt" | "eth" | "lisk";
+export type NetworkName = "goerli" | "mainnet" | "sepolia";
 export type SignerOrProvider = Signer | Provider;
 
 const HARDHAT_NETWORK_NAMES = {
   eth: {
     goerli: "eth_goerli",
     mainnet: "eth_mainnet",
+    sepolia: "eth_sepolia",
   },
   arb: {
     goerli: "arb_goerli",
     mainnet: "arb_mainnet",
+    sepolia: "arb_sepolia",
   },
   opt: {
     goerli: "opt_goerli",
     mainnet: "opt_mainnet",
+    sepolia: "opt_sepolia",
+  },
+  lisk: {
+    goerli: "lisk_goerli",
+    mainnet: "lisk_mainnet",
+    sepolia: "lisk_sepolia",
   },
 };
 
@@ -29,14 +37,22 @@ const HARDHAT_NETWORK_NAMES_FORK = {
   eth: {
     goerli: "eth_goerli_fork",
     mainnet: "eth_mainnet_fork",
+    sepolia: "eth_sepolia_fork",
   },
   arb: {
     goerli: "arb_goerli_fork",
     mainnet: "arb_mainnet_fork",
+    sepolia: "arb_sepolia_fork",
   },
   opt: {
     goerli: "opt_goerli_fork",
     mainnet: "opt_mainnet_fork",
+    sepolia: "opt_sepolia_fork",
+  },
+  lisk: {
+    goerli: "lisk_goerli_fork",
+    mainnet: "lisk_mainnet_fork",
+    sepolia: "lisk_sepolia_fork",
   },
 };
 
@@ -120,14 +136,26 @@ function getChainId(protocol: ChainNameShort, networkName: NetworkName) {
     eth: {
       mainnet: 1,
       goerli: 5,
+      sepolia: 11155111,
     },
     opt: {
       mainnet: 10,
       goerli: 420,
+      //UNREACHABLE
+      sepolia: 11155112,
     },
     arb: {
       mainnet: 42161,
       goerli: 421613,
+      //UNREACHABLE
+      sepolia: 11155113,
+    },
+    lisk: {
+      //FIXME
+      mainnet: 11155114,
+      //FIXME
+      goerli: 11155115,
+      sepolia: 4202,
     },
   };
   const chainId = chainIds[protocol][networkName];

@@ -1,7 +1,7 @@
 import aragon from "./aragon";
 import { SignerOrProvider } from "./network";
 
-type AragonEnvSetupName = "mainnet" | "mainnet_test" | "goerli";
+type AragonEnvSetupName = "mainnet" | "mainnet_test" | "goerli" | "sepolia";
 
 const ARAGON_MAINNET_TESTING = {
   agent: "0x184d39300f2fA4419d04998e9C58Cb5De586d879",
@@ -21,10 +21,17 @@ const ARAGON_GOERLI = {
   tokenManager: "0xDfe76d11b365f5e0023343A367f0b311701B3bc1",
 };
 
+const ARAGON_SEPOLIA = {
+  agent: "0x32A0E5828B62AAb932362a4816ae03b860b65e83",
+  voting: "0x39A0EbdEE54cB319f4F42141daaBDb6ba25D341A",
+  tokenManager: "0xC73cd4B2A7c1CBC5BF046eB4A7019365558ABF66",
+};
+
 const ARAGON_CONTRACTS_BY_NAME = {
   mainnet: ARAGON_MAINNET,
   mainnet_test: ARAGON_MAINNET_TESTING,
   goerli: ARAGON_GOERLI,
+  sepolia: ARAGON_SEPOLIA,
 };
 
 export default function lido(

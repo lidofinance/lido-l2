@@ -1,11 +1,14 @@
 import hre from "hardhat";
 import { CtxFactory, StepTest, CtxFn } from "./types";
 
-export function unit<T>(title: string, ctxFactory: CtxFactory<T>) {
+export function unit<T extends object>(
+  title: string,
+  ctxFactory: CtxFactory<T>
+) {
   return new UnitTest(title, ctxFactory);
 }
 
-class UnitTest<T> {
+class UnitTest<T extends object> {
   public readonly title: string;
 
   private readonly ctxFactory: CtxFactory<T>;
