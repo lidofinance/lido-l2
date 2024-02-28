@@ -92,7 +92,6 @@ const config: HardhatUserConfig = {
     apiKey: {
       mainnet: env.string("ETHERSCAN_API_KEY_ETH", ""),
       sepolia: env.string("ETHERSCAN_API_KEY_ETH", ""),
-      // arbitrumSepolia: env.string("ETHERSCAN_API_KEY_ARB", ""),
       arbitrumOne: env.string("ETHERSCAN_API_KEY_ARB", ""),
       optimisticEthereum: env.string("ETHERSCAN_API_KEY_OPT", ""),
       "opt_sepolia": env.string("ETHERSCAN_API_KEY_OPT", ""),
