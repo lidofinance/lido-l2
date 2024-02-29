@@ -108,8 +108,7 @@ export default function testing(networkName: NetworkName) {
         l2ERC20TokenBridgeAdmin: await testingUtils.impersonate(
           l2ERC20TokenBridgeAdminAddress,
           optProvider
-        ),
-        canonicalTransactionChain: optContracts.CanonicalTransactionChain,
+        )
       };
     },
     async getE2ETestSetup() {

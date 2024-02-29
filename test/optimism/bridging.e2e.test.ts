@@ -12,6 +12,7 @@ import network from "../../utils/network";
 import optimism from "../../utils/optimism";
 import { ERC20Mintable } from "../../typechain";
 import { scenario } from "../../utils/testing";
+import { sleep } from "../../utils/testing/e2e";
 
 let depositTokensTxResponse: TransactionResponse;
 let withdrawTokensTxResponse: TransactionResponse;
@@ -109,6 +110,8 @@ scenario("Optimism :: Bridging via deposit/withdraw E2E test", ctxFactory)
   })
 
   .step("Finalizing L2 -> L1 message", async (ctx) => {
+    const finalizationPeriod = await ctx.crossChainMessenger.contracts.l1.L2OutputOracle.FINALIZATION_PERIOD_SECONDS();
+    await sleep(finalizationPeriod * 1000);
     await ctx.crossChainMessenger.finalizeMessage(withdrawTokensTxResponse);
   })
 
@@ -122,7 +125,7 @@ scenario("Optimism :: Bridging via deposit/withdraw E2E test", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const networkName = env.network("TESTING_OPT_NETWORK", "goerli");
+  const networkName = env.network("TESTING_OPT_NETWORK", "sepolia");
   const testingSetup = await optimism.testing(networkName).getE2ETestSetup();
 
   return {

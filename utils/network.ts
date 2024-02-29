@@ -7,35 +7,35 @@ import { HardhatRuntimeEnvironment, HttpNetworkConfig } from "hardhat/types";
 import env from "./env";
 
 type ChainNameShort = "arb" | "opt" | "eth";
-export type NetworkName = "goerli" | "mainnet";
+export type NetworkName = "sepolia" | "mainnet";
 export type SignerOrProvider = Signer | Provider;
 
 const HARDHAT_NETWORK_NAMES = {
   eth: {
-    goerli: "eth_goerli",
+    sepolia: "eth_sepolia",
     mainnet: "eth_mainnet",
   },
   arb: {
-    goerli: "arb_goerli",
+    sepolia: "arb_sepolia",
     mainnet: "arb_mainnet",
   },
   opt: {
-    goerli: "opt_goerli",
+    sepolia: "opt_sepolia",
     mainnet: "opt_mainnet",
   },
 };
 
 const HARDHAT_NETWORK_NAMES_FORK = {
   eth: {
-    goerli: "eth_goerli_fork",
+    sepolia: "eth_sepolia_fork",
     mainnet: "eth_mainnet_fork",
   },
   arb: {
-    goerli: "arb_goerli_fork",
+    sepolia: "arb_sepolia_fork",
     mainnet: "arb_mainnet_fork",
   },
   opt: {
-    goerli: "opt_goerli_fork",
+    sepolia: "opt_sepolia_fork",
     mainnet: "opt_mainnet_fork",
   },
 };
@@ -119,15 +119,15 @@ function getChainId(protocol: ChainNameShort, networkName: NetworkName) {
   const chainIds = {
     eth: {
       mainnet: 1,
-      goerli: 5,
+      sepolia: 11155111,
     },
     opt: {
       mainnet: 10,
-      goerli: 420,
+      sepolia: 11155420,
     },
     arb: {
       mainnet: 42161,
-      goerli: 421613,
+      sepolia: 421613,
     },
   };
   const chainId = chainIds[protocol][networkName];
@@ -141,13 +141,13 @@ function getBlockExplorerBaseUrlByChainId(chainId: number) {
   const baseUrlByChainId: Record<number, string> = {
     // ethereum
     1: "https://etherscan.io",
-    5: "https://goerli.etherscan.io",
+    11155111: "https://sepolia.etherscan.io",
     // arbitrum
     42161: "https://arbiscan.io",
-    421613: "https://goerli-rollup-explorer.arbitrum.io",
+    421613: "https://sepolia-rollup-explorer.arbitrum.io",
     // optimism
     10: "https://optimistic.etherscan.io",
-    420: "https://blockscout.com/optimism/goerli",
+    11155420: "https://blockscout.com/optimism/sepolia",
     // forked node
     31337: "https://etherscan.io",
   };

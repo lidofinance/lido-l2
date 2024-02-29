@@ -166,12 +166,12 @@ export class DeployScript {
     const chainId = await this.deployer.getChainId();
     const networkNameByChainId: Record<number, string> = {
       1: "eth_mainnet",
-      5: "eth_goerli",
+      11155111: "eth_sepolia",
       10: "opt_mainnet",
-      420: "opt_goerli",
+      11155420: "opt_sepolia",
       31337: "hardhat",
       42161: "arb_mainnet",
-      421613: "arb_goerli",
+      421613: "arb_sepolia",
     };
     const networkName = networkNameByChainId[chainId] || "<NETWORK_NAME>";
     const arsString = stepInfo.args.map((a) => `"${a.value}"`).join(" ");
