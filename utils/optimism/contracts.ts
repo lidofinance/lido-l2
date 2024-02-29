@@ -1,5 +1,4 @@
 import {
-  CanonicalTransactionChain__factory,
   CrossDomainMessengerStub__factory,
   L1CrossDomainMessenger__factory,
   L2CrossDomainMessenger__factory,
@@ -34,10 +33,6 @@ export default function contracts(
     L2CrossDomainMessenger: L2CrossDomainMessenger__factory.connect(
       optAddresses.L2CrossDomainMessenger,
       l2Provider
-    ),
-    CanonicalTransactionChain: CanonicalTransactionChain__factory.connect(
-      optAddresses.CanonicalTransactionChain,
-      l1Provider
     ),
   };
 }
