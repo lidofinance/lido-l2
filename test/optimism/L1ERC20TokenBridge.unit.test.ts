@@ -3,7 +3,7 @@ import hre, { ethers } from "hardhat";
 import {
   ERC20BridgedStub__factory,
   ERC20WrapperStub__factory,
-  L1ERC20TokenBridge__factory,
+  L1LidoTokensBridge__factory,
   L2ERC20TokenBridge__factory,
   OssifiableProxy__factory,
   EmptyContractStub__factory,
@@ -15,7 +15,7 @@ import { wei } from "../../utils/wei";
 import { BigNumber } from "ethers";
 import { ERC20WrapperStub } from "../../typechain";
 
-unit("Optimism :: L1ERC20TokenBridge", ctxFactory)
+unit("Optimism :: L1LidoTokensBridge", ctxFactory)
   .test("l2TokenBridge()", async (ctx) => {
     assert.equal(
       await ctx.l1TokenBridge.l2TokenBridge(),
@@ -844,7 +844,7 @@ async function ctxFactory() {
     l1MessengerStub.address
   );
 
-  const l1TokenBridgeImpl = await new L1ERC20TokenBridge__factory(
+  const l1TokenBridgeImpl = await new L1LidoTokensBridge__factory(
     deployer
   ).deploy(
     l1MessengerStub.address,
@@ -865,7 +865,7 @@ async function ctxFactory() {
     ])
   );
 
-  const l1TokenBridge = L1ERC20TokenBridge__factory.connect(
+  const l1TokenBridge = L1LidoTokensBridge__factory.connect(
     l1TokenBridgeProxy.address,
     deployer
   );

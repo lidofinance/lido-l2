@@ -4,10 +4,9 @@ import {
   ERC20Bridged__factory,
   ERC20Rebasable__factory,
   IERC20Metadata__factory,
-  L1ERC20TokenBridge__factory,
+  L1LidoTokensBridge__factory,
   L2ERC20TokenBridge__factory,
   OssifiableProxy__factory,
-  TokenRateOracle,
   TokenRateOracle__factory,
 } from "../../typechain";
 
@@ -64,7 +63,7 @@ export default function deployment(
         options?.logger
       )
         .addStep({
-          factory: L1ERC20TokenBridge__factory,
+          factory: L1LidoTokensBridge__factory,
           args: [
             optAddresses.L1CrossDomainMessenger,
             expectedL2TokenBridgeProxyAddress,
@@ -82,7 +81,7 @@ export default function deployment(
           args: [
             expectedL1TokenBridgeImplAddress,
             l1Params.admins.proxy,
-            L1ERC20TokenBridge__factory.createInterface().encodeFunctionData(
+            L1LidoTokensBridge__factory.createInterface().encodeFunctionData(
               "initialize",
               [l1Params.admins.bridge]
             ),

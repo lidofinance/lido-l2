@@ -4,7 +4,7 @@ import {
     ERC20WrapperStub__factory,
     TokenRateOracle__factory,
     ERC20Rebasable__factory,
-    L1ERC20TokenBridge__factory,
+    L1LidoTokensBridge__factory,
     L2ERC20TokenBridge__factory,
     OssifiableProxy__factory,
     EmptyContractStub__factory,
@@ -105,7 +105,7 @@ unit("Optimism:: L2ERC20TokenBridge", ctxFactory)
         await assert.emits(l2Messenger, tx, "SentMessage", [
             l1TokenBridgeEOA.address,
             l2TokenBridge.address,
-            L1ERC20TokenBridge__factory.createInterface().encodeFunctionData(
+            L1LidoTokensBridge__factory.createInterface().encodeFunctionData(
                 "finalizeERC20Withdrawal",
                 [
                     l1TokenNonRebasable.address,
@@ -184,7 +184,7 @@ unit("Optimism:: L2ERC20TokenBridge", ctxFactory)
         await assert.emits(l2Messenger, tx, "SentMessage", [
             l1TokenBridgeEOA.address,
             l2TokenBridge.address,
-            L1ERC20TokenBridge__factory.createInterface().encodeFunctionData(
+            L1LidoTokensBridge__factory.createInterface().encodeFunctionData(
                 "finalizeERC20Withdrawal",
                 [
                     l1TokenRebasable.address,
@@ -298,7 +298,7 @@ unit("Optimism:: L2ERC20TokenBridge", ctxFactory)
         await assert.emits(l2MessengerStub, tx, "SentMessage", [
             l1TokenBridgeEOA.address,
             l2TokenBridge.address,
-            L1ERC20TokenBridge__factory.createInterface().encodeFunctionData(
+            L1LidoTokensBridge__factory.createInterface().encodeFunctionData(
                 "finalizeERC20Withdrawal",
                 [
                     l1TokenNonRebasable.address,
@@ -379,7 +379,7 @@ unit("Optimism:: L2ERC20TokenBridge", ctxFactory)
         await assert.emits(l2Messenger, tx, "SentMessage", [
             l1TokenBridgeEOA.address,
             l2TokenBridge.address,
-            L1ERC20TokenBridge__factory.createInterface().encodeFunctionData(
+            L1LidoTokensBridge__factory.createInterface().encodeFunctionData(
                 "finalizeERC20Withdrawal",
                 [
                     l1TokenRebasable.address,

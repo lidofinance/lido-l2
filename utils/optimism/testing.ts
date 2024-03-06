@@ -5,13 +5,13 @@ import {
   IERC20,
   ERC20Bridged,
   IERC20__factory,
-  L1ERC20TokenBridge,
+  L1LidoTokensBridge,
   L2ERC20TokenBridge,
   ERC20Bridged__factory,
   ERC20BridgedStub__factory,
   ERC20WrapperStub__factory,
   TokenRateOracle__factory,
-  L1ERC20TokenBridge__factory,
+  L1LidoTokensBridge__factory,
   L2ERC20TokenBridge__factory,
   CrossDomainMessengerStub__factory,
   ERC20Rebasable__factory,
@@ -59,7 +59,7 @@ export default function testing(networkName: NetworkName) {
         : await deployTestBridge(networkName, ethProvider, optProvider);
 
       const [l1ERC20TokenBridgeAdminAddress] =
-        await BridgingManagement.getAdmins(bridgeContracts.l1ERC20TokenBridge);
+        await BridgingManagement.getAdmins(bridgeContracts.l1LidoTokensBridge);
 
       const [l2ERC20TokenBridgeAdminAddress] =
         await BridgingManagement.getAdmins(bridgeContracts.l2ERC20TokenBridge);
@@ -166,10 +166,10 @@ async function loadDeployedBridges(
 
     ...connectBridgeContracts(
       {
-        tokenRateOracle: testingUtils.env.OPT_L2_TOKEN(), // fix
+        tokenRateOracle: testingUtils.env.OPT_L2_TOKEN_RATE_ORACLE(),
         l2Token: testingUtils.env.OPT_L2_TOKEN(),
-        l2TokenRebasable: testingUtils.env.OPT_L2_TOKEN(), // fix
-        l1ERC20TokenBridge: testingUtils.env.OPT_L1_ERC20_TOKEN_BRIDGE(),
+        l2TokenRebasable: testingUtils.env.OPT_L2_REBASABLE_TOKEN(),
+        l1LidoTokensBridge: testingUtils.env.OPT_L1_ERC20_TOKEN_BRIDGE(),
         l2ERC20TokenBridge: testingUtils.env.OPT_L2_ERC20_TOKEN_BRIDGE(),
       },
       l1SignerOrProvider,
@@ -215,9 +215,9 @@ async function deployTestBridge(
   await ethDeployScript.run();
   await optDeployScript.run();
 
-  const l1ERC20TokenBridgeProxyDeployStepIndex = 1;
+  const l1LidoTokensBridgeProxyDeployStepIndex = 1;
   const l1BridgingManagement = new BridgingManagement(
-    ethDeployScript.getContractAddress(l1ERC20TokenBridgeProxyDeployStepIndex),
+    ethDeployScript.getContractAddress(l1LidoTokensBridgeProxyDeployStepIndex),
     ethDeployer
   );
 
@@ -247,7 +247,7 @@ async function deployTestBridge(
         tokenRateOracle: optDeployScript.getContractAddress(0),
         l2Token: optDeployScript.getContractAddress(2),
         l2TokenRebasable: optDeployScript.getContractAddress(4),
-        l1ERC20TokenBridge: ethDeployScript.getContractAddress(1),
+        l1LidoTokensBridge: ethDeployScript.getContractAddress(1),
         l2ERC20TokenBridge: optDeployScript.getContractAddress(6)
       },
       ethProvider,
@@ -261,15 +261,15 @@ function connectBridgeContracts(
     tokenRateOracle: string;
     l2Token: string;
     l2TokenRebasable: string;
-    l1ERC20TokenBridge: string;
+    l1LidoTokensBridge: string;
     l2ERC20TokenBridge: string;
   },
   ethSignerOrProvider: SignerOrProvider,
   optSignerOrProvider: SignerOrProvider
 ) {
 
-  const l1ERC20TokenBridge = L1ERC20TokenBridge__factory.connect(
-    addresses.l1ERC20TokenBridge,
+  const l1LidoTokensBridge = L1LidoTokensBridge__factory.connect(
+    addresses.l1LidoTokensBridge,
     ethSignerOrProvider
   );
   const l2ERC20TokenBridge = L2ERC20TokenBridge__factory.connect(
@@ -292,7 +292,7 @@ function connectBridgeContracts(
     tokenRateOracle,
     l2Token,
     l2TokenRebasable,
-    l1ERC20TokenBridge,
+    l1LidoTokensBridge,
     l2ERC20TokenBridge
   };
 }
@@ -302,7 +302,7 @@ async function printLoadedTestConfig(
   bridgeContracts: {
     l1Token: IERC20;
     l2Token: ERC20Bridged;
-    l1ERC20TokenBridge: L1ERC20TokenBridge;
+    l1LidoTokensBridge: L1LidoTokensBridge;
     l2ERC20TokenBridge: L2ERC20TokenBridge;
   },
   l1TokensHolder?: Signer
@@ -323,7 +323,7 @@ async function printLoadedTestConfig(
     console.log(`  · L1 Tokens Holder Balance: ${holderBalance.toString()}`);
   }
   console.log(
-    `  · L1 ERC20 Token Bridge: ${bridgeContracts.l1ERC20TokenBridge.address}`
+    `  · L1 ERC20 Token Bridge: ${bridgeContracts.l1LidoTokensBridge.address}`
   );
   console.log(
     `  · L2 ERC20 Token Bridge: ${bridgeContracts.l2ERC20TokenBridge.address}`

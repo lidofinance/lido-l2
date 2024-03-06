@@ -12,13 +12,13 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
   })
 
   .step("Activate bridging on L1", async (ctx) => {
-    const { l1ERC20TokenBridge } = ctx;
+    const { l1LidoTokensBridge } = ctx;
     const { l1ERC20TokenBridgeAdmin } = ctx.accounts;
 
-    const isDepositsEnabled = await l1ERC20TokenBridge.isDepositsEnabled();
+    const isDepositsEnabled = await l1LidoTokensBridge.isDepositsEnabled();
 
     if (!isDepositsEnabled) {
-      await l1ERC20TokenBridge
+      await l1LidoTokensBridge
         .connect(l1ERC20TokenBridgeAdmin)
         .enableDeposits();
     } else {
@@ -26,18 +26,18 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     }
 
     const isWithdrawalsEnabled =
-      await l1ERC20TokenBridge.isWithdrawalsEnabled();
+      await l1LidoTokensBridge.isWithdrawalsEnabled();
 
     if (!isWithdrawalsEnabled) {
-      await l1ERC20TokenBridge
+      await l1LidoTokensBridge
         .connect(l1ERC20TokenBridgeAdmin)
         .enableWithdrawals();
     } else {
       console.log("L1 withdrawals already enabled");
     }
 
-    assert.isTrue(await l1ERC20TokenBridge.isDepositsEnabled());
-    assert.isTrue(await l1ERC20TokenBridge.isWithdrawalsEnabled());
+    assert.isTrue(await l1LidoTokensBridge.isDepositsEnabled());
+    assert.isTrue(await l1LidoTokensBridge.isWithdrawalsEnabled());
   })
 
   .step("Activate bridging on L2", async (ctx) => {
@@ -74,26 +74,26 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       l1Token,
       l2Token,
       l1TokenRebasable,
-      l1ERC20TokenBridge,
+      l1LidoTokensBridge,
       l2TokenRebasable
     } = ctx;
 
     const { accountA: tokenHolderA } = ctx.accounts;
-    const stETHPerToken = await l1Token.stETHPerToken();
-    
+    const stEthPerToken = await l1Token.stEthPerToken();
+
     await l1TokenRebasable
       .connect(tokenHolderA.l1Signer)
-      .approve(l1ERC20TokenBridge.address, 0);
+      .approve(l1LidoTokensBridge.address, 0);
 
     const tokenHolderABalanceBefore = await l1TokenRebasable.balanceOf(
       tokenHolderA.address
     );
 
     const l1ERC20TokenBridgeBalanceBefore = await l1TokenRebasable.balanceOf(
-      l1ERC20TokenBridge.address
+        l1LidoTokensBridge.address
     );
 
-    const tx0 = await l1ERC20TokenBridge
+    const tx0 = await l1LidoTokensBridge
     .connect(tokenHolderA.l1Signer)
     .depositERC20(
       l1Token.address,
@@ -106,7 +106,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     const receipt0 = await tx0.wait();
     console.log("l1Token gasUsed=",receipt0.gasUsed);
 
-    const tx1 = await l1ERC20TokenBridge
+    const tx1 = await l1LidoTokensBridge
       .connect(tokenHolderA.l1Signer)
       .depositERC20(
         l1TokenRebasable.address,
@@ -118,19 +118,19 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
 
       const receipt1 = await tx1.wait();
       console.log("l1TokenRebasable gasUsed=",receipt1.gasUsed);
-      
+
       const gasDifference = receipt1.gasUsed.sub(receipt0.gasUsed);
       console.log("gasUsed difference=", gasDifference);
   })
 
-  
+
 
   .run();
 
 async function ctxFactory() {
   const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
   console.log("networkName=",networkName);
-  
+
   const {
     l1Provider,
     l2Provider,
