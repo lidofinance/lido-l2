@@ -31,13 +31,48 @@ export class LidoBridgeAdapter extends StandardBridgeAdapter {
                 stateMutability: 'view',
                 type: 'function',
             },
+            {
+                inputs: [],
+                name: 'L1_TOKEN_REBASABLE',
+                outputs: [
+                    {
+                        internalType: 'address',
+                        name: '',
+                        type: 'address',
+                    },
+                ],
+                stateMutability: 'view',
+                type: 'function',
+            },
+            {
+                inputs: [],
+                name: 'L2_TOKEN_REBASABLE',
+                outputs: [
+                    {
+                        internalType: 'address',
+                        name: '',
+                        type: 'address',
+                    },
+                ],
+                stateMutability: 'view',
+                type: 'function',
+            },
         ], this.messenger.l1Provider);
-        const allowedL1Token = await l1Bridge.L1_TOKEN_NON_REBASABLE();
-        if (!(0, hexStringEquals)(allowedL1Token, (0, toAddress)(l1Token))) {
+
+        const allowedL1RebasableToken = await l1Bridge.L1_TOKEN_REBASABLE();
+        const allowedL1NonRebasableToken = await l1Bridge.L1_TOKEN_NON_REBASABLE();
+
+        if ((!(0, hexStringEquals)(allowedL1RebasableToken, (0, toAddress)(l1Token))) &&
+            (!(0, hexStringEquals)(allowedL1NonRebasableToken, (0, toAddress)(l1Token))))
+        {
             return false;
         }
-        const allowedL2Token = await l1Bridge.L2_TOKEN_NON_REBASABLE();
-        if (!(0, hexStringEquals)(allowedL2Token, (0, toAddress)(l2Token))) {
+
+        const allowedL2RebasableToken = await l1Bridge.L2_TOKEN_REBASABLE();
+        const allowedL2NonRebasableToken = await l1Bridge.L2_TOKEN_NON_REBASABLE();
+
+        if ((!(0, hexStringEquals)(allowedL2RebasableToken, (0, toAddress)(l2Token))) &&
+            (!(0, hexStringEquals)(allowedL2NonRebasableToken, (0, toAddress)(l2Token)))) {
             return false;
         }
         return true;

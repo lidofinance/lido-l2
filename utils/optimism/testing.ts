@@ -160,7 +160,7 @@ async function loadDeployedBridges(
       l1SignerOrProvider
     ),
     l1TokenRebasable: IERC20__factory.connect(
-      testingUtils.env.OPT_L1_TOKEN(),
+      testingUtils.env.OPT_L1_REBASABLE_TOKEN(),
       l1SignerOrProvider
     ),
 
