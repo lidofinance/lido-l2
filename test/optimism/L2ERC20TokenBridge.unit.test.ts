@@ -805,7 +805,7 @@ async function predictAddresses(account: SignerWithAddress, txsCount: number) {
 async function packedTokenRateAndTimestamp(provider: JsonRpcProvider, tokenRate: BigNumber) {
     const blockNumber = await provider.getBlockNumber();
     const blockTimestamp = (await provider.getBlock(blockNumber)).timestamp;
-    const stETHPerTokenStr = ethers.utils.hexZeroPad(tokenRate.toHexString(), 12);
+    const stEthPerTokenStr = ethers.utils.hexZeroPad(tokenRate.toHexString(), 12);
     const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 5);
-    return ethers.utils.hexConcat([stETHPerTokenStr, blockTimestampStr]);
+    return ethers.utils.hexConcat([stEthPerTokenStr, blockTimestampStr]);
 }

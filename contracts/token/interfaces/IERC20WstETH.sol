@@ -10,5 +10,5 @@ interface IERC20WstETH {
      * @notice Get amount of wstETH for a one stETH
      * @return Amount of wstETH for a 1 stETH
      */
-    function stETHPerToken() external view returns (uint256);
+    function stEthPerToken() external view returns (uint256);
 }

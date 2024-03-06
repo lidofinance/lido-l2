@@ -10,17 +10,17 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
 import {IERC20Wrapper} from "../token/interfaces/IERC20Wrapper.sol";
-import {L1TokenNonRebasableAdapter} from "../token/L1TokenNonRebasableAdapter.sol";
 import {BridgingManager} from "../BridgingManager.sol";
 import {RebasableAndNonRebasableTokens} from "./RebasableAndNonRebasableTokens.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {DepositDataCodec} from "./DepositDataCodec.sol";
+import {IERC20WstETH} from "../token/interfaces/IERC20WstETH.sol";
 
 /// @author psirex, kovalgek
 /// @notice The L1 ERC20 token bridge locks bridged tokens on the L1 side, sends deposit messages
 ///     on the L2 side, and finalizes token withdrawals from L2. Additionally, adds the methods for
 ///     bridging management: enabling and disabling withdrawals/deposits
-contract L1ERC20TokenBridge is
+abstract contract L1ERC20TokenBridgeBase is
     IL1ERC20Bridge,
     BridgingManager,
     RebasableAndNonRebasableTokens,
@@ -30,8 +30,6 @@ contract L1ERC20TokenBridge is
     using SafeERC20 for IERC20;
 
     address public immutable L2_TOKEN_BRIDGE;
-
-    L1TokenNonRebasableAdapter public immutable L1_TOKEN_NON_REBASABLE_ADAPTER;
 
     /// @param messenger_ L1 messenger address being used for cross-chain communications
     /// @param l2TokenBridge_ Address of the corresponding L2 bridge
@@ -48,8 +46,9 @@ contract L1ERC20TokenBridge is
         address l2TokenRebasable_
     ) CrossDomainEnabled(messenger_) RebasableAndNonRebasableTokens(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
         L2_TOKEN_BRIDGE = l2TokenBridge_;
-        L1_TOKEN_NON_REBASABLE_ADAPTER = new L1TokenNonRebasableAdapter(l1TokenNonRebasable_);
     }
+
+    function tokenRate() virtual internal view returns (uint256);
 
     /// @notice Pushes token rate to L2 by depositing zero tokens.
     /// @param l2Gas_ Gas limit required to complete the deposit on L2.
@@ -151,7 +150,7 @@ contract L1ERC20TokenBridge is
     ) internal {
         if (isRebasableTokenFlow(l1Token_, l2Token_)) {
             DepositData memory depositData = DepositData({
-                rate: uint96(L1_TOKEN_NON_REBASABLE_ADAPTER.tokenRate()),
+                rate: uint96(tokenRate()),
                 timestamp: uint40(block.timestamp),
                 data: data_
             });
@@ -261,4 +260,28 @@ contract L1ERC20TokenBridge is
 
     error ErrorSenderNotEOA();
     error ErrorRebasableTokenApprove();
+}
+
+contract L1ERC20TokenBridge is L1ERC20TokenBridgeBase {
+
+    constructor(
+        address messenger_,
+        address l2TokenBridge_,
+        address l1TokenNonRebasable_,
+        address l1TokenRebasable_,
+        address l2TokenNonRebasable_,
+        address l2TokenRebasable_
+    ) L1ERC20TokenBridgeBase(
+        messenger_,
+        l2TokenBridge_,
+        l1TokenNonRebasable_,
+        l1TokenRebasable_,
+        l2TokenNonRebasable_,
+        l2TokenRebasable_
+    ) {
+    }
+
+    function tokenRate() override internal view returns (uint256) {
+        return IERC20WstETH(L1_TOKEN_NON_REBASABLE).stEthPerToken();
+    }
 }

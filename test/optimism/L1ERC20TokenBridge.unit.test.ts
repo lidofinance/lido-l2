@@ -196,7 +196,7 @@ unit("Optimism :: L1ERC20TokenBridge", ctxFactory)
     const l2Gas = wei`0.99 wei`;
     const amount = wei`1 ether`;
     const data = "0xdeadbeaf";
-    const rate = await l1TokenNonRebasable.stETHPerToken();
+    const rate = await l1TokenNonRebasable.stEthPerToken();
     const decimalsStr = await l1TokenNonRebasable.decimals();
     const decimals = BigNumber.from(10).pow(decimalsStr);
 
@@ -462,7 +462,7 @@ unit("Optimism :: L1ERC20TokenBridge", ctxFactory)
     const amount = wei`1 ether`;
     const data = "0x";
 
-    const rate = await l1TokenNonRebasable.stETHPerToken();
+    const rate = await l1TokenNonRebasable.stEthPerToken();
     const decimalsStr = await l1TokenNonRebasable.decimals();
     const decimals = BigNumber.from(10).pow(decimalsStr);
 
@@ -761,7 +761,7 @@ unit("Optimism :: L1ERC20TokenBridge", ctxFactory)
 
     const amount = wei`1 ether`;
     const data = "0xdeadbeaf";
-    const rate = await l1TokenNonRebasable.stETHPerToken();
+    const rate = await l1TokenNonRebasable.stEthPerToken();
     const decimalsStr = await l1TokenNonRebasable.decimals();
     const decimals = BigNumber.from(10).pow(decimalsStr);
 
@@ -909,10 +909,10 @@ async function ctxFactory() {
 }
 
 async function packedTokenRateAndTimestamp(l1Provider: JsonRpcProvider, l1Token: ERC20WrapperStub) {
-    const stETHPerToken = await l1Token.stETHPerToken();
+    const stEthPerToken = await l1Token.stEthPerToken();
     const blockNumber = await l1Provider.getBlockNumber();
     const blockTimestamp = (await l1Provider.getBlock(blockNumber)).timestamp;
-    const stETHPerTokenStr = ethers.utils.hexZeroPad(stETHPerToken.toHexString(), 12);
+    const stEthPerTokenStr = ethers.utils.hexZeroPad(stEthPerToken.toHexString(), 12);
     const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 5);
-    return ethers.utils.hexConcat([stETHPerTokenStr, blockTimestampStr]);
+    return ethers.utils.hexConcat([stEthPerTokenStr, blockTimestampStr]);
 }
