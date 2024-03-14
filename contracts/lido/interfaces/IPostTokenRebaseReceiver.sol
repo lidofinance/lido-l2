@@ -1,13 +1,13 @@
-// SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+// SPDX-FileCopyrightText: 2024 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
 pragma solidity 0.8.10;
 
 /// @author kovalgek
-/// @notice An interface for Lido core protocol rebase event.
+/// @notice An interface to subscribe on the `stETH` token rebases (defined in the `Lido` core contract)
 interface IPostTokenRebaseReceiver {
 
-    /// @notice Is called when Lido core protocol rebasable event occures.
+    /// @notice Is called in the context of `Lido.handleOracleReport` to notify the subscribers about each token rebase
     function handlePostTokenRebase(
         uint256 _reportTimestamp,
         uint256 _timeElapsed,
