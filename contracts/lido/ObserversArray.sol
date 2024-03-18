@@ -3,11 +3,9 @@
 
 pragma solidity 0.8.10;
 
-import {IPostTokenRebaseReceiver} from "./interfaces/IPostTokenRebaseReceiver.sol";
-import {ITokenRateObserver} from "./interfaces/ITokenRateObserver.sol";
-import {IObserversArray} from "./interfaces/IObserversArray.sol";
-import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import {IObserversArray} from "./interfaces/IObserversArray.sol";
 
 /// @author kovalgek
 /// @notice Manage observers.
@@ -18,12 +16,12 @@ contract ObserversArray is Ownable, IObserversArray {
     uint256 public constant MAX_OBSERVERS_COUNT = 16;
 
     /// @notice Invalid interface id.
-    bytes4 constant INVALID_INTERFACE_ID = 0xffffffff;
+    bytes4 public constant INVALID_INTERFACE_ID = 0xffffffff;
 
     /// @notice An interface that each observer should support.
     bytes4 public immutable REQUIRED_INTERFACE;
 
-    /// @notice all observers.
+    /// @notice All observers.
     address[] public observers;
 
     /// @param requiredInterface_ An interface that each observer should support.
@@ -33,11 +31,6 @@ contract ObserversArray is Ownable, IObserversArray {
         }
 
         REQUIRED_INTERFACE = requiredInterface_;
-    }
-
-    /// @inheritdoc IObserversArray
-    function observersLength() public view returns (uint256) {
-        return observers.length;
     }
 
     /// @inheritdoc IObserversArray
@@ -71,7 +64,12 @@ contract ObserversArray is Ownable, IObserversArray {
 
         observers.pop();
 
-        emit ObserverRemoved(observer_, observerIndexToRemove);
+        emit ObserverRemoved(observer_);
+    }
+
+    /// @inheritdoc IObserversArray
+    function observersLength() public view returns (uint256) {
+        return observers.length;
     }
 
     /// @notice `observer_` index in `observers` array.
@@ -83,8 +81,6 @@ contract ObserversArray is Ownable, IObserversArray {
         }
         return type(uint256).max;
     }
-
-    event FailObserverNotification(address indexed observer);
 
     error ErrorInvalidInterface();
     error ErrorZeroAddressObserver();

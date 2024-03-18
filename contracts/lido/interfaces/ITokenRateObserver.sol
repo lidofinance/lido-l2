@@ -4,9 +4,9 @@
 pragma solidity 0.8.10;
 
 /// @author kovalgek
-/// @notice An interface to subscribe for token rebases. Is used to handle different rollups.
+/// @notice An interface to subscribe for token rebases. It is used to handle different rollups.
 interface ITokenRateObserver {
 
-    /// @notice Is called when rebase event occures.
+    /// @notice It's called when rebase event occures.
     function handleTokenRebased() external;
 }

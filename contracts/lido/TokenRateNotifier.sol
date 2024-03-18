@@ -11,7 +11,7 @@ import {ObserversArray} from "./ObserversArray.sol";
 /// @notice Notifies all observers when rebase event occures.
 contract TokenRateNotifier is ObserversArray, IPostTokenRebaseReceiver {
 
-    constructor() ObserversArray(type(ITokenRateObserver).interfaceId)  {
+    constructor() ObserversArray(type(ITokenRateObserver).interfaceId) {
     }
 
     /// @inheritdoc IPostTokenRebaseReceiver
