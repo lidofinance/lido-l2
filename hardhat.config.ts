@@ -108,10 +108,10 @@ const config: HardhatUserConfig = {
         },
         {
             network: 'opt_sepolia',
-            chainId: 11155420,
+            chainId: 3441006,
             urls: {
-              apiURL: 'https://api-sepolia-optimism.etherscan.io/api',
-              browserURL: 'https://sepolia-optimism.etherscan.io',
+              apiURL: 'https://manta-sepolia.rpc.caldera.xyz/http',
+              browserURL: 'https://manta-sepolia.explorer.caldera.xyz',
             },
           },
       ],
