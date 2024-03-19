@@ -2,13 +2,15 @@ import hre from "hardhat";
 import { assert } from "chai";
 import { unit } from "../../utils/testing";
 import { BigNumber, utils } from 'ethers'
-import { ethers } from 'hardhat'
 
 import {
     TokenRateNotifier__factory,
     ObserversArray__factory,
     OpStackTokenRateObserver__factory,
     ITokenRateObserver__factory,
+    TokenRateObserverWithSomeErrorStub__factory,
+    TokenRateObserverWithOutOfGasErrorStub__factory,
+    TokenRatePusherStub__factory
 } from "../../typechain";
 
 unit("TokenRateNotifier", ctxFactory)
@@ -100,12 +102,47 @@ unit("TokenRateNotifier", ctxFactory)
     assert.equalBN(await tokenRateNotifier.observersLength(), 0);
   })
 
+  .test("notify observers with some error", async (ctx) => {
+    const { tokenRateNotifier } = ctx.contracts;
+    const { deployer } = ctx.accounts;
+
+    const observer = await new TokenRateObserverWithSomeErrorStub__factory(deployer).deploy();
+    await tokenRateNotifier.addObserver(observer.address);
+
+    const tx = await tokenRateNotifier.handlePostTokenRebase(1,2,3,4,5,6,7);
+
+    await assert.emits(tokenRateNotifier, tx, "HandleTokenRebasedFailed", [observer.address, "0x332e27d2"]);
+  })
+
+  .test("notify observers with out of gas error", async (ctx) => {
+    const { tokenRateNotifier } = ctx.contracts;
+    const { deployer } = ctx.accounts;
+
+    const observer = await new TokenRateObserverWithOutOfGasErrorStub__factory(deployer).deploy();
+    await tokenRateNotifier.addObserver(observer.address);
+
+    await assert.revertsWith(tokenRateNotifier.handlePostTokenRebase(1,2,3,4,5,6,7), "ErrorUnrecoverableObserver()");
+  })
+
+  .test("notify observers", async (ctx) => {
+    const { tokenRateNotifier } = ctx.contracts;
+    const { deployer } = ctx.accounts;
+
+    const tokenRatePusher = await new TokenRatePusherStub__factory(deployer).deploy();
+    const observer = await new OpStackTokenRateObserver__factory(deployer).deploy(tokenRatePusher.address, 22);
+    await tokenRateNotifier.addObserver(observer.address);
+
+    assert.equalBN(await tokenRatePusher.l2Gas(), 0);
+
+    await tokenRateNotifier.handlePostTokenRebase(1,2,3,4,5,6,7);
+
+    assert.equalBN(await tokenRatePusher.l2Gas(), 22);
+  })
+
   .run();
 
 async function ctxFactory() {
-
     const [deployer, bridge, stranger] = await hre.ethers.getSigners();
-
     const tokenRateNotifier = await new TokenRateNotifier__factory(deployer).deploy();
 
     return {
@@ -115,12 +152,10 @@ async function ctxFactory() {
 }
 
 export function getInterfaceID(contractInterface: utils.Interface) {
-    let interfaceID = ethers.constants.Zero;
+    let interfaceID = hre.ethers.constants.Zero;
     const functions: string[] = Object.keys(contractInterface.functions);
     for (let i = 0; i < functions.length; i++) {
         interfaceID = interfaceID.xor(contractInterface.getSighash(functions[i]));
     }
     return interfaceID;
 }
-
-
