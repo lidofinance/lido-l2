@@ -7,6 +7,5 @@ pragma solidity 0.8.10;
 /// @notice An interface for entity that pushes rate.
 interface ITokenRatePusher {
     /// @notice Pushes token rate to L2 by depositing zero tokens.
-    /// @param l2Gas_ Gas limit required to complete the deposit on L2.
-    function pushTokenRate(uint32 l2Gas_) external;
+    function pushTokenRate() external;
 }

@@ -34,7 +34,7 @@ contract ObserversArray is Ownable, IObserversArray {
     }
 
     /// @inheritdoc IObserversArray
-    function addObserver(address observer_) external virtual onlyOwner {
+    function addObserver(address observer_) external onlyOwner {
         if (observer_ == address(0)) {
             revert ErrorZeroAddressObserver();
         }
@@ -50,7 +50,7 @@ contract ObserversArray is Ownable, IObserversArray {
     }
 
     /// @inheritdoc IObserversArray
-    function removeObserver(address observer_) external virtual onlyOwner {
+    function removeObserver(address observer_) external onlyOwner {
 
         uint256 observerIndexToRemove = _observerIndex(observer_);
 

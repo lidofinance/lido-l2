@@ -93,7 +93,7 @@ contract L2ERC20TokenBridge is
         onlySupportedL2Token(l2Token_)
         onlyFromCrossDomainAccount(L1_TOKEN_BRIDGE)
     {
-        if (isRebasableTokenFlow(l1Token_, l2Token_)) {
+        if (_isRebasableTokenFlow(l1Token_, l2Token_)) {
             DepositData memory depositData = decodeDepositData(data_);
             ITokenRateOracle tokenRateOracle = ERC20Rebasable(L2_TOKEN_REBASABLE).TOKEN_RATE_ORACLE();
             tokenRateOracle.updateRate(depositData.rate, depositData.timestamp);
@@ -109,7 +109,7 @@ contract L2ERC20TokenBridge is
                 rebasableTokenAmount,
                 depositData.data
             );
-        } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
+        } else if (_isNonRebasableTokenFlow(l1Token_, l2Token_)) {
             IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeMint(to_, amount_);
             emit DepositFinalized(
                 L1_TOKEN_NON_REBASABLE,
