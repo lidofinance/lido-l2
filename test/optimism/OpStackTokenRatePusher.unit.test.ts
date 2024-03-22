@@ -1,4 +1,4 @@
-import hre from "hardhat";
+import { ethers } from "hardhat";
 import { assert } from "chai";
 import { utils } from 'ethers'
 import { unit } from "../../utils/testing";
@@ -36,7 +36,7 @@ unit("OpStackTokenRatePusher", ctxFactory)
 
     let tx = await opStackTokenRatePusher.pushTokenRate();
 
-    const provider = await hre.ethers.provider;
+    const provider = await ethers.provider;
     const blockNumber = await provider.getBlockNumber();
     const blockTimestamp = (await provider.getBlock(blockNumber)).timestamp;
 
@@ -58,7 +58,7 @@ unit("OpStackTokenRatePusher", ctxFactory)
   .run();
 
 async function ctxFactory() {
-    const [deployer, bridge, stranger, tokenRateOracle, l1TokenBridgeEOA] = await hre.ethers.getSigners();
+    const [deployer, bridge, stranger, tokenRateOracle, l1TokenBridgeEOA] = await ethers.getSigners();
 
     const l1TokenRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
       "L1 Token Rebasable",
@@ -93,7 +93,7 @@ async function ctxFactory() {
 }
 
 export function getInterfaceID(contractInterface: utils.Interface) {
-    let interfaceID = hre.ethers.constants.Zero;
+    let interfaceID = ethers.constants.Zero;
     const functions: string[] = Object.keys(contractInterface.functions);
     for (let i = 0; i < functions.length; i++) {
         interfaceID = interfaceID.xor(contractInterface.getSighash(functions[i]));

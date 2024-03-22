@@ -74,9 +74,7 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
         uint256,
         uint256
     ) external {
-        uint256 obLength = observersLength();
-
-        for (uint256 obIndex = 0; obIndex < obLength; obIndex++) {
+        for (uint256 obIndex = 0; obIndex < observers.length; obIndex++) {
             try ITokenRatePusher(observers[obIndex]).pushTokenRate() {}
             catch (bytes memory lowLevelRevertData) {
                 /// @dev This check is required to prevent incorrect gas estimation of the method.
@@ -102,9 +100,7 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
     /// @notice `observer_` index in `observers` array.
     /// @return An index of `observer_` or `INDEX_NOT_FOUND` if it wasn't found.
     function _observerIndex(address observer_) internal view returns (uint256) {
-        uint256 obLength = observersLength();
-
-        for (uint256 obIndex = 0; obIndex < obLength; obIndex++) {
+        for (uint256 obIndex = 0; obIndex < observers.length; obIndex++) {
             if (observers[obIndex] == observer_) {
                 return obIndex;
             }

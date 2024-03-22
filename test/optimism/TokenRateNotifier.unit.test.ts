@@ -1,4 +1,4 @@
-import hre from "hardhat";
+import { ethers } from "hardhat";
 import { assert } from "chai";
 import { utils } from 'ethers'
 import { unit } from "../../utils/testing";
@@ -34,21 +34,21 @@ unit("TokenRateNotifier", ctxFactory)
     await assert.revertsWith(
         tokenRateNotifier
             .connect(stranger)
-            .addObserver(hre.ethers.constants.AddressZero),
+            .addObserver(ethers.constants.AddressZero),
         "Ownable: caller is not the owner"
     );
   })
 
-  .test("addObserver() :: zero address observer", async (ctx) => {
+  .test("addObserver() :: revert on adding zero address observer", async (ctx) => {
     const { tokenRateNotifier } = ctx.contracts;
 
     await assert.revertsWith(
-      tokenRateNotifier.addObserver(hre.ethers.constants.AddressZero),
+      tokenRateNotifier.addObserver(ethers.constants.AddressZero),
       "ErrorZeroAddressObserver()"
     );
   })
 
-  .test("addObserver() :: bad interface observer", async (ctx) => {
+  .test("addObserver() :: revert on adding observer with bad interface", async (ctx) => {
     const { tokenRateNotifier } = ctx.contracts;
     const { deployer } = ctx.accounts;
 
@@ -59,7 +59,7 @@ unit("TokenRateNotifier", ctxFactory)
     );
   })
 
-  .test("addObserver() :: too many observers", async (ctx) => {
+  .test("addObserver() :: revert on adding too many observers", async (ctx) => {
     const { tokenRateNotifier, opStackTokenRatePusher } = ctx.contracts;
 
     assert.equalBN(await tokenRateNotifier.observersLength(), 0);
@@ -75,7 +75,7 @@ unit("TokenRateNotifier", ctxFactory)
     );
   })
 
-  .test("addObserver() :: success", async (ctx) => {
+  .test("addObserver() :: happy path of adding observer", async (ctx) => {
     const { tokenRateNotifier, opStackTokenRatePusher } = ctx.contracts;
 
     assert.equalBN(await tokenRateNotifier.observersLength(), 0);
@@ -85,19 +85,19 @@ unit("TokenRateNotifier", ctxFactory)
     await assert.emits(tokenRateNotifier, tx, "ObserverAdded", [opStackTokenRatePusher.address]);
   })
 
-  .test("removeObserver() :: not the owner", async (ctx) => {
+  .test("removeObserver() :: revert on calling by not the owner", async (ctx) => {
     const { tokenRateNotifier } = ctx.contracts;
     const { stranger } = ctx.accounts;
 
     await assert.revertsWith(
         tokenRateNotifier
             .connect(stranger)
-            .removeObserver(hre.ethers.constants.AddressZero),
+            .removeObserver(ethers.constants.AddressZero),
         "Ownable: caller is not the owner"
     );
   })
 
-  .test("removeObserver() :: non-added observer", async (ctx) => {
+  .test("removeObserver() :: revert on removing non-added observer", async (ctx) => {
     const { tokenRateNotifier, opStackTokenRatePusher } = ctx.contracts;
 
     assert.equalBN(await tokenRateNotifier.observersLength(), 0);
@@ -108,7 +108,7 @@ unit("TokenRateNotifier", ctxFactory)
     );
   })
 
-  .test("removeObserver() :: success", async (ctx) => {
+  .test("removeObserver() :: happy path of removing observer", async (ctx) => {
     const { tokenRateNotifier, opStackTokenRatePusher } = ctx.contracts;
 
     assert.equalBN(await tokenRateNotifier.observersLength(), 0);
@@ -135,7 +135,7 @@ unit("TokenRateNotifier", ctxFactory)
     await assert.emits(tokenRateNotifier, tx, "PushTokenRateFailed", [observer.address, "0x332e27d2"]);
   })
 
-  .test("handlePostTokenRebase() :: out of gas error", async (ctx) => {
+  .test("handlePostTokenRebase() :: revert when observer has out of gas error", async (ctx) => {
     const { tokenRateNotifier } = ctx.contracts;
     const { deployer } = ctx.accounts;
 
@@ -148,7 +148,7 @@ unit("TokenRateNotifier", ctxFactory)
     );
   })
 
-  .test("handlePostTokenRebase() :: success", async (ctx) => {
+  .test("handlePostTokenRebase() :: happy path of handling token rebase", async (ctx) => {
     const {
         tokenRateNotifier,
         l1MessengerStub,
@@ -162,7 +162,7 @@ unit("TokenRateNotifier", ctxFactory)
     await tokenRateNotifier.addObserver(opStackTokenRatePusher.address);
     let tx = await tokenRateNotifier.handlePostTokenRebase(1,2,3,4,5,6,7);
 
-    const provider = await hre.ethers.provider;
+    const provider = await ethers.provider;
     const blockNumber = await provider.getBlockNumber();
     const blockTimestamp = (await provider.getBlock(blockNumber)).timestamp;
 
@@ -184,7 +184,7 @@ unit("TokenRateNotifier", ctxFactory)
   .run();
 
 async function ctxFactory() {
-    const [deployer, bridge, stranger, tokenRateOracle] = await hre.ethers.getSigners();
+    const [deployer, bridge, stranger, tokenRateOracle] = await ethers.getSigners();
     const tokenRateNotifier = await new TokenRateNotifier__factory(deployer).deploy();
 
     const l1TokenRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
@@ -219,7 +219,7 @@ async function ctxFactory() {
 }
 
 export function getInterfaceID(contractInterface: utils.Interface) {
-    let interfaceID = hre.ethers.constants.Zero;
+    let interfaceID = ethers.constants.Zero;
     const functions: string[] = Object.keys(contractInterface.functions);
     for (let i = 0; i < functions.length; i++) {
         interfaceID = interfaceID.xor(contractInterface.getSighash(functions[i]));
