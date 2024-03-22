@@ -1,153 +1,220 @@
 import hre from "hardhat";
 import { assert } from "chai";
+import { utils } from 'ethers'
 import { unit } from "../../utils/testing";
-import { BigNumber, utils } from 'ethers'
-
+import { wei } from "../../utils/wei";
 import {
     TokenRateNotifier__factory,
-    ObserversArray__factory,
-    OpStackTokenRateObserver__factory,
-    ITokenRateObserver__factory,
-    TokenRateObserverWithSomeErrorStub__factory,
-    TokenRateObserverWithOutOfGasErrorStub__factory,
-    TokenRatePusherStub__factory
+    ITokenRatePusher__factory,
+    OpStackTokenRatePusher__factory,
+    ITokenRateOracle__factory,
+    ERC20BridgedStub__factory,
+    ERC20WrapperStub__factory,
+    CrossDomainMessengerStub__factory,
+    OpStackTokenRatePusherWithSomeErrorStub__factory,
+    OpStackTokenRatePusherWithOutOfGasErrorStub__factory
 } from "../../typechain";
 
 unit("TokenRateNotifier", ctxFactory)
-
-  .test("init with wrong interface", async (ctx) => {
-    const { deployer } = ctx.accounts;
-    await assert.revertsWith(new ObserversArray__factory(deployer).deploy(BigNumber.from("0xffffffff")._hex), "ErrorInvalidInterface()");
-  })
 
   .test("initial state", async (ctx) => {
     const { tokenRateNotifier } = ctx.contracts;
 
     assert.equalBN(await tokenRateNotifier.MAX_OBSERVERS_COUNT(), 16);
     assert.equal(await tokenRateNotifier.INVALID_INTERFACE_ID(), "0xffffffff");
-    const iTokenRateObserver = getInterfaceID(ITokenRateObserver__factory.createInterface());
+    const iTokenRateObserver = getInterfaceID(ITokenRatePusher__factory.createInterface());
     assert.equal(await tokenRateNotifier.REQUIRED_INTERFACE(), iTokenRateObserver._hex);
     assert.equalBN(await tokenRateNotifier.observersLength(), 0);
   })
 
-  .test("add zero address observer", async (ctx) => {
+  .test("addObserver() :: not the owner", async (ctx) => {
     const { tokenRateNotifier } = ctx.contracts;
-    await assert.revertsWith(tokenRateNotifier.addObserver(hre.ethers.constants.AddressZero), "ErrorZeroAddressObserver()");
+    const { stranger } = ctx.accounts;
+
+    await assert.revertsWith(
+        tokenRateNotifier
+            .connect(stranger)
+            .addObserver(hre.ethers.constants.AddressZero),
+        "Ownable: caller is not the owner"
+    );
   })
 
-  .test("add bad interface observer", async (ctx) => {
+  .test("addObserver() :: zero address observer", async (ctx) => {
+    const { tokenRateNotifier } = ctx.contracts;
+
+    await assert.revertsWith(
+      tokenRateNotifier.addObserver(hre.ethers.constants.AddressZero),
+      "ErrorZeroAddressObserver()"
+    );
+  })
+
+  .test("addObserver() :: bad interface observer", async (ctx) => {
     const { tokenRateNotifier } = ctx.contracts;
     const { deployer } = ctx.accounts;
 
     const observer = await new TokenRateNotifier__factory(deployer).deploy();
-    await assert.revertsWith(tokenRateNotifier.addObserver(observer.address), "ErrorBadObserverInterface()");
+    await assert.revertsWith(
+      tokenRateNotifier.addObserver(observer.address),
+      "ErrorBadObserverInterface()"
+    );
   })
 
-  .test("add too many observers", async (ctx) => {
-    const { tokenRateNotifier } = ctx.contracts;
-    const { deployer } = ctx.accounts;
+  .test("addObserver() :: too many observers", async (ctx) => {
+    const { tokenRateNotifier, opStackTokenRatePusher } = ctx.contracts;
 
     assert.equalBN(await tokenRateNotifier.observersLength(), 0);
-
     const maxObservers = await tokenRateNotifier.MAX_OBSERVERS_COUNT();
     for (let i = 0; i < maxObservers.toNumber(); i++) {
-        const observer = await new OpStackTokenRateObserver__factory(deployer).deploy(hre.ethers.constants.AddressZero, 10);
-        await tokenRateNotifier.addObserver(observer.address);
+        await tokenRateNotifier.addObserver(opStackTokenRatePusher.address);
     }
-
     assert.equalBN(await tokenRateNotifier.observersLength(), maxObservers);
 
-    const observer = await new OpStackTokenRateObserver__factory(deployer).deploy(hre.ethers.constants.AddressZero, 10);
-    await assert.revertsWith(tokenRateNotifier.addObserver(observer.address), "ErrorMaxObserversCountExceeded()");
+    await assert.revertsWith(
+      tokenRateNotifier.addObserver(opStackTokenRatePusher.address),
+      "ErrorMaxObserversCountExceeded()"
+    );
   })
 
-  .test("add observer", async (ctx) => {
+  .test("addObserver() :: success", async (ctx) => {
+    const { tokenRateNotifier, opStackTokenRatePusher } = ctx.contracts;
+
+    assert.equalBN(await tokenRateNotifier.observersLength(), 0);
+    const tx = await tokenRateNotifier.addObserver(opStackTokenRatePusher.address);
+    assert.equalBN(await tokenRateNotifier.observersLength(), 1);
+
+    await assert.emits(tokenRateNotifier, tx, "ObserverAdded", [opStackTokenRatePusher.address]);
+  })
+
+  .test("removeObserver() :: not the owner", async (ctx) => {
     const { tokenRateNotifier } = ctx.contracts;
-    const { deployer } = ctx.accounts;
+    const { stranger } = ctx.accounts;
+
+    await assert.revertsWith(
+        tokenRateNotifier
+            .connect(stranger)
+            .removeObserver(hre.ethers.constants.AddressZero),
+        "Ownable: caller is not the owner"
+    );
+  })
+
+  .test("removeObserver() :: non-added observer", async (ctx) => {
+    const { tokenRateNotifier, opStackTokenRatePusher } = ctx.contracts;
 
     assert.equalBN(await tokenRateNotifier.observersLength(), 0);
 
-    const observer = await new OpStackTokenRateObserver__factory(deployer).deploy(hre.ethers.constants.AddressZero, 10);
-    const tx = await tokenRateNotifier.addObserver(observer.address);
+    await assert.revertsWith(
+      tokenRateNotifier.removeObserver(opStackTokenRatePusher.address),
+      "ErrorNoObserverToRemove()"
+    );
+  })
+
+  .test("removeObserver() :: success", async (ctx) => {
+    const { tokenRateNotifier, opStackTokenRatePusher } = ctx.contracts;
+
+    assert.equalBN(await tokenRateNotifier.observersLength(), 0);
+
+    await tokenRateNotifier.addObserver(opStackTokenRatePusher.address);
 
     assert.equalBN(await tokenRateNotifier.observersLength(), 1);
 
-    await assert.emits(tokenRateNotifier, tx, "ObserverAdded", [observer.address]);
-  })
-
-  .test("remove non-added observer", async (ctx) => {
-    const { tokenRateNotifier } = ctx.contracts;
-    const { deployer } = ctx.accounts;
-
-    assert.equalBN(await tokenRateNotifier.observersLength(), 0);
-
-    const observer = await new OpStackTokenRateObserver__factory(deployer).deploy(hre.ethers.constants.AddressZero, 10);
-    await assert.revertsWith(tokenRateNotifier.removeObserver(observer.address), "ErrorNoObserverToRemove()");
-  })
-
-  .test("remove observer", async (ctx) => {
-    const { tokenRateNotifier } = ctx.contracts;
-    const { deployer } = ctx.accounts;
-
-    assert.equalBN(await tokenRateNotifier.observersLength(), 0);
-
-    const observer = await new OpStackTokenRateObserver__factory(deployer).deploy(hre.ethers.constants.AddressZero, 10);
-    await tokenRateNotifier.addObserver(observer.address);
-
-    assert.equalBN(await tokenRateNotifier.observersLength(), 1);
-
-    const tx = await tokenRateNotifier.removeObserver(observer.address);
-    await assert.emits(tokenRateNotifier, tx, "ObserverRemoved", [observer.address]);
+    const tx = await tokenRateNotifier.removeObserver(opStackTokenRatePusher.address);
+    await assert.emits(tokenRateNotifier, tx, "ObserverRemoved", [opStackTokenRatePusher.address]);
 
     assert.equalBN(await tokenRateNotifier.observersLength(), 0);
   })
 
-  .test("notify observers with some error", async (ctx) => {
+  .test("handlePostTokenRebase() :: failed with some error", async (ctx) => {
     const { tokenRateNotifier } = ctx.contracts;
     const { deployer } = ctx.accounts;
 
-    const observer = await new TokenRateObserverWithSomeErrorStub__factory(deployer).deploy();
+    const observer = await new OpStackTokenRatePusherWithSomeErrorStub__factory(deployer).deploy();
     await tokenRateNotifier.addObserver(observer.address);
 
     const tx = await tokenRateNotifier.handlePostTokenRebase(1,2,3,4,5,6,7);
 
-    await assert.emits(tokenRateNotifier, tx, "HandleTokenRebasedFailed", [observer.address, "0x332e27d2"]);
+    await assert.emits(tokenRateNotifier, tx, "PushTokenRateFailed", [observer.address, "0x332e27d2"]);
   })
 
-  .test("notify observers with out of gas error", async (ctx) => {
+  .test("handlePostTokenRebase() :: out of gas error", async (ctx) => {
     const { tokenRateNotifier } = ctx.contracts;
     const { deployer } = ctx.accounts;
 
-    const observer = await new TokenRateObserverWithOutOfGasErrorStub__factory(deployer).deploy();
+    const observer = await new OpStackTokenRatePusherWithOutOfGasErrorStub__factory(deployer).deploy();
     await tokenRateNotifier.addObserver(observer.address);
 
-    await assert.revertsWith(tokenRateNotifier.handlePostTokenRebase(1,2,3,4,5,6,7), "ErrorUnrecoverableObserver()");
+    await assert.revertsWith(
+      tokenRateNotifier.handlePostTokenRebase(1,2,3,4,5,6,7),
+      "ErrorTokenRateNotifierRevertedWithNoData()"
+    );
   })
 
-  .test("notify observers", async (ctx) => {
-    const { tokenRateNotifier } = ctx.contracts;
-    const { deployer } = ctx.accounts;
+  .test("handlePostTokenRebase() :: success", async (ctx) => {
+    const {
+        tokenRateNotifier,
+        l1MessengerStub,
+        opStackTokenRatePusher,
+        l1TokenNonRebasableStub
+    } = ctx.contracts;
+    const { tokenRateOracle } = ctx.accounts;
+    const { l2GasLimitForPushingTokenRate } = ctx.constants;
 
-    const tokenRatePusher = await new TokenRatePusherStub__factory(deployer).deploy();
-    const observer = await new OpStackTokenRateObserver__factory(deployer).deploy(tokenRatePusher.address, 22);
-    await tokenRateNotifier.addObserver(observer.address);
+    let tokenRate = await l1TokenNonRebasableStub.stEthPerToken();
+    await tokenRateNotifier.addObserver(opStackTokenRatePusher.address);
+    let tx = await tokenRateNotifier.handlePostTokenRebase(1,2,3,4,5,6,7);
 
-    assert.equalBN(await tokenRatePusher.l2Gas(), 0);
+    const provider = await hre.ethers.provider;
+    const blockNumber = await provider.getBlockNumber();
+    const blockTimestamp = (await provider.getBlock(blockNumber)).timestamp;
 
-    await tokenRateNotifier.handlePostTokenRebase(1,2,3,4,5,6,7);
-
-    assert.equalBN(await tokenRatePusher.l2Gas(), 22);
+    await assert.emits(l1MessengerStub, tx, "SentMessage", [
+        tokenRateOracle.address,
+        opStackTokenRatePusher.address,
+        ITokenRateOracle__factory.createInterface().encodeFunctionData(
+            "updateRate",
+            [
+                tokenRate,
+                blockTimestamp
+            ]
+        ),
+        1,
+        l2GasLimitForPushingTokenRate,
+      ]);
   })
 
   .run();
 
 async function ctxFactory() {
-    const [deployer, bridge, stranger] = await hre.ethers.getSigners();
+    const [deployer, bridge, stranger, tokenRateOracle] = await hre.ethers.getSigners();
     const tokenRateNotifier = await new TokenRateNotifier__factory(deployer).deploy();
 
+    const l1TokenRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
+      "L1 Token Rebasable",
+      "L1R"
+    );
+
+    const l1TokenNonRebasableStub = await new ERC20WrapperStub__factory(deployer).deploy(
+      l1TokenRebasableStub.address,
+      "L1 Token Non Rebasable",
+      "L1NR"
+    );
+
+    const l1MessengerStub = await new CrossDomainMessengerStub__factory(
+      deployer
+    ).deploy({ value: wei.toBigNumber(wei`1 ether`) });
+
+    const l2GasLimitForPushingTokenRate = 123;
+
+    const opStackTokenRatePusher = await new OpStackTokenRatePusher__factory(deployer).deploy(
+      l1MessengerStub.address,
+      l1TokenNonRebasableStub.address,
+      tokenRateOracle.address,
+      l2GasLimitForPushingTokenRate
+    );
+
     return {
-      accounts: { deployer, bridge, stranger },
-      contracts: { tokenRateNotifier }
+      accounts: { deployer, bridge, stranger, tokenRateOracle },
+      contracts: { tokenRateNotifier, opStackTokenRatePusher, l1MessengerStub, l1TokenNonRebasableStub },
+      constants: { l2GasLimitForPushingTokenRate }
     };
 }
 

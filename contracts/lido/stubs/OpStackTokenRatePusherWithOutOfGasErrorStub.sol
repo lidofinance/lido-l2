@@ -3,21 +3,23 @@
 
 pragma solidity 0.8.10;
 
-import {ITokenRateObserver} from "../interfaces/ITokenRateObserver.sol";
+import {ITokenRatePusher} from "../interfaces/ITokenRatePusher.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
-contract TokenRateObserverWithSomeErrorStub is ERC165, ITokenRateObserver {
+contract OpStackTokenRatePusherWithOutOfGasErrorStub is ERC165, ITokenRatePusher {
 
-    error SomeError();
+    mapping (uint256 => uint256) data;
 
-    function handleTokenRebased() external {
-        revert SomeError();
+    function pushTokenRate() external {
+        for (uint256 i = 0; i < 1000000000000; ++i) {
+            data[i] = i;
+        }
     }
 
     /// @inheritdoc ERC165
     function supportsInterface(bytes4 _interfaceId) public view virtual override returns (bool) {
         return (
-            _interfaceId == type(ITokenRateObserver).interfaceId
+            _interfaceId == type(ITokenRatePusher).interfaceId
             || super.supportsInterface(_interfaceId)
         );
     }

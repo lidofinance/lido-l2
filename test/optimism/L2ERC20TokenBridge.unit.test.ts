@@ -712,7 +712,9 @@ async function ctxFactory() {
     );
 
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+        l2MessengerStub.address,
         l2TokenBridgeProxyAddress,
+        l1TokenBridgeEOA.address,
         86400
     );
 

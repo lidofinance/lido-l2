@@ -7,10 +7,11 @@ import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {ITokenRatePusher} from "../lido/interfaces/ITokenRatePusher.sol";
 import {IERC20WstETH} from "../token/interfaces/IERC20WstETH.sol";
 import {ITokenRateOracle} from "../token/interfaces/ITokenRateOracle.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 /// @author kovalgek
 /// @notice Pushes token rate to L2 Oracle.
-contract OpStackTokenRatePusher is CrossDomainEnabled, ITokenRatePusher {
+contract OpStackTokenRatePusher is CrossDomainEnabled, ERC165, ITokenRatePusher {
 
     /// @notice Oracle address on L2 for receiving token rate.
     address public immutable L2_TOKEN_RATE_ORACLE;
@@ -47,5 +48,13 @@ contract OpStackTokenRatePusher is CrossDomainEnabled, ITokenRatePusher {
         );
 
         sendCrossDomainMessage(L2_TOKEN_RATE_ORACLE, L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE, message);
+    }
+
+    /// @inheritdoc ERC165
+    function supportsInterface(bytes4 _interfaceId) public view virtual override returns (bool) {
+        return (
+            _interfaceId == type(ITokenRatePusher).interfaceId
+            || super.supportsInterface(_interfaceId)
+        );
     }
 }
