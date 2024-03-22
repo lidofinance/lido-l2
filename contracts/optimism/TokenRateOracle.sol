@@ -76,7 +76,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle {
     function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external {
 
         if ((msg.sender != address(MESSENGER) || MESSENGER.xDomainMessageSender() != L1_TOKEN_RATE_PUSHER) &&
-            (msg.sender != BRIDGE) {
+             msg.sender != BRIDGE) {
             revert ErrorNoRights(msg.sender);
         }
 
