@@ -16,7 +16,7 @@ contract OpStackTokenRatePusher is CrossDomainEnabled, ITokenRatePusher {
     address public immutable L2_TOKEN_RATE_ORACLE;
 
     /// @notice Non-rebasable token of Core Lido procotol.
-    address public immutable WST_ETH;
+    address public immutable WSTETH;
 
     /// @notice Gas limit required to complete pushing token rate on L2.
     uint32 public immutable L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE;
@@ -31,14 +31,14 @@ contract OpStackTokenRatePusher is CrossDomainEnabled, ITokenRatePusher {
         address tokenRateOracle_,
         uint32 l2GasLimitForPushingTokenRate_
     ) CrossDomainEnabled(messenger_) {
-        WST_ETH = wstEth_;
+        WSTETH = wstEth_;
         L2_TOKEN_RATE_ORACLE = tokenRateOracle_;
         L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE = l2GasLimitForPushingTokenRate_;
     }
 
     /// @inheritdoc ITokenRatePusher
     function pushTokenRate() external {
-        uint256 tokenRate = IERC20WstETH(WST_ETH).stEthPerToken();
+        uint256 tokenRate = IERC20WstETH(WSTETH).stEthPerToken();
 
         bytes memory message = abi.encodeWithSelector(
             ITokenRateOracle.updateRate.selector,
