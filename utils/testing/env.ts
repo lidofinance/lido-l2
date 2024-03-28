@@ -33,6 +33,15 @@ export default {
   OPT_L2_TOKEN() {
     return env.address("TESTING_OPT_L2_TOKEN");
   },
+  OPT_L2_TOKEN_RATE_ORACLE() {
+    return env.address("TESTING_OPT_L2_TOKEN_RATE_ORACLE");
+  },
+  OPT_L1_REBASABLE_TOKEN() {
+    return env.address("TESTING_OPT_L1_REBASABLE_TOKEN");
+  },
+  OPT_L2_REBASABLE_TOKEN() {
+    return env.address("TESTING_OPT_L2_REBASABLE_TOKEN");
+  },
   OPT_L1_ERC20_TOKEN_BRIDGE() {
     return env.address("TESTING_OPT_L1_ERC20_TOKEN_BRIDGE");
   },

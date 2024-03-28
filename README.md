@@ -42,7 +42,8 @@ Fill the newly created `.env` file with the required variables. See the [Project
 
 The configuration of the deployment scripts happens via the ENV variables. The following variables are required:
 
-- [`TOKEN`](#TOKEN) - address of the token to deploy a new bridge on the Ethereum chain.
+- [`TOKEN`](#TOKEN) - address of the non-rebasable token to deploy a new bridge on the Ethereum chain.
+- [`STETH_TOKEN`] (#STETH_TOKEN) - address of the rebasable token to deploy new bridge on the Ethereum chain.
 - [`NETWORK`](#NETWORK) - name of the network environments used by deployment scripts. Allowed values: `mainnet`, `goerli`.
 - [`FORKING`](#FORKING) - run deployment in the forking network instead of real ones
 - [`ETH_DEPLOYER_PRIVATE_KEY`](#ETH_DEPLOYER_PRIVATE_KEY) - The private key of the deployer account in the Ethereum network is used during the deployment process.
@@ -314,7 +315,11 @@ Below variables used in the Arbitrum/Optimism bridge deployment process.
 
 #### `TOKEN`
 
-Address of the token to deploy a new bridge on the Ethereum chain.
+Address of the non-rebasable token to deploy a new bridge on the Ethereum chain.
+
+#### `STETH_TOKEN`
+
+Address of the rebasable token to deploy new bridge on the Ethereum chain.
 
 #### `NETWORK`
 

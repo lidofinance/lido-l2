@@ -5,6 +5,9 @@ import {
   OssifiableProxy__factory,
   OptimismBridgeExecutor__factory,
   ERC20Bridged__factory,
+  ERC20Rebasable__factory,
+  TokenRateOracle__factory,
+  ERC20WrapperStub__factory,
 } from "../../typechain";
 import { wei } from "../../utils/wei";
 import optimism from "../../utils/optimism";
@@ -212,6 +215,12 @@ async function ctxFactory() {
     "TT"
   );
 
+  const l1TokenRebasable = await new ERC20WrapperStub__factory(l1Deployer).deploy(
+    l1Token.address,
+    "Test Token",
+    "TT"
+  );
+
   const optAddresses = optimism.addresses(networkName);
 
   const govBridgeExecutor = testingOnDeployedContracts
@@ -233,9 +242,13 @@ async function ctxFactory() {
     .deployment(networkName)
     .erc20TokenBridgeDeployScript(
       l1Token.address,
+      l1TokenRebasable.address,
       {
         deployer: l1Deployer,
-        admins: { proxy: l1Deployer.address, bridge: l1Deployer.address },
+        admins: {
+           proxy: l1Deployer.address,
+           bridge: l1Deployer.address
+        },
       },
       {
         deployer: l2Deployer,

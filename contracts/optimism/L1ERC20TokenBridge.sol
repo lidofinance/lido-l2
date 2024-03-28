@@ -9,37 +9,51 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
-
+import {IERC20Wrapper} from "../token/interfaces/IERC20Wrapper.sol";
 import {BridgingManager} from "../BridgingManager.sol";
-import {BridgeableTokens} from "../BridgeableTokens.sol";
+import {RebasableAndNonRebasableTokens} from "./RebasableAndNonRebasableTokens.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
+import {DepositDataCodec} from "./DepositDataCodec.sol";
+import {IERC20WstETH} from "../token/interfaces/IERC20WstETH.sol";
 
-/// @author psirex
+/// @author psirex, kovalgek
 /// @notice The L1 ERC20 token bridge locks bridged tokens on the L1 side, sends deposit messages
 ///     on the L2 side, and finalizes token withdrawals from L2. Additionally, adds the methods for
 ///     bridging management: enabling and disabling withdrawals/deposits
-contract L1ERC20TokenBridge is
+abstract contract L1ERC20TokenBridge is
     IL1ERC20Bridge,
     BridgingManager,
-    BridgeableTokens,
-    CrossDomainEnabled
+    RebasableAndNonRebasableTokens,
+    CrossDomainEnabled,
+    DepositDataCodec
 {
     using SafeERC20 for IERC20;
 
-    /// @inheritdoc IL1ERC20Bridge
-    address public immutable l2TokenBridge;
+    address public immutable L2_TOKEN_BRIDGE;
 
     /// @param messenger_ L1 messenger address being used for cross-chain communications
     /// @param l2TokenBridge_ Address of the corresponding L2 bridge
-    /// @param l1Token_ Address of the bridged token in the L1 chain
-    /// @param l2Token_ Address of the token minted on the L2 chain when token bridged
+    /// @param l1TokenNonRebasable_ Address of the bridged token in the L1 chain
+    /// @param l1TokenRebasable_ Address of the bridged token in the L1 chain
+    /// @param l2TokenNonRebasable_ Address of the token minted on the L2 chain when token bridged
+    /// @param l2TokenRebasable_ Address of the token minted on the L2 chain when token bridged
     constructor(
         address messenger_,
         address l2TokenBridge_,
-        address l1Token_,
-        address l2Token_
-    ) CrossDomainEnabled(messenger_) BridgeableTokens(l1Token_, l2Token_) {
-        l2TokenBridge = l2TokenBridge_;
+        address l1TokenNonRebasable_,
+        address l1TokenRebasable_,
+        address l2TokenNonRebasable_,
+        address l2TokenRebasable_
+    ) CrossDomainEnabled(messenger_) RebasableAndNonRebasableTokens(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
+        L2_TOKEN_BRIDGE = l2TokenBridge_;
+    }
+
+    /// @notice required to abstact a way token rate is requested.
+    function tokenRate() virtual internal view returns (uint256);
+
+    /// @inheritdoc IL1ERC20Bridge
+    function l2TokenBridge() external view returns (address) {
+        return L2_TOKEN_BRIDGE;
     }
 
     /// @inheritdoc IL1ERC20Bridge
@@ -58,7 +72,8 @@ contract L1ERC20TokenBridge is
         if (Address.isContract(msg.sender)) {
             revert ErrorSenderNotEOA();
         }
-        _initiateERC20Deposit(msg.sender, msg.sender, amount_, l2Gas_, data_);
+
+        _depositERC20To(l1Token_, l2Token_, msg.sender, amount_, l2Gas_, data_);
     }
 
     /// @inheritdoc IL1ERC20Bridge
@@ -76,7 +91,7 @@ contract L1ERC20TokenBridge is
         onlySupportedL1Token(l1Token_)
         onlySupportedL2Token(l2Token_)
     {
-        _initiateERC20Deposit(msg.sender, to_, amount_, l2Gas_, data_);
+        _depositERC20To(l1Token_, l2Token_, to_, amount_, l2Gas_, data_);
     }
 
     /// @inheritdoc IL1ERC20Bridge
@@ -92,18 +107,119 @@ contract L1ERC20TokenBridge is
         whenWithdrawalsEnabled
         onlySupportedL1Token(l1Token_)
         onlySupportedL2Token(l2Token_)
-        onlyFromCrossDomainAccount(l2TokenBridge)
+        onlyFromCrossDomainAccount(L2_TOKEN_BRIDGE)
     {
-        IERC20(l1Token_).safeTransfer(to_, amount_);
+        if (_isRebasableTokenFlow(l1Token_, l2Token_)) {
+            uint256 rebasableTokenAmount = IERC20Wrapper(L1_TOKEN_NON_REBASABLE).unwrap(amount_);
+            IERC20(L1_TOKEN_REBASABLE).safeTransfer(to_, rebasableTokenAmount);
 
-        emit ERC20WithdrawalFinalized(
-            l1Token_,
-            l2Token_,
-            from_,
-            to_,
-            amount_,
-            data_
-        );
+            emit ERC20WithdrawalFinalized(
+                L1_TOKEN_REBASABLE,
+                L2_TOKEN_REBASABLE,
+                from_,
+                to_,
+                rebasableTokenAmount,
+                data_
+            );
+        } else if (_isNonRebasableTokenFlow(l1Token_, l2Token_)) {
+            IERC20(L1_TOKEN_NON_REBASABLE).safeTransfer(to_, amount_);
+
+            emit ERC20WithdrawalFinalized(
+                L1_TOKEN_NON_REBASABLE,
+                L2_TOKEN_NON_REBASABLE,
+                from_,
+                to_,
+                amount_,
+                data_
+            );
+        }
+    }
+
+    function _depositERC20To(
+        address l1Token_,
+        address l2Token_,
+        address to_,
+        uint256 amount_,
+        uint32 l2Gas_,
+        bytes memory data_
+    ) internal {
+        if (_isRebasableTokenFlow(l1Token_, l2Token_)) {
+            DepositData memory depositData = DepositData({
+                rate: uint96(tokenRate()),
+                timestamp: uint40(block.timestamp),
+                data: data_
+            });
+            bytes memory encodedDepositData = encodeDepositData(depositData);
+
+            if (amount_ == 0) {
+                _initiateERC20Deposit(
+                    L1_TOKEN_REBASABLE,
+                    L2_TOKEN_REBASABLE,
+                    msg.sender,
+                    to_,
+                    0,
+                    l2Gas_,
+                    encodedDepositData
+                );
+
+                emit ERC20DepositInitiated(
+                    L1_TOKEN_REBASABLE,
+                    L2_TOKEN_REBASABLE,
+                    msg.sender,
+                    to_,
+                    0,
+                    encodedDepositData
+                );
+
+                return;
+            }
+
+            IERC20(L1_TOKEN_REBASABLE).safeTransferFrom(msg.sender, address(this), amount_);
+            if(!IERC20(L1_TOKEN_REBASABLE).approve(L1_TOKEN_NON_REBASABLE, amount_)) {
+                revert ErrorRebasableTokenApprove();
+            }
+            uint256 nonRebasableTokenAmount = IERC20Wrapper(L1_TOKEN_NON_REBASABLE).wrap(amount_);
+
+            _initiateERC20Deposit(
+                L1_TOKEN_REBASABLE,
+                L2_TOKEN_REBASABLE,
+                msg.sender,
+                to_,
+                nonRebasableTokenAmount,
+                l2Gas_,
+                encodedDepositData
+            );
+
+            emit ERC20DepositInitiated(
+                L1_TOKEN_REBASABLE,
+                L2_TOKEN_REBASABLE,
+                msg.sender,
+                to_,
+                amount_,
+                encodedDepositData
+            );
+        } else if (_isNonRebasableTokenFlow(l1Token_, l2Token_)) {
+            IERC20(L1_TOKEN_NON_REBASABLE).safeTransferFrom(msg.sender, address(this), amount_);
+
+            _initiateERC20Deposit(
+                L1_TOKEN_NON_REBASABLE,
+                L2_TOKEN_NON_REBASABLE,
+                msg.sender,
+                to_,
+                amount_,
+                l2Gas_,
+                data_
+            );
+
+            emit ERC20DepositInitiated(
+                L1_TOKEN_NON_REBASABLE,
+                L2_TOKEN_NON_REBASABLE,
+                msg.sender,
+                to_,
+                amount_,
+                data_
+            );
+        }
     }
 
     /// @dev Performs the logic for deposits by informing the L2 token bridge contract
@@ -116,35 +232,27 @@ contract L1ERC20TokenBridge is
     ///        solely as a convenience for external contracts. Aside from enforcing a maximum
     ///        length, these contracts provide no guarantees about its content.
     function _initiateERC20Deposit(
+        address l1Token_,
+        address l2Token_,
         address from_,
         address to_,
         uint256 amount_,
         uint32 l2Gas_,
-        bytes calldata data_
+        bytes memory data_
     ) internal {
-        IERC20(l1Token).safeTransferFrom(from_, address(this), amount_);
-
         bytes memory message = abi.encodeWithSelector(
             IL2ERC20Bridge.finalizeDeposit.selector,
-            l1Token,
-            l2Token,
+            l1Token_,
+            l2Token_,
             from_,
             to_,
             amount_,
             data_
         );
 
-        sendCrossDomainMessage(l2TokenBridge, l2Gas_, message);
-
-        emit ERC20DepositInitiated(
-            l1Token,
-            l2Token,
-            from_,
-            to_,
-            amount_,
-            data_
-        );
+        sendCrossDomainMessage(L2_TOKEN_BRIDGE, l2Gas_, message);
     }
 
     error ErrorSenderNotEOA();
+    error ErrorRebasableTokenApprove();
 }

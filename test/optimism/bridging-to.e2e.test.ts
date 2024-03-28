@@ -38,7 +38,7 @@ scenario("Optimism :: Bridging via depositTo/withdrawTo E2E test", ctxFactory)
     }
   )
 
-  .step("Set allowance for L1ERC20TokenBridge to deposit", async (ctx) => {
+  .step("Set allowance for L1LidoTokensBridge to deposit", async (ctx) => {
     const allowanceTxResponse = await ctx.crossChainMessenger.approveERC20(
       ctx.l1Token.address,
       ctx.l2Token.address,
@@ -50,14 +50,14 @@ scenario("Optimism :: Bridging via depositTo/withdrawTo E2E test", ctxFactory)
     assert.equalBN(
       await ctx.l1Token.allowance(
         ctx.l1Tester.address,
-        ctx.l1ERC20TokenBridge.address
+        ctx.l1LidoTokensBridge.address
       ),
       ctx.depositAmount
     );
   })
 
   .step("Bridge tokens to L2 via depositERC20To()", async (ctx) => {
-    depositTokensTxResponse = await ctx.l1ERC20TokenBridge
+    depositTokensTxResponse = await ctx.l1LidoTokensBridge
       .connect(ctx.l1Tester)
       .depositERC20To(
         ctx.l1Token.address,
@@ -145,7 +145,7 @@ async function ctxFactory() {
     l2Tester: testingSetup.l2Tester,
     l1Token: testingSetup.l1Token,
     l2Token: testingSetup.l2Token,
-    l1ERC20TokenBridge: testingSetup.l1ERC20TokenBridge,
+    l1LidoTokensBridge: testingSetup.l1LidoTokensBridge,
     l2ERC20TokenBridge: testingSetup.l2ERC20TokenBridge,
     crossChainMessenger: new CrossChainMessenger({
       l2ChainId: network.chainId("opt", networkName),
@@ -155,7 +155,7 @@ async function ctxFactory() {
       bridges: {
         LidoBridge: {
           Adapter: DAIBridgeAdapter,
-          l1Bridge: testingSetup.l1ERC20TokenBridge.address,
+          l1Bridge: testingSetup.l1LidoTokensBridge.address,
           l2Bridge: testingSetup.l2ERC20TokenBridge.address,
         },
       },
