@@ -1,23 +1,22 @@
 import { assert } from "chai";
 import { Overrides, Wallet } from "ethers";
-import {
-  ERC20Bridged__factory,
-  ERC20Rebasable__factory,
-  IERC20Metadata__factory,
-  L1LidoTokensBridge__factory,
-  L2ERC20TokenBridge__factory,
-  OssifiableProxy__factory,
-  TokenRateOracle__factory,
-} from "../../typechain";
-
 import addresses from "./addresses";
 import { CommonOptions } from "./types";
 import network, { NetworkName } from "../network";
 import { DeployScript, Logger } from "../deployment/DeployScript";
+import {
+    ERC20Bridged__factory,
+    ERC20Rebasable__factory,
+    IERC20Metadata__factory,
+    L1LidoTokensBridge__factory,
+    L2ERC20TokenBridge__factory,
+    OssifiableProxy__factory,
+  } from "../../typechain";
 
 interface OptL1DeployScriptParams {
   deployer: Wallet;
   admins: { proxy: string; bridge: string };
+  contractsShift: number;
 }
 
 interface OptL2DeployScriptParams extends OptL1DeployScriptParams {
@@ -30,6 +29,54 @@ interface OptDeploymentOptions extends CommonOptions {
   overrides?: Overrides;
 }
 
+export class BridgeL1DeployScript extends DeployScript {
+
+    constructor(
+        deployer: Wallet,
+        bridgeImplAddress: string,
+        bridgeProxyAddress: string,
+        logger?: Logger
+    ) {
+        super(deployer, logger);
+        this.bridgeImplAddress = bridgeImplAddress;
+        this.bridgeProxyAddress = bridgeProxyAddress;
+    }
+
+    public bridgeImplAddress: string;
+    public bridgeProxyAddress: string;
+}
+
+export class BridgeL2DeployScript extends DeployScript {
+
+    constructor(
+        deployer: Wallet,
+        tokenImplAddress: string,
+        tokenProxyAddress: string,
+        tokenRebasableImplAddress: string,
+        tokenRebasableProxyAddress: string,
+        tokenBridgeImplAddress: string,
+        tokenBridgeProxyAddress: string,
+        logger?: Logger
+    ) {
+        super(deployer, logger);
+        this.tokenImplAddress = tokenImplAddress;
+        this.tokenProxyAddress = tokenProxyAddress;
+        this.tokenRebasableImplAddress = tokenRebasableImplAddress;
+        this.tokenRebasableProxyAddress = tokenRebasableProxyAddress;
+        this.tokenBridgeImplAddress = tokenBridgeImplAddress;
+        this.tokenBridgeProxyAddress = tokenBridgeProxyAddress;
+      }
+
+    public tokenImplAddress: string;
+    public tokenProxyAddress: string;
+    public tokenRebasableImplAddress: string;
+    public tokenRebasableProxyAddress: string;
+    public tokenBridgeImplAddress: string;
+    public tokenBridgeProxyAddress: string;
+}
+
+/// deploy Oracle first
+/// deploys from scratch wstETH on L2, stETH on L2, bridgeL1, bridgeL2
 export default function deployment(
   networkName: NetworkName,
   options: OptDeploymentOptions = {}
@@ -39,6 +86,7 @@ export default function deployment(
     async erc20TokenBridgeDeployScript(
       l1Token: string,
       l1TokenRebasable: string,
+      l2TokenRateOracle: string,
       l1Params: OptL1DeployScriptParams,
       l2Params: OptL2DeployScriptParams,
     ) {
@@ -46,20 +94,21 @@ export default function deployment(
       const [
         expectedL1TokenBridgeImplAddress,
         expectedL1TokenBridgeProxyAddress,
-      ] = await network.predictAddresses(l1Params.deployer, 2);
+      ] = await network.predictAddresses(l1Params.deployer, l1Params.contractsShift + 2);
 
       const [
-        expectedL2TokenRateOracleImplAddress,
         expectedL2TokenImplAddress,
         expectedL2TokenProxyAddress,
         expectedL2TokenRebasableImplAddress,
         expectedL2TokenRebasableProxyAddress,
         expectedL2TokenBridgeImplAddress,
         expectedL2TokenBridgeProxyAddress,
-      ] = await network.predictAddresses(l2Params.deployer, 7);
+      ] = await network.predictAddresses(l2Params.deployer, l2Params.contractsShift + 6);
 
-      const l1DeployScript = new DeployScript(
+      const l1DeployScript = new BridgeL1DeployScript(
         l1Params.deployer,
+        expectedL1TokenBridgeImplAddress,
+        expectedL1TokenBridgeProxyAddress,
         options?.logger
       )
         .addStep({
@@ -108,21 +157,16 @@ export default function deployment(
         l2Params.l2TokenRebasable?.symbol ?? l1TokenRebasableInfo.symbol(),
       ]);
 
-      const l2DeployScript = new DeployScript(
+      const l2DeployScript = new BridgeL2DeployScript(
         l2Params.deployer,
+        expectedL2TokenImplAddress,
+        expectedL2TokenProxyAddress,
+        expectedL2TokenRebasableImplAddress,
+        expectedL2TokenRebasableProxyAddress,
+        expectedL2TokenBridgeImplAddress,
+        expectedL2TokenBridgeProxyAddress,
         options?.logger
       )
-        .addStep({
-            factory: TokenRateOracle__factory,
-            args: [
-                expectedL2TokenBridgeProxyAddress,
-                86400,
-                options?.overrides,
-            ],
-            afterDeploy: (c) =>
-                assert.equal(c.address, expectedL2TokenRateOracleImplAddress),
-        })
-
         .addStep({
           factory: ERC20Bridged__factory,
           args: [
@@ -156,7 +200,7 @@ export default function deployment(
             l2TokenRebasableSymbol,
             decimals,
             expectedL2TokenProxyAddress,
-            expectedL2TokenRateOracleImplAddress,
+            l2TokenRateOracle,
             expectedL2TokenBridgeProxyAddress,
             options?.overrides,
           ],
@@ -177,7 +221,6 @@ export default function deployment(
           afterDeploy: (c) =>
             assert.equal(c.address, expectedL2TokenRebasableProxyAddress),
         })
-
         .addStep({
           factory: L2ERC20TokenBridge__factory,
           args: [

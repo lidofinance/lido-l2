@@ -12,6 +12,7 @@ interface ChainDeploymentConfig extends BridgingManagerSetupConfig {
 interface MultiChainDeploymentConfig {
   token: string;
   stETHToken: string;
+  l2TokenRateOracle: string;
   l1: ChainDeploymentConfig;
   l2: ChainDeploymentConfig;
 }
@@ -20,6 +21,7 @@ export function loadMultiChainDeploymentConfig(): MultiChainDeploymentConfig {
   return {
     token: env.address("TOKEN"),
     stETHToken: env.address("STETH_TOKEN"),
+    l2TokenRateOracle: env.address("TOKEN_RATE_ORACLE"),
     l1: {
       proxyAdmin: env.address("L1_PROXY_ADMIN"),
       bridgeAdmin: env.address("L1_BRIDGE_ADMIN"),

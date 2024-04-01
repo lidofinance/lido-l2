@@ -686,12 +686,12 @@ async function ctxFactory() {
     const emptyContractEOA = await testing.impersonate(emptyContract.address);
 
     const [
-        l1TokenRebasableAddress,
-        l1TokenNonRebasableAddress,
-        l2TokenNonRebasableAddress,
-        tokenRateOracleAddress,
-        l2TokenRebasableAddress,
-        l2TokenBridgeImplAddress,
+        ,
+        ,
+        ,
+        ,
+        ,
+        ,
         l2TokenBridgeProxyAddress
     ] = await predictAddresses(deployer, 7);
 

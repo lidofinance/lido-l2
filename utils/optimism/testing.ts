@@ -1,4 +1,4 @@
-import { BigNumber, Signer } from "ethers";
+import { Signer } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
 import {
@@ -18,7 +18,7 @@ import {
 } from "../../typechain";
 import addresses from "./addresses";
 import contracts from "./contracts";
-import deployment from "./deployment";
+import deploymentAll, { L1DeployAllScript, L2DeployAllScript } from "./deploymentBridgesBothTokensAndOracle";
 import testingUtils from "../testing";
 import { BridgingManagement } from "../bridging-management";
 import network, { NetworkName, SignerOrProvider } from "../network";
@@ -197,7 +197,7 @@ async function deployTestBridge(
     "TT"
   );
 
-  const [ethDeployScript, optDeployScript] = await deployment(
+  const [ethDeployScript, optDeployScript] = await deploymentAll(
     networkName
   ).erc20TokenBridgeDeployScript(
     l1Token.address,
@@ -205,25 +205,26 @@ async function deployTestBridge(
     {
       deployer: ethDeployer,
       admins: { proxy: ethDeployer.address, bridge: ethDeployer.address },
+      contractsShift: 0
     },
     {
       deployer: optDeployer,
       admins: { proxy: optDeployer.address, bridge: optDeployer.address },
+      contractsShift: 0
     }
   );
 
   await ethDeployScript.run();
   await optDeployScript.run();
 
-  const l1LidoTokensBridgeProxyDeployStepIndex = 1;
+
   const l1BridgingManagement = new BridgingManagement(
-    ethDeployScript.getContractAddress(l1LidoTokensBridgeProxyDeployStepIndex),
+    ethDeployScript.bridgeProxyAddress,
     ethDeployer
   );
 
-  const l2ERC20TokenBridgeProxyDeployStepIndex = 6;
   const l2BridgingManagement = new BridgingManagement(
-    optDeployScript.getContractAddress(l2ERC20TokenBridgeProxyDeployStepIndex),
+    optDeployScript.tokenBridgeProxyAddress,
     optDeployer
   );
 
@@ -244,11 +245,11 @@ async function deployTestBridge(
     l1TokenRebasable: l1TokenRebasable.connect(ethProvider),
     ...connectBridgeContracts(
       {
-        tokenRateOracle: optDeployScript.getContractAddress(0),
-        l2Token: optDeployScript.getContractAddress(2),
-        l2TokenRebasable: optDeployScript.getContractAddress(4),
-        l1LidoTokensBridge: ethDeployScript.getContractAddress(1),
-        l2ERC20TokenBridge: optDeployScript.getContractAddress(6)
+        tokenRateOracle: optDeployScript.tokenRateOracleProxyAddress,
+        l2Token: optDeployScript.tokenProxyAddress,
+        l2TokenRebasable: optDeployScript.tokenRebasableProxyAddress,
+        l1LidoTokensBridge: ethDeployScript.bridgeProxyAddress,
+        l2ERC20TokenBridge: optDeployScript.tokenBridgeProxyAddress
       },
       ethProvider,
       optProvider

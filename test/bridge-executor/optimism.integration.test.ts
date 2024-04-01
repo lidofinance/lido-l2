@@ -5,8 +5,6 @@ import {
   OssifiableProxy__factory,
   OptimismBridgeExecutor__factory,
   ERC20Bridged__factory,
-  ERC20Rebasable__factory,
-  TokenRateOracle__factory,
   ERC20WrapperStub__factory,
 } from "../../typechain";
 import { wei } from "../../utils/wei";
@@ -17,6 +15,7 @@ import { BridgingManagerRole } from "../../utils/bridging-management";
 import env from "../../utils/env";
 import network from "../../utils/network";
 import { getBridgeExecutorParams } from "../../utils/bridge-executor";
+import deploymentAll, { L1DeployAllScript, L2DeployAllScript } from "../../utils/optimism/deploymentBridgesBothTokensAndOracle";
 
 scenario("Optimism :: Bridge Executor integration test", ctxFactory)
   .step("Activate L2 bridge", async (ctx) => {
@@ -238,39 +237,42 @@ async function ctxFactory() {
   const l1EthGovExecutorAddress =
     await govBridgeExecutor.getEthereumGovernanceExecutor();
 
-  const [, l2DeployScript] = await optimism
-    .deployment(networkName)
-    .erc20TokenBridgeDeployScript(
-      l1Token.address,
-      l1TokenRebasable.address,
-      {
-        deployer: l1Deployer,
-        admins: {
-           proxy: l1Deployer.address,
-           bridge: l1Deployer.address
-        },
-      },
-      {
-        deployer: l2Deployer,
-        admins: {
-          proxy: govBridgeExecutor.address,
-          bridge: govBridgeExecutor.address,
-        },
-      }
-    );
 
-  await l2DeployScript.run();
+    const [, optDeployScript] = await deploymentAll(
+        networkName
+      ).erc20TokenBridgeDeployScript(
+        l1Token.address,
+        l1TokenRebasable.address,
+        {
+            deployer: l1Deployer,
+            admins: {
+               proxy: l1Deployer.address,
+               bridge: l1Deployer.address
+            },
+            contractsShift: 0
+          },
+          {
+            deployer: l2Deployer,
+            admins: {
+              proxy: govBridgeExecutor.address,
+              bridge: govBridgeExecutor.address,
+            },
+            contractsShift: 0
+          }
+      );
+
+      await optDeployScript.run();
 
   const l2Token = ERC20Bridged__factory.connect(
-    l2DeployScript.getContractAddress(1),
+    optDeployScript.tokenProxyAddress,
     l2Deployer
   );
   const l2ERC20TokenBridge = L2ERC20TokenBridge__factory.connect(
-    l2DeployScript.getContractAddress(3),
+    optDeployScript.tokenBridgeProxyAddress,
     l2Deployer
   );
   const l2ERC20TokenBridgeProxy = OssifiableProxy__factory.connect(
-    l2DeployScript.getContractAddress(3),
+    optDeployScript.tokenBridgeProxyAddress,
     l2Deployer
   );
 
