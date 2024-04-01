@@ -7,7 +7,8 @@ import {
     ERC20Bridged__factory,
     TokenRateOracle__factory,
     ERC20Rebasable__factory,
-    OssifiableProxy__factory
+    OssifiableProxy__factory,
+    CrossDomainMessengerStub__factory
 } from "../../typechain";
 import { BigNumber } from "ethers";
 
@@ -32,7 +33,7 @@ unit("ERC20Rebasable", ctxFactory)
   )
 
   .test("initialize() :: name already set", async (ctx) => {
-    const { deployer, owner } = ctx.accounts;
+    const { deployer, owner, zero } = ctx.accounts;
     const { decimalsToSet } = ctx.constants;
 
     // deploy new implementation
@@ -42,8 +43,11 @@ unit("ERC20Rebasable", ctxFactory)
         decimalsToSet,
         owner.address
     );
+
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+        zero.address,
         owner.address,
+        zero.address,
         86400
     );
     const rebasableTokenImpl = await new ERC20Rebasable__factory(deployer).deploy(
@@ -61,7 +65,7 @@ unit("ERC20Rebasable", ctxFactory)
   })
 
   .test("initialize() :: symbol already set", async (ctx) => {
-    const { deployer, owner } = ctx.accounts;
+    const { deployer, owner, zero } = ctx.accounts;
     const { decimalsToSet } = ctx.constants;
 
     // deploy new implementation
@@ -72,7 +76,9 @@ unit("ERC20Rebasable", ctxFactory)
         owner.address
     );
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+        zero.address,
         owner.address,
+        zero.address,
         86400
     );
     const rebasableTokenImpl = await new ERC20Rebasable__factory(deployer).deploy(
@@ -106,7 +112,7 @@ unit("ERC20Rebasable", ctxFactory)
 
   .test("wrap() :: wrong oracle update time", async (ctx) => {
 
-    const { deployer, user1, owner } = ctx.accounts;
+    const { deployer, user1, owner, zero } = ctx.accounts;
     const { decimalsToSet } = ctx.constants;
 
     // deploy new implementation to test initial oracle state
@@ -117,7 +123,9 @@ unit("ERC20Rebasable", ctxFactory)
         owner.address
     );
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+        zero.address,
         owner.address,
+        zero.address,
         86400
     );
     const rebasableProxied = await new ERC20Rebasable__factory(deployer).deploy(
@@ -284,7 +292,7 @@ unit("ERC20Rebasable", ctxFactory)
 
   .test("unwrap() :: with wrong oracle update time", async (ctx) => {
 
-    const { deployer, user1, owner } = ctx.accounts;
+    const { deployer, user1, owner, zero } = ctx.accounts;
     const { decimalsToSet } = ctx.constants;
 
     // deploy new implementation to test initial oracle state
@@ -295,7 +303,9 @@ unit("ERC20Rebasable", ctxFactory)
         owner.address
     );
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+        zero.address,
         owner.address,
+        zero.address,
         86400
     );
     const rebasableProxied = await new ERC20Rebasable__factory(deployer).deploy(
@@ -1002,6 +1012,7 @@ async function ctxFactory() {
         user1,
         user2
     ] = await hre.ethers.getSigners();
+    const zero = await hre.ethers.getSigner(hre.ethers.constants.AddressZero);
 
     const wrappedToken = await new ERC20Bridged__factory(deployer).deploy(
         "WsETH Test Token",
@@ -1010,7 +1021,9 @@ async function ctxFactory() {
         owner.address
     );
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+        zero.address,
         owner.address,
+        zero.address,
         86400
     );
     const rebasableTokenImpl = await new ERC20Rebasable__factory(deployer).deploy(
@@ -1026,8 +1039,6 @@ async function ctxFactory() {
       method: "hardhat_impersonateAccount",
       params: [hre.ethers.constants.AddressZero],
     });
-
-    const zero = await hre.ethers.getSigner(hre.ethers.constants.AddressZero);
 
     const l2TokensProxy = await new OssifiableProxy__factory(deployer).deploy(
       rebasableTokenImpl.address,

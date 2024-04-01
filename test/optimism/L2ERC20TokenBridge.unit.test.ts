@@ -686,12 +686,12 @@ async function ctxFactory() {
     const emptyContractEOA = await testing.impersonate(emptyContract.address);
 
     const [
-        l1TokenRebasableAddress,
-        l1TokenNonRebasableAddress,
-        l2TokenNonRebasableAddress,
-        tokenRateOracleAddress,
-        l2TokenRebasableAddress,
-        l2TokenBridgeImplAddress,
+        ,
+        ,
+        ,
+        ,
+        ,
+        ,
         l2TokenBridgeProxyAddress
     ] = await predictAddresses(deployer, 7);
 
@@ -712,7 +712,9 @@ async function ctxFactory() {
     );
 
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+        l2MessengerStub.address,
         l2TokenBridgeProxyAddress,
+        l1TokenBridgeEOA.address,
         86400
     );
 

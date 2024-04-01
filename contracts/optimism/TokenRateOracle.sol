@@ -4,13 +4,17 @@
 pragma solidity 0.8.10;
 
 import {ITokenRateOracle} from "../token/interfaces/ITokenRateOracle.sol";
+import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 
 /// @author kovalgek
 /// @notice Oracle for storing token rate.
-contract TokenRateOracle is ITokenRateOracle {
+contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle {
 
     /// @notice A bridge which can update oracle.
     address public immutable BRIDGE;
+
+    /// @notice An address of account on L1 that can update token rate.
+    address public immutable L1_TOKEN_RATE_PUSHER;
 
     /// @notice A time period when token rate can be considered outdated.
     uint256 public immutable RATE_OUTDATED_DELAY;
@@ -24,10 +28,18 @@ contract TokenRateOracle is ITokenRateOracle {
     /// @notice Decimals of the oracle response.
     uint8 private constant DECIMALS = 18;
 
+    /// @param messenger_ L2 messenger address being used for cross-chain communications
     /// @param bridge_ the bridge address that has a right to updates oracle.
+    /// @param l1TokenRatePusher_ An address of account on L1 that can update token rate.
     /// @param rateOutdatedDelay_ time period when token rate can be considered outdated.
-    constructor(address bridge_, uint256 rateOutdatedDelay_) {
+    constructor(
+        address messenger_,
+        address bridge_,
+        address l1TokenRatePusher_,
+        uint256 rateOutdatedDelay_
+    ) CrossDomainEnabled(messenger_) {
         BRIDGE = bridge_;
+        L1_TOKEN_RATE_PUSHER = l1TokenRatePusher_;
         RATE_OUTDATED_DELAY = rateOutdatedDelay_;
     }
 
@@ -63,7 +75,10 @@ contract TokenRateOracle is ITokenRateOracle {
     /// @inheritdoc ITokenRateOracle
     function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external {
 
-        if (msg.sender != BRIDGE) {
+        if (!(
+            (msg.sender == address(MESSENGER) && MESSENGER.xDomainMessageSender() == L1_TOKEN_RATE_PUSHER)
+            || (msg.sender == BRIDGE)
+        )) {
             revert ErrorNoRights(msg.sender);
         }
 

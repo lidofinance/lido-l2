@@ -48,13 +48,8 @@ abstract contract L1ERC20TokenBridge is
         L2_TOKEN_BRIDGE = l2TokenBridge_;
     }
 
+    /// @notice required to abstact a way token rate is requested.
     function tokenRate() virtual internal view returns (uint256);
-
-    /// @notice Pushes token rate to L2 by depositing zero tokens.
-    /// @param l2Gas_ Gas limit required to complete the deposit on L2.
-    function pushTokenRate(uint32 l2Gas_) external {
-        _depositERC20To(L1_TOKEN_REBASABLE, L2_TOKEN_REBASABLE, L2_TOKEN_BRIDGE, 0, l2Gas_, "");
-    }
 
     /// @inheritdoc IL1ERC20Bridge
     function l2TokenBridge() external view returns (address) {
@@ -114,7 +109,7 @@ abstract contract L1ERC20TokenBridge is
         onlySupportedL2Token(l2Token_)
         onlyFromCrossDomainAccount(L2_TOKEN_BRIDGE)
     {
-        if (isRebasableTokenFlow(l1Token_, l2Token_)) {
+        if (_isRebasableTokenFlow(l1Token_, l2Token_)) {
             uint256 rebasableTokenAmount = IERC20Wrapper(L1_TOKEN_NON_REBASABLE).unwrap(amount_);
             IERC20(L1_TOKEN_REBASABLE).safeTransfer(to_, rebasableTokenAmount);
 
@@ -126,7 +121,7 @@ abstract contract L1ERC20TokenBridge is
                 rebasableTokenAmount,
                 data_
             );
-        } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
+        } else if (_isNonRebasableTokenFlow(l1Token_, l2Token_)) {
             IERC20(L1_TOKEN_NON_REBASABLE).safeTransfer(to_, amount_);
 
             emit ERC20WithdrawalFinalized(
@@ -148,7 +143,7 @@ abstract contract L1ERC20TokenBridge is
         uint32 l2Gas_,
         bytes memory data_
     ) internal {
-        if (isRebasableTokenFlow(l1Token_, l2Token_)) {
+        if (_isRebasableTokenFlow(l1Token_, l2Token_)) {
             DepositData memory depositData = DepositData({
                 rate: uint96(tokenRate()),
                 timestamp: uint40(block.timestamp),
@@ -203,7 +198,7 @@ abstract contract L1ERC20TokenBridge is
                 amount_,
                 encodedDepositData
             );
-        } else if (isNonRebasableTokenFlow(l1Token_, l2Token_)) {
+        } else if (_isNonRebasableTokenFlow(l1Token_, l2Token_)) {
             IERC20(L1_TOKEN_NON_REBASABLE).safeTransferFrom(msg.sender, address(this), amount_);
 
             _initiateERC20Deposit(

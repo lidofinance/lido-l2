@@ -53,11 +53,11 @@ contract RebasableAndNonRebasableTokens {
         _;
     }
 
-    function isRebasableTokenFlow(address l1Token_, address l2Token_) internal view returns (bool) {
+    function _isRebasableTokenFlow(address l1Token_, address l2Token_) internal view returns (bool) {
         return l1Token_ == L1_TOKEN_REBASABLE && l2Token_ == L2_TOKEN_REBASABLE;
     }
 
-    function isNonRebasableTokenFlow(address l1Token_, address l2Token_) internal view returns (bool) {
+    function _isNonRebasableTokenFlow(address l1Token_, address l2Token_) internal view returns (bool) {
         return l1Token_ == L1_TOKEN_NON_REBASABLE && l2Token_ == L2_TOKEN_NON_REBASABLE;
     }
 

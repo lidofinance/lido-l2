@@ -2,8 +2,7 @@ import env from "../../utils/env";
 import prompt from "../../utils/prompt";
 import network from "../../utils/network";
 import optimism from "../../utils/optimism";
-import deployment from "../../utils/deployment";
-import { BridgingManagement } from "../../utils/bridging-management";
+import deploymentOracle from "../../utils/deployment";
 
 async function main() {
   const networkName = env.network();
@@ -19,21 +18,18 @@ async function main() {
     }
   );
 
-  const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
+  const deploymentConfig = deploymentOracle.loadMultiChainDeploymentConfig();
 
   const [l1DeployScript, l2DeployScript] = await optimism
-    .deployment(networkName, { logger: console })
-    .erc20TokenBridgeDeployScript(
+    .deploymentOracle(networkName, { logger: console })
+    .oracleDeployScript(
       deploymentConfig.token,
-      deploymentConfig.stETHToken,
-      deploymentConfig.l2TokenRateOracle,
       {
         deployer: ethDeployer,
         admins: {
           proxy: deploymentConfig.l1.proxyAdmin,
-          bridge: ethDeployer.address
+          bridge: ethDeployer.address,
         },
-        contractsShift: 0
       },
       {
         deployer: optDeployer,
@@ -41,11 +37,10 @@ async function main() {
           proxy: deploymentConfig.l2.proxyAdmin,
           bridge: optDeployer.address,
         },
-        contractsShift: 0
       }
     );
 
-  await deployment.printMultiChainDeploymentConfig(
+  await deploymentOracle.printMultiChainDeploymentConfig(
     "Deploy Optimism Bridge",
     ethDeployer,
     optDeployer,
@@ -58,23 +53,6 @@ async function main() {
 
   await l1DeployScript.run();
   await l2DeployScript.run();
-
-  const l1ERC20TokenBridgeProxyDeployStepIndex = 1;
-  const l1BridgingManagement = new BridgingManagement(
-    l1DeployScript.getContractAddress(l1ERC20TokenBridgeProxyDeployStepIndex),
-    ethDeployer,
-    { logger: console }
-  );
-
-  const l2ERC20TokenBridgeProxyDeployStepIndex = 5;
-  const l2BridgingManagement = new BridgingManagement(
-    l2DeployScript.getContractAddress(l2ERC20TokenBridgeProxyDeployStepIndex),
-    optDeployer,
-    { logger: console }
-  );
-
-   await l1BridgingManagement.setup(deploymentConfig.l1);
-   await l2BridgingManagement.setup(deploymentConfig.l2);
 }
 
 main().catch((error) => {

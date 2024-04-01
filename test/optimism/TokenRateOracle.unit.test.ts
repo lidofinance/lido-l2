@@ -1,15 +1,22 @@
 import hre from "hardhat";
 import { assert } from "chai";
-import { unit } from "../../utils/testing";
-import { TokenRateOracle__factory } from "../../typechain";
+import testing, { unit } from "../../utils/testing";
+import {
+    TokenRateOracle__factory,
+    CrossDomainMessengerStub__factory
+} from "../../typechain";
+import { wei } from "../../utils/wei";
 
 unit("TokenRateOracle", ctxFactory)
 
   .test("state after init", async (ctx) => {
-    const { tokenRateOracle } = ctx.contracts;
-    const { bridge } = ctx.accounts;
+    const { tokenRateOracle, l2MessengerStub } = ctx.contracts;
+    const { bridge, l1TokenBridgeEOA } = ctx.accounts;
 
+    assert.equal(await tokenRateOracle.MESSENGER(), l2MessengerStub.address);
     assert.equal(await tokenRateOracle.BRIDGE(), bridge.address);
+    assert.equal(await tokenRateOracle.L1_TOKEN_RATE_PUSHER(), l1TokenBridgeEOA.address);
+    assert.equalBN(await tokenRateOracle.RATE_OUTDATED_DELAY(), 86400);
 
     assert.equalBN(await tokenRateOracle.latestAnswer(), 0);
 
@@ -29,22 +36,28 @@ unit("TokenRateOracle", ctxFactory)
     assert.equalBN(await tokenRateOracle.decimals(), 18);
   })
 
-  .test("updateRate() :: no rights to call", async (ctx) => {
+  .test("updateRate() :: called by non-bridge account", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
-    const { bridge, stranger } = ctx.accounts;
-    tokenRateOracle.connect(bridge).updateRate(10, 20);
+    const { stranger } = ctx.accounts;
     await assert.revertsWith(tokenRateOracle.connect(stranger).updateRate(10, 40), "ErrorNoRights(\""+stranger.address+"\")");
+  })
+
+  .test("updateRate() :: called by messenger with incorrect cross-domain sender", async (ctx) => {
+    const { tokenRateOracle, l2MessengerStub } = ctx.contracts;
+    const { stranger, l2MessengerStubEOA } = ctx.accounts;
+    await l2MessengerStub.setXDomainMessageSender(stranger.address);
+    await assert.revertsWith(tokenRateOracle.connect(l2MessengerStubEOA).updateRate(10, 40), "ErrorNoRights(\""+l2MessengerStubEOA._address+"\")");
   })
 
   .test("updateRate() :: incorrect time", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
     const { bridge } = ctx.accounts;
 
-    tokenRateOracle.connect(bridge).updateRate(10, 1000);
+    await tokenRateOracle.connect(bridge).updateRate(10, 1000);
     await assert.revertsWith(tokenRateOracle.connect(bridge).updateRate(12, 20), "ErrorIncorrectRateTimestamp()");
   })
 
-  .test("updateRate() :: dont update state if values are the same", async (ctx) => {
+  .test("updateRate() :: don't update state if values are the same", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
     const { bridge } = ctx.accounts;
 
@@ -55,14 +68,43 @@ unit("TokenRateOracle", ctxFactory)
     await assert.notEmits(tokenRateOracle, tx2, "RateUpdated");
   })
 
-  .test("updateRate() :: happy path", async (ctx) => {
+  .test("updateRate() :: happy path called by bridge", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
     const { bridge } = ctx.accounts;
 
     const currentTime = Date.now();
     const tokenRate = 123;
 
-    await tokenRateOracle.connect(bridge).updateRate(tokenRate, currentTime );
+    await tokenRateOracle.connect(bridge).updateRate(tokenRate, currentTime);
+
+    assert.equalBN(await tokenRateOracle.latestAnswer(), tokenRate);
+
+    const {
+        roundId_,
+        answer_,
+        startedAt_,
+        updatedAt_,
+        answeredInRound_
+    } = await tokenRateOracle.latestRoundData();
+
+    assert.equalBN(roundId_, currentTime);
+    assert.equalBN(answer_, tokenRate);
+    assert.equalBN(startedAt_, currentTime);
+    assert.equalBN(updatedAt_, currentTime);
+    assert.equalBN(answeredInRound_, currentTime);
+    assert.equalBN(await tokenRateOracle.decimals(), 18);
+  })
+
+  .test("updateRate() :: happy path called by messenger with correct cross-domain sender", async (ctx) => {
+    const { tokenRateOracle, l2MessengerStub } = ctx.contracts;
+    const { l2MessengerStubEOA, l1TokenBridgeEOA } = ctx.accounts;
+
+    await l2MessengerStub.setXDomainMessageSender(l1TokenBridgeEOA.address);
+
+    const currentTime = Date.now();
+    const tokenRate = 123;
+
+    await tokenRateOracle.connect(l2MessengerStubEOA).updateRate(tokenRate, currentTime);
 
     assert.equalBN(await tokenRateOracle.latestAnswer(), tokenRate);
 
@@ -86,15 +128,22 @@ unit("TokenRateOracle", ctxFactory)
 
 async function ctxFactory() {
 
-    const [deployer, bridge, stranger] = await hre.ethers.getSigners();
+    const [deployer, bridge, stranger, l1TokenBridgeEOA] = await hre.ethers.getSigners();
+
+    const l2MessengerStub = await new CrossDomainMessengerStub__factory(
+        deployer
+    ).deploy({ value: wei.toBigNumber(wei`1 ether`) });
+    const l2MessengerStubEOA = await testing.impersonate(l2MessengerStub.address);
 
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+        l2MessengerStub.address,
         bridge.address,
+        l1TokenBridgeEOA.address,
         86400
     );
 
     return {
-      accounts: { deployer, bridge, stranger },
-      contracts: { tokenRateOracle }
+      accounts: { deployer, bridge, stranger, l1TokenBridgeEOA, l2MessengerStubEOA },
+      contracts: { tokenRateOracle, l2MessengerStub }
     };
 }
