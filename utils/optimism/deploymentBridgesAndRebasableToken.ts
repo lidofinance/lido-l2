@@ -89,7 +89,7 @@ export default function deployment(
       l2TokenRateOracle: string,
       l1Params: OptL1DeployScriptParams,
       l2Params: OptL2DeployScriptParams,
-    ) {
+    ): Promise<[BridgeL1DeployScript, BridgeL2DeployScript]> {
 
       const [
         expectedL1TokenBridgeImplAddress,
@@ -248,7 +248,7 @@ export default function deployment(
           ],
         });
 
-      return [l1DeployScript, l2DeployScript];
+      return [l1DeployScript as BridgeL1DeployScript, l2DeployScript as BridgeL2DeployScript];
     },
   };
 }

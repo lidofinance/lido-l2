@@ -22,6 +22,40 @@ interface OptDeploymentOptions extends CommonOptions {
   overrides?: Overrides;
 }
 
+export class OracleL1DeployScript extends DeployScript {
+
+    constructor(
+        deployer: Wallet,
+        tokenRateNotifierImplAddress: string,
+        opStackTokenRatePusherImplAddress: string,
+        logger?: Logger
+    ) {
+        super(deployer, logger);
+        this.tokenRateNotifierImplAddress = tokenRateNotifierImplAddress;
+        this.opStackTokenRatePusherImplAddress = opStackTokenRatePusherImplAddress;
+    }
+
+    public tokenRateNotifierImplAddress: string;
+    public opStackTokenRatePusherImplAddress: string;
+}
+
+export class OracleL2DeployScript extends DeployScript {
+
+    constructor(
+        deployer: Wallet,
+        tokenRateOracleImplAddress: string,
+        tokenRateOracleProxyAddress: string,
+        logger?: Logger
+    ) {
+        super(deployer, logger);
+        this.tokenRateOracleImplAddress = tokenRateOracleImplAddress;
+        this.tokenRateOracleProxyAddress = tokenRateOracleProxyAddress;
+      }
+
+    public tokenRateOracleImplAddress: string;
+    public tokenRateOracleProxyAddress: string;
+}
+
 export default function deploymentOracle(
     networkName: NetworkName,
     options: OptDeploymentOptions = {}
@@ -32,7 +66,7 @@ export default function deploymentOracle(
         l1Token: string,
         l1Params: OptDeployScriptParams,
         l2Params: OptDeployScriptParams,
-      ) {
+      ): Promise<[OracleL1DeployScript, OracleL2DeployScript]> {
 
         const [
           expectedL1TokenRateNotifierImplAddress,
@@ -44,8 +78,10 @@ export default function deploymentOracle(
           expectedL2TokenRateOracleProxyAddress
         ] = await network.predictAddresses(l2Params.deployer, 2);
 
-        const l1DeployScript = new DeployScript(
+        const l1DeployScript = new OracleL1DeployScript(
           l1Params.deployer,
+          expectedL1TokenRateNotifierImplAddress,
+          expectedL1OpStackTokenRatePusherImplAddress,
           options?.logger
         )
           .addStep({
@@ -69,8 +105,10 @@ export default function deploymentOracle(
               assert.equal(c.address, expectedL1OpStackTokenRatePusherImplAddress),
           });
 
-        const l2DeployScript = new DeployScript(
+        const l2DeployScript = new OracleL2DeployScript(
           l2Params.deployer,
+          expectedL2TokenRateOracleImplAddress,
+          expectedL2TokenRateOracleProxyAddress,
           options?.logger
         )
           .addStep({
@@ -97,7 +135,7 @@ export default function deploymentOracle(
               assert.equal(c.address, expectedL2TokenRateOracleProxyAddress),
           });
 
-        return [l1DeployScript, l2DeployScript];
+        return [l1DeployScript as OracleL1DeployScript, l2DeployScript as OracleL2DeployScript];
       },
     };
   }

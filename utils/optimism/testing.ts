@@ -18,7 +18,7 @@ import {
 } from "../../typechain";
 import addresses from "./addresses";
 import contracts from "./contracts";
-import deploymentAll, { L1DeployAllScript, L2DeployAllScript } from "./deploymentBridgesBothTokensAndOracle";
+import deploymentAll from "./deploymentAll";
 import testingUtils from "../testing";
 import { BridgingManagement } from "../bridging-management";
 import network, { NetworkName, SignerOrProvider } from "../network";
@@ -216,7 +216,6 @@ async function deployTestBridge(
 
   await ethDeployScript.run();
   await optDeployScript.run();
-
 
   const l1BridgingManagement = new BridgingManagement(
     ethDeployScript.bridgeProxyAddress,

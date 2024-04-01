@@ -102,7 +102,7 @@ export default function deploymentAll(
       l1TokenRebasable: string,
       l1Params: OptL1DeployScriptParams,
       l2Params: OptL2DeployScriptParams,
-    ) {
+    ): Promise<[L1DeployAllScript, L2DeployAllScript]> {
 
       const [
         expectedL1TokenBridgeImplAddress,
@@ -312,7 +312,7 @@ export default function deploymentAll(
             assert.equal(c.address, expectedL2TokenRateOracleProxyAddress),
         });
 
-      return [l1DeployScript, l2DeployScript];
+      return [l1DeployScript as L1DeployAllScript, l2DeployScript as L2DeployAllScript];
     },
   };
 }
