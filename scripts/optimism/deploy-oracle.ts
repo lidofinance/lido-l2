@@ -3,6 +3,7 @@ import prompt from "../../utils/prompt";
 import network from "../../utils/network";
 import optimism from "../../utils/optimism";
 import deploymentOracle from "../../utils/deployment";
+import { TokenRateNotifier__factory } from "../../typechain";
 
 async function main() {
   const networkName = env.network();
@@ -18,41 +19,52 @@ async function main() {
     }
   );
 
-  const deploymentConfig = deploymentOracle.loadMultiChainDeploymentConfig();
+  const l1Token = env.address("TOKEN")
+  const l1Admin = env.address("L1_PROXY_ADMIN");
+  const l2Admin = env.address("L2_PROXY_ADMIN");
 
   const [l1DeployScript, l2DeployScript] = await optimism
     .deploymentOracle(networkName, { logger: console })
     .oracleDeployScript(
-      deploymentConfig.token,
+      l1Token,
       {
         deployer: ethDeployer,
         admins: {
-          proxy: deploymentConfig.l1.proxyAdmin,
+          proxy: l1Admin,
           bridge: ethDeployer.address,
         },
       },
       {
         deployer: optDeployer,
         admins: {
-          proxy: deploymentConfig.l2.proxyAdmin,
+          proxy: l2Admin,
           bridge: optDeployer.address,
         },
       }
     );
 
-  await deploymentOracle.printMultiChainDeploymentConfig(
-    "Deploy Optimism Bridge",
-    ethDeployer,
-    optDeployer,
-    deploymentConfig,
-    l1DeployScript,
-    l2DeployScript
-  );
+//   await deploymentOracle.printMultiChainDeploymentConfig(
+//     "Deploy Token Rate Oracle",
+//     ethDeployer,
+//     optDeployer,
+//     deploymentConfig,
+//     l1DeployScript,
+//     l2DeployScript
+//   );
 
   await prompt.proceed();
 
   await l1DeployScript.run();
   await l2DeployScript.run();
+
+  /// setup, add observer
+  const tokenRateNotifier = TokenRateNotifier__factory.connect(
+    l1DeployScript.tokenRateNotifierImplAddress,
+    ethDeployer
+  );
+  await tokenRateNotifier
+    .connect(ethDeployer)
+    .addObserver(l1DeployScript.opStackTokenRatePusherImplAddress);
 }
 
 main().catch((error) => {

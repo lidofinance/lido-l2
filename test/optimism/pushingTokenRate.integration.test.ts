@@ -8,6 +8,7 @@ import testing, { scenario } from "../../utils/testing";
 import deploymentOracle from "../../utils/optimism/deploymentOracle";
 import { getBridgeExecutorParams } from "../../utils/bridge-executor";
 import { JsonRpcProvider } from "@ethersproject/providers";
+import { BigNumber } from "ethers";
 import {
     ERC20BridgedStub__factory,
     ERC20WrapperStub__factory,
@@ -55,7 +56,7 @@ scenario("Optimism :: Token Rate Oracle integration test", ctxFactory)
         ]);
     })
 
-    .step("finalize pushing rate", async (ctx) => {
+    .step("Finalize pushing rate", async (ctx) => {
         const {
             opTokenRatePusher,
             tokenRateOracle,
@@ -91,15 +92,15 @@ scenario("Optimism :: Token Rate Oracle integration test", ctxFactory)
         assert.equalBN(answer, tokenRate);
 
         const [
-            answer1,
-            answer2,
-            answer3,
-            answer4,
-            answer5
+            ,
+            tokenRateAnswer,
+            ,
+            updatedAt,
+
         ] = await tokenRateOracle.latestRoundData();
 
-        assert.equalBN(answer2, tokenRate);
-        assert.equalBN(answer4, blockTimestampStr);
+        assert.equalBN(tokenRateAnswer, tokenRate);
+        assert.equalBN(updatedAt, blockTimestampStr);
     })
 
     .run();
