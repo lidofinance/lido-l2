@@ -3,58 +3,11 @@
 
 pragma solidity 0.8.10;
 
-// import {UnstructuredStorage} from "@aragon/os/contracts/common/UnstructuredStorage.sol";
-
-// import {SignatureUtils} from "../common/lib/SignatureUtils.sol";
-// import {IEIP712ERC20Rebasable} from "../lib/IEIP712ERC20Rebasable.sol";
-
 import {UnstructuredStorage} from "./UnstructuredStorage.sol";
 import {ERC20Rebasable} from "./ERC20Rebasable.sol";
 import {EIP712} from "@openzeppelin/contracts-v4.9/utils/cryptography/EIP712.sol";
+import {IERC2612} from "@openzeppelin/contracts-v4.9/interfaces/IERC2612.sol";
 import {SignatureChecker} from "../lib/SignatureChecker.sol";
-
-
-/**
- * @dev Interface of the ERC20 Permit extension allowing approvals to be made via signatures, as defined in
- * https://eips.ethereum.org/EIPS/eip-2612[EIP-2612].
- *
- * Adds the {permit} method, which can be used to change an account's ERC20 allowance (see {IERC20-allowance}) by
- * presenting a message signed by the account. By not relying on {IERC20-approve}, the token holder account doesn't
- * need to send a transaction, and thus is not required to hold Ether at all.
- */
-interface IERC2612 {
-    /**
-     * @dev Sets `value` as the allowance of `spender` over ``owner``'s tokens,
-     * given ``owner``'s signed approval.
-     * Emits an {Approval} event.
-     *
-     * Requirements:
-     *
-     * - `spender` cannot be the zero address.
-     * - `deadline` must be a timestamp in the future.
-     * - `v`, `r` and `s` must be a valid `secp256k1` signature from `owner`
-     * over the EIP712-formatted function arguments.
-     * - the signature must use ``owner``'s current nonce (see {nonces}).
-     */
-    function permit(
-        address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s
-    ) external;
-
-    /**
-     * @dev Returns the current nonce for `owner`. This value must be
-     * included whenever a signature is generated for {permit}.
-     *
-     * Every successful call to {permit} increases ``owner``'s nonce by one. This
-     * prevents a signature from being used multiple times.
-     */
-    function nonces(address owner) external view returns (uint256);
-
-    /**
-     * @dev Returns the domain separator used in the encoding of the signature for {permit}, as defined by {EIP712}.
-     */
-    // solhint-disable-next-line func-name-mixedcase
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
-}
 
 
 contract ERC20RebasablePermit is IERC2612, ERC20Rebasable, EIP712 {
@@ -65,6 +18,8 @@ contract ERC20RebasablePermit is IERC2612, ERC20Rebasable, EIP712 {
      */
     mapping(address => uint256) internal noncesByAddress;
 
+    // TODO: outline structured storage used because at least EIP712 uses it
+
     /**
      * @dev Typehash constant for ERC-2612 (Permit)
      *
@@ -73,11 +28,9 @@ contract ERC20RebasablePermit is IERC2612, ERC20Rebasable, EIP712 {
     bytes32 internal constant PERMIT_TYPEHASH =
         0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
 
-    // TODO: outline structured storage used because at least EIP712 uses it
-    // TODO: use custom errors
-
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
+    /// @param version_ The current major version of the signing domain (aka token version)
     /// @param decimals_ The decimals places of the token
     /// @param wrappedToken_ address of the ERC20 token to wrap
     /// @param tokenRateOracle_ address of oracle that returns tokens rate
@@ -85,14 +38,14 @@ contract ERC20RebasablePermit is IERC2612, ERC20Rebasable, EIP712 {
     constructor(
         string memory name_,
         string memory symbol_,
-        // TODO: pass signing domain version
+        string memory version_,
         uint8 decimals_,
         address wrappedToken_,
         address tokenRateOracle_,
         address bridge_
     )
         ERC20Rebasable(name_, symbol_, decimals_, wrappedToken_, tokenRateOracle_, bridge_)
-        EIP712(name_, "2")
+        EIP712(name_, version_)
     {
     }
 

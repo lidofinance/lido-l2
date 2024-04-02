@@ -7,6 +7,9 @@ import { ecsign as ecSignBuf } from "ethereumjs-util";
 const PERMIT_TYPE_HASH = streccak(
   'Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)'
 )
+const TRANSFER_WITH_AUTHORIZATION_TYPE_HASH = streccak(
+  'TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)'
+)
 
 interface Eip1271Contract {
   address: string;
@@ -19,12 +22,18 @@ async function signEOA(digest: string, account: ExternallyOwnedAccount) {
   return ecSign(digest, account.privateKey)
 }
 
-
 async function signEIP1271(digest: string, eip1271Contract: Eip1271Contract) {
   const sig = await eip1271Contract.sign(digest)
   return { v: sig.v, r: sig.r, s: sig.s }
 }
 
+export async function signEOAorEIP1271(digest: string, signer: Eip1271Contract | ExternallyOwnedAccount) {
+  if (signer.hasOwnProperty('sign')) {
+    return await signEIP1271(digest, signer as Eip1271Contract);
+  } else {
+    return await signEOA(digest, signer as ExternallyOwnedAccount);
+  }
+}
 
 export function makeDomainSeparator(name: string, version: string, chainId: BigNumberish, verifyingContract: string) {
   return keccak256(
@@ -41,13 +50,17 @@ export function makeDomainSeparator(name: string, version: string, chainId: BigN
   )
 }
 
-export async function signPermit(owner: ExternallyOwnedAccount | Eip1271Contract, spender: string, value: number, deadline: string, nonce: number, domainSeparator: string) {
-  const digest = calculatePermitDigest(owner.address, spender, value, nonce, deadline, domainSeparator)
-  if (owner.hasOwnProperty('sign')) {
-    return await signEIP1271(digest, owner as Eip1271Contract);
-  } else {
-    return await signEOA(digest, owner as ExternallyOwnedAccount);
-  }
+export async function signPermit(
+  owner: string,
+  signer: ExternallyOwnedAccount | Eip1271Contract,
+  spender: string,
+  value: number,
+  deadline: string,
+  nonce: number,
+  domainSeparator: string
+) {
+  const digest = calculatePermitDigest(owner, spender, value, nonce, deadline, domainSeparator)
+  return await signEOAorEIP1271(digest, signer)
 }
 
 export function calculatePermitDigest(owner: string, spender: string, value: number, nonce: number, deadline: string, domainSeparator: string) {
@@ -56,6 +69,15 @@ export function calculatePermitDigest(owner: string, spender: string, value: num
     PERMIT_TYPE_HASH,
     ['address', 'address', 'uint256', 'uint256', 'uint256'],
     [owner, spender, value, nonce, deadline]
+  )
+}
+
+export function calculateTransferAuthorizationDigest(from: string, to: string, value: number, validAfter: string, validBefore: string, nonce: string, domainSeparator: string) {
+  return calculateEIP712Digest(
+    domainSeparator,
+    TRANSFER_WITH_AUTHORIZATION_TYPE_HASH,
+    ['address', 'address', 'uint256', 'uint256', 'uint256', 'bytes32'],
+    [from, to, value, validAfter, validBefore, nonce]
   )
 }
 
