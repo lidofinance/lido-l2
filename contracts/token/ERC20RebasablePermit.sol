@@ -85,13 +85,14 @@ contract ERC20RebasablePermit is IERC2612, ERC20Rebasable, EIP712 {
     constructor(
         string memory name_,
         string memory symbol_,
+        // TODO: pass signing domain version
         uint8 decimals_,
         address wrappedToken_,
         address tokenRateOracle_,
         address bridge_
     )
         ERC20Rebasable(name_, symbol_, decimals_, wrappedToken_, tokenRateOracle_, bridge_)
-        EIP712("Liquid staked Ether 2.0", "1")
+        EIP712(name_, "2")
     {
     }
 

@@ -7,7 +7,6 @@ import { ecsign as ecSignBuf } from "ethereumjs-util";
 const PERMIT_TYPE_HASH = streccak(
   'Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)'
 )
-console.log({ PERMIT_TYPE_HASH })
 
 interface Eip1271Contract {
   address: string;
@@ -23,7 +22,6 @@ async function signEOA(digest: string, account: ExternallyOwnedAccount) {
 
 async function signEIP1271(digest: string, eip1271Contract: Eip1271Contract) {
   const sig = await eip1271Contract.sign(digest)
-  console.log({ sig })
   return { v: sig.v, r: sig.r, s: sig.s }
 }
 
@@ -43,7 +41,7 @@ export function makeDomainSeparator(name: string, version: string, chainId: BigN
   )
 }
 
-export async function signPermit(owner: ExternallyOwnedAccount | Eip1271Contract, spender: string, value: number, nonce: number, deadline: string, domainSeparator: string) {
+export async function signPermit(owner: ExternallyOwnedAccount | Eip1271Contract, spender: string, value: number, deadline: string, nonce: number, domainSeparator: string) {
   const digest = calculatePermitDigest(owner.address, spender, value, nonce, deadline, domainSeparator)
   if (owner.hasOwnProperty('sign')) {
     return await signEIP1271(digest, owner as Eip1271Contract);
@@ -52,7 +50,7 @@ export async function signPermit(owner: ExternallyOwnedAccount | Eip1271Contract
   }
 }
 
-function calculatePermitDigest(owner: string, spender: string, value: number, nonce: number, deadline: string, domainSeparator: string) {
+export function calculatePermitDigest(owner: string, spender: string, value: number, nonce: number, deadline: string, domainSeparator: string) {
   return calculateEIP712Digest(
     domainSeparator,
     PERMIT_TYPE_HASH,
@@ -62,11 +60,9 @@ function calculatePermitDigest(owner: string, spender: string, value: number, no
 }
 
 function calculateEIP712Digest(domainSeparator: string, typeHash: string, types: string[], parameters: unknown[]) {
-  return streccak(
-    '0x1901' +
-      strip0x(domainSeparator) +
-      strip0x(keccak256(defaultAbiCoder.encode(['bytes32', ...types], [typeHash, ...parameters])))
-  )
+  const structHash = keccak256(defaultAbiCoder.encode(['bytes32', ...types], [typeHash, ...parameters]));
+  const data = '0x1901' + strip0x(domainSeparator) + strip0x(structHash)
+  return keccak256(data)
 }
 
 function ecSign(digest: string, privateKey: string) {
