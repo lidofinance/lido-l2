@@ -161,38 +161,6 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
         return true;
     }
 
-    /// @notice Atomically increases the allowance granted to spender by the caller.
-    /// @param spender_ An address of the tokens spender
-    /// @param addedValue_ An amount to increase the allowance
-    function increaseAllowance(address spender_, uint256 addedValue_)
-        external
-        returns (bool)
-    {
-        _approve(
-            msg.sender,
-            spender_,
-            _getTokenAllowance()[msg.sender][spender_] + addedValue_
-        );
-        return true;
-    }
-
-    /// @notice Atomically decreases the allowance granted to spender by the caller.
-    /// @param spender_ An address of the tokens spender
-    /// @param subtractedValue_ An amount to decrease the allowance
-    function decreaseAllowance(address spender_, uint256 subtractedValue_)
-        external
-        returns (bool)
-    {
-        uint256 currentAllowance = _getTokenAllowance()[msg.sender][spender_];
-        if (currentAllowance < subtractedValue_) {
-            revert ErrorDecreasedAllowanceBelowZero();
-        }
-        unchecked {
-            _approve(msg.sender, spender_, currentAllowance - subtractedValue_);
-        }
-        return true;
-    }
-
     function _getTokenAllowance() internal pure returns (mapping(address => mapping(address => uint256)) storage) {
         return TOKEN_ALLOWANCE_POSITION.storageMapAddressMapAddressUint256();
     }

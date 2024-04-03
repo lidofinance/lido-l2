@@ -695,36 +695,6 @@ Returns a `bool` value indicating whether the operation succeeded.
 
 Transfers `amount` of token from the `from_` account to `to_` using the allowance mechanism. `amount_` is then deducted from the caller's allowance. Returns a `bool` value indicating whether the operation succeed.
 
-#### `increaseAllowance(address,uint256)`
-
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
->
-> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)`
->
-> **Arguments:**
->
-> - **`spender_`** - an address of the tokens spender
-> - **`addedValue_`** - a number to increase allowance
->
-> **Emits:** `Approval(address indexed owner, address indexed spender, uint256 value)`
-
-Atomically increases the allowance granted to `spender` by the caller. Returns a `bool` value indicating whether the operation succeed.
-
-#### `decreaseAllowance(address,uint256)`
-
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
->
-> **Returns** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `(bool)`
->
-> **Arguments:**
->
-> - **`spender_`** - an address of the tokens spender
-> - **`subtractedValue_`** - a number to decrease allowance
->
-> **Emits:** `Approval(address indexed owner, address indexed spender, uint256 value)`
-
-Atomically decreases the allowance granted to `spender` by the caller. Returns a `bool` value indicating whether the operation succeed.
-
 ## `ERC20Bridged`
 
 **Implements:** [`IERC20Bridged`](https://github.com/lidofinance/lido-l2/blob/main/contracts/token/interfaces/IERC20Bridged.sol)
