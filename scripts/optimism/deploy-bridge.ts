@@ -25,7 +25,7 @@ async function main() {
     .deployment(networkName, { logger: console })
     .erc20TokenBridgeDeployScript(
       deploymentConfig.token,
-      deploymentConfig.stETHToken,
+      deploymentConfig.rebasableToken,
       deploymentConfig.l2TokenRateOracle,
       {
         deployer: ethDeployer,

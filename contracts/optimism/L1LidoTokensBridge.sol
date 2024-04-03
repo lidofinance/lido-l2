@@ -7,7 +7,7 @@ import {L1ERC20TokenBridge} from "./L1ERC20TokenBridge.sol";
 import {IERC20WstETH} from "../token/interfaces/IERC20WstETH.sol";
 
 /// @author kovalgek
-/// @notice Hides wstETH concept from other contracts to save level of abstraction.
+/// @notice Hides wstETH concept from other contracts to keep `L1ERC20TokenBridge` reusable.
 contract L1LidoTokensBridge is L1ERC20TokenBridge {
 
     constructor(
