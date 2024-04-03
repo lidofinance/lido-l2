@@ -85,12 +85,12 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
     }
 
     /// @inheritdoc IERC20BridgedShares
-    function mintShares(address account_, uint256 amount_) external onlyBridge {
+    function bridgeMintShares(address account_, uint256 amount_) external onlyBridge {
         _mintShares(account_, amount_);
     }
 
     /// @inheritdoc IERC20BridgedShares
-    function burnShares(address account_, uint256 amount_) external onlyBridge {
+    function bridgeBurnShares(address account_, uint256 amount_) external onlyBridge {
         _burnShares(account_, amount_);
     }
 

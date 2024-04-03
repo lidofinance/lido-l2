@@ -98,7 +98,7 @@ contract L2ERC20TokenBridge is
             ITokenRateOracle tokenRateOracle = ERC20Rebasable(L2_TOKEN_REBASABLE).TOKEN_RATE_ORACLE();
             tokenRateOracle.updateRate(depositData.rate, depositData.timestamp);
 
-            ERC20Rebasable(L2_TOKEN_REBASABLE).mintShares(to_, amount_);
+            ERC20Rebasable(L2_TOKEN_REBASABLE).bridgeMintShares(to_, amount_);
 
             uint256 rebasableTokenAmount = ERC20Rebasable(L2_TOKEN_REBASABLE).getTokensByShares(amount_);
             emit DepositFinalized(
@@ -131,7 +131,7 @@ contract L2ERC20TokenBridge is
     ) internal {
         if (l2Token_ == L2_TOKEN_REBASABLE) {
             uint256 shares = ERC20Rebasable(L2_TOKEN_REBASABLE).getSharesByTokens(amount_);
-            ERC20Rebasable(L2_TOKEN_REBASABLE).burnShares(msg.sender, shares);
+            ERC20Rebasable(L2_TOKEN_REBASABLE).bridgeBurnShares(msg.sender, shares);
 
             _initiateWithdrawal(
                 L1_TOKEN_REBASABLE,

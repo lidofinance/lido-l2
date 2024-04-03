@@ -342,7 +342,7 @@ unit("ERC20Rebasable", ctxFactory)
     await assert.revertsWith(rebasableProxied.connect(user1).unwrap(wei`4 ether`), "ErrorNotEnoughBalance()");
   })
 
-  .test("mintShares() :: happy path", async (ctx) => {
+  .test("bridgeMintShares() :: happy path", async (ctx) => {
 
     const { rebasableProxied } = ctx.contracts;
     const {user1, user2, owner } = ctx.accounts;
@@ -358,7 +358,7 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.sharesOf(user1.address), 0);
     assert.equalBN(await rebasableProxied.balanceOf(user1.address), 0);
 
-    const tx0 = await rebasableProxied.connect(owner).mintShares(user1.address, user1SharesToMint);
+    const tx0 = await rebasableProxied.connect(owner).bridgeMintShares(user1.address, user1SharesToMint);
 
     assert.equalBN(await rebasableProxied.sharesOf(user1.address), user1SharesToMint);
     assert.equalBN(await rebasableProxied.balanceOf(user1.address), user1TokensMinted);
@@ -374,7 +374,7 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.sharesOf(user2.address), 0);
     assert.equalBN(await rebasableProxied.balanceOf(user2.address), 0);
 
-    const tx1 = await rebasableProxied.connect(owner).mintShares(user2.address, user2SharesToMint);
+    const tx1 = await rebasableProxied.connect(owner).bridgeMintShares(user2.address, user2SharesToMint);
 
     assert.equalBN(await rebasableProxied.sharesOf(user2.address), user2SharesToMint);
     assert.equalBN(await rebasableProxied.balanceOf(user2.address), user2TokensMinted);
@@ -384,7 +384,7 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.totalSupply(), premintTokens.add(user1TokensMinted).add(user2TokensMinted));
   })
 
-  .test("burnShares() :: happy path", async (ctx) => {
+  .test("bridgeBurnShares() :: happy path", async (ctx) => {
 
     const { rebasableProxied } = ctx.contracts;
     const {user1, user2, owner } = ctx.accounts;
@@ -406,11 +406,11 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.sharesOf(user1.address), 0);
     assert.equalBN(await rebasableProxied.balanceOf(user1.address), 0);
 
-    await rebasableProxied.connect(owner).mintShares(user1.address, user1SharesToMint);
+    await rebasableProxied.connect(owner).bridgeMintShares(user1.address, user1SharesToMint);
     assert.equalBN(await rebasableProxied.sharesOf(user1.address), user1SharesToMint);
     assert.equalBN(await rebasableProxied.balanceOf(user1.address), user1TokensMinted);
 
-    await rebasableProxied.connect(owner).burnShares(user1.address, user1SharesToBurn);
+    await rebasableProxied.connect(owner).bridgeBurnShares(user1.address, user1SharesToBurn);
     assert.equalBN(await rebasableProxied.sharesOf(user1.address), user1Shares);
     assert.equalBN(await rebasableProxied.balanceOf(user1.address), user1Tokens);
 
@@ -431,10 +431,10 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.sharesOf(user2.address), 0);
     assert.equalBN(await rebasableProxied.balanceOf(user2.address), 0);
 
-    await rebasableProxied.connect(owner).mintShares(user2.address, user2SharesToMint);
+    await rebasableProxied.connect(owner).bridgeMintShares(user2.address, user2SharesToMint);
     assert.equalBN(await rebasableProxied.sharesOf(user2.address), user2SharesToMint);
     assert.equalBN(await rebasableProxied.balanceOf(user2.address), user2TokensMinted);
-    await rebasableProxied.connect(owner).burnShares(user2.address, user2SharesToBurn);
+    await rebasableProxied.connect(owner).bridgeBurnShares(user2.address, user2SharesToBurn);
     assert.equalBN(await rebasableProxied.sharesOf(user2.address), user2Shares);
     assert.equalBN(await rebasableProxied.balanceOf(user2.address), user2Tokens);
 
@@ -713,7 +713,7 @@ unit("ERC20Rebasable", ctxFactory)
     await assert.revertsWith(
         rebasableProxied
         .connect(stranger)
-        .mintShares(stranger.address, wei`1000 ether`),
+        .bridgeMintShares(stranger.address, wei`1000 ether`),
       "ErrorNotBridge()"
     );
   })
@@ -734,7 +734,7 @@ unit("ERC20Rebasable", ctxFactory)
       // mint tokens
       const tx = await rebasableProxied
         .connect(owner)
-        .mintShares(recipient.address, mintAmount);
+        .bridgeMintShares(recipient.address, mintAmount);
 
       // validate Transfer event was emitted
       await assert.emits(rebasableProxied, tx, "Transfer", [
@@ -762,7 +762,7 @@ unit("ERC20Rebasable", ctxFactory)
     const { holder, stranger } = ctx.accounts;
 
     await assert.revertsWith(
-        rebasableProxied.connect(stranger).burnShares(holder.address, wei`100 ether`),
+        rebasableProxied.connect(stranger).bridgeBurnShares(holder.address, wei`100 ether`),
       "ErrorNotBridge()"
     );
   })
@@ -775,7 +775,7 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.balanceOf(stranger.address), 0);
 
     await assert.revertsWith(
-        rebasableProxied.connect(owner).burnShares(stranger.address, wei`100 ether`),
+        rebasableProxied.connect(owner).bridgeBurnShares(stranger.address, wei`100 ether`),
       "ErrorNotEnoughBalance()"
     );
   })
@@ -796,7 +796,7 @@ unit("ERC20Rebasable", ctxFactory)
       // burn tokens
       const tx = await rebasableProxied
         .connect(owner)
-        .burnShares(holder.address, burnAmount);
+        .bridgeBurnShares(holder.address, burnAmount);
 
       // validate Transfer event was emitted
       await assert.emits(rebasableProxied, tx, "Transfer", [
@@ -886,7 +886,7 @@ async function ctxFactory() {
     );
 
     await tokenRateOracle.connect(owner).updateRate(rate, 1000);
-    await rebasableProxied.connect(owner).mintShares(holder.address, premintShares);
+    await rebasableProxied.connect(owner).bridgeMintShares(holder.address, premintShares);
 
     return {
       accounts: { deployer, owner, recipient, spender, holder, stranger, zero, user1, user2 },

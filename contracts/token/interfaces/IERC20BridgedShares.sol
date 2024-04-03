@@ -14,10 +14,10 @@ interface IERC20BridgedShares is IERC20 {
     /// @notice Creates amount_ shares and assigns them to account_, increasing the total shares supply
     /// @param account_ An address of the account to mint shares
     /// @param amount_ An amount of shares to mint
-    function mintShares(address account_, uint256 amount_) external;
+    function bridgeMintShares(address account_, uint256 amount_) external;
 
     /// @notice Destroys amount_ shares from account_, reducing the total shares supply
     /// @param account_ An address of the account to burn shares
     /// @param amount_ An amount of shares to burn
-    function burnShares(address account_, uint256 amount_) external;
+    function bridgeBurnShares(address account_, uint256 amount_) external;
 }

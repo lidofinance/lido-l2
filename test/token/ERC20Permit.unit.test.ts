@@ -386,7 +386,7 @@ function ctxFactoryFactory(signingAccountsFuncFactory: typeof getAccountsEIP1271
     );
 
     await tokenRateOracle.connect(owner).updateRate(rate, 1000);
-    await rebasableProxied.connect(owner).mintShares(holder.address, premintShares);
+    await rebasableProxied.connect(owner).bridgeMintShares(holder.address, premintShares);
     const { alice, bob } = await signingAccountsFuncFactory();
 
     return {
