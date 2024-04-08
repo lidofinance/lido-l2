@@ -1,9 +1,9 @@
 import env from "../../utils/env";
 import prompt from "../../utils/prompt";
 import network from "../../utils/network";
-import optimism from "../../utils/optimism";
 import deployment from "../../utils/deployment";
-import { TokenRateNotifier__factory } from "../../typechain";
+
+import deploymentNewImplementations from "../../utils/optimism/deploymentNewImplementations";
 
 async function main() {
     const networkName = env.network();
@@ -21,19 +21,22 @@ async function main() {
 
     const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
 
-    const [l1DeployScript, l2DeployScript] = await optimism
-        .deploymentOracle(networkName, { logger: console })
-        .oracleDeployScript(
-            deploymentConfig.l1Token,
-            deploymentConfig.l2GasLimitForPushingTokenRate,
-            deploymentConfig.rateOutdatedDelay,
+    const [l1DeployScript, l2DeployScript] = await deploymentNewImplementations(
+        networkName,
+        { logger: console }
+    )
+        .deployScript(
             {
                 deployer: ethDeployer,
                 admins: {
                     proxy: deploymentConfig.l1.proxyAdmin,
-                    bridge: ethDeployer.address,
+                    bridge: ethDeployer.address
                 },
-                contractsShift: 0
+                contractsShift: 0,
+                tokenProxyAddress: deploymentConfig.l1Token,
+                tokenRebasableProxyAddress: deploymentConfig.l1RebasableToken,
+                opStackTokenRatePusherImplAddress: deploymentConfig.l1OpStackTokenRatePusher,
+                tokenBridgeProxyAddress: deploymentConfig.l1TokenBridge,
             },
             {
                 deployer: optDeployer,
@@ -41,12 +44,16 @@ async function main() {
                     proxy: deploymentConfig.l2.proxyAdmin,
                     bridge: optDeployer.address,
                 },
-                contractsShift: 0
+                contractsShift: 0,
+                tokenBridgeProxyAddress: deploymentConfig.l2TokenBridge,
+                tokenProxyAddress: deploymentConfig.l2Token,
+                tokenRateOracleProxyAddress: deploymentConfig.l2TokenRateOracle,
+                tokenRateOracleRateOutdatedDelay: deploymentConfig.rateOutdatedDelay,
             }
         );
 
     await deployment.printMultiChainDeploymentConfig(
-        "Deploy Token Rate Oracle",
+        "Deploy new implementations: bridges, wstETH, stETH",
         ethDeployer,
         optDeployer,
         deploymentConfig,
@@ -58,15 +65,6 @@ async function main() {
 
     await l1DeployScript.run();
     await l2DeployScript.run();
-
-    /// setup by adding observer
-    const tokenRateNotifier = TokenRateNotifier__factory.connect(
-        l1DeployScript.tokenRateNotifierImplAddress,
-        ethDeployer
-    );
-    await tokenRateNotifier
-        .connect(ethDeployer)
-        .addObserver(l1DeployScript.opStackTokenRatePusherImplAddress);
 }
 
 main().catch((error) => {

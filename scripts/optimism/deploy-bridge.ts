@@ -24,8 +24,8 @@ async function main() {
   const [l1DeployScript, l2DeployScript] = await optimism
     .deployment(networkName, { logger: console })
     .erc20TokenBridgeDeployScript(
-      deploymentConfig.token,
-      deploymentConfig.rebasableToken,
+      deploymentConfig.l1Token,
+      deploymentConfig.l1RebasableToken,
       deploymentConfig.l2TokenRateOracle,
       {
         deployer: ethDeployer,

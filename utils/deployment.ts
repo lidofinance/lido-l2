@@ -10,18 +10,32 @@ interface ChainDeploymentConfig extends BridgingManagerSetupConfig {
 }
 
 interface MultiChainDeploymentConfig {
-  token: string;
-  rebasableToken: string;
+  l1Token: string;
+  l1RebasableToken: string;
+  l1OpStackTokenRatePusher: string;
+  l2GasLimitForPushingTokenRate: number;
+  rateOutdatedDelay: number;
+  l1TokenBridge: string;
+  l2TokenBridge: string;
+  l2Token: string;
   l2TokenRateOracle: string;
+  govBridgeExecutor: string;
   l1: ChainDeploymentConfig;
   l2: ChainDeploymentConfig;
 }
 
 export function loadMultiChainDeploymentConfig(): MultiChainDeploymentConfig {
   return {
-    token: env.address("TOKEN"),
-    rebasableToken: env.address("REBASABLE_TOKEN"),
-    l2TokenRateOracle: env.address("TOKEN_RATE_ORACLE"),
+    l1Token: env.address("TOKEN"),
+    l1RebasableToken: env.address("REBASABLE_TOKEN"),
+    l1OpStackTokenRatePusher: env.address("L1_OP_STACK_TOKEN_RATE_PUSHER"),
+    l2GasLimitForPushingTokenRate: Number(env.string("L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE")),
+    rateOutdatedDelay: Number(env.string("RATE_OUTDATED_DELAY")),
+    l1TokenBridge: env.address("L1_TOKEN_BRIDGE"),
+    l2TokenBridge: env.address("L2_TOKEN_BRIDGE"),
+    l2Token: env.address("L2_TOKEN"),
+    l2TokenRateOracle: env.address("L2_TOKEN_RATE_ORACLE"),
+    govBridgeExecutor: env.address("GOV_BRIDGE_EXECUTOR"),
     l1: {
       proxyAdmin: env.address("L1_PROXY_ADMIN"),
       bridgeAdmin: env.address("L1_BRIDGE_ADMIN"),
@@ -53,8 +67,8 @@ export async function printMultiChainDeploymentConfig(
   l1DeployScript: DeployScript,
   l2DeployScript: DeployScript
 ) {
-  const { token, stETHToken, l1, l2 } = deploymentParams;
-  console.log(chalk.bold(`${title} :: ${chalk.underline(token)} :: ${chalk.underline(stETHToken)}\n`));
+  const { l1Token, l1RebasableToken, l1, l2 } = deploymentParams;
+  console.log(chalk.bold(`${title} :: ${chalk.underline(l1Token)} :: ${chalk.underline(l1RebasableToken)}\n`));
   console.log(chalk.bold("  · L1 Deployment Params:"));
   await printChainDeploymentConfig(l1Deployer, l1);
   console.log();

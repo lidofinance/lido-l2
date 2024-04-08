@@ -18,7 +18,7 @@ import {
 } from "../../typechain";
 import addresses from "./addresses";
 import contracts from "./contracts";
-import deploymentAll from "./deploymentAll";
+import deploymentAll from "./deploymentAllFromScratch";
 import testingUtils from "../testing";
 import { BridgingManagement } from "../bridging-management";
 import network, { NetworkName, SignerOrProvider } from "../network";
@@ -199,7 +199,7 @@ async function deployTestBridge(
 
   const [ethDeployScript, optDeployScript] = await deploymentAll(
     networkName
-  ).erc20TokenBridgeDeployScript(
+  ).deployAllScript(
     l1Token.address,
     l1TokenRebasable.address,
     {

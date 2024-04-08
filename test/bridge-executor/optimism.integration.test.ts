@@ -15,7 +15,7 @@ import { BridgingManagerRole } from "../../utils/bridging-management";
 import env from "../../utils/env";
 import network from "../../utils/network";
 import { getBridgeExecutorParams } from "../../utils/bridge-executor";
-import deploymentAll from "../../utils/optimism/deploymentAll";
+import deploymentAll from "../../utils/optimism/deploymentAllFromScratch";
 
 scenario("Optimism :: Bridge Executor integration test", ctxFactory)
   .step("Activate L2 bridge", async (ctx) => {
@@ -239,7 +239,7 @@ async function ctxFactory() {
 
   const [, optDeployScript] = await deploymentAll(
     networkName
-  ).erc20TokenBridgeDeployScript(
+  ).deployAllScript(
     l1Token.address,
     l1TokenRebasable.address,
     {
