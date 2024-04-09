@@ -191,7 +191,7 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
     ) internal onlyNonZeroAccount(from_) onlyNonZeroAccount(to_) {
         uint256 sharesToTransfer = _getSharesByTokens(amount_);
         _transferShares(from_, to_, sharesToTransfer);
-        emit Transfer(from_, to_, amount_);
+        _emitTransferEvents(from_, to_, amount_ ,sharesToTransfer);
     }
 
     /// @dev Updates owner_'s allowance for spender_ based on spent amount_. Does not update
@@ -271,7 +271,8 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
     ) internal onlyNonZeroAccount(recipient_) {
         _setTotalShares(_getTotalShares() + amount_);
         _getShares()[recipient_] = _getShares()[recipient_] + amount_;
-        emit Transfer(address(0), recipient_, amount_);
+        uint256 tokensAmount = _getTokensByShares(amount_);
+        _emitTransferEvents(address(0), recipient_, tokensAmount ,amount_);
     }
 
     /// @dev Destroys amount_ shares from account_, reducing the total shares supply.
@@ -307,6 +308,17 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
         _getShares()[recipient_] = _getShares()[recipient_] + sharesAmount_;
     }
 
+    /// @dev Emits `Transfer` and `TransferShares` events
+    function _emitTransferEvents(
+        address _from,
+        address _to,
+        uint _tokenAmount,
+        uint256 _sharesAmount
+    ) internal {
+        emit Transfer(_from, _to, _tokenAmount);
+        emit TransferShares(_from, _to, _sharesAmount);
+    }
+
     /// @dev validates that account_ is not zero address
     modifier onlyNonZeroAccount(address account_) {
         if (account_ == address(0)) {
@@ -322,6 +334,14 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
         }
         _;
     }
+
+    /// @notice An executed shares transfer from `sender` to `recipient`.
+    /// @dev emitted in pair with an ERC20-defined `Transfer` event.
+    event TransferShares(
+        address indexed from,
+        address indexed to,
+        uint256 sharesValue
+    );
 
     error ErrorZeroSharesWrap();
     error ErrorZeroTokensUnwrap();

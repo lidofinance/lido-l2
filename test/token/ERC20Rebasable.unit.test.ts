@@ -737,7 +737,13 @@ unit("ERC20Rebasable", ctxFactory)
         .bridgeMintShares(recipient.address, mintAmount);
 
       // validate Transfer event was emitted
+      const mintAmountInTokens = await rebasableProxied.getTokensByShares(mintAmount);
       await assert.emits(rebasableProxied, tx, "Transfer", [
+        hre.ethers.constants.AddressZero,
+        recipient.address,
+        mintAmountInTokens,
+      ]);
+      await assert.emits(rebasableProxied, tx, "TransferShares", [
         hre.ethers.constants.AddressZero,
         recipient.address,
         mintAmount,
