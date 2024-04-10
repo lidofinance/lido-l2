@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 Lido <info@lido.fi>
+// SPDX-FileCopyrightText: 2024 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
 pragma solidity 0.8.10;
@@ -9,7 +9,7 @@ contract DepositDataCodec {
 
     uint8 internal constant RATE_FIELD_SIZE = 12;
     uint8 internal constant TIMESTAMP_FIELD_SIZE = 5;
-    
+
     struct DepositData {
         uint96 rate;
         uint40 timestamp;
@@ -26,11 +26,11 @@ contract DepositDataCodec {
     }
 
     function decodeDepositData(bytes calldata buffer) internal pure returns (DepositData memory) {
-        
+
         if (buffer.length < RATE_FIELD_SIZE + TIMESTAMP_FIELD_SIZE) {
             revert ErrorDepositDataLength();
         }
-        
+
         DepositData memory depositData = DepositData({
             rate: uint96(bytes12(buffer[0:RATE_FIELD_SIZE])),
             timestamp: uint40(bytes5(buffer[RATE_FIELD_SIZE:RATE_FIELD_SIZE + TIMESTAMP_FIELD_SIZE])),

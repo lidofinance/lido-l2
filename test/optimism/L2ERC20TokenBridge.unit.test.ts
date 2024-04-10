@@ -5,7 +5,7 @@ import {
     TokenRateOracle__factory,
     ERC20Rebasable__factory,
     L1LidoTokensBridge__factory,
-    L2ERC20TokenBridge__factory,
+    L2ERC20ExtendedTokensBridge__factory,
     OssifiableProxy__factory,
     EmptyContractStub__factory,
     CrossDomainMessengerStub__factory,
@@ -18,7 +18,7 @@ import { getContractAddress } from "ethers/lib/utils";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber } from "ethers";
 
-unit("Optimism:: L2ERC20TokenBridge", ctxFactory)
+unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
     .test("l1TokenBridge()", async (ctx) => {
         assert.equal(
             await ctx.l2TokenBridge.l1TokenBridge(),
@@ -727,7 +727,7 @@ async function ctxFactory() {
         l2TokenBridgeProxyAddress
     );
 
-    const l2TokenBridgeImpl = await new L2ERC20TokenBridge__factory(
+    const l2TokenBridgeImpl = await new L2ERC20ExtendedTokensBridge__factory(
         deployer
     ).deploy(
         l2MessengerStub.address,
@@ -748,7 +748,7 @@ async function ctxFactory() {
         ])
     );
 
-    const l2TokenBridge = L2ERC20TokenBridge__factory.connect(
+    const l2TokenBridge = L2ERC20ExtendedTokensBridge__factory.connect(
         l2TokenBridgeProxy.address,
         deployer
     );

@@ -3,12 +3,12 @@
 
 pragma solidity 0.8.10;
 
-import {L1ERC20TokenBridge} from "./L1ERC20TokenBridge.sol";
+import {L1ERC20ExtendedTokensBridge} from "./L1ERC20ExtendedTokensBridge.sol";
 import {IERC20WstETH} from "../token/interfaces/IERC20WstETH.sol";
 
 /// @author kovalgek
-/// @notice Hides wstETH concept from other contracts to keep `L1ERC20TokenBridge` reusable.
-contract L1LidoTokensBridge is L1ERC20TokenBridge {
+/// @notice Hides wstETH concept from other contracts to keep `L1ERC20ExtendedTokensBridge` reusable.
+contract L1LidoTokensBridge is L1ERC20ExtendedTokensBridge {
 
     constructor(
         address messenger_,
@@ -17,7 +17,7 @@ contract L1LidoTokensBridge is L1ERC20TokenBridge {
         address l1TokenRebasable_,
         address l2TokenNonRebasable_,
         address l2TokenRebasable_
-    ) L1ERC20TokenBridge(
+    ) L1ERC20ExtendedTokensBridge(
         messenger_,
         l2TokenBridge_,
         l1TokenNonRebasable_,

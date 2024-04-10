@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2024 OpenZeppelin, Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
-// Writen based on (utils/cryptography/SignatureChecker.sol from d398d68
+// Written based on (utils/cryptography/SignatureChecker.sol from d398d68
 
 pragma solidity 0.8.10;
 
@@ -24,7 +24,6 @@ library SignatureChecker {
      */
     function isValidSignatureNow(address signer, bytes32 hash, bytes memory signature) internal view returns (bool) {
         if (signer.code.length == 0) {
-          // return true;
             (address recovered, ECDSA.RecoverError err) = ECDSA.tryRecover(hash, signature);
             return err == ECDSA.RecoverError.NoError && recovered == signer;
         } else {

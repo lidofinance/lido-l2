@@ -59,16 +59,16 @@ async function main() {
   await l1DeployScript.run();
   await l2DeployScript.run();
 
-  const l1ERC20TokenBridgeProxyDeployStepIndex = 1;
+  const l1ERC20ExtendedTokensBridgeProxyDeployStepIndex = 1;
   const l1BridgingManagement = new BridgingManagement(
-    l1DeployScript.getContractAddress(l1ERC20TokenBridgeProxyDeployStepIndex),
+    l1DeployScript.getContractAddress(l1ERC20ExtendedTokensBridgeProxyDeployStepIndex),
     ethDeployer,
     { logger: console }
   );
 
-  const l2ERC20TokenBridgeProxyDeployStepIndex = 5;
+  const l2ERC20ExtendedTokensBridgeProxyDeployStepIndex = 5;
   const l2BridgingManagement = new BridgingManagement(
-    l2DeployScript.getContractAddress(l2ERC20TokenBridgeProxyDeployStepIndex),
+    l2DeployScript.getContractAddress(l2ERC20ExtendedTokensBridgeProxyDeployStepIndex),
     optDeployer,
     { logger: console }
   );

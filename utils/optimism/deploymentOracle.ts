@@ -78,6 +78,7 @@ export default function deploymentOracle(
                 .addStep({
                     factory: TokenRateNotifier__factory,
                     args: [
+                        l1Params.deployer.address,
                         options?.overrides,
                     ],
                     afterDeploy: (c) =>

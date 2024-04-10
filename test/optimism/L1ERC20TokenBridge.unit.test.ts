@@ -4,7 +4,7 @@ import {
   ERC20BridgedStub__factory,
   ERC20WrapperStub__factory,
   L1LidoTokensBridge__factory,
-  L2ERC20TokenBridge__factory,
+  L2ERC20ExtendedTokensBridge__factory,
   OssifiableProxy__factory,
   EmptyContractStub__factory,
 } from "../../typechain";
@@ -160,7 +160,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
     await assert.emits(l1Messenger, tx, "SentMessage", [
       l2TokenBridgeEOA.address,
       l1TokenBridge.address,
-      L2ERC20TokenBridge__factory.createInterface().encodeFunctionData(
+      L2ERC20ExtendedTokensBridge__factory.createInterface().encodeFunctionData(
         "finalizeDeposit",
         [
             l1TokenNonRebasable.address,
@@ -229,7 +229,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
     await assert.emits(l1Messenger, tx, "SentMessage", [
       l2TokenBridgeEOA.address,
       l1TokenBridge.address,
-      L2ERC20TokenBridge__factory.createInterface().encodeFunctionData(
+      L2ERC20ExtendedTokensBridge__factory.createInterface().encodeFunctionData(
         "finalizeDeposit",
         [
           l1TokenRebasable.address,
@@ -425,7 +425,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
     await assert.emits(l1Messenger, tx, "SentMessage", [
       l2TokenBridgeEOA.address,
       l1TokenBridge.address,
-      L2ERC20TokenBridge__factory.createInterface().encodeFunctionData(
+      L2ERC20ExtendedTokensBridge__factory.createInterface().encodeFunctionData(
         "finalizeDeposit",
         [
           l1TokenNonRebasable.address,
@@ -497,7 +497,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
     await assert.emits(l1Messenger, tx, "SentMessage", [
       l2TokenBridgeEOA.address,
       l1TokenBridge.address,
-      L2ERC20TokenBridge__factory.createInterface().encodeFunctionData(
+      L2ERC20ExtendedTokensBridge__factory.createInterface().encodeFunctionData(
         "finalizeDeposit",
         [
           l1TokenRebasable.address,

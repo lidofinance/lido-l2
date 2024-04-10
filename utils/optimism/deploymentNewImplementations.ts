@@ -9,7 +9,7 @@ import {
     ERC20Rebasable__factory,
     IERC20Metadata__factory,
     L1LidoTokensBridge__factory,
-    L2ERC20TokenBridge__factory,
+    L2ERC20ExtendedTokensBridge__factory,
     OssifiableProxy__factory,
     TokenRateOracle__factory
 } from "../../typechain";
@@ -197,7 +197,7 @@ export default function deploymentNewImplementations(
                         assert.equal(c.address, expectedL2TokenRebasableProxyAddress),
                 })
                 .addStep({
-                    factory: L2ERC20TokenBridge__factory,
+                    factory: L2ERC20ExtendedTokensBridge__factory,
                     args: [
                         optAddresses.L2CrossDomainMessenger,
                         l1Params.tokenBridgeProxyAddress,

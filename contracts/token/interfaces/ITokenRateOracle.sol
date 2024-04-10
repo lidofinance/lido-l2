@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 Lido <info@lido.fi>
+// SPDX-FileCopyrightText: 2024 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
 pragma solidity 0.8.10;
@@ -10,7 +10,7 @@ interface ITokenRateOracle {
     /// @notice get the latest token rate data.
     /// @return roundId_ is a unique id for each answer. The value is based on timestamp.
     /// @return answer_ is wstETH/stETH token rate.
-    /// @return startedAt_ is time when rate was pushed on L1 side. 
+    /// @return startedAt_ is time when rate was pushed on L1 side.
     /// @return updatedAt_ is the same as startedAt_.
     /// @return answeredInRound_ is the same as roundId_.
     function latestRoundData()
@@ -34,6 +34,6 @@ interface ITokenRateOracle {
 
     /// @notice Updates token rate.
     /// @param tokenRate_ wstETH/stETH token rate.
-    /// @param rateL1Timestamp_ L1 time when rate was pushed on L1 side. 
+    /// @param rateL1Timestamp_ L1 time when rate was pushed on L1 side.
     function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external;
 }

@@ -44,7 +44,7 @@ scenario("Optimism Bridge :: deployment acceptance test", ctxFactory)
   .step("L1 bridge :: L2 token bridge", async (ctx) => {
     assert.equal(
       await ctx.l1LidoTokensBridge.l2TokenBridge(),
-      ctx.l2ERC20TokenBridge.address
+      ctx.l2ERC20ExtendedTokensBridge.address
     );
   })
   .step("L1 Bridge :: is deposits enabled", async (ctx) => {
@@ -122,55 +122,55 @@ scenario("Optimism Bridge :: deployment acceptance test", ctxFactory)
 
   .step("L2 Bridge :: proxy admin", async (ctx) => {
     assert.equal(
-      await ctx.l2ERC20TokenBridgeProxy.proxy__getAdmin(),
+      await ctx.l2ERC20ExtendedTokensBridgeProxy.proxy__getAdmin(),
       ctx.deployment.l2.proxyAdmin
     );
   })
   .step("L2 Bridge :: bridge admin", async (ctx) => {
     const currentAdmins = await getRoleHolders(
-      ctx.l2ERC20TokenBridge,
+      ctx.l2ERC20ExtendedTokensBridge,
       BridgingManagerRole.DEFAULT_ADMIN_ROLE.hash
     );
     assert.equal(currentAdmins.size, 1);
     assert.isTrue(currentAdmins.has(ctx.deployment.l2.bridgeAdmin));
 
     await assert.isTrue(
-      await ctx.l2ERC20TokenBridge.hasRole(
+      await ctx.l2ERC20ExtendedTokensBridge.hasRole(
         BridgingManagerRole.DEFAULT_ADMIN_ROLE.hash,
         ctx.deployment.l2.bridgeAdmin
       )
     );
   })
   .step("L2 bridge :: L1 token", async (ctx) => {
-    assert.equal(await ctx.l2ERC20TokenBridge.L1_TOKEN_NON_REBASABLE(), ctx.deployment.token);
+    assert.equal(await ctx.l2ERC20ExtendedTokensBridge.L1_TOKEN_NON_REBASABLE(), ctx.deployment.token);
   })
   .step("L2 bridge :: L2 token", async (ctx) => {
     assert.equal(
-      await ctx.l2ERC20TokenBridge.L2_TOKEN_NON_REBASABLE(),
+      await ctx.l2ERC20ExtendedTokensBridge.L2_TOKEN_NON_REBASABLE(),
       ctx.erc20Bridged.address
     );
   })
   .step("L2 bridge :: L1 token bridge", async (ctx) => {
     assert.equal(
-      await ctx.l2ERC20TokenBridge.l1TokenBridge(),
+      await ctx.l2ERC20ExtendedTokensBridge.l1TokenBridge(),
       ctx.l1LidoTokensBridge.address
     );
   })
   .step("L2 Bridge :: is deposits enabled", async (ctx) => {
     assert.equal(
-      await ctx.l2ERC20TokenBridge.isDepositsEnabled(),
+      await ctx.l2ERC20ExtendedTokensBridge.isDepositsEnabled(),
       ctx.deployment.l2.depositsEnabled
     );
   })
   .step("L2 Bridge :: is withdrawals enabled", async (ctx) => {
     assert.equal(
-      await ctx.l2ERC20TokenBridge.isWithdrawalsEnabled(),
+      await ctx.l2ERC20ExtendedTokensBridge.isWithdrawalsEnabled(),
       ctx.deployment.l2.withdrawalsEnabled
     );
   })
   .step("L2 Bridge :: deposits enablers", async (ctx) => {
     const actualDepositsEnablers = await getRoleHolders(
-      ctx.l2ERC20TokenBridge,
+      ctx.l2ERC20ExtendedTokensBridge,
       BridgingManagerRole.DEPOSITS_ENABLER_ROLE.hash
     );
     const expectedDepositsEnablers = ctx.deployment.l2.depositsEnablers || [];
@@ -182,7 +182,7 @@ scenario("Optimism Bridge :: deployment acceptance test", ctxFactory)
   })
   .step("L2 Bridge :: deposits disablers", async (ctx) => {
     const actualDepositsDisablers = await getRoleHolders(
-      ctx.l2ERC20TokenBridge,
+      ctx.l2ERC20ExtendedTokensBridge,
       BridgingManagerRole.DEPOSITS_DISABLER_ROLE.hash
     );
     const expectedDepositsDisablers = ctx.deployment.l2.depositsDisablers || [];
@@ -197,7 +197,7 @@ scenario("Optimism Bridge :: deployment acceptance test", ctxFactory)
   })
   .step("L2 Bridge :: withdrawals enablers", async (ctx) => {
     const actualWithdrawalsEnablers = await getRoleHolders(
-      ctx.l2ERC20TokenBridge,
+      ctx.l2ERC20ExtendedTokensBridge,
       BridgingManagerRole.WITHDRAWALS_ENABLER_ROLE.hash
     );
     const expectedWithdrawalsEnablers =
@@ -213,7 +213,7 @@ scenario("Optimism Bridge :: deployment acceptance test", ctxFactory)
   })
   .step("L2 Bridge :: withdrawals disablers", async (ctx) => {
     const actualWithdrawalsDisablers = await getRoleHolders(
-      ctx.l2ERC20TokenBridge,
+      ctx.l2ERC20ExtendedTokensBridge,
       BridgingManagerRole.WITHDRAWALS_DISABLER_ROLE.hash
     );
     const expectedWithdrawalsDisablers =
@@ -251,7 +251,7 @@ scenario("Optimism Bridge :: deployment acceptance test", ctxFactory)
   .step("L2 token :: bridge", async (ctx) => {
     assert.equalBN(
       await ctx.erc20Bridged.bridge(),
-      ctx.l2ERC20TokenBridge.address
+      ctx.l2ERC20ExtendedTokensBridge.address
     );
   })
 
@@ -287,9 +287,9 @@ async function ctxFactory() {
       testingSetup.l1LidoTokensBridge.address,
       testingSetup.l1Provider
     ),
-    l2ERC20TokenBridge: testingSetup.l2ERC20TokenBridge,
-    l2ERC20TokenBridgeProxy: OssifiableProxy__factory.connect(
-      testingSetup.l2ERC20TokenBridge.address,
+    l2ERC20ExtendedTokensBridge: testingSetup.l2ERC20ExtendedTokensBridge,
+    l2ERC20ExtendedTokensBridgeProxy: OssifiableProxy__factory.connect(
+      testingSetup.l2ERC20ExtendedTokensBridge.address,
       testingSetup.l2Provider
     ),
     erc20Bridged: testingSetup.l2Token,

@@ -41,8 +41,8 @@ A high-level overview of the proposed solution might be found in the below diagr
 - [**`BridgingManager`**](#BridgingManager) - contains administrative methods to retrieve and control the state of the bridging process.
 - [**`BridgeableTokens`**](#BridgeableTokens) - contains the logic for validation of tokens used in the bridging process.
 - [**`CrossDomainEnabled`**](#CrossDomainEnabled) - helper contract for contracts performing cross-domain communications
-- [**`L1ERC20TokenBridge`**](#L1ERC20TokenBridge) - Ethereum's counterpart of the bridge to bridge registered ERC20 compatible tokens between Ethereum and Optimism chains.
-- [**`L2ERC20TokenBridge`**](#L2ERC20TokenBridge) - Optimism's counterpart of the bridge to bridge registered ERC20 compatible tokens between Ethereum and Optimism chains
+- [**`L1ERC20ExtendedTokensBridge`**](#L1ERC20ExtendedTokensBridge) - Ethereum's counterpart of the bridge to bridge registered ERC20 compatible tokens between Ethereum and Optimism chains.
+- [**`L2ERC20ExtendedTokensBridge`**](#L2ERC20ExtendedTokensBridge) - Optimism's counterpart of the bridge to bridge registered ERC20 compatible tokens between Ethereum and Optimism chains
 - [**`ERC20Bridged`**](#ERC20Bridged) - an implementation of the `ERC20` token with administrative methods to mint and burn tokens.
 - [**`OssifiableProxy`**](#OssifiableProxy) - the ERC1967 proxy with extra admin functionality.
 
@@ -216,7 +216,7 @@ Sends a message to an account on another domain.
 
 Enforces that the modified function is only callable by a specific cross-domain account.
 
-## `L1ERC20TokenBridge`
+## `L1ERC20ExtendedTokensBridge`
 
 **Implements:** [`IL1ERC20Bridge`](https://github.com/ethereum-optimism/optimism/blob/develop/packages/contracts/contracts/L1/messaging/IL1ERC20Bridge.sol)
 **Inherits:** [`BridgingManager`](#BridgingManager) [`BridgeableTokens`](#BridgeableTokens) [`CrossDomainEnabled`](#CrossDomainEnabled)
@@ -300,7 +300,7 @@ Complete a withdrawal from L2 to L1, and credit funds to the recipient's balance
 
 Performs the logic for deposits by informing the L2 Deposited Token contract of the deposit and calling safeTransferFrom to lock the L1 funds.
 
-## `L2ERC20TokenBridge`
+## `L2ERC20ExtendedTokensBridge`
 
 **Implements:** [`IL2ERC20Bridge`](https://github.com/ethereum-optimism/optimism/blob/develop/packages/contracts/contracts/L2/messaging/IL2ERC20Bridge.sol)
 **Extends** [`BridgingManager`](#BridgingManager) [`BridgeableTokens`](#BridgeableTokens) [`CrossDomainEnabled`](#CrossDomainEnabled)
@@ -661,7 +661,7 @@ Validates that that proxy is not ossified and that method is called by the admin
 
 ## Deployment Process
 
-To reduce the gas costs for users, contracts `L1ERC20TokenBridge`, `L2ERC20TokenBridge`, and `ERC20Bridged` contracts use immutable variables as much as possible. But some of those variables are cross-referred. For example, `L1ERC20TokenBridge` has reference to `L2ERC20TokenBridge` and vice versa. As we use proxies, we can deploy proxies at first and stub the implementation with an empty contract. Then deploy actual implementations with addresses of deployed proxies and then upgrade proxies with new implementations. For stub, the following contract might be used:
+To reduce the gas costs for users, contracts `L1ERC20ExtendedTokensBridge`, `L2ERC20ExtendedTokensBridge`, and `ERC20Bridged` contracts use immutable variables as much as possible. But some of those variables are cross-referred. For example, `L1ERC20ExtendedTokensBridge` has reference to `L2ERC20ExtendedTokensBridge` and vice versa. As we use proxies, we can deploy proxies at first and stub the implementation with an empty contract. Then deploy actual implementations with addresses of deployed proxies and then upgrade proxies with new implementations. For stub, the following contract might be used:
 
 ```
 pragma solidity ^0.8.0;
@@ -676,7 +676,7 @@ As an additional link in the tokens flow chain, the Optimism protocol and bridge
 
 ## Minting of uncollateralized L2 token
 
-Such an attack might happen if an attacker obtains the right to call `L2ERC20TokenBridge.finalizeDeposit()` directly. In such a scenario, an attacker can mint uncollaterized tokens on L2 and initiate withdrawal later.
+Such an attack might happen if an attacker obtains the right to call `L2ERC20ExtendedTokensBridge.finalizeDeposit()` directly. In such a scenario, an attacker can mint uncollaterized tokens on L2 and initiate withdrawal later.
 
 The best way to detect such an attack is an offchain monitoring of the minting and depositing/withdrawal events. Based on such events might be tracked following stats:
 

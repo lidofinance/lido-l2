@@ -143,12 +143,15 @@ async function ctxFactory() {
         networkName
     ).oracleDeployScript(
         l1Token.address,
+        1000,
+        86400,
         {
             deployer: l1Deployer,
             admins: {
                 proxy: l1Deployer.address,
                 bridge: l1Deployer.address
             },
+            contractsShift: 0
         },
         {
             deployer: l2Deployer,
@@ -156,6 +159,7 @@ async function ctxFactory() {
                 proxy: govBridgeExecutor.address,
                 bridge: govBridgeExecutor.address,
             },
+            contractsShift: 0
         }
     );
 

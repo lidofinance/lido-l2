@@ -80,7 +80,7 @@ import {
     })
 
     .step("Withdraw tokens from L2 via withdrawERC20To()", async (ctx) => {
-      withdrawTokensTxResponse = await ctx.l2ERC20TokenBridge
+      withdrawTokensTxResponse = await ctx.l2ERC20ExtendedTokensBridge
         .connect(ctx.l2Tester)
         .withdrawTo(
           ctx.l2TokenRebasable.address,
@@ -147,7 +147,7 @@ import {
       l1TokenRebasable: testingSetup.l1TokenRebasable,
       l2TokenRebasable: testingSetup.l2TokenRebasable,
       l1LidoTokensBridge: testingSetup.l1LidoTokensBridge,
-      l2ERC20TokenBridge: testingSetup.l2ERC20TokenBridge,
+      l2ERC20ExtendedTokensBridge: testingSetup.l2ERC20ExtendedTokensBridge,
       crossChainMessenger: new CrossChainMessenger({
         l2ChainId: network.chainId("opt", networkName),
         l1ChainId: network.chainId("eth", networkName),
@@ -157,7 +157,7 @@ import {
           LidoBridge: {
             Adapter: LidoBridgeAdapter,
             l1Bridge: testingSetup.l1LidoTokensBridge.address,
-            l2Bridge: testingSetup.l2ERC20TokenBridge.address,
+            l2Bridge: testingSetup.l2ERC20ExtendedTokensBridge.address,
           },
         },
       }),

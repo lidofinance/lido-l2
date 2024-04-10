@@ -13,13 +13,13 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
 
   .step("Activate bridging on L1", async (ctx) => {
     const { l1LidoTokensBridge } = ctx;
-    const { l1ERC20TokenBridgeAdmin } = ctx.accounts;
+    const { l1ERC20ExtendedTokensBridgeAdmin } = ctx.accounts;
 
     const isDepositsEnabled = await l1LidoTokensBridge.isDepositsEnabled();
 
     if (!isDepositsEnabled) {
       await l1LidoTokensBridge
-        .connect(l1ERC20TokenBridgeAdmin)
+        .connect(l1ERC20ExtendedTokensBridgeAdmin)
         .enableDeposits();
     } else {
       console.log("L1 deposits already enabled");
@@ -30,7 +30,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
 
     if (!isWithdrawalsEnabled) {
       await l1LidoTokensBridge
-        .connect(l1ERC20TokenBridgeAdmin)
+        .connect(l1ERC20ExtendedTokensBridgeAdmin)
         .enableWithdrawals();
     } else {
       console.log("L1 withdrawals already enabled");
@@ -41,32 +41,32 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
   })
 
   .step("Activate bridging on L2", async (ctx) => {
-    const { l2ERC20TokenBridge } = ctx;
-    const { l2ERC20TokenBridgeAdmin } = ctx.accounts;
+    const { l2ERC20ExtendedTokensBridge } = ctx;
+    const { l2ERC20ExtendedTokensBridgeAdmin } = ctx.accounts;
 
-    const isDepositsEnabled = await l2ERC20TokenBridge.isDepositsEnabled();
+    const isDepositsEnabled = await l2ERC20ExtendedTokensBridge.isDepositsEnabled();
 
     if (!isDepositsEnabled) {
-      await l2ERC20TokenBridge
-        .connect(l2ERC20TokenBridgeAdmin)
+      await l2ERC20ExtendedTokensBridge
+        .connect(l2ERC20ExtendedTokensBridgeAdmin)
         .enableDeposits();
     } else {
       console.log("L2 deposits already enabled");
     }
 
     const isWithdrawalsEnabled =
-      await l2ERC20TokenBridge.isWithdrawalsEnabled();
+      await l2ERC20ExtendedTokensBridge.isWithdrawalsEnabled();
 
     if (!isWithdrawalsEnabled) {
-      await l2ERC20TokenBridge
-        .connect(l2ERC20TokenBridgeAdmin)
+      await l2ERC20ExtendedTokensBridge
+        .connect(l2ERC20ExtendedTokensBridgeAdmin)
         .enableWithdrawals();
     } else {
       console.log("L2 withdrawals already enabled");
     }
 
-    assert.isTrue(await l2ERC20TokenBridge.isDepositsEnabled());
-    assert.isTrue(await l2ERC20TokenBridge.isWithdrawalsEnabled());
+    assert.isTrue(await l2ERC20ExtendedTokensBridge.isDepositsEnabled());
+    assert.isTrue(await l2ERC20ExtendedTokensBridge.isWithdrawalsEnabled());
   })
 
   .step("L1 -> L2 deposit zero tokens via depositERC20() method", async (ctx) => {
@@ -83,13 +83,18 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
 
     await l1TokenRebasable
       .connect(tokenHolderA.l1Signer)
-      .approve(l1LidoTokensBridge.address, 0);
+      .approve(l1LidoTokensBridge.address, 10);
 
-    const tokenHolderABalanceBefore = await l1TokenRebasable.balanceOf(
+    await l1Token
+      .connect(tokenHolderA.l1Signer)
+      .approve(l1LidoTokensBridge.address, 10);
+
+    const tokenHolderABalanceBefore = await l1Token.balanceOf(
       tokenHolderA.address
     );
+    console.log("tokenHolderABalanceBefore=",tokenHolderABalanceBefore);
 
-    const l1ERC20TokenBridgeBalanceBefore = await l1TokenRebasable.balanceOf(
+    const l1ERC20ExtendedTokensBridgeBalanceBefore = await l1TokenRebasable.balanceOf(
         l1LidoTokensBridge.address
     );
 
@@ -98,7 +103,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     .depositERC20(
       l1Token.address,
       l2Token.address,
-      0,
+      10,
       200_000,
       "0x"
     );
@@ -111,7 +116,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       .depositERC20(
         l1TokenRebasable.address,
         l2TokenRebasable.address,
-        0,
+        10,
         200_000,
         "0x"
       );
@@ -134,8 +139,8 @@ async function ctxFactory() {
   const {
     l1Provider,
     l2Provider,
-    l1ERC20TokenBridgeAdmin,
-    l2ERC20TokenBridgeAdmin,
+    l1ERC20ExtendedTokensBridgeAdmin,
+    l2ERC20ExtendedTokensBridgeAdmin,
     ...contracts
   } = await optimism.testing(networkName).getIntegrationTestSetup();
 
@@ -155,16 +160,20 @@ async function ctxFactory() {
   );
 
   await testing.setBalance(
-    await l1ERC20TokenBridgeAdmin.getAddress(),
+    await l1ERC20ExtendedTokensBridgeAdmin.getAddress(),
     wei.toBigNumber(wei`1 ether`),
     l1Provider
   );
 
   await testing.setBalance(
-    await l2ERC20TokenBridgeAdmin.getAddress(),
+    await l2ERC20ExtendedTokensBridgeAdmin.getAddress(),
     wei.toBigNumber(wei`1 ether`),
     l2Provider
   );
+
+  await contracts.l1Token
+  .connect(contracts.l1TokensHolder)
+  .transfer(accountA.l1Signer.address, depositAmount);
 
   await contracts.l1TokenRebasable
     .connect(contracts.l1TokensHolder)
@@ -192,8 +201,8 @@ async function ctxFactory() {
       accountA,
       accountB,
       l1Stranger: testing.accounts.stranger(l1Provider),
-      l1ERC20TokenBridgeAdmin,
-      l2ERC20TokenBridgeAdmin,
+      l1ERC20ExtendedTokensBridgeAdmin,
+      l2ERC20ExtendedTokensBridgeAdmin,
       l1CrossDomainMessengerAliased,
     },
     common: {

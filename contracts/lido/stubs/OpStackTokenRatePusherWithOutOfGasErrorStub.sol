@@ -8,10 +8,12 @@ import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 contract OpStackTokenRatePusherWithOutOfGasErrorStub is ERC165, ITokenRatePusher {
 
-    mapping (uint256 => uint256) data;
+    uint256 public constant OUT_OF_GAS_INCURRING_MAX = 1000000000000;
+
+    mapping (uint256 => uint256) public data;
 
     function pushTokenRate() external {
-        for (uint256 i = 0; i < 1000000000000; ++i) {
+        for (uint256 i = 0; i < OUT_OF_GAS_INCURRING_MAX; ++i) {
             data[i] = i;
         }
     }

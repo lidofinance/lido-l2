@@ -20,7 +20,7 @@ import {IERC20WstETH} from "../token/interfaces/IERC20WstETH.sol";
 /// @notice The L1 ERC20 token bridge locks bridged tokens on the L1 side, sends deposit messages
 ///     on the L2 side, and finalizes token withdrawals from L2. Additionally, adds the methods for
 ///     bridging management: enabling and disabling withdrawals/deposits
-abstract contract L1ERC20TokenBridge is
+abstract contract L1ERC20ExtendedTokensBridge is
     IL1ERC20Bridge,
     BridgingManager,
     RebasableAndNonRebasableTokens,
@@ -44,7 +44,12 @@ abstract contract L1ERC20TokenBridge is
         address l1TokenRebasable_,
         address l2TokenNonRebasable_,
         address l2TokenRebasable_
-    ) CrossDomainEnabled(messenger_) RebasableAndNonRebasableTokens(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
+    ) CrossDomainEnabled(messenger_) RebasableAndNonRebasableTokens(
+        l1TokenNonRebasable_,
+        l1TokenRebasable_,
+        l2TokenNonRebasable_,
+        l2TokenRebasable_
+    ) {
         L2_TOKEN_BRIDGE = l2TokenBridge_;
     }
 

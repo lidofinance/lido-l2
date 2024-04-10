@@ -3,10 +3,24 @@
 
 pragma solidity 0.8.10;
 
-import {IPostTokenRebaseReceiver} from "./interfaces/IPostTokenRebaseReceiver.sol";
 import {ITokenRatePusher} from "./interfaces/ITokenRatePusher.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+
+/// @notice An interface to subscribe on the `stETH` token rebases (defined in the `Lido` core contract)
+interface IPostTokenRebaseReceiver {
+
+    /// @notice Is called in the context of `Lido.handleOracleReport` to notify the subscribers about each token rebase
+    function handlePostTokenRebase(
+        uint256 _reportTimestamp,
+        uint256 _timeElapsed,
+        uint256 _preTotalShares,
+        uint256 _preTotalEther,
+        uint256 _postTotalShares,
+        uint256 _postTotalEther,
+        uint256 _sharesMintedAsFees
+    ) external;
+}
 
 /// @author kovalgek
 /// @notice Notifies all observers when rebase event occures.
@@ -14,10 +28,7 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
     using ERC165Checker for address;
 
     /// @notice Maximum amount of observers to be supported.
-    uint256 public constant MAX_OBSERVERS_COUNT = 16;
-
-    /// @notice Invalid interface id.
-    bytes4 public constant INVALID_INTERFACE_ID = 0xffffffff;
+    uint256 public constant MAX_OBSERVERS_COUNT = 32;
 
     /// @notice A value that indicates that value was not found.
     uint256 public constant INDEX_NOT_FOUND = type(uint256).max;
@@ -27,6 +38,11 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
 
     /// @notice All observers.
     address[] public observers;
+
+    /// @param initialOwner_ initial owner
+    constructor(address initialOwner_) {
+        _transferOwnership(initialOwner_);
+    }
 
     /// @notice Add a `observer_` to the back of array
     /// @param observer_ observer address
@@ -55,24 +71,22 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
             revert ErrorNoObserverToRemove();
         }
 
-        for (uint256 obIndex = observerIndexToRemove; obIndex < observers.length - 1; obIndex++) {
-            observers[obIndex] = observers[obIndex + 1];
-        }
-
+        observers[observerIndexToRemove] = observers[observers.length - 1];
         observers.pop();
 
         emit ObserverRemoved(observer_);
     }
 
     /// @inheritdoc IPostTokenRebaseReceiver
+    /// @dev Parameters aren't used because all required data further components fetch by themselves.
     function handlePostTokenRebase(
-        uint256,
-        uint256,
-        uint256,
-        uint256,
-        uint256,
-        uint256,
-        uint256
+        uint256, /* reportTimestamp    */
+        uint256, /* timeElapsed        */
+        uint256, /* preTotalShares     */
+        uint256, /* preTotalEther      */
+        uint256, /* postTotalShares    */
+        uint256, /* postTotalEther     */
+        uint256  /* sharesMintedAsFees */
     ) external {
         for (uint256 obIndex = 0; obIndex < observers.length; obIndex++) {
             try ITokenRatePusher(observers[obIndex]).pushTokenRate() {}
@@ -93,7 +107,7 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
 
     /// @notice Observer length
     /// @return Added observers count
-    function observersLength() public view returns (uint256) {
+    function observersLength() external view returns (uint256) {
         return observers.length;
     }
 

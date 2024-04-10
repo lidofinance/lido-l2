@@ -144,7 +144,7 @@ import {
           LidoBridge: {
             Adapter: LidoBridgeAdapter,
             l1Bridge: testingSetup.l1LidoTokensBridge.address,
-            l2Bridge: testingSetup.l2ERC20TokenBridge.address,
+            l2Bridge: testingSetup.l2ERC20ExtendedTokensBridge.address,
           },
         },
       }),

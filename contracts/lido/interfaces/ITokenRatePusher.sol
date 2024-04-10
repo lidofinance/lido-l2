@@ -4,8 +4,8 @@
 pragma solidity 0.8.10;
 
 /// @author kovalgek
-/// @notice An interface for entity that pushes rate.
+/// @notice An interface for entity that pushes token rate.
 interface ITokenRatePusher {
-    /// @notice Pushes token rate to L2 by depositing zero tokens.
+    /// @notice Pushes token rate to L2 by depositing zero token amount.
     function pushTokenRate() external;
 }

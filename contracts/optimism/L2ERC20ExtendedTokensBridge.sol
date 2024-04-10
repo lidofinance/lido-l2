@@ -24,7 +24,7 @@ import {DepositDataCodec} from "./DepositDataCodec.sol";
 ///     deposits into the L1 token bridge. It also acts as a burner of the tokens
 ///     intended for withdrawal, informing the L1 bridge to release L1 funds. Additionally, adds
 ///     the methods for bridging management: enabling and disabling withdrawals/deposits
-contract L2ERC20TokenBridge is
+contract L2ERC20ExtendedTokensBridge is
     IL2ERC20Bridge,
     BridgingManager,
     RebasableAndNonRebasableTokens,
@@ -48,7 +48,12 @@ contract L2ERC20TokenBridge is
         address l1TokenRebasable_,
         address l2TokenNonRebasable_,
         address l2TokenRebasable_
-    ) CrossDomainEnabled(messenger_) RebasableAndNonRebasableTokens(l1TokenNonRebasable_, l1TokenRebasable_, l2TokenNonRebasable_, l2TokenRebasable_) {
+    ) CrossDomainEnabled(messenger_) RebasableAndNonRebasableTokens(
+        l1TokenNonRebasable_,
+        l1TokenRebasable_,
+        l2TokenNonRebasable_,
+        l2TokenRebasable_
+    ) {
         L1_TOKEN_BRIDGE = l1TokenBridge_;
     }
 
@@ -95,6 +100,7 @@ contract L2ERC20TokenBridge is
     {
         if (_isRebasableTokenFlow(l1Token_, l2Token_)) {
             DepositData memory depositData = decodeDepositData(data_);
+
             ITokenRateOracle tokenRateOracle = ERC20Rebasable(L2_TOKEN_REBASABLE).TOKEN_RATE_ORACLE();
             tokenRateOracle.updateRate(depositData.rate, depositData.timestamp);
 
