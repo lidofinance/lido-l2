@@ -27,7 +27,7 @@ contract L1LidoTokensBridge is L1ERC20ExtendedTokensBridge {
     ) {
     }
 
-    function tokenRate() override internal view returns (uint256) {
-        return IERC20WstETH(L1_TOKEN_NON_REBASABLE).stEthPerToken();
+    function tokenRate(address l1NonRebasableToken) override internal view returns (uint256) {
+        return IERC20WstETH(l1NonRebasableToken).stEthPerToken();
     }
 }
