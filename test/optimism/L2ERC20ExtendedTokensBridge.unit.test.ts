@@ -70,6 +70,37 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
         );
     })
 
+    .test("withdraw() :: not from EOA", async (ctx) => {
+        const {
+            l2TokenBridge,
+            accounts: { emptyContractEOA },
+            stubs: { l2TokenRebasable, l2TokenNonRebasable },
+        } = ctx;
+
+        await assert.revertsWith(
+            l2TokenBridge
+                .connect(emptyContractEOA)
+                .withdraw(
+                    l2TokenNonRebasable.address,
+                    wei`1 ether`,
+                    wei`1 gwei`,
+                    "0x"
+                ),
+            "ErrorSenderNotEOA()"
+        );
+        await assert.revertsWith(
+            l2TokenBridge
+                .connect(emptyContractEOA)
+                .withdraw(
+                    l2TokenRebasable.address,
+                    wei`1 ether`,
+                    wei`1 gwei`,
+                    "0x"
+                ),
+            "ErrorSenderNotEOA()"
+        );
+    })
+
     .test("withdraw() :: non-rebasable token flow", async (ctx) => {
         const {
             l2TokenBridge,

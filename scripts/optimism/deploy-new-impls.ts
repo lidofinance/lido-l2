@@ -48,7 +48,7 @@ async function main() {
                 tokenBridgeProxyAddress: deploymentConfig.l2TokenBridge,
                 tokenProxyAddress: deploymentConfig.l2Token,
                 tokenRateOracleProxyAddress: deploymentConfig.l2TokenRateOracle,
-                tokenRateOracleRateOutdatedDelay: deploymentConfig.rateOutdatedDelay,
+                tokenRateOracleRateOutdatedDelay: deploymentConfig.tokenRateOutdatedDelay,
             }
         );
 

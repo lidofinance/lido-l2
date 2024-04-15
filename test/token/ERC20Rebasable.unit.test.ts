@@ -16,7 +16,7 @@ unit("ERC20Rebasable", ctxFactory)
 
   .test("wrappedToken() :: has the same address is in constructor", async (ctx) => {
       const { rebasableProxied, wrappedToken } = ctx.contracts;
-      assert.equal(await rebasableProxied.WRAPPED_TOKEN(), wrappedToken.address)
+      assert.equal(await rebasableProxied.TOKEN_TO_WRAP_FROM(), wrappedToken.address)
   })
 
   .test("tokenRateOracle() :: has the same address is in constructor", async (ctx) => {

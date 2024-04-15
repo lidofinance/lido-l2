@@ -26,7 +26,7 @@ async function main() {
         .oracleDeployScript(
             deploymentConfig.l1Token,
             deploymentConfig.l2GasLimitForPushingTokenRate,
-            deploymentConfig.rateOutdatedDelay,
+            deploymentConfig.tokenRateOutdatedDelay,
             {
                 deployer: ethDeployer,
                 admins: {

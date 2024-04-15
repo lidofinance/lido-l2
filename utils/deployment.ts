@@ -14,7 +14,7 @@ interface MultiChainDeploymentConfig {
   l1RebasableToken: string;
   l1OpStackTokenRatePusher: string;
   l2GasLimitForPushingTokenRate: number;
-  rateOutdatedDelay: number;
+  tokenRateOutdatedDelay: number;
   l1TokenBridge: string;
   l2TokenBridge: string;
   l2Token: string;
@@ -30,7 +30,7 @@ export function loadMultiChainDeploymentConfig(): MultiChainDeploymentConfig {
     l1RebasableToken: env.address("REBASABLE_TOKEN"),
     l1OpStackTokenRatePusher: env.address("L1_OP_STACK_TOKEN_RATE_PUSHER"),
     l2GasLimitForPushingTokenRate: Number(env.string("L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE")),
-    rateOutdatedDelay: Number(env.string("RATE_OUTDATED_DELAY")),
+    tokenRateOutdatedDelay: Number(env.string("TOKEN_RATE_OUTDATED_DELAY")),
     l1TokenBridge: env.address("L1_TOKEN_BRIDGE"),
     l2TokenBridge: env.address("L2_TOKEN_BRIDGE"),
     l2Token: env.address("L2_TOKEN"),

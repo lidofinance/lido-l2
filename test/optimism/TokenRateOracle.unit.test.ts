@@ -14,9 +14,9 @@ unit("TokenRateOracle", ctxFactory)
     const { bridge, l1TokenBridgeEOA } = ctx.accounts;
 
     assert.equal(await tokenRateOracle.MESSENGER(), l2MessengerStub.address);
-    assert.equal(await tokenRateOracle.BRIDGE(), bridge.address);
+    assert.equal(await tokenRateOracle.L2_ERC20_TOKEN_BRIDGE(), bridge.address);
     assert.equal(await tokenRateOracle.L1_TOKEN_RATE_PUSHER(), l1TokenBridgeEOA.address);
-    assert.equalBN(await tokenRateOracle.RATE_OUTDATED_DELAY(), 86400);
+    assert.equalBN(await tokenRateOracle.TOKEN_RATE_OUTDATED_DELAY(), 86400);
 
     assert.equalBN(await tokenRateOracle.latestAnswer(), 0);
 

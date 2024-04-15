@@ -54,7 +54,7 @@ export default function deploymentOracle(
         async oracleDeployScript(
             l1Token: string,
             l2GasLimitForPushingTokenRate: number,
-            rateOutdatedDelay: number,
+            tokenRateOutdatedDelay: number,
             l1Params: OptDeployScriptParams,
             l2Params: OptDeployScriptParams,
         ): Promise<[OracleL1DeployScript, OracleL2DeployScript]> {
@@ -109,7 +109,7 @@ export default function deploymentOracle(
                         optAddresses.L2CrossDomainMessenger,
                         ethers.constants.AddressZero,
                         expectedL1OpStackTokenRatePusherImplAddress,
-                        rateOutdatedDelay,
+                        tokenRateOutdatedDelay,
                         options?.overrides,
                     ],
                     afterDeploy: (c) =>

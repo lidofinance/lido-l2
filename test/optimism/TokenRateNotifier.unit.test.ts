@@ -3,6 +3,7 @@ import { assert } from "chai";
 import { utils } from 'ethers'
 import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
     TokenRateNotifier__factory,
     ITokenRatePusher__factory,
@@ -16,6 +17,15 @@ import {
 } from "../../typechain";
 
 unit("TokenRateNotifier", ctxFactory)
+
+    .test("deploy with zero address owner", async (ctx) => {
+        const { deployer } = ctx.accounts;
+
+        await assert.revertsWith(
+            new TokenRateNotifier__factory(deployer).deploy(ethers.constants.AddressZero),
+            "ErrorZeroAddressOwner()"
+        );
+    })
 
     .test("initial state", async (ctx) => {
         const { tokenRateNotifier } = ctx.contracts;
@@ -64,10 +74,17 @@ unit("TokenRateNotifier", ctxFactory)
 
     .test("addObserver() :: revert on adding too many observers", async (ctx) => {
         const { tokenRateNotifier, opStackTokenRatePusher } = ctx.contracts;
+        const { deployer, owner, tokenRateOracle } = ctx.accounts;
+        const { l2GasLimitForPushingTokenRate } = ctx.constants;
 
         assert.equalBN(await tokenRateNotifier.observersLength(), 0);
         const maxObservers = await tokenRateNotifier.MAX_OBSERVERS_COUNT();
         for (let i = 0; i < maxObservers.toNumber(); i++) {
+
+            const {
+                opStackTokenRatePusher
+            } = await getOpStackTokenRatePusher(deployer, owner, tokenRateOracle, l2GasLimitForPushingTokenRate);
+
             await tokenRateNotifier
                 .connect(ctx.accounts.owner)
                 .addObserver(opStackTokenRatePusher.address);
@@ -79,6 +96,21 @@ unit("TokenRateNotifier", ctxFactory)
                 .connect(ctx.accounts.owner)
                 .addObserver(opStackTokenRatePusher.address),
             "ErrorMaxObserversCountExceeded()"
+        );
+    })
+
+    .test("addObserver() :: revert on adding the same observer twice", async (ctx) => {
+        const { tokenRateNotifier, opStackTokenRatePusher } = ctx.contracts;
+
+        await tokenRateNotifier
+            .connect(ctx.accounts.owner)
+            .addObserver(opStackTokenRatePusher.address);
+
+        await assert.revertsWith(
+            tokenRateNotifier
+                .connect(ctx.accounts.owner)
+                .addObserver(opStackTokenRatePusher.address),
+            "ErrorAddExistedObserver()"
         );
     })
 
@@ -204,9 +236,17 @@ unit("TokenRateNotifier", ctxFactory)
 
     .run();
 
-async function ctxFactory() {
-    const [deployer, owner, stranger, tokenRateOracle] = await ethers.getSigners();
+async function getOpStackTokenRatePusher(
+    deployer: SignerWithAddress,
+    owner: SignerWithAddress,
+    tokenRateOracle: SignerWithAddress,
+    l2GasLimitForPushingTokenRate: number) {
+
     const tokenRateNotifier = await new TokenRateNotifier__factory(deployer).deploy(owner.address);
+
+    const l1MessengerStub = await new CrossDomainMessengerStub__factory(
+        deployer
+    ).deploy({ value: wei.toBigNumber(wei`1 ether`) });
 
     const l1TokenRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
         "L1 Token Rebasable",
@@ -219,18 +259,27 @@ async function ctxFactory() {
         "L1NR"
     );
 
-    const l1MessengerStub = await new CrossDomainMessengerStub__factory(
-        deployer
-    ).deploy({ value: wei.toBigNumber(wei`1 ether`) });
-
-    const l2GasLimitForPushingTokenRate = 123;
-
     const opStackTokenRatePusher = await new OpStackTokenRatePusher__factory(deployer).deploy(
         l1MessengerStub.address,
         l1TokenNonRebasableStub.address,
         tokenRateOracle.address,
         l2GasLimitForPushingTokenRate
     );
+
+    return {tokenRateNotifier, opStackTokenRatePusher, l1MessengerStub, l1TokenNonRebasableStub}
+}
+
+async function ctxFactory() {
+    const [deployer, owner, stranger, tokenRateOracle] = await ethers.getSigners();
+
+    const l2GasLimitForPushingTokenRate = 123;
+
+    const {
+        tokenRateNotifier,
+        opStackTokenRatePusher,
+        l1MessengerStub,
+        l1TokenNonRebasableStub
+     } = await getOpStackTokenRatePusher(deployer, owner, tokenRateOracle, l2GasLimitForPushingTokenRate);
 
     return {
         accounts: { deployer, owner, stranger, tokenRateOracle },
