@@ -5,8 +5,8 @@ pragma solidity 0.8.10;
 
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {ITokenRatePusher} from "../lido/interfaces/ITokenRatePusher.sol";
-import {IERC20WstETH} from "../token/interfaces/IERC20WstETH.sol";
-import {ITokenRateOracle} from "../token/interfaces/ITokenRateOracle.sol";
+import {IERC20WstETH} from "./L1LidoTokensBridge.sol";
+import {ITokenRateUpdatable} from "../optimism/interfaces/ITokenRateUpdatable.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 /// @author kovalgek
@@ -19,7 +19,11 @@ contract OpStackTokenRatePusher is CrossDomainEnabled, ERC165, ITokenRatePusher 
     /// @notice Non-rebasable token of Core Lido procotol.
     address public immutable WSTETH;
 
-    /// @notice Gas limit required to complete pushing token rate on L2.
+    /// @notice Gas limit for L2 required to finish pushing token rate on L2 side.
+    ///         Client pays for gas on L2 by burning it on L1.
+    ///         Depends linearly on deposit data length and gas used for finalizing deposit on L2.
+    ///         Formula to find value:
+    ///         (gas cost of L2Bridge.finalizeDeposit() + OptimismPortal.minimumGasLimit(depositData.length)) * 1.5
     uint32 public immutable L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE;
 
     /// @param messenger_ L1 messenger address being used for cross-chain communications
@@ -42,7 +46,7 @@ contract OpStackTokenRatePusher is CrossDomainEnabled, ERC165, ITokenRatePusher 
         uint256 tokenRate = IERC20WstETH(WSTETH).stEthPerToken();
 
         bytes memory message = abi.encodeWithSelector(
-            ITokenRateOracle.updateRate.selector,
+            ITokenRateUpdatable.updateRate.selector,
             tokenRate,
             block.timestamp
         );

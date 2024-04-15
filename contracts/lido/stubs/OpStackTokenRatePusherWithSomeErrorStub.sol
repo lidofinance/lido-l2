@@ -6,11 +6,12 @@ pragma solidity 0.8.10;
 import {ITokenRatePusher} from "../interfaces/ITokenRatePusher.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
+/// @dev For testing purposes.
 contract OpStackTokenRatePusherWithSomeErrorStub is ERC165, ITokenRatePusher {
 
     error SomeError();
 
-    function pushTokenRate() external {
+    function pushTokenRate() pure external {
         revert SomeError();
     }
 

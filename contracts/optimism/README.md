@@ -514,7 +514,7 @@ Transfers `amount` of token from the `from_` account to `to_` using the allowanc
 
 ## `ERC20Bridged`
 
-**Implements:** [`IERC20Bridged`](https://github.com/lidofinance/lido-l2/blob/main/contracts/token/interfaces/IERC20Bridged.sol)
+**Implements:** [`IERC20Bridged`](https://github.com/lidofinance/lido-l2/blob/main/contracts/token/ERC20Bridged.sol)
 **Inherits:** [`ERC20Metadata`](#ERC20Metadata) [`ERC20Core`](#ERC20CoreLogic)
 
 Inherits the `ERC20` default functionality that allows the bridge to mint and burn tokens.

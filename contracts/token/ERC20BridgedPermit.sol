@@ -4,9 +4,10 @@
 pragma solidity 0.8.10;
 
 import {ERC20Bridged} from "./ERC20Bridged.sol";
-import {ERC20Permit} from "./ERC20Permit.sol";
+import {PermitExtension} from "./PermitExtension.sol";
 
-contract ERC20BridgedPermit is ERC20Bridged, ERC20Permit {
+/// @author kovalgek
+contract ERC20BridgedPermit is ERC20Bridged, PermitExtension {
 
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
@@ -21,7 +22,7 @@ contract ERC20BridgedPermit is ERC20Bridged, ERC20Permit {
         address bridge_
     )
         ERC20Bridged(name_, symbol_, decimals_, bridge_)
-        ERC20Permit(name_, version_)
+        PermitExtension(name_, version_)
     {
     }
 

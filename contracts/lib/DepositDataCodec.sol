@@ -5,7 +5,7 @@ pragma solidity 0.8.10;
 
 /// @author kovalgek
 /// @notice encodes and decodes DepositData for crosschain transfering.
-contract DepositDataCodec {
+library DepositDataCodec {
 
     uint8 internal constant RATE_FIELD_SIZE = 12;
     uint8 internal constant TIMESTAMP_FIELD_SIZE = 5;

@@ -3,7 +3,7 @@
 
 pragma solidity 0.8.10;
 
-
+/// @dev For testing purposes.
 contract ERC1271PermitSignerMock {
     bytes4 public constant ERC1271_MAGIC_VALUE = 0x1626ba7e;
 

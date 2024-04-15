@@ -8,32 +8,18 @@ import {UnstructuredRefStorage} from "../token/UnstructuredRefStorage.sol";
 /// @author psirex, kovalgek
 /// @notice Contains the logic for validation of tokens used in the bridging process
 contract RebasableAndNonRebasableTokens {
-    using UnstructuredRefStorage for bytes32;
 
-    /// @dev Servers for pairing tokens by one-layer and wrapping.
-    /// @param `oppositeLayerToken` token representation on opposite layer.
-    /// @param `pairedToken` paired token address on the same domain.
-    struct TokenInfo {
-        address oppositeLayerToken;
-        address pairedToken;
-    }
+    /// @notice Address of the bridged non rebasable token in the L1 chain
+    address public immutable L1_TOKEN_NON_REBASABLE;
 
-    bytes32 internal constant REBASABLE_TOKENS_POSITION = keccak256("RebasableAndNonRebasableTokens.REBASABLE_TOKENS_POSITION");
-    bytes32 internal constant NON_REBASABLE_TOKENS_POSITION = keccak256("RebasableAndNonRebasableTokens.NON_REBASABLE_TOKENS_POSITION");
+    /// @notice Address of the bridged rebasable token in the L1 chain
+    address public immutable L1_TOKEN_REBASABLE;
 
-    function _getRebasableTokens() internal pure returns (mapping(address => TokenInfo) storage) {
-        return _storageMapAddressTokenInfo(REBASABLE_TOKENS_POSITION);
-    }
+    /// @notice Address of the non rebasable token minted on the L2 chain when token bridged
+    address public immutable L2_TOKEN_NON_REBASABLE;
 
-    function _getNonRebasableTokens() internal pure returns (mapping(address => TokenInfo) storage) {
-        return _storageMapAddressTokenInfo(REBASABLE_TOKENS_POSITION);
-    }
-
-    function _storageMapAddressTokenInfo(bytes32 _position) internal pure returns (
-        mapping(address => TokenInfo) storage result
-    ) {
-        assembly { result.slot := _position }
-    }
+    /// @notice Address of the rebasable token minted on the L2 chain when token bridged
+    address public immutable L2_TOKEN_REBASABLE;
 
     /// @param l1TokenNonRebasable_ Address of the bridged non rebasable token in the L1 chain
     /// @param l1TokenRebasable_ Address of the bridged rebasable token in the L1 chain
@@ -45,69 +31,35 @@ contract RebasableAndNonRebasableTokens {
         address l2TokenNonRebasable_,
         address l2TokenRebasable_
     ) {
-        _getRebasableTokens()[l1TokenRebasable_] = TokenInfo({
-            oppositeLayerToken: l2TokenRebasable_,
-            pairedToken: l1TokenNonRebasable_
-        });
-        _getRebasableTokens()[l2TokenRebasable_] = TokenInfo({
-            oppositeLayerToken: l1TokenRebasable_,
-            pairedToken: l2TokenNonRebasable_
-        });
-        _getNonRebasableTokens()[l1TokenNonRebasable_] = TokenInfo({
-            oppositeLayerToken: l2TokenNonRebasable_,
-            pairedToken: l1TokenRebasable_
-        });
-        _getNonRebasableTokens()[l2TokenNonRebasable_] = TokenInfo({
-            oppositeLayerToken: l1TokenNonRebasable_,
-            pairedToken: l2TokenRebasable_
-        });
-    }
-
-    function initialize(
-        address l1TokenNonRebasable_,
-        address l1TokenRebasable_,
-        address l2TokenNonRebasable_,
-        address l2TokenRebasable_
-    ) public {
-        _getRebasableTokens()[l1TokenRebasable_] = TokenInfo({
-            oppositeLayerToken: l2TokenRebasable_,
-            pairedToken: l1TokenNonRebasable_
-        });
-        _getRebasableTokens()[l2TokenRebasable_] = TokenInfo({
-            oppositeLayerToken: l1TokenRebasable_,
-            pairedToken: l2TokenNonRebasable_
-        });
-        _getNonRebasableTokens()[l1TokenNonRebasable_] = TokenInfo({
-            oppositeLayerToken: l2TokenNonRebasable_,
-            pairedToken: l1TokenRebasable_
-        });
-        _getNonRebasableTokens()[l2TokenNonRebasable_] = TokenInfo({
-            oppositeLayerToken: l1TokenNonRebasable_,
-            pairedToken: l2TokenRebasable_
-        });
+        L1_TOKEN_NON_REBASABLE = l1TokenNonRebasable_;
+        L1_TOKEN_REBASABLE = l1TokenRebasable_;
+        L2_TOKEN_NON_REBASABLE = l2TokenNonRebasable_;
+        L2_TOKEN_REBASABLE = l2TokenRebasable_;
     }
 
     /// @dev Validates that passed l1Token_ and l2Token_ tokens pair is supported by the bridge.
     modifier onlySupportedL1L2TokensPair(address l1Token_, address l2Token_) {
-        if (_getRebasableTokens()[l1Token_].oppositeLayerToken == address(0) &&
-            _getNonRebasableTokens()[l1Token_].oppositeLayerToken == address(0)) {
+        if (l1Token_ != L1_TOKEN_NON_REBASABLE && l1Token_ != L1_TOKEN_REBASABLE) {
             revert ErrorUnsupportedL1Token();
         }
-        if (_getRebasableTokens()[l2Token_].oppositeLayerToken == address(0) &&
-            _getNonRebasableTokens()[l2Token_].oppositeLayerToken == address(0)) {
+        if (l2Token_ != L2_TOKEN_NON_REBASABLE && l2Token_ != L2_TOKEN_REBASABLE) {
             revert ErrorUnsupportedL2Token();
         }
-        if (_getRebasableTokens()[l1Token_].oppositeLayerToken != l2Token_ &&
-            _getNonRebasableTokens()[l2Token_].oppositeLayerToken != l1Token_) {
+        if (!_isSupportedL1L2TokensPair(l1Token_, l2Token_)) {
             revert ErrorUnsupportedL1L2TokensPair();
         }
         _;
     }
 
+    function _isSupportedL1L2TokensPair(address l1Token_, address l2Token_) internal view returns (bool) {
+        bool isNonRebasablePair = l1Token_ == L1_TOKEN_NON_REBASABLE && l2Token_ == L2_TOKEN_NON_REBASABLE;
+        bool isRebasablePair = l1Token_ == L1_TOKEN_REBASABLE && l2Token_ == L2_TOKEN_REBASABLE;
+        return isNonRebasablePair || isRebasablePair;
+    }
+
     /// @dev Validates that passed l1Token_ is supported by the bridge
     modifier onlySupportedL1Token(address l1Token_) {
-        if (_getRebasableTokens()[l1Token_].oppositeLayerToken == address(0) &&
-            _getNonRebasableTokens()[l1Token_].oppositeLayerToken == address(0)) {
+        if (l1Token_ != L1_TOKEN_NON_REBASABLE && l1Token_ != L1_TOKEN_REBASABLE) {
             revert ErrorUnsupportedL1Token();
         }
         _;
@@ -115,8 +67,7 @@ contract RebasableAndNonRebasableTokens {
 
     /// @dev Validates that passed l2Token_ is supported by the bridge
     modifier onlySupportedL2Token(address l2Token_) {
-        if (_getRebasableTokens()[l2Token_].oppositeLayerToken == address(0) &&
-            _getNonRebasableTokens()[l2Token_].oppositeLayerToken == address(0)) {
+        if (l2Token_ != L2_TOKEN_NON_REBASABLE && l2Token_ != L2_TOKEN_REBASABLE) {
             revert ErrorUnsupportedL2Token();
         }
         _;
@@ -131,17 +82,11 @@ contract RebasableAndNonRebasableTokens {
     }
 
     function _isRebasable(address token_) internal view returns (bool) {
-        return _getRebasableTokens()[token_].oppositeLayerToken != address(0);
+        return token_ == L1_TOKEN_REBASABLE || token_ == L2_TOKEN_REBASABLE;
     }
 
     function _l1Token(address l2Token_) internal view returns (address) {
-        return _isRebasable(l2Token_) ?
-            _getRebasableTokens()[l2Token_].oppositeLayerToken :
-            _getNonRebasableTokens()[l2Token_].oppositeLayerToken;
-    }
-
-    function _l1NonRebasableToken(address l1Token_) internal view returns (address) {
-        return _isRebasable(l1Token_) ? _getRebasableTokens()[l1Token_].pairedToken : l1Token_;
+        return _isRebasable(l2Token_) ? L1_TOKEN_REBASABLE : L1_TOKEN_NON_REBASABLE;
     }
 
     error ErrorUnsupportedL1Token();

@@ -1,15 +1,31 @@
-// SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+// SPDX-FileCopyrightText: 2024 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
 pragma solidity 0.8.10;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Wrapper} from "./interfaces/IERC20Wrapper.sol";
-import {IERC20BridgedShares} from "./interfaces/IERC20BridgedShares.sol";
-import {ITokenRateOracle} from "./interfaces/ITokenRateOracle.sol";
+import {ITokenRateOracle} from "../optimism/TokenRateOracle.sol";
 import {ERC20Metadata} from "./ERC20Metadata.sol";
 import {UnstructuredRefStorage} from "./UnstructuredRefStorage.sol";
 import {UnstructuredStorage} from "./UnstructuredStorage.sol";
+
+/// @author kovalgek
+/// @notice Extends the ERC20 functionality that allows the bridge to mint/burn shares
+interface IERC20BridgedShares is IERC20 {
+    /// @notice Returns bridge which can mint and burn shares on L2
+    function L2_ERC20_TOKEN_BRIDGE() external view returns (address);
+
+    /// @notice Creates amount_ shares and assigns them to account_, increasing the total shares supply
+    /// @param account_ An address of the account to mint shares
+    /// @param amount_ An amount of shares to mint
+    function bridgeMintShares(address account_, uint256 amount_) external;
+
+    /// @notice Destroys amount_ shares from account_, reducing the total shares supply
+    /// @param account_ An address of the account to burn shares
+    /// @param amount_ An amount of shares to burn
+    function bridgeBurnShares(address account_, uint256 amount_) external;
+}
 
 /// @author kovalgek
 /// @notice Rebasable token that wraps/unwraps non-rebasable token and allow to mint/burn tokens by bridge.
@@ -19,10 +35,10 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
     using UnstructuredStorage for bytes32;
 
     /// @inheritdoc IERC20BridgedShares
-    address public immutable BRIDGE;
+    address public immutable L2_ERC20_TOKEN_BRIDGE;
 
-    /// @notice Contract of non-rebasable token to wrap.
-    IERC20 public immutable WRAPPED_TOKEN;
+    /// @notice Contract of non-rebasable token to wrap from.
+    IERC20 public immutable TOKEN_TO_WRAP_FROM;
 
     /// @notice Oracle contract used to get token rate for wrapping/unwrapping tokens.
     ITokenRateOracle public immutable TOKEN_RATE_ORACLE;
@@ -41,18 +57,18 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
     /// @param decimals_ The decimals places of the token
     /// @param wrappedToken_ address of the ERC20 token to wrap
     /// @param tokenRateOracle_ address of oracle that returns tokens rate
-    /// @param bridge_ The bridge address which allowd to mint/burn tokens
+    /// @param l2ERC20TokenBridge_ The bridge address which allowd to mint/burn tokens
     constructor(
         string memory name_,
         string memory symbol_,
         uint8 decimals_,
         address wrappedToken_,
         address tokenRateOracle_,
-        address bridge_
+        address l2ERC20TokenBridge_
     ) ERC20Metadata(name_, symbol_, decimals_) {
-        WRAPPED_TOKEN = IERC20(wrappedToken_);
+        TOKEN_TO_WRAP_FROM = IERC20(wrappedToken_);
         TOKEN_RATE_ORACLE = ITokenRateOracle(tokenRateOracle_);
-        BRIDGE = bridge_;
+        L2_ERC20_TOKEN_BRIDGE = l2ERC20TokenBridge_;
     }
 
     /// @notice Sets the name and the symbol of the tokens if they both are empty
@@ -68,7 +84,7 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
         if (sharesAmount_ == 0) revert ErrorZeroSharesWrap();
 
         _mintShares(msg.sender, sharesAmount_);
-        if(!WRAPPED_TOKEN.transferFrom(msg.sender, address(this), sharesAmount_)) revert ErrorERC20Transfer();
+        if(!TOKEN_TO_WRAP_FROM.transferFrom(msg.sender, address(this), sharesAmount_)) revert ErrorERC20Transfer();
 
         return _getTokensByShares(sharesAmount_);
     }
@@ -79,7 +95,7 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
 
         uint256 sharesAmount = _getSharesByTokens(tokenAmount_);
         _burnShares(msg.sender, sharesAmount);
-        if(!WRAPPED_TOKEN.transfer(msg.sender, sharesAmount)) revert ErrorERC20Transfer();
+        if(!TOKEN_TO_WRAP_FROM.transfer(msg.sender, sharesAmount)) revert ErrorERC20Transfer();
 
         return sharesAmount;
     }
@@ -249,12 +265,13 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
         if (rateDecimals == uint8(0)) revert ErrorTokenRateDecimalsIsZero();
 
         //slither-disable-next-line unused-return
-        (,
-        int256 answer
-        ,
-        ,
-        uint256 updatedAt
-        ,) = TOKEN_RATE_ORACLE.latestRoundData();
+        (
+            /* roundId_ */,
+            int256 answer,
+            /* startedAt_ */,
+            uint256 updatedAt,
+            /* answeredInRound_ */
+        ) = TOKEN_RATE_ORACLE.latestRoundData();
 
         if (updatedAt == 0) revert ErrorWrongOracleUpdateTime();
         if (answer <= 0) revert ErrorOracleAnswerIsNotPositive();
@@ -312,7 +329,7 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
     function _emitTransferEvents(
         address _from,
         address _to,
-        uint _tokenAmount,
+        uint256 _tokenAmount,
         uint256 _sharesAmount
     ) internal {
         emit Transfer(_from, _to, _tokenAmount);
@@ -329,7 +346,7 @@ contract ERC20Rebasable is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Meta
 
     /// @dev Validates that sender of the transaction is the bridge
     modifier onlyBridge() {
-        if (msg.sender != BRIDGE) {
+        if (msg.sender != L2_ERC20_TOKEN_BRIDGE) {
             revert ErrorNotBridge();
         }
         _;

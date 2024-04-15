@@ -4,9 +4,10 @@
 pragma solidity 0.8.10;
 
 import {ERC20Rebasable} from "./ERC20Rebasable.sol";
-import {ERC20Permit} from "./ERC20Permit.sol";
+import {PermitExtension} from "./PermitExtension.sol";
 
-contract ERC20RebasablePermit is ERC20Rebasable, ERC20Permit {
+/// @author kovalgek
+contract ERC20RebasablePermit is ERC20Rebasable, PermitExtension {
 
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
@@ -25,7 +26,7 @@ contract ERC20RebasablePermit is ERC20Rebasable, ERC20Permit {
         address bridge_
     )
         ERC20Rebasable(name_, symbol_, decimals_, wrappedToken_, tokenRateOracle_, bridge_)
-        ERC20Permit(name_, version_)
+        PermitExtension(name_, version_)
     {
     }
 

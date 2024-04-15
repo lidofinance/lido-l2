@@ -5,10 +5,11 @@ pragma solidity 0.8.10;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
-import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
-import {ITokenRateOracle} from "../token/interfaces/ITokenRateOracle.sol";
+import {IERC20Bridged} from "../token/ERC20Bridged.sol";
+import {ITokenRateUpdatable} from "../optimism/interfaces/ITokenRateUpdatable.sol";
 import {IERC20Wrapper} from "../token/interfaces/IERC20Wrapper.sol";
 import {ERC20Rebasable} from "../token/ERC20Rebasable.sol";
 import {BridgingManager} from "../BridgingManager.sol";
@@ -30,7 +31,7 @@ contract L2ERC20ExtendedTokensBridge is
 {
     using SafeERC20 for IERC20;
 
-    address public immutable L1_TOKEN_BRIDGE;
+    address private immutable L1_TOKEN_BRIDGE;
 
     /// @param messenger_ L2 messenger address being used for cross-chain communications
     /// @param l1TokenBridge_  Address of the corresponding L1 bridge
@@ -69,6 +70,9 @@ contract L2ERC20ExtendedTokensBridge is
         whenWithdrawalsEnabled
         onlySupportedL2Token(l2Token_)
     {
+        if (Address.isContract(msg.sender)) {
+            revert ErrorSenderNotEOA();
+        }
         _withdrawTo(l2Token_, msg.sender, msg.sender, amount_, l1Gas_, data_);
         emit WithdrawalInitiated(_l1Token(l2Token_), l2Token_, msg.sender, msg.sender, amount_, data_);
     }
@@ -103,7 +107,7 @@ contract L2ERC20ExtendedTokensBridge is
         onlyFromCrossDomainAccount(L1_TOKEN_BRIDGE)
     {
         DepositDataCodec.DepositData memory depositData = DepositDataCodec.decodeDepositData(data_);
-        ITokenRateOracle tokenRateOracle = ERC20Rebasable(L2_TOKEN_REBASABLE).TOKEN_RATE_ORACLE();
+        ITokenRateUpdatable tokenRateOracle = ERC20Rebasable(L2_TOKEN_REBASABLE).TOKEN_RATE_ORACLE();
         tokenRateOracle.updateRate(depositData.rate, depositData.timestamp);
 
         uint256 depositedAmount = _mintTokens(l1Token_, l2Token_, to_, amount_);
@@ -165,4 +169,6 @@ contract L2ERC20ExtendedTokensBridge is
         IERC20Bridged(l2Token_).bridgeBurn(from_, amount_);
         return amount_;
     }
+
+    error ErrorSenderNotEOA();
 }

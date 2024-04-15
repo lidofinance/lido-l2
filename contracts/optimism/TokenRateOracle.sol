@@ -1,49 +1,52 @@
-// SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+// SPDX-FileCopyrightText: 2024 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
 pragma solidity 0.8.10;
 
-import {ITokenRateOracle} from "../token/interfaces/ITokenRateOracle.sol";
+import {ITokenRateUpdatable} from "./interfaces/ITokenRateUpdatable.sol";
+import {IChainlinkAggregatorInterface} from "./interfaces/IChainlinkAggregatorInterface.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
+
+interface ITokenRateOracle is ITokenRateUpdatable, IChainlinkAggregatorInterface {}
 
 /// @author kovalgek
 /// @notice Oracle for storing token rate.
 contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle {
 
     /// @notice A bridge which can update oracle.
-    address public immutable BRIDGE;
+    address public immutable L2_ERC20_TOKEN_BRIDGE;
 
     /// @notice An address of account on L1 that can update token rate.
     address public immutable L1_TOKEN_RATE_PUSHER;
 
     /// @notice A time period when token rate can be considered outdated.
-    uint256 public immutable RATE_OUTDATED_DELAY;
-
-    /// @notice wstETH/stETH token rate.
-    uint256 private tokenRate;
-
-    /// @notice L1 time when token rate was pushed.
-    uint256 private rateL1Timestamp;
+    uint256 public immutable TOKEN_RATE_OUTDATED_DELAY;
 
     /// @notice Decimals of the oracle response.
-    uint8 private constant DECIMALS = 18;
+    uint8 public constant DECIMALS = 18;
+
+    /// @notice wstETH/stETH token rate.
+    uint256 public tokenRate;
+
+    /// @notice L1 time when token rate was pushed.
+    uint256 public rateL1Timestamp;
 
     /// @param messenger_ L2 messenger address being used for cross-chain communications
-    /// @param bridge_ the bridge address that has a right to updates oracle.
+    /// @param l2ERC20TokenBridge_ the bridge address that has a right to updates oracle.
     /// @param l1TokenRatePusher_ An address of account on L1 that can update token rate.
-    /// @param rateOutdatedDelay_ time period when token rate can be considered outdated.
+    /// @param tokenRateOutdatedDelay_ time period when token rate can be considered outdated.
     constructor(
         address messenger_,
-        address bridge_,
+        address l2ERC20TokenBridge_,
         address l1TokenRatePusher_,
-        uint256 rateOutdatedDelay_
+        uint256 tokenRateOutdatedDelay_
     ) CrossDomainEnabled(messenger_) {
-        BRIDGE = bridge_;
+        L2_ERC20_TOKEN_BRIDGE = l2ERC20TokenBridge_;
         L1_TOKEN_RATE_PUSHER = l1TokenRatePusher_;
-        RATE_OUTDATED_DELAY = rateOutdatedDelay_;
+        TOKEN_RATE_OUTDATED_DELAY = tokenRateOutdatedDelay_;
     }
 
-    /// @inheritdoc ITokenRateOracle
+    /// @inheritdoc IChainlinkAggregatorInterface
     function latestRoundData() external view returns (
         uint80 roundId_,
         int256 answer_,
@@ -51,7 +54,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle {
         uint256 updatedAt_,
         uint80 answeredInRound_
     ) {
-        uint80 roundId = uint80(rateL1Timestamp); // TODO: add solt
+        uint80 roundId = uint80(rateL1Timestamp);
 
         return (
             roundId,
@@ -62,23 +65,20 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle {
         );
     }
 
-    /// @inheritdoc ITokenRateOracle
+    /// @inheritdoc IChainlinkAggregatorInterface
     function latestAnswer() external view returns (int256) {
         return int256(tokenRate);
     }
 
-    /// @inheritdoc ITokenRateOracle
+    /// @inheritdoc IChainlinkAggregatorInterface
     function decimals() external pure returns (uint8) {
         return DECIMALS;
     }
 
-    /// @inheritdoc ITokenRateOracle
+    /// @inheritdoc ITokenRateUpdatable
     function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external {
 
-        if (!(
-            (msg.sender == address(MESSENGER) && MESSENGER.xDomainMessageSender() == L1_TOKEN_RATE_PUSHER)
-            || (msg.sender == BRIDGE)
-        )) {
+        if (_isNoRightsToCall(msg.sender)) {
             revert ErrorNoRights(msg.sender);
         }
 
@@ -98,7 +98,14 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle {
 
     /// @notice Returns flag that shows that token rate can be considered outdated.
     function isLikelyOutdated() external view returns (bool) {
-        return block.timestamp - rateL1Timestamp > RATE_OUTDATED_DELAY;
+        return block.timestamp - rateL1Timestamp > TOKEN_RATE_OUTDATED_DELAY;
+    }
+
+    function _isNoRightsToCall(address caller_) internal view returns (bool) {
+        bool isCalledFromL1TokenRatePusher = caller_ == address(MESSENGER) &&
+            MESSENGER.xDomainMessageSender() == L1_TOKEN_RATE_PUSHER;
+        bool isCalledFromERC20TokenRateBridge = caller_ == L2_ERC20_TOKEN_BRIDGE;
+        return !isCalledFromL1TokenRatePusher && !isCalledFromERC20TokenRateBridge;
     }
 
     event RateUpdated(uint256 tokenRate_, uint256 rateL1Timestamp_);

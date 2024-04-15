@@ -6,6 +6,7 @@ pragma solidity 0.8.10;
 import {ITokenRatePusher} from "../interfaces/ITokenRatePusher.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
+/// @dev For testing purposes.
 contract OpStackTokenRatePusherWithOutOfGasErrorStub is ERC165, ITokenRatePusher {
 
     uint256 public constant OUT_OF_GAS_INCURRING_MAX = 1000000000000;

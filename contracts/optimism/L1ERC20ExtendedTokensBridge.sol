@@ -119,14 +119,11 @@ abstract contract L1ERC20ExtendedTokensBridge is
         onlyFromCrossDomainAccount(L2_TOKEN_BRIDGE)
         onlySupportedL1L2TokensPair(l1Token_, l2Token_)
     {
-        if(_isRebasable(l1Token_)) {
-            uint256 rebasableTokenAmount = IERC20Wrapper(L1_TOKEN_NON_REBASABLE).unwrap(amount_);
-            IERC20(l1Token_).safeTransfer(to_, rebasableTokenAmount);
-            emit ERC20WithdrawalFinalized(l1Token_, l2Token_, from_, to_, rebasableTokenAmount, data_);
-        } else {
-            IERC20(l1Token_).safeTransfer(to_, amount_);
-            emit ERC20WithdrawalFinalized(l1Token_, l2Token_, from_, to_, amount_, data_);
-        }
+        uint256 amountToWithdraw = _isRebasable(l1Token_) ?
+            IERC20Wrapper(L1_TOKEN_NON_REBASABLE).unwrap(amount_) :
+            amount_;
+        IERC20(l1Token_).safeTransfer(to_, amountToWithdraw);
+        emit ERC20WithdrawalFinalized(l1Token_, l2Token_, from_, to_, amountToWithdraw, data_);
     }
 
     /// @dev Performs the logic for deposits by informing the L2 token bridge contract

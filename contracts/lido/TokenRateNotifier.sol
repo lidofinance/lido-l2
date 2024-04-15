@@ -41,6 +41,9 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
 
     /// @param initialOwner_ initial owner
     constructor(address initialOwner_) {
+        if (initialOwner_ == address(0)) {
+            revert ErrorZeroAddressOwner();
+        }
         _transferOwnership(initialOwner_);
     }
 
@@ -56,6 +59,9 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
         if (observers.length >= MAX_OBSERVERS_COUNT) {
             revert ErrorMaxObserversCountExceeded();
         }
+        if (_observerIndex(observer_) != INDEX_NOT_FOUND) {
+            revert ErrorAddExistedObserver();
+        }
 
         observers.push(observer_);
         emit ObserverAdded(observer_);
@@ -70,8 +76,9 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
         if (observerIndexToRemove == INDEX_NOT_FOUND) {
             revert ErrorNoObserverToRemove();
         }
-
-        observers[observerIndexToRemove] = observers[observers.length - 1];
+        if (observers.length > 1) {
+            observers[observerIndexToRemove] = observers[observers.length - 1];
+        }
         observers.pop();
 
         emit ObserverRemoved(observer_);
@@ -89,6 +96,7 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
         uint256  /* sharesMintedAsFees */
     ) external {
         for (uint256 obIndex = 0; obIndex < observers.length; obIndex++) {
+            // solhint-disable-next-line no-empty-blocks
             try ITokenRatePusher(observers[obIndex]).pushTokenRate() {}
             catch (bytes memory lowLevelRevertData) {
                 /// @dev This check is required to prevent incorrect gas estimation of the method.
@@ -131,4 +139,6 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
     error ErrorBadObserverInterface();
     error ErrorMaxObserversCountExceeded();
     error ErrorNoObserverToRemove();
+    error ErrorZeroAddressOwner();
+    error ErrorAddExistedObserver();
 }

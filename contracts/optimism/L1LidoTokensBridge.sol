@@ -4,7 +4,14 @@
 pragma solidity 0.8.10;
 
 import {L1ERC20ExtendedTokensBridge} from "./L1ERC20ExtendedTokensBridge.sol";
-import {IERC20WstETH} from "../token/interfaces/IERC20WstETH.sol";
+
+/// @author kovalgek
+/// @notice A subset of wstETH token interface of core LIDO protocol.
+interface IERC20WstETH {
+    /// @notice Get amount of wstETH for a one stETH
+    /// @return Amount of wstETH for a 1 stETH
+    function stEthPerToken() external view returns (uint256);
+}
 
 /// @author kovalgek
 /// @notice Hides wstETH concept from other contracts to keep `L1ERC20ExtendedTokensBridge` reusable.
