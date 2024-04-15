@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+// SPDX-FileCopyrightText: 2024 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
 pragma solidity 0.8.10;
@@ -27,7 +27,7 @@ contract L1LidoTokensBridge is L1ERC20ExtendedTokensBridge {
     ) {
     }
 
-    function tokenRate(address l1NonRebasableToken) override internal view returns (uint256) {
-        return IERC20WstETH(l1NonRebasableToken).stEthPerToken();
+    function tokenRate() override internal view returns (uint256) {
+        return IERC20WstETH(L1_TOKEN_NON_REBASABLE).stEthPerToken();
     }
 }

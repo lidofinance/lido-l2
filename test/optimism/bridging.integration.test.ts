@@ -4,8 +4,11 @@ import env from "../../utils/env";
 import { wei } from "../../utils/wei";
 import optimism from "../../utils/optimism";
 import testing, { scenario } from "../../utils/testing";
+import { ethers } from "hardhat";
+import { JsonRpcProvider } from "@ethersproject/providers";
+import { ERC20WrapperStub } from "../../typechain";
 
-scenario("Optimism :: Bridging integration test", ctxFactory)
+scenario("Optimism :: Bridging non-rebasable token integration test", ctxFactory)
   .after(async (ctx) => {
     await ctx.l1Provider.send("evm_revert", [ctx.snapshot.l1]);
     await ctx.l2Provider.send("evm_revert", [ctx.snapshot.l2]);
@@ -101,13 +104,15 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         "0x"
       );
 
+    const dataToSend = await packedTokenRateAndTimestamp(ctx.l1Provider, l1Token);
+
     await assert.emits(l1LidoTokensBridge, tx, "ERC20DepositInitiated", [
       l1Token.address,
       l2Token.address,
       tokenHolderA.address,
       tokenHolderA.address,
       depositAmount,
-      "0x",
+      dataToSend,
     ]);
 
     const l2DepositCalldata = l2ERC20ExtendedTokensBridge.interface.encodeFunctionData(
@@ -118,7 +123,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         tokenHolderA.address,
         tokenHolderA.address,
         depositAmount,
-        "0x",
+        dataToSend,
       ]
     );
 
@@ -159,6 +164,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       tokenHolderA.address
     );
     const l2TokenTotalSupplyBefore = await l2Token.totalSupply();
+    const dataToReceive = await packedTokenRateAndTimestamp(ctx.l2Provider, l1Token);
 
     const tx = await l2CrossDomainMessenger
       .connect(l1CrossDomainMessengerAliased)
@@ -174,7 +180,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
           tokenHolderA.address,
           tokenHolderA.address,
           depositAmount,
-          "0x",
+          dataToReceive,
         ]),
         { gasLimit: 5_000_000 }
       );
@@ -326,13 +332,15 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         "0x"
       );
 
+    const dataToSend = await packedTokenRateAndTimestamp(ctx.l1Provider, l1Token);
+
     await assert.emits(l1LidoTokensBridge, tx, "ERC20DepositInitiated", [
       l1Token.address,
       l2Token.address,
       tokenHolderA.address,
       tokenHolderB.address,
       depositAmount,
-      "0x",
+      dataToSend,
     ]);
 
     const l2DepositCalldata = l2ERC20ExtendedTokensBridge.interface.encodeFunctionData(
@@ -343,7 +351,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         tokenHolderA.address,
         tokenHolderB.address,
         depositAmount,
-        "0x",
+        dataToSend,
       ]
     );
 
@@ -388,6 +396,8 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
       tokenHolderB.address
     );
 
+    const dataToReceive = await packedTokenRateAndTimestamp(ctx.l2Provider, l1Token);
+
     const tx = await l2CrossDomainMessenger
       .connect(l1CrossDomainMessengerAliased)
       .relayMessage(
@@ -402,7 +412,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
           tokenHolderA.address,
           tokenHolderB.address,
           depositAmount,
-          "0x",
+          dataToReceive,
         ]),
         { gasLimit: 5_000_000 }
       );
@@ -610,4 +620,13 @@ async function ctxFactory() {
       l2: l2Snapshot,
     },
   };
+}
+
+async function packedTokenRateAndTimestamp(l1Provider: JsonRpcProvider, l1Token: ERC20WrapperStub) {
+    const stEthPerToken = await l1Token.stEthPerToken();
+    const blockNumber = await l1Provider.getBlockNumber();
+    const blockTimestamp = (await l1Provider.getBlock(blockNumber)).timestamp;
+    const stEthPerTokenStr = ethers.utils.hexZeroPad(stEthPerToken.toHexString(), 12);
+    const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 5);
+    return ethers.utils.hexConcat([stEthPerTokenStr, blockTimestampStr]);
 }

@@ -50,24 +50,8 @@ abstract contract L1ERC20ExtendedTokensBridge is
         L2_TOKEN_BRIDGE = l2TokenBridge_;
     }
 
-    function initialize2(
-        address admin_,
-        address l1TokenNonRebasable_,
-        address l1TokenRebasable_,
-        address l2TokenNonRebasable_,
-        address l2TokenRebasable_
-    ) external {
-        BridgingManager.initialize(admin_);
-        RebasableAndNonRebasableTokens.initialize(
-            l1TokenNonRebasable_,
-            l1TokenRebasable_,
-            l2TokenNonRebasable_,
-            l2TokenRebasable_
-        );
-    }
-
     /// @notice required to abstact a way token rate is requested.
-    function tokenRate(address l1NonRebasableToken) virtual internal view returns (uint256);
+    function tokenRate() virtual internal view returns (uint256);
 
     /// @inheritdoc IL1ERC20Bridge
     function l2TokenBridge() external view returns (address) {
@@ -89,13 +73,12 @@ abstract contract L1ERC20ExtendedTokensBridge is
         if (Address.isContract(msg.sender)) {
             revert ErrorSenderNotEOA();
         }
-        uint256 rate = tokenRate(_l1NonRebasableToken(l1Token_));
         bytes memory encodedDepositData  = DepositDataCodec.encodeDepositData(DepositDataCodec.DepositData({
-            rate: uint96(rate),
+            rate: uint96(tokenRate()),
             timestamp: uint40(block.timestamp),
             data: data_
         }));
-        _depositERC20To(l1Token_, l2Token_, msg.sender, msg.sender, amount_, l2Gas_, data_);
+        _depositERC20To(l1Token_, l2Token_, msg.sender, msg.sender, amount_, l2Gas_, encodedDepositData);
         emit ERC20DepositInitiated(l1Token_, l2Token_, msg.sender, msg.sender, amount_, encodedDepositData);
     }
 
@@ -111,13 +94,10 @@ abstract contract L1ERC20ExtendedTokensBridge is
         external
         whenDepositsEnabled
         onlyNonZeroAccount(to_)
-        // onlySupportedL1Token(l1Token_)
-        // onlySupportedL2Token(l2Token_)
         onlySupportedL1L2TokensPair(l1Token_, l2Token_)
     {
-        uint256 rate = tokenRate(_l1NonRebasableToken(l1Token_));
         bytes memory encodedDepositData  = DepositDataCodec.encodeDepositData(DepositDataCodec.DepositData({
-            rate: uint96(rate),
+            rate: uint96(tokenRate()),
             timestamp: uint40(block.timestamp),
             data: data_
         }));
@@ -136,12 +116,11 @@ abstract contract L1ERC20ExtendedTokensBridge is
     )
         external
         whenWithdrawalsEnabled
-        onlySupportedL1L2TokensPair(l1Token_, l2Token_)
         onlyFromCrossDomainAccount(L2_TOKEN_BRIDGE)
+        onlySupportedL1L2TokensPair(l1Token_, l2Token_)
     {
         if(_isRebasable(l1Token_)) {
-            address l1NonRebasableToken = _getRebasableTokens()[l1Token_].pairedToken;
-            uint256 rebasableTokenAmount = IERC20Wrapper(l1NonRebasableToken).unwrap(amount_);
+            uint256 rebasableTokenAmount = IERC20Wrapper(L1_TOKEN_NON_REBASABLE).unwrap(amount_);
             IERC20(l1Token_).safeTransfer(to_, rebasableTokenAmount);
             emit ERC20WithdrawalFinalized(l1Token_, l2Token_, from_, to_, rebasableTokenAmount, data_);
         } else {
@@ -152,14 +131,12 @@ abstract contract L1ERC20ExtendedTokensBridge is
 
     /// @dev Performs the logic for deposits by informing the L2 token bridge contract
     ///     of the deposit and calling safeTransferFrom to lock the L1 funds.
-
     /// @param l1Token_ Address of the L1 ERC20 we are depositing
     /// @param l2Token_ Address of the L1 respective L2 ERC20
     /// @param from_ Account to pull the deposit from on L1
     /// @param to_ Account to give the deposit to on L2
     /// @param amount_ Amount of the ERC20 to deposit.
     /// @param l2Gas_ Gas limit required to complete the deposit on L2.
-
     /// @param encodedDepositData_ Optional data to forward to L2. This data is provided
     ///        solely as a convenience for external contracts. Aside from enforcing a maximum
     ///        length, these contracts provide no guarantees about its content.
@@ -187,16 +164,12 @@ abstract contract L1ERC20ExtendedTokensBridge is
         address from_,
         uint256 amount_
     ) internal returns (uint256) {
-
-        if (amount_ == 0) {
-            return amount_;
-        }
-
-        IERC20(l1Token_).safeTransferFrom(from_, address(this), amount_);
-        if(_isRebasable(l1Token_)) {
-            address l1NonRebasableToken = _getRebasableTokens()[l1Token_].pairedToken;
-            if(!IERC20(l1Token_).approve(l1NonRebasableToken, amount_)) revert ErrorRebasableTokenApprove();
-            return IERC20Wrapper(l1NonRebasableToken).wrap(amount_);
+        if (amount_ != 0) {
+            IERC20(l1Token_).safeTransferFrom(from_, address(this), amount_);
+            if(_isRebasable(l1Token_)) {
+                if(!IERC20(l1Token_).approve(L1_TOKEN_NON_REBASABLE, amount_)) revert ErrorRebasableTokenApprove();
+                return IERC20Wrapper(L1_TOKEN_NON_REBASABLE).wrap(amount_);
+            }
         }
         return amount_;
     }

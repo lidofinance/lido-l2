@@ -19,11 +19,13 @@ import { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber } from "ethers";
 
 unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
-    .test("l1TokenBridge()", async (ctx) => {
-        assert.equal(
-            await ctx.l2TokenBridge.l1TokenBridge(),
-            ctx.accounts.l1TokenBridgeEOA.address
-        );
+    .test("initial state", async (ctx) => {
+        assert.equal(await ctx.l2TokenBridge.l1TokenBridge(), ctx.accounts.l1TokenBridgeEOA.address);
+        assert.equal(await ctx.l2TokenBridge.MESSENGER(), ctx.accounts.l2MessengerStubEOA._address);
+        assert.equal(await ctx.l2TokenBridge.L1_TOKEN_NON_REBASABLE(), ctx.stubs.l1TokenNonRebasable.address);
+        assert.equal(await ctx.l2TokenBridge.L1_TOKEN_REBASABLE(), ctx.stubs.l1TokenRebasable.address);
+        assert.equal(await ctx.l2TokenBridge.L2_TOKEN_NON_REBASABLE(), ctx.stubs.l2TokenNonRebasable.address);
+        assert.equal(await ctx.l2TokenBridge.L2_TOKEN_REBASABLE(), ctx.stubs.l2TokenRebasable.address);
     })
 
     .test("withdraw() :: withdrawals disabled", async (ctx) => {
@@ -68,7 +70,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
         );
     })
 
-    .test("withdraw() :: non rebasable token flow", async (ctx) => {
+    .test("withdraw() :: non-rebasable token flow", async (ctx) => {
         const {
             l2TokenBridge,
             accounts: { deployer, l1TokenBridgeEOA },
@@ -137,8 +139,6 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
             accounts: { deployer, l1TokenBridgeEOA, l2MessengerStubEOA, recipient },
             stubs: {
                 l2Messenger,
-                l1TokenNonRebasable,
-                l2TokenNonRebasable,
                 l1TokenRebasable,
                 l2TokenRebasable
             },
@@ -514,6 +514,41 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
         );
     })
 
+    .test("finalizeDeposit() :: unsupported tokens combination", async (ctx) => {
+        const {
+            l2TokenBridge,
+            accounts: { l2MessengerStubEOA, deployer, recipient, stranger },
+            stubs: { l1TokenNonRebasable, l1TokenRebasable, l2TokenNonRebasable, l2TokenRebasable },
+        } = ctx;
+
+        await assert.revertsWith(
+            l2TokenBridge
+                .connect(l2MessengerStubEOA)
+                .finalizeDeposit(
+                    l1TokenNonRebasable.address,
+                    l2TokenRebasable.address,
+                    deployer.address,
+                    recipient.address,
+                    wei`1 ether`,
+                    "0x"
+                ),
+            "ErrorUnsupportedL1L2TokensPair()"
+        );
+        await assert.revertsWith(
+            l2TokenBridge
+                .connect(l2MessengerStubEOA)
+                .finalizeDeposit(
+                    l1TokenRebasable.address,
+                    l2TokenNonRebasable.address,
+                    deployer.address,
+                    recipient.address,
+                    wei`1 ether`,
+                    "0x"
+                ),
+            "ErrorUnsupportedL1L2TokensPair()"
+        );
+    })
+
     .test("finalizeDeposit() :: unauthorized messenger", async (ctx) => {
         const {
             l2TokenBridge,
@@ -587,7 +622,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
         );
     })
 
-    .test("finalizeDeposit() :: non rebasable token flow", async (ctx) => {
+    .test("finalizeDeposit() :: non-rebasable token flow", async (ctx) => {
         const {
             l2TokenBridge,
             stubs: { l1TokenNonRebasable, l2TokenNonRebasable, l2Messenger },
@@ -600,6 +635,9 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
 
         const amount = wei`1 ether`;
         const data = "0xdeadbeaf";
+        const provider = await hre.ethers.provider;
+        const packedTokenRateAndTimestampData = await packedTokenRateAndTimestamp(provider, ctx.exchangeRate);
+        const dataToReceive = ethers.utils.hexConcat([packedTokenRateAndTimestampData, data]);
 
         const tx = await l2TokenBridge
             .connect(l2MessengerStubEOA)
@@ -609,7 +647,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
                 deployer.address,
                 recipient.address,
                 amount,
-                data
+                dataToReceive
             );
 
         await assert.emits(l2TokenBridge, tx, "DepositFinalized", [

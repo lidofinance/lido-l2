@@ -5,11 +5,10 @@ import { wei } from "../../utils/wei";
 import optimism from "../../utils/optimism";
 import testing, { scenario } from "../../utils/testing";
 import { ethers } from "hardhat";
-import { BigNumber } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { ERC20WrapperStub } from "../../typechain";
 
-scenario("Optimism :: Bridging integration test", ctxFactory)
+scenario("Optimism :: Bridging rebasable token integration test", ctxFactory)
   .after(async (ctx) => {
     await ctx.l1Provider.send("evm_revert", [ctx.snapshot.l1]);
     await ctx.l2Provider.send("evm_revert", [ctx.snapshot.l2]);

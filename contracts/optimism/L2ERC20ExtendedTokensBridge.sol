@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+// SPDX-FileCopyrightText: 2024 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
 pragma solidity 0.8.10;
@@ -16,7 +16,7 @@ import {RebasableAndNonRebasableTokens} from "./RebasableAndNonRebasableTokens.s
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {DepositDataCodec} from "../lib/DepositDataCodec.sol";
 
-/// @author psirex
+/// @author psirex, kovalgek
 /// @notice The L2 token bridge works with the L1 token bridge to enable ERC20 token bridging
 ///     between L1 and L2. It acts as a minter for new tokens when it hears about
 ///     deposits into the L1 token bridge. It also acts as a burner of the tokens
@@ -103,7 +103,7 @@ contract L2ERC20ExtendedTokensBridge is
         onlyFromCrossDomainAccount(L1_TOKEN_BRIDGE)
     {
         DepositDataCodec.DepositData memory depositData = DepositDataCodec.decodeDepositData(data_);
-        ITokenRateOracle tokenRateOracle = ERC20Rebasable(l2Token_).TOKEN_RATE_ORACLE();
+        ITokenRateOracle tokenRateOracle = ERC20Rebasable(L2_TOKEN_REBASABLE).TOKEN_RATE_ORACLE();
         tokenRateOracle.updateRate(depositData.rate, depositData.timestamp);
 
         uint256 depositedAmount = _mintTokens(l1Token_, l2Token_, to_, amount_);
