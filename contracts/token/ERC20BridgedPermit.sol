@@ -26,11 +26,8 @@ contract ERC20BridgedPermit is ERC20Bridged, PermitExtension {
     {
     }
 
-    function _permitAccepted(
-        address owner_,
-        address spender_,
-        uint256 amount_
-    ) internal override {
+    /// @inheritdoc PermitExtension
+    function _permitAccepted(address owner_, address spender_, uint256 amount_) internal override {
         _approve(owner_, spender_, amount_);
     }
 }

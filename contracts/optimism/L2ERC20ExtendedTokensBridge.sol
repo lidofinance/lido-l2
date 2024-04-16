@@ -11,7 +11,7 @@ import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
 import {IERC20Bridged} from "../token/ERC20Bridged.sol";
 import {ITokenRateUpdatable} from "../optimism/interfaces/ITokenRateUpdatable.sol";
 import {IERC20Wrapper} from "../token/interfaces/IERC20Wrapper.sol";
-import {ERC20Rebasable} from "../token/ERC20Rebasable.sol";
+import {ERC20RebasableBridged} from "../token/ERC20RebasableBridged.sol";
 import {BridgingManager} from "../BridgingManager.sol";
 import {RebasableAndNonRebasableTokens} from "./RebasableAndNonRebasableTokens.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
@@ -107,7 +107,7 @@ contract L2ERC20ExtendedTokensBridge is
         onlyFromCrossDomainAccount(L1_TOKEN_BRIDGE)
     {
         DepositDataCodec.DepositData memory depositData = DepositDataCodec.decodeDepositData(data_);
-        ITokenRateUpdatable tokenRateOracle = ERC20Rebasable(L2_TOKEN_REBASABLE).TOKEN_RATE_ORACLE();
+        ITokenRateUpdatable tokenRateOracle = ERC20RebasableBridged(L2_TOKEN_REBASABLE).TOKEN_RATE_ORACLE();
         tokenRateOracle.updateRate(depositData.rate, depositData.timestamp);
 
         uint256 depositedAmount = _mintTokens(l1Token_, l2Token_, to_, amount_);
@@ -116,6 +116,7 @@ contract L2ERC20ExtendedTokensBridge is
 
     /// @notice Performs the logic for withdrawals by burning the token and informing
     ///     the L1 token Gateway of the withdrawal
+    /// @param l2Token_ Address of L2 token where withdrawal was initiated.
     /// @param from_ Account to pull the withdrawal from on L2
     /// @param to_ Account to give the withdrawal to on L1
     /// @param amount_ Amount of the token to withdraw
@@ -140,6 +141,12 @@ contract L2ERC20ExtendedTokensBridge is
         sendCrossDomainMessage(L1_TOKEN_BRIDGE, l1Gas_, message);
     }
 
+    /// @dev Mints tokens.
+    /// @param l1Token_ Address of L1 token for which deposit is finalizing.
+    /// @param l2Token_ Address of L2 token for which deposit is finalizing.
+    /// @param to_ Account that token mints for.
+    /// @param amount_ Amount of token or shares to mint.
+    /// @return returns amount of minted tokens.
     function _mintTokens(
         address l1Token_,
         address l2Token_,
@@ -147,22 +154,27 @@ contract L2ERC20ExtendedTokensBridge is
         uint256 amount_
     ) internal returns (uint256) {
         if(_isRebasable(l1Token_)) {
-            ERC20Rebasable(l2Token_).bridgeMintShares(to_, amount_);
-            return ERC20Rebasable(l2Token_).getTokensByShares(amount_);
+            ERC20RebasableBridged(l2Token_).bridgeMintShares(to_, amount_);
+            return ERC20RebasableBridged(l2Token_).getTokensByShares(amount_);
         }
 
         IERC20Bridged(l2Token_).bridgeMint(to_, amount_);
         return amount_;
     }
 
+    /// @dev Burns tokens
+    /// @param l2Token_ Address of L2 token where withdrawal was initiated.
+    /// @param from_ Account which tokens are burns.
+    /// @param amount_ Amount of token to burn.
+    /// @return returns amount of non-rebasable token to withdraw.
     function _burnTokens(
         address l2Token_,
         address from_,
         uint256 amount_
     ) internal returns (uint256) {
         if(_isRebasable(l2Token_)) {
-            uint256 shares = ERC20Rebasable(l2Token_).getSharesByTokens(amount_);
-            ERC20Rebasable(l2Token_).bridgeBurnShares(from_, shares);
+            uint256 shares = ERC20RebasableBridged(l2Token_).getSharesByTokens(amount_);
+            ERC20RebasableBridged(l2Token_).bridgeBurnShares(from_, shares);
             return shares;
         }
 

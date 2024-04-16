@@ -119,7 +119,7 @@ abstract contract L1ERC20ExtendedTokensBridge is
         onlyFromCrossDomainAccount(L2_TOKEN_BRIDGE)
         onlySupportedL1L2TokensPair(l1Token_, l2Token_)
     {
-        uint256 amountToWithdraw = _isRebasable(l1Token_) ?
+        uint256 amountToWithdraw = (_isRebasable(l1Token_) && amount_ != 0) ?
             IERC20Wrapper(L1_TOKEN_NON_REBASABLE).unwrap(amount_) :
             amount_;
         IERC20(l1Token_).safeTransfer(to_, amountToWithdraw);
@@ -134,9 +134,8 @@ abstract contract L1ERC20ExtendedTokensBridge is
     /// @param to_ Account to give the deposit to on L2
     /// @param amount_ Amount of the ERC20 to deposit.
     /// @param l2Gas_ Gas limit required to complete the deposit on L2.
-    /// @param encodedDepositData_ Optional data to forward to L2. This data is provided
-    ///        solely as a convenience for external contracts. Aside from enforcing a maximum
-    ///        length, these contracts provide no guarantees about its content.
+    /// @param encodedDepositData_ a concatenation of packed token rate with L1 time and
+    ///        optional data passed by external contract
     function _depositERC20To(
         address l1Token_,
         address l2Token_,
@@ -156,6 +155,11 @@ abstract contract L1ERC20ExtendedTokensBridge is
         sendCrossDomainMessage(L2_TOKEN_BRIDGE, l2Gas_, message);
     }
 
+    /// @dev Transfers tokens to the bridge and wraps if needed.
+    /// @param l1Token_ Address of the L1 ERC20 we are depositing.
+    /// @param from_ Account to pull the deposit from on L1.
+    /// @param amount_ Amount of the ERC20 to deposit.
+    /// @return Amount of non-rebasable token.
     function _transferToBridge(
         address l1Token_,
         address from_,

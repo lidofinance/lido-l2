@@ -10,7 +10,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
     TokenRateOracle__factory,
     OssifiableProxy__factory,
-    ERC20RebasablePermit__factory,
+    ERC20RebasableBridgedPermit__factory,
     ERC1271PermitSignerMock__factory,
     ERC20BridgedPermit__factory,
 } from "../../typechain";
@@ -56,7 +56,7 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
 
         //   .test("wrappedToken() :: has the same address is in constructor", async (ctx) => {
         //       const { rebasableProxied, wrappedToken } = ctx.contracts;
-        //       assert.equal(await rebasableProxied.WRAPPED_TOKEN(), wrappedToken.address)
+        //       assert.equal(await rebasableProxied.TOKEN_TO_WRAP_FROM(), wrappedToken.address)
         //   })
 
         .test('eip712Domain() is correct', async (ctx) => {
@@ -404,7 +404,7 @@ async function tokenProxied(
             hre.ethers.constants.AddressZero,
             86400
         );
-        const rebasableTokenImpl = await new ERC20RebasablePermit__factory(deployer).deploy(
+        const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
             name,
             symbol,
             SIGNING_DOMAIN_VERSION,
@@ -417,13 +417,13 @@ async function tokenProxied(
         const l2TokensProxy = await new OssifiableProxy__factory(deployer).deploy(
             rebasableTokenImpl.address,
             deployer.address,
-            ERC20RebasablePermit__factory.createInterface().encodeFunctionData("initialize", [
+            ERC20RebasableBridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
                 name,
                 symbol,
             ])
         );
 
-        const rebasableProxied = ERC20RebasablePermit__factory.connect(
+        const rebasableProxied = ERC20RebasableBridgedPermit__factory.connect(
             l2TokensProxy.address,
             holder
         );
@@ -461,7 +461,7 @@ async function tokenProxied(
 }
 
 permitTestsSuit(
-    unit("ERC20RebasablePermit with EIP1271 (contract) signing",
+    unit("ERC20RebasableBridgedPermit with EIP1271 (contract) signing",
         ctxFactoryFactory(
             "Liquid staked Ether 2.0",
             "stETH",
@@ -472,7 +472,7 @@ permitTestsSuit(
 );
 
 permitTestsSuit(
-    unit("ERC20RebasablePermit with ECDSA (EOA) signing",
+    unit("ERC20RebasableBridgedPermit with ECDSA (EOA) signing",
         ctxFactoryFactory(
             "Liquid staked Ether 2.0",
             "stETH",

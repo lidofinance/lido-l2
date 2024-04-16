@@ -14,7 +14,7 @@ import {
   L1LidoTokensBridge__factory,
   L2ERC20ExtendedTokensBridge__factory,
   CrossDomainMessengerStub__factory,
-  ERC20Rebasable__factory,
+  ERC20RebasableBridged__factory,
 } from "../../typechain";
 import addresses from "./addresses";
 import contracts from "./contracts";
@@ -280,7 +280,7 @@ function connectBridgeContracts(
     addresses.l2Token,
     optSignerOrProvider
   );
-  const l2TokenRebasable = ERC20Rebasable__factory.connect(
+  const l2TokenRebasable = ERC20RebasableBridged__factory.connect(
     addresses.l2TokenRebasable,
     optSignerOrProvider
   );

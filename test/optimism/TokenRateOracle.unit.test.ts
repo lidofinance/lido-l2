@@ -1,5 +1,6 @@
 import hre from "hardhat";
 import { assert } from "chai";
+import { BigNumber } from "ethers";
 import testing, { unit } from "../../utils/testing";
 import {
     TokenRateOracle__factory,
@@ -52,32 +53,61 @@ unit("TokenRateOracle", ctxFactory)
   .test("updateRate() :: incorrect time", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
     const { bridge } = ctx.accounts;
+    const { tokenRateCorrect } = ctx.constants;
 
-    await tokenRateOracle.connect(bridge).updateRate(10, 1000);
-    await assert.revertsWith(tokenRateOracle.connect(bridge).updateRate(12, 20), "ErrorIncorrectRateTimestamp()");
+    const tx0 = await tokenRateOracle.connect(bridge).updateRate(tokenRateCorrect, 1000);
+    const tx1 = await tokenRateOracle.connect(bridge).updateRate(tokenRateCorrect, 20);
+
+    await assert.emits(tokenRateOracle, tx1, "NewTokenRateOutdated", [tokenRateCorrect, 1000, 20]);
+  })
+
+  .test("updateRate() :: time in future", async (ctx) => {
+    const { tokenRateOracle } = ctx.contracts;
+    const { bridge } = ctx.accounts;
+    const { tokenRateCorrect, blockTimestamp } = ctx.constants;
+
+    const timeInFuture = blockTimestamp + 100000;
+    await assert.revertsWith(
+        tokenRateOracle.connect(bridge).updateRate(tokenRateCorrect, timeInFuture),
+        "ErrorL1TimestampInFuture("+tokenRateCorrect+", "+timeInFuture+")"
+    );
+  })
+
+  .test("updateRate() :: rate is out of range", async (ctx) => {
+    const { tokenRateOracle } = ctx.contracts;
+    const { bridge } = ctx.accounts;
+    const { tokenRateTooBig, tokenRateTooSmall, blockTimestamp } = ctx.constants;
+
+    await assert.revertsWith(
+        tokenRateOracle.connect(bridge).updateRate(tokenRateTooBig, blockTimestamp),
+        "ErrorTokenRateIsOutOfRange("+tokenRateTooBig+", "+blockTimestamp+")"
+    );
+    await assert.revertsWith(
+        tokenRateOracle.connect(bridge).updateRate(tokenRateTooSmall, blockTimestamp),
+        "ErrorTokenRateIsOutOfRange("+tokenRateTooSmall+", "+blockTimestamp+")"
+    );
   })
 
   .test("updateRate() :: don't update state if values are the same", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
     const { bridge } = ctx.accounts;
+    const { tokenRateCorrect } = ctx.constants;
 
-    const tx1 = await tokenRateOracle.connect(bridge).updateRate(10, 1000);
-    await assert.emits(tokenRateOracle, tx1, "RateUpdated", [10, 1000]);
+    const tx1 = await tokenRateOracle.connect(bridge).updateRate(tokenRateCorrect, 1000);
+    await assert.emits(tokenRateOracle, tx1, "RateUpdated", [tokenRateCorrect, 1000]);
 
-    const tx2 = await tokenRateOracle.connect(bridge).updateRate(10, 1000);
+    const tx2 = await tokenRateOracle.connect(bridge).updateRate(tokenRateCorrect, 1000);
     await assert.notEmits(tokenRateOracle, tx2, "RateUpdated");
   })
 
   .test("updateRate() :: happy path called by bridge", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
     const { bridge } = ctx.accounts;
+    const { tokenRateCorrect, blockTimestamp } = ctx.constants;
 
-    const currentTime = Date.now();
-    const tokenRate = 123;
+    await tokenRateOracle.connect(bridge).updateRate(tokenRateCorrect, blockTimestamp);
 
-    await tokenRateOracle.connect(bridge).updateRate(tokenRate, currentTime);
-
-    assert.equalBN(await tokenRateOracle.latestAnswer(), tokenRate);
+    assert.equalBN(await tokenRateOracle.latestAnswer(), tokenRateCorrect);
 
     const {
         roundId_,
@@ -87,26 +117,24 @@ unit("TokenRateOracle", ctxFactory)
         answeredInRound_
     } = await tokenRateOracle.latestRoundData();
 
-    assert.equalBN(roundId_, currentTime);
-    assert.equalBN(answer_, tokenRate);
-    assert.equalBN(startedAt_, currentTime);
-    assert.equalBN(updatedAt_, currentTime);
-    assert.equalBN(answeredInRound_, currentTime);
+    assert.equalBN(roundId_, blockTimestamp);
+    assert.equalBN(answer_, tokenRateCorrect);
+    assert.equalBN(startedAt_, blockTimestamp);
+    assert.equalBN(updatedAt_, blockTimestamp);
+    assert.equalBN(answeredInRound_, blockTimestamp);
     assert.equalBN(await tokenRateOracle.decimals(), 18);
   })
 
   .test("updateRate() :: happy path called by messenger with correct cross-domain sender", async (ctx) => {
     const { tokenRateOracle, l2MessengerStub } = ctx.contracts;
     const { l2MessengerStubEOA, l1TokenBridgeEOA } = ctx.accounts;
+    const { tokenRateCorrect, blockTimestamp } = ctx.constants;
 
     await l2MessengerStub.setXDomainMessageSender(l1TokenBridgeEOA.address);
 
-    const currentTime = Date.now();
-    const tokenRate = 123;
+    await tokenRateOracle.connect(l2MessengerStubEOA).updateRate(tokenRateCorrect, blockTimestamp);
 
-    await tokenRateOracle.connect(l2MessengerStubEOA).updateRate(tokenRate, currentTime);
-
-    assert.equalBN(await tokenRateOracle.latestAnswer(), tokenRate);
+    assert.equalBN(await tokenRateOracle.latestAnswer(), tokenRateCorrect);
 
     const {
         roundId_,
@@ -116,11 +144,11 @@ unit("TokenRateOracle", ctxFactory)
         answeredInRound_
     } = await tokenRateOracle.latestRoundData();
 
-    assert.equalBN(roundId_, currentTime);
-    assert.equalBN(answer_, tokenRate);
-    assert.equalBN(startedAt_, currentTime);
-    assert.equalBN(updatedAt_, currentTime);
-    assert.equalBN(answeredInRound_, currentTime);
+    assert.equalBN(roundId_, blockTimestamp);
+    assert.equalBN(answer_, tokenRateCorrect);
+    assert.equalBN(startedAt_, blockTimestamp);
+    assert.equalBN(updatedAt_, blockTimestamp);
+    assert.equalBN(answeredInRound_, blockTimestamp);
     assert.equalBN(await tokenRateOracle.decimals(), 18);
   })
 
@@ -142,8 +170,19 @@ async function ctxFactory() {
         86400
     );
 
+    const decimals = 18;
+    const decimalsBN = BigNumber.from(10).pow(decimals);
+    const tokenRateCorrect = BigNumber.from('12').pow(decimals - 1);
+    const tokenRateTooBig = BigNumber.from('2000').pow(decimals);
+    const tokenRateTooSmall = BigNumber.from('1').pow(decimals-3);
+
+    const provider = await hre.ethers.provider;
+    const blockNumber = await provider.getBlockNumber();
+    const blockTimestamp = (await provider.getBlock(blockNumber)).timestamp;
+
     return {
       accounts: { deployer, bridge, stranger, l1TokenBridgeEOA, l2MessengerStubEOA },
-      contracts: { tokenRateOracle, l2MessengerStub }
+      contracts: { tokenRateOracle, l2MessengerStub },
+      constants: { tokenRateCorrect, tokenRateTooBig, tokenRateTooSmall, blockTimestamp }
     };
 }

@@ -8,7 +8,7 @@ pragma solidity 0.8.10;
 interface IChainlinkAggregatorInterface {
     /// @notice get the latest token rate data.
     /// @return roundId_ is a unique id for each answer. The value is based on timestamp.
-    /// @return answer_ is wstETH/stETH token rate.
+    /// @return answer_ is wstETH/stETH token rate. It is a chainlink convention to return int256.
     /// @return startedAt_ is time when rate was pushed on L1 side.
     /// @return updatedAt_ is the same as startedAt_.
     /// @return answeredInRound_ is the same as roundId_.
@@ -24,7 +24,7 @@ interface IChainlinkAggregatorInterface {
         );
 
     /// @notice get the lastest token rate.
-    /// @return wstETH/stETH token rate.
+    /// @return wstETH/stETH token rate. It is a chainlink convention to return int256.
     function latestAnswer() external view returns (int256);
 
     /// @notice represents the number of decimals the oracle responses represent.

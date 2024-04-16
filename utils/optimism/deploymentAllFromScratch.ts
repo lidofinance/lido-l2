@@ -6,7 +6,7 @@ import network, { NetworkName } from "../network";
 import { DeployScript, Logger } from "../deployment/DeployScript";
 import {
     ERC20Bridged__factory,
-    ERC20Rebasable__factory,
+    ERC20RebasableBridged__factory,
     IERC20Metadata__factory,
     L1LidoTokensBridge__factory,
     L2ERC20ExtendedTokensBridge__factory,
@@ -238,7 +238,7 @@ export default function deploymentAll(
                         assert.equal(c.address, expectedL2TokenProxyAddress),
                 })
                 .addStep({
-                    factory: ERC20Rebasable__factory,
+                    factory: ERC20RebasableBridged__factory,
                     args: [
                         l2TokenRebasableName,
                         l2TokenRebasableSymbol,
@@ -256,7 +256,7 @@ export default function deploymentAll(
                     args: [
                         expectedL2TokenRebasableImplAddress,
                         l2Params.admins.proxy,
-                        ERC20Rebasable__factory.createInterface().encodeFunctionData(
+                        ERC20RebasableBridged__factory.createInterface().encodeFunctionData(
                             "initialize",
                             [l2TokenRebasableName, l2TokenRebasableSymbol]
                         ),

@@ -89,7 +89,7 @@ abstract contract PermitExtension is IERC2612, EIP712 {
         noncesByAddress[_owner] = current + 1;
     }
 
-    /// @dev is used to override in inherited contracts and call approve function
+    /// @dev Override this function in the inherited contract to invoke the approve() function of ERC20.
     function _permitAccepted(address owner_, address spender_, uint256 amount_) internal virtual;
 
     error ErrorInvalidSignature();

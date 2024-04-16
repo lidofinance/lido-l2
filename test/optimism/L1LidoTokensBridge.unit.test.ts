@@ -804,10 +804,9 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                 ),
             "ErrorWrongCrossDomainSender()"
         );
-    }
-    )
+    })
 
-    .test("finalizeERC20Withdrawal() :: non rebasable token flow", async (ctx) => {
+    .test("finalizeERC20Withdrawal() :: non-rebasable token flow", async (ctx) => {
         const {
             l1TokenBridge,
             stubs: { l1TokenNonRebasable, l2TokenNonRebasable, l1Messenger },
@@ -816,10 +815,9 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
 
         await l1Messenger.setXDomainMessageSender(l2TokenBridgeEOA.address);
 
-        const bridgeBalanceBefore = await l1TokenNonRebasable.balanceOf(l1TokenBridge.address);
-
         const amount = wei`1 ether`;
         const data = "0xdeadbeaf";
+        const bridgeBalanceBefore = await l1TokenNonRebasable.balanceOf(l1TokenBridge.address);
 
         const tx = await l1TokenBridge
             .connect(l1MessengerStubAsEOA)
@@ -855,19 +853,15 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
             accounts: { deployer, recipient, l1MessengerStubAsEOA, l2TokenBridgeEOA },
         } = ctx;
 
+        await l1Messenger.setXDomainMessageSender(l2TokenBridgeEOA.address);
+        await l1TokenRebasable.transfer(l1TokenNonRebasable.address, wei`100 ether`);
+
         const amount = wei`1 ether`;
         const data = "0xdeadbeaf";
         const rate = await l1TokenNonRebasable.stEthPerToken();
         const decimalsStr = await l1TokenNonRebasable.decimals();
         const decimals = BigNumber.from(10).pow(decimalsStr);
-
         const amountUnwrapped = (wei.toBigNumber(amount)).mul(rate).div(BigNumber.from(decimals));
-        const deployerBalanceBefore = await l1TokenRebasable.balanceOf(deployer.address);
-
-        await l1Messenger.setXDomainMessageSender(l2TokenBridgeEOA.address);
-
-        await l1TokenRebasable.transfer(l1TokenNonRebasable.address, wei`100 ether`);
-
         const bridgeBalanceBefore = await l1TokenRebasable.balanceOf(l1TokenBridge.address);
 
         const tx = await l1TokenBridge
@@ -895,6 +889,80 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
             await l1TokenNonRebasable.balanceOf(l1TokenBridge.address),
             bridgeBalanceBefore.sub(amount)
         );
+    })
+
+    .test("finalizeERC20Withdrawal() :: zero amount of rebasable token", async (ctx) => {
+        const {
+            l1TokenBridge,
+            stubs: { l1TokenRebasable, l2TokenRebasable, l1Messenger },
+            accounts: { deployer, recipient, l1MessengerStubAsEOA, l2TokenBridgeEOA },
+        } = ctx;
+
+        await l1Messenger.setXDomainMessageSender(l2TokenBridgeEOA.address);
+
+        const data = "0xdeadbeaf";
+        const recipientBalanceBefore = await l1TokenRebasable.balanceOf(recipient.address);
+        const bridgeBalanceBefore = await l1TokenRebasable.balanceOf(l1TokenBridge.address);
+
+        const tx = await l1TokenBridge
+            .connect(l1MessengerStubAsEOA)
+            .finalizeERC20Withdrawal(
+                l1TokenRebasable.address,
+                l2TokenRebasable.address,
+                deployer.address,
+                recipient.address,
+                0,
+                data
+            );
+
+        await assert.emits(l1TokenBridge, tx, "ERC20WithdrawalFinalized", [
+            l1TokenRebasable.address,
+            l2TokenRebasable.address,
+            deployer.address,
+            recipient.address,
+            0,
+            data,
+        ]);
+
+        assert.equalBN(await l1TokenRebasable.balanceOf(recipient.address), recipientBalanceBefore);
+        assert.equalBN(await l1TokenRebasable.balanceOf(l1TokenBridge.address), bridgeBalanceBefore);
+    })
+
+    .test("finalizeERC20Withdrawal() :: zero amount of non-rebasable token", async (ctx) => {
+        const {
+            l1TokenBridge,
+            stubs: { l1TokenNonRebasable, l2TokenNonRebasable, l1Messenger },
+            accounts: { deployer, recipient, l1MessengerStubAsEOA, l2TokenBridgeEOA },
+        } = ctx;
+
+        await l1Messenger.setXDomainMessageSender(l2TokenBridgeEOA.address);
+
+        const data = "0xdeadbeaf";
+        const recipientBalanceBefore = await l1TokenNonRebasable.balanceOf(recipient.address);
+        const bridgeBalanceBefore = await l1TokenNonRebasable.balanceOf(l1TokenBridge.address);
+
+        const tx = await l1TokenBridge
+            .connect(l1MessengerStubAsEOA)
+            .finalizeERC20Withdrawal(
+                l1TokenNonRebasable.address,
+                l2TokenNonRebasable.address,
+                deployer.address,
+                recipient.address,
+                0,
+                data
+            );
+
+        await assert.emits(l1TokenBridge, tx, "ERC20WithdrawalFinalized", [
+            l1TokenNonRebasable.address,
+            l2TokenNonRebasable.address,
+            deployer.address,
+            recipient.address,
+            0,
+            data,
+        ]);
+
+        assert.equalBN(await l1TokenNonRebasable.balanceOf(recipient.address), recipientBalanceBefore);
+        assert.equalBN(await l1TokenNonRebasable.balanceOf(l1TokenBridge.address), bridgeBalanceBefore);
     })
 
     .run();

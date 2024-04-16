@@ -3,12 +3,13 @@ import {
     ERC20BridgedStub__factory,
     ERC20WrapperStub__factory,
     TokenRateOracle__factory,
-    ERC20Rebasable__factory,
+    ERC20RebasableBridged__factory,
     L1LidoTokensBridge__factory,
     L2ERC20ExtendedTokensBridge__factory,
     OssifiableProxy__factory,
     EmptyContractStub__factory,
     CrossDomainMessengerStub__factory,
+    L2ERC20ExtendedTokensBridge
 } from "../../typechain";
 import testing, { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
@@ -241,6 +242,120 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
         );
     })
 
+    .test("withdraw() :: zero rebasable tokens", async (ctx) => {
+        const {
+            l2TokenBridge,
+            accounts: { deployer, l1TokenBridgeEOA, recipient },
+            stubs: {
+                l2Messenger,
+                l1TokenRebasable,
+                l2TokenRebasable
+            },
+        } = ctx;
+
+        await pushTokenRate(ctx);
+
+        const l1Gas = wei`1 wei`;
+        const data = "0xdeadbeaf";
+        const recipientBalanceBefore = await l2TokenRebasable.balanceOf(recipient.address);
+        const totalSupplyBefore = await l2TokenRebasable.totalSupply();
+
+        const tx = await l2TokenBridge
+            .connect(recipient)
+            .withdraw(
+                l2TokenRebasable.address,
+                0,
+                l1Gas,
+                data);
+
+        await assert.emits(l2TokenBridge, tx, "WithdrawalInitiated", [
+            l1TokenRebasable.address,
+            l2TokenRebasable.address,
+            recipient.address,
+            recipient.address,
+            0,
+            data,
+        ]);
+
+        await assert.emits(l2Messenger, tx, "SentMessage", [
+            l1TokenBridgeEOA.address,
+            l2TokenBridge.address,
+            L1LidoTokensBridge__factory.createInterface().encodeFunctionData(
+                "finalizeERC20Withdrawal",
+                [
+                    l1TokenRebasable.address,
+                    l2TokenRebasable.address,
+                    recipient.address,
+                    recipient.address,
+                    0,
+                    data,
+                ]
+            ),
+            1, // message nonce
+            l1Gas,
+        ]);
+
+        assert.equalBN(await l2TokenRebasable.balanceOf(deployer.address), recipientBalanceBefore);
+        assert.equalBN(await l2TokenRebasable.totalSupply(), totalSupplyBefore);
+    })
+
+    .test("withdraw() :: zero non-rebasable tokens", async (ctx) => {
+        const {
+            l2TokenBridge,
+            accounts: { deployer, l1TokenBridgeEOA, recipient },
+            stubs: {
+                l2Messenger,
+                l1TokenNonRebasable,
+                l2TokenNonRebasable
+            },
+        } = ctx;
+
+        await pushTokenRate(ctx);
+
+        const l1Gas = wei`1 wei`;
+        const data = "0xdeadbeaf";
+        const recipientBalanceBefore = await l2TokenNonRebasable.balanceOf(recipient.address);
+        const totalSupplyBefore = await l2TokenNonRebasable.totalSupply();
+
+        const tx = await l2TokenBridge
+            .connect(recipient)
+            .withdraw(
+                l2TokenNonRebasable.address,
+                0,
+                l1Gas,
+                data);
+
+        await assert.emits(l2TokenBridge, tx, "WithdrawalInitiated", [
+            l1TokenNonRebasable.address,
+            l2TokenNonRebasable.address,
+            recipient.address,
+            recipient.address,
+            0,
+            data,
+        ]);
+
+        await assert.emits(l2Messenger, tx, "SentMessage", [
+            l1TokenBridgeEOA.address,
+            l2TokenBridge.address,
+            L1LidoTokensBridge__factory.createInterface().encodeFunctionData(
+                "finalizeERC20Withdrawal",
+                [
+                    l1TokenNonRebasable.address,
+                    l2TokenNonRebasable.address,
+                    recipient.address,
+                    recipient.address,
+                    0,
+                    data,
+                ]
+            ),
+            1, // message nonce
+            l1Gas,
+        ]);
+
+        assert.equalBN(await l2TokenNonRebasable.balanceOf(recipient.address), recipientBalanceBefore);
+        assert.equalBN(await l2TokenNonRebasable.totalSupply(), totalSupplyBefore);
+    })
+
     .test("withdrawTo() :: withdrawals disabled", async (ctx) => {
         const {
             l2TokenBridge,
@@ -434,6 +549,122 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
             await l2TokenRebasable.totalSupply(),
             totalSupplyBefore.sub(amountToWithdraw)
         );
+    })
+
+    .test("withdrawTo() :: zero rebasable tokens", async (ctx) => {
+        const {
+            l2TokenBridge,
+            accounts: { deployer, l1TokenBridgeEOA, recipient },
+            stubs: {
+                l2Messenger,
+                l1TokenRebasable,
+                l2TokenRebasable
+            },
+        } = ctx;
+
+        await pushTokenRate(ctx);
+
+        const l1Gas = wei`1 wei`;
+        const data = "0xdeadbeaf";
+        const recipientBalanceBefore = await l2TokenRebasable.balanceOf(recipient.address);
+        const totalSupplyBefore = await l2TokenRebasable.totalSupply();
+
+        const tx = await l2TokenBridge
+            .connect(recipient)
+            .withdrawTo(
+                l2TokenRebasable.address,
+                recipient.address,
+                0,
+                l1Gas,
+                data);
+
+        await assert.emits(l2TokenBridge, tx, "WithdrawalInitiated", [
+            l1TokenRebasable.address,
+            l2TokenRebasable.address,
+            recipient.address,
+            recipient.address,
+            0,
+            data,
+        ]);
+
+        await assert.emits(l2Messenger, tx, "SentMessage", [
+            l1TokenBridgeEOA.address,
+            l2TokenBridge.address,
+            L1LidoTokensBridge__factory.createInterface().encodeFunctionData(
+                "finalizeERC20Withdrawal",
+                [
+                    l1TokenRebasable.address,
+                    l2TokenRebasable.address,
+                    recipient.address,
+                    recipient.address,
+                    0,
+                    data,
+                ]
+            ),
+            1, // message nonce
+            l1Gas,
+        ]);
+
+        assert.equalBN(await l2TokenRebasable.balanceOf(deployer.address), recipientBalanceBefore);
+        assert.equalBN(await l2TokenRebasable.totalSupply(), totalSupplyBefore);
+    })
+
+    .test("withdrawTo() :: zero non-rebasable tokens", async (ctx) => {
+        const {
+            l2TokenBridge,
+            accounts: { deployer, l1TokenBridgeEOA, recipient },
+            stubs: {
+                l2Messenger,
+                l1TokenNonRebasable,
+                l2TokenNonRebasable
+            },
+        } = ctx;
+
+        await pushTokenRate(ctx);
+
+        const l1Gas = wei`1 wei`;
+        const data = "0xdeadbeaf";
+        const recipientBalanceBefore = await l2TokenNonRebasable.balanceOf(recipient.address);
+        const totalSupplyBefore = await l2TokenNonRebasable.totalSupply();
+
+        const tx = await l2TokenBridge
+            .connect(recipient)
+            .withdrawTo(
+                l2TokenNonRebasable.address,
+                recipient.address,
+                0,
+                l1Gas,
+                data);
+
+        await assert.emits(l2TokenBridge, tx, "WithdrawalInitiated", [
+            l1TokenNonRebasable.address,
+            l2TokenNonRebasable.address,
+            recipient.address,
+            recipient.address,
+            0,
+            data,
+        ]);
+
+        await assert.emits(l2Messenger, tx, "SentMessage", [
+            l1TokenBridgeEOA.address,
+            l2TokenBridge.address,
+            L1LidoTokensBridge__factory.createInterface().encodeFunctionData(
+                "finalizeERC20Withdrawal",
+                [
+                    l1TokenNonRebasable.address,
+                    l2TokenNonRebasable.address,
+                    recipient.address,
+                    recipient.address,
+                    0,
+                    data,
+                ]
+            ),
+            1, // message nonce
+            l1Gas,
+        ]);
+
+        assert.equalBN(await l2TokenNonRebasable.balanceOf(recipient.address), recipientBalanceBefore);
+        assert.equalBN(await l2TokenNonRebasable.totalSupply(), totalSupplyBefore);
     })
 
     .test("finalizeDeposit() :: deposits disabled", async (ctx) => {
@@ -787,7 +1018,7 @@ async function ctxFactory() {
         86400
     );
 
-    const l2TokenRebasableStub = await new ERC20Rebasable__factory(deployer).deploy(
+    const l2TokenRebasableStub = await new ERC20RebasableBridged__factory(deployer).deploy(
         "L2 Token Rebasable",
         "L2R",
         decimals,
@@ -879,4 +1110,23 @@ async function packedTokenRateAndTimestamp(provider: JsonRpcProvider, tokenRate:
     const stEthPerTokenStr = ethers.utils.hexZeroPad(tokenRate.toHexString(), 12);
     const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 5);
     return ethers.utils.hexConcat([stEthPerTokenStr, blockTimestampStr]);
+}
+
+type ContextType = Awaited<ReturnType<typeof ctxFactory>>
+
+async function pushTokenRate(ctx: ContextType) {
+    const provider = await hre.ethers.provider;
+
+    const packedTokenRateAndTimestampData = await packedTokenRateAndTimestamp(provider, ctx.exchangeRate);
+
+    await ctx.l2TokenBridge
+        .connect(ctx.accounts.l2MessengerStubEOA)
+        .finalizeDeposit(
+            ctx.stubs.l1TokenRebasable.address,
+            ctx.stubs.l2TokenRebasable.address,
+            ctx.accounts.deployer.address,
+            ctx.accounts.deployer.address,
+            0,
+            packedTokenRateAndTimestampData
+        );
 }

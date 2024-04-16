@@ -25,6 +25,10 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle {
     /// @notice Decimals of the oracle response.
     uint8 public constant DECIMALS = 18;
 
+    uint256 public constant MIN_TOKEN_RATE = 1_000_000_000_000_000;         // 0.001
+
+    uint256 public constant MAX_TOKEN_RATE = 1_000_000_000_000_000_000_000; // 1000
+
     /// @notice wstETH/stETH token rate.
     uint256 public tokenRate;
 
@@ -83,7 +87,16 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle {
         }
 
         if (rateL1Timestamp_ < rateL1Timestamp) {
-            revert ErrorIncorrectRateTimestamp();
+            emit NewTokenRateOutdated(tokenRate_, rateL1Timestamp, rateL1Timestamp_);
+            return;
+        }
+
+        if (rateL1Timestamp_ > block.timestamp) {
+            revert ErrorL1TimestampInFuture(tokenRate_, rateL1Timestamp_);
+        }
+
+        if (tokenRate_ < MIN_TOKEN_RATE || tokenRate_ > MAX_TOKEN_RATE) {
+            revert ErrorTokenRateIsOutOfRange(tokenRate_, rateL1Timestamp_);
         }
 
         if (tokenRate_ == tokenRate && rateL1Timestamp_ == rateL1Timestamp) {
@@ -109,7 +122,9 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle {
     }
 
     event RateUpdated(uint256 tokenRate_, uint256 rateL1Timestamp_);
+    event NewTokenRateOutdated(uint256 tokenRate_, uint256 rateL1Timestamp_, uint256 newTateL1Timestamp_);
 
     error ErrorNoRights(address caller);
-    error ErrorIncorrectRateTimestamp();
+    error ErrorL1TimestampInFuture(uint256 tokenRate_, uint256 rateL1Timestamp_);
+    error ErrorTokenRateIsOutOfRange(uint256 tokenRate_, uint256 rateL1Timestamp_);
 }

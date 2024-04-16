@@ -6,13 +6,13 @@ import { wei } from "../../utils/wei";
 import {
     ERC20Bridged__factory,
     TokenRateOracle__factory,
-    ERC20Rebasable__factory,
+    ERC20RebasableBridged__factory,
     OssifiableProxy__factory,
     CrossDomainMessengerStub__factory
 } from "../../typechain";
 import { BigNumber } from "ethers";
 
-unit("ERC20Rebasable", ctxFactory)
+unit("ERC20RebasableBridged", ctxFactory)
 
   .test("wrappedToken() :: has the same address is in constructor", async (ctx) => {
       const { rebasableProxied, wrappedToken } = ctx.contracts;
@@ -50,7 +50,7 @@ unit("ERC20Rebasable", ctxFactory)
         zero.address,
         86400
     );
-    const rebasableTokenImpl = await new ERC20Rebasable__factory(deployer).deploy(
+    const rebasableTokenImpl = await new ERC20RebasableBridged__factory(deployer).deploy(
       "name",
       "",
       10,
@@ -81,7 +81,7 @@ unit("ERC20Rebasable", ctxFactory)
         zero.address,
         86400
     );
-    const rebasableTokenImpl = await new ERC20Rebasable__factory(deployer).deploy(
+    const rebasableTokenImpl = await new ERC20RebasableBridged__factory(deployer).deploy(
       "",
       "symbol",
       10,
@@ -128,7 +128,7 @@ unit("ERC20Rebasable", ctxFactory)
         zero.address,
         86400
     );
-    const rebasableProxied = await new ERC20Rebasable__factory(deployer).deploy(
+    const rebasableProxied = await new ERC20RebasableBridged__factory(deployer).deploy(
         "",
         "symbol",
         10,
@@ -143,18 +143,6 @@ unit("ERC20Rebasable", ctxFactory)
     await assert.revertsWith(rebasableProxied.connect(user1).wrap(5), "ErrorWrongOracleUpdateTime()");
 })
 
-.test("wrap() :: wrong oracle answer", async (ctx) => {
-
-    const { rebasableProxied, wrappedToken, tokenRateOracle } = ctx.contracts;
-    const { user1, owner } = ctx.accounts;
-
-    await tokenRateOracle.connect(owner).updateRate(0, 2000);
-    await wrappedToken.connect(owner).bridgeMint(user1.address, 1000);
-    await wrappedToken.connect(user1).approve(rebasableProxied.address, 1000);
-
-    await assert.revertsWith(rebasableProxied.connect(user1).wrap(21), "ErrorOracleAnswerIsNotPositive()");
-  })
-
   .test("wrap() :: when no balance", async (ctx) => {
     const { rebasableProxied, wrappedToken } = ctx.contracts;
     const { user1 } = ctx.accounts;
@@ -166,7 +154,7 @@ unit("ERC20Rebasable", ctxFactory)
   .test("wrap() :: happy path", async (ctx) => {
 
     const { rebasableProxied, wrappedToken, tokenRateOracle } = ctx.contracts;
-    const {user1, user2, owner } = ctx.accounts;
+    const {user1, user2, owner, zero } = ctx.accounts;
     const { rate, decimals, premintShares } = ctx.constants;
 
     await tokenRateOracle.connect(owner).updateRate(rate, 1000);
@@ -189,6 +177,9 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.connect(user1).callStatic.wrap(user1Shares), user1Tokens);
     const tx = await rebasableProxied.connect(user1).wrap(user1Shares);
 
+    await assert.emits(rebasableProxied, tx, "Transfer", [zero.address, user1.address, user1Tokens]);
+    await assert.emits(rebasableProxied, tx, "TransferShares", [zero.address, user1.address, user1Shares]);
+
     assert.equalBN(await rebasableProxied.sharesOf(user1.address), user1Shares);
     assert.equalBN(await rebasableProxied.balanceOf(user1.address), user1Tokens);
     assert.equalBN(await wrappedToken.balanceOf(rebasableProxied.address), user1Shares);
@@ -209,6 +200,9 @@ unit("ERC20Rebasable", ctxFactory)
 
     assert.equalBN(await rebasableProxied.connect(user2).callStatic.wrap(user2Shares), user2Tokens);
     const tx2 = await rebasableProxied.connect(user2).wrap(user2Shares);
+
+    await assert.emits(rebasableProxied, tx2, "Transfer", [zero.address, user2.address, user2Tokens]);
+    await assert.emits(rebasableProxied, tx2, "TransferShares", [zero.address, user2.address, user2Shares]);
 
     assert.equalBN(await rebasableProxied.sharesOf(user2.address), user2Shares);
     assert.equalBN(await rebasableProxied.balanceOf(user2.address), user2Tokens);
@@ -308,7 +302,7 @@ unit("ERC20Rebasable", ctxFactory)
         zero.address,
         86400
     );
-    const rebasableProxied = await new ERC20Rebasable__factory(deployer).deploy(
+    const rebasableProxied = await new ERC20RebasableBridged__factory(deployer).deploy(
         "",
         "symbol",
         10,
@@ -323,18 +317,6 @@ unit("ERC20Rebasable", ctxFactory)
     await assert.revertsWith(rebasableProxied.connect(user1).unwrap(5), "ErrorWrongOracleUpdateTime()");
   })
 
-.test("unwrap() :: wrong oracle answer", async (ctx) => {
-
-    const { rebasableProxied, wrappedToken, tokenRateOracle } = ctx.contracts;
-    const { user1, owner } = ctx.accounts;
-
-    await tokenRateOracle.connect(owner).updateRate(0, 2000);
-    await wrappedToken.connect(owner).bridgeMint(user1.address, 1000);
-    await wrappedToken.connect(user1).approve(rebasableProxied.address, 1000);
-
-    await assert.revertsWith(rebasableProxied.connect(user1).unwrap(21), "ErrorOracleAnswerIsNotPositive()");
-  })
-
   .test("unwrap() :: when no balance", async (ctx) => {
     const { rebasableProxied } = ctx.contracts;
     const { user1 } = ctx.accounts;
@@ -345,7 +327,7 @@ unit("ERC20Rebasable", ctxFactory)
   .test("bridgeMintShares() :: happy path", async (ctx) => {
 
     const { rebasableProxied } = ctx.contracts;
-    const {user1, user2, owner } = ctx.accounts;
+    const {user1, user2, owner, zero } = ctx.accounts;
     const { rate, decimals, premintShares, premintTokens } = ctx.constants;
 
     assert.equalBN(await rebasableProxied.getTotalShares(), premintShares);
@@ -359,6 +341,8 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.balanceOf(user1.address), 0);
 
     const tx0 = await rebasableProxied.connect(owner).bridgeMintShares(user1.address, user1SharesToMint);
+    await assert.emits(rebasableProxied, tx0, "Transfer", [zero.address, user1.address, user1TokensMinted]);
+    await assert.emits(rebasableProxied, tx0, "TransferShares", [zero.address, user1.address, user1SharesToMint]);
 
     assert.equalBN(await rebasableProxied.sharesOf(user1.address), user1SharesToMint);
     assert.equalBN(await rebasableProxied.balanceOf(user1.address), user1TokensMinted);
@@ -375,6 +359,8 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.balanceOf(user2.address), 0);
 
     const tx1 = await rebasableProxied.connect(owner).bridgeMintShares(user2.address, user2SharesToMint);
+    await assert.emits(rebasableProxied, tx1, "Transfer", [zero.address, user2.address, user2TokensMinted]);
+    await assert.emits(rebasableProxied, tx1, "TransferShares", [zero.address, user2.address, user2SharesToMint]);
 
     assert.equalBN(await rebasableProxied.sharesOf(user2.address), user2SharesToMint);
     assert.equalBN(await rebasableProxied.balanceOf(user2.address), user2TokensMinted);
@@ -538,6 +524,7 @@ unit("ERC20Rebasable", ctxFactory)
     assert.equalBN(await rebasableProxied.balanceOf(holder.address), premintTokens);
 
     const amount = wei`1 ether`;
+    const sharesToTransfer = await rebasableProxied.getSharesByTokens(amount);
 
     // transfer tokens
     const tx = await rebasableProxied
@@ -549,6 +536,12 @@ unit("ERC20Rebasable", ctxFactory)
       holder.address,
       recipient.address,
       amount,
+    ]);
+
+    await assert.emits(rebasableProxied, tx, "TransferShares", [
+      holder.address,
+      recipient.address,
+      sharesToTransfer,
     ]);
 
     // validate balance was updated
@@ -723,7 +716,7 @@ unit("ERC20Rebasable", ctxFactory)
     async (ctx) => {
       const { rebasableProxied } = ctx.contracts;
       const { premintShares } = ctx.constants;
-      const { recipient, owner } = ctx.accounts;
+      const { recipient, owner, zero } = ctx.accounts;
 
       // validate balance before mint
       assert.equalBN(await rebasableProxied.balanceOf(recipient.address), 0);
@@ -739,12 +732,12 @@ unit("ERC20Rebasable", ctxFactory)
       // validate Transfer event was emitted
       const mintAmountInTokens = await rebasableProxied.getTokensByShares(mintAmount);
       await assert.emits(rebasableProxied, tx, "Transfer", [
-        hre.ethers.constants.AddressZero,
+        zero.address,
         recipient.address,
         mintAmountInTokens,
       ]);
       await assert.emits(rebasableProxied, tx, "TransferShares", [
-        hre.ethers.constants.AddressZero,
+        zero.address,
         recipient.address,
         mintAmount,
       ]);
@@ -839,6 +832,10 @@ async function ctxFactory() {
     const premintShares = wei.toBigNumber(wei`100 ether`);
     const premintTokens = BigNumber.from(rate).mul(premintShares).div(decimals);
 
+    const provider = await hre.ethers.provider;
+    const blockNumber = await provider.getBlockNumber();
+    const blockTimestamp = (await provider.getBlock(blockNumber)).timestamp;
+
     const [
         deployer,
         owner,
@@ -863,7 +860,7 @@ async function ctxFactory() {
         zero.address,
         86400
     );
-    const rebasableTokenImpl = await new ERC20Rebasable__factory(deployer).deploy(
+    const rebasableTokenImpl = await new ERC20RebasableBridged__factory(deployer).deploy(
       name,
       symbol,
       decimalsToSet,
@@ -880,23 +877,23 @@ async function ctxFactory() {
     const l2TokensProxy = await new OssifiableProxy__factory(deployer).deploy(
       rebasableTokenImpl.address,
       deployer.address,
-      ERC20Rebasable__factory.createInterface().encodeFunctionData("initialize", [
+      ERC20RebasableBridged__factory.createInterface().encodeFunctionData("initialize", [
         name,
         symbol,
       ])
     );
 
-    const rebasableProxied = ERC20Rebasable__factory.connect(
+    const rebasableProxied = ERC20RebasableBridged__factory.connect(
       l2TokensProxy.address,
       holder
     );
 
-    await tokenRateOracle.connect(owner).updateRate(rate, 1000);
+    await tokenRateOracle.connect(owner).updateRate(rate, blockTimestamp - 1000);
     await rebasableProxied.connect(owner).bridgeMintShares(holder.address, premintShares);
 
     return {
       accounts: { deployer, owner, recipient, spender, holder, stranger, zero, user1, user2 },
-      constants: { name, symbol, decimalsToSet, decimals, premintShares, premintTokens, rate },
+      constants: { name, symbol, decimalsToSet, decimals, premintShares, premintTokens, rate, blockTimestamp },
       contracts: { rebasableProxied, wrappedToken, tokenRateOracle }
     };
 }
