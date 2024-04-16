@@ -170,8 +170,6 @@ export class DeployScript {
       10: "opt_mainnet",
       11155420: "opt_sepolia",
       31337: "hardhat",
-      42161: "arb_mainnet",
-      421613: "arb_sepolia",
     };
     const networkName = networkNameByChainId[chainId] || "<NETWORK_NAME>";
     const arsString = stepInfo.args.map((a) => `"${a.value}"`).join(" ");
