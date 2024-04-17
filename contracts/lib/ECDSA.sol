@@ -3,7 +3,6 @@
 
 // Extracted from:
 // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.4.0/contracts/cryptography/ECDSA.sol#L53
-// https://github.com/OpenZeppelin/openzeppelin-contracts/blob/541e821/contracts/utils/cryptography/ECDSA.sol#L112
 
 pragma solidity 0.8.10;
 
@@ -39,19 +38,5 @@ library ECDSA {
         require(signer != address(0), "ECDSA: invalid signature");
 
         return signer;
-    }
-
-    /**
-     * @dev Overload of `recover` that receives the `r` and `vs` short-signature fields separately.
-     * See https://eips.ethereum.org/EIPS/eip-2098[EIP-2098 short signatures]
-     */
-    function recover(bytes32 hash, bytes32 r, bytes32 vs) internal pure returns (address) {
-        bytes32 s;
-        uint8 v;
-        assembly {
-            s := and(vs, 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
-            v := add(shr(255, vs), 27)
-        }
-        return recover(hash, v, r, s);
     }
 }
