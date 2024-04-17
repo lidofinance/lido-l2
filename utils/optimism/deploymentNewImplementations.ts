@@ -188,7 +188,7 @@ export default function deploymentNewImplementations(
                         expectedL2TokenRebasableImplAddress,
                         l2Params.admins.proxy,
                         ERC20RebasableBridged__factory.createInterface().encodeFunctionData(
-                            "initialize",
+                            "initializeERC20Metadata",
                             [l2TokenRebasableName, l2TokenRebasableSymbol]
                         ),
                         options?.overrides,

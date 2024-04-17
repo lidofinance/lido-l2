@@ -420,6 +420,7 @@ async function tokenProxied(
             ERC20RebasableBridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
                 name,
                 symbol,
+                SIGNING_DOMAIN_VERSION
             ])
         );
 
@@ -449,6 +450,7 @@ async function tokenProxied(
         ERC20BridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
             name,
             symbol,
+            SIGNING_DOMAIN_VERSION
         ])
     );
 

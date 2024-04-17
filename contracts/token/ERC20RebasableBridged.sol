@@ -72,14 +72,6 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
         L2_ERC20_TOKEN_BRIDGE = l2ERC20TokenBridge_;
     }
 
-    /// @notice Sets the name and the symbol of the tokens if they both are empty
-    /// @param name_ The name of the token
-    /// @param symbol_ The symbol of the token
-    function initialize(string memory name_, string memory symbol_) external {
-        _setERC20MetadataName(name_);
-        _setERC20MetadataSymbol(symbol_);
-    }
-
     /// @inheritdoc IERC20Wrapper
     function wrap(uint256 sharesAmount_) external returns (uint256) {
         if (sharesAmount_ == 0) revert ErrorZeroSharesWrap();
@@ -176,6 +168,14 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
         _spendAllowance(from_, msg.sender, amount_);
         _transfer(from_, to_, amount_);
         return true;
+    }
+
+    /// @notice Sets the name and the symbol of the tokens if they both are empty
+    /// @param name_ The name of the token
+    /// @param symbol_ The symbol of the token
+    function initializeERC20Metadata(string memory name_, string memory symbol_) public {
+        _setERC20MetadataName(name_);
+        _setERC20MetadataSymbol(symbol_);
     }
 
     function _getTokenAllowance() internal pure returns (mapping(address => mapping(address => uint256)) storage) {

@@ -43,14 +43,6 @@ contract ERC20Bridged is IERC20Bridged, ERC20Core, ERC20Metadata {
         bridge = bridge_;
     }
 
-    /// @notice Sets the name and the symbol of the tokens if they both are empty
-    /// @param name_ The name of the token
-    /// @param symbol_ The symbol of the token
-    function initialize(string memory name_, string memory symbol_) external {
-        _setERC20MetadataName(name_);
-        _setERC20MetadataSymbol(symbol_);
-    }
-
     /// @inheritdoc IERC20Bridged
     function bridgeMint(address account_, uint256 amount_) external onlyBridge {
         _mint(account_, amount_);
@@ -59,6 +51,14 @@ contract ERC20Bridged is IERC20Bridged, ERC20Core, ERC20Metadata {
     /// @inheritdoc IERC20Bridged
     function bridgeBurn(address account_, uint256 amount_) external onlyBridge {
         _burn(account_, amount_);
+    }
+
+    /// @notice Sets the name and the symbol of the tokens if they both are empty
+    /// @param name_ The name of the token
+    /// @param symbol_ The symbol of the token
+    function initializeERC20Metadata(string memory name_, string memory symbol_) public {
+        _setERC20MetadataName(name_);
+        _setERC20MetadataSymbol(symbol_);
     }
 
     /// @dev Validates that sender of the transaction is the bridge

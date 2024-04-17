@@ -26,6 +26,15 @@ contract ERC20BridgedPermit is ERC20Bridged, PermitExtension {
     {
     }
 
+    /// @notice Sets the name, the symbol and the version of the tokens if they are empty
+    /// @param name_ The name of the token
+    /// @param symbol_ The symbol of the token
+    /// @param version_ The version of the token
+    function initialize(string memory name_, string memory symbol_, string memory version_) external {
+        initializeERC20Metadata(name_, symbol_);
+        initializeEIP5267Metadata(name_, version_);
+    }
+
     /// @inheritdoc PermitExtension
     function _permitAccepted(address owner_, address spender_, uint256 amount_) internal override {
         _approve(owner_, spender_, amount_);

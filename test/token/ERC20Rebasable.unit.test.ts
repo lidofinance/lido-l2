@@ -59,7 +59,7 @@ unit("ERC20RebasableBridged", ctxFactory)
       owner.address
     );
     await assert.revertsWith(
-      rebasableTokenImpl.initialize("New Name", ""),
+      rebasableTokenImpl.initializeERC20Metadata("New Name", ""),
       "ErrorNameAlreadySet()"
     );
   })
@@ -90,7 +90,7 @@ unit("ERC20RebasableBridged", ctxFactory)
       owner.address
     );
     await assert.revertsWith(
-      rebasableTokenImpl.initialize("", "New Symbol"),
+      rebasableTokenImpl.initializeERC20Metadata("", "New Symbol"),
       "ErrorSymbolAlreadySet()"
     );
   })
@@ -877,7 +877,7 @@ async function ctxFactory() {
     const l2TokensProxy = await new OssifiableProxy__factory(deployer).deploy(
       rebasableTokenImpl.address,
       deployer.address,
-      ERC20RebasableBridged__factory.createInterface().encodeFunctionData("initialize", [
+      ERC20RebasableBridged__factory.createInterface().encodeFunctionData("initializeERC20Metadata", [
         name,
         symbol,
       ])
