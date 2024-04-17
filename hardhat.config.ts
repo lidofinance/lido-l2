@@ -16,15 +16,6 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.6.11",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 100,
-          },
-        },
-      },
-      {
         version: "0.8.10",
         settings: {
           optimizer: {
@@ -52,22 +43,6 @@ const config: HardhatUserConfig = {
       url: "http://localhost:8545",
     },
 
-    // Arbitrum Public Chains
-    arb_mainnet: {
-      url: env.string("RPC_ARB_MAINNET", ""),
-    },
-    arb_sepolia: {
-      url: env.string("RPC_ARB_SEPOLIA", ""),
-    },
-
-    // Arbitrum Fork Chains
-    arb_mainnet_fork: {
-      url: "http://localhost:8546",
-    },
-    arb_sepolia_fork: {
-      url: "http://localhost:8546",
-    },
-
     // Optimism Public Chains
     opt_mainnet: {
       url: env.string("RPC_OPT_MAINNET", ""),
@@ -92,7 +67,6 @@ const config: HardhatUserConfig = {
     apiKey: {
       mainnet: env.string("ETHERSCAN_API_KEY_ETH", ""),
       sepolia: env.string("ETHERSCAN_API_KEY_ETH", ""),
-      arbitrumOne: env.string("ETHERSCAN_API_KEY_ARB", ""),
       optimisticEthereum: env.string("ETHERSCAN_API_KEY_OPT", ""),
       "opt_sepolia": env.string("ETHERSCAN_API_KEY_OPT", ""),
     },
@@ -120,7 +94,6 @@ const config: HardhatUserConfig = {
     externalArtifacts: [
       "./interfaces/**/*.json",
       "./utils/optimism/artifacts/*.json",
-      "./utils/arbitrum/artifacts/*.json",
     ],
   },
   mocha: {
