@@ -13,6 +13,19 @@ interface ITokenRateOracle is ITokenRateUpdatable, IChainlinkAggregatorInterface
 /// @notice Oracle for storing token rate.
 contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle {
 
+    /// @dev Stores the dynamic data of the oracle. Allows safely use of this
+    ///     contract with upgradable proxies
+    struct TokenRateData {
+        /// @notice wstETH/stETH token rate.
+        uint192 tokenRate;
+        /// @notice L1 time when token rate was pushed.
+        uint64 rateL1Timestamp;
+    } // occupy a single slot
+
+    /// @dev Location of the slot with TokenRateData
+    bytes32 private constant TOKEN_RATE_DATA_SLOT =
+        keccak256("TokenRateOracle.TOKEN_RATE_DATA_SLOT");
+
     /// @notice A bridge which can update oracle.
     address public immutable L2_ERC20_TOKEN_BRIDGE;
 
@@ -25,15 +38,11 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle {
     /// @notice Decimals of the oracle response.
     uint8 public constant DECIMALS = 18;
 
+    /// @notice The minimum value that the token rate can be
     uint256 public constant MIN_TOKEN_RATE = 1_000_000_000_000_000;         // 0.001
 
+    /// @notice The maximum value that the token rate can be.
     uint256 public constant MAX_TOKEN_RATE = 1_000_000_000_000_000_000_000; // 1000
-
-    /// @notice wstETH/stETH token rate.
-    uint256 public tokenRate;
-
-    /// @notice L1 time when token rate was pushed.
-    uint256 public rateL1Timestamp;
 
     /// @param messenger_ L2 messenger address being used for cross-chain communications
     /// @param l2ERC20TokenBridge_ the bridge address that has a right to updates oracle.
@@ -58,20 +67,20 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle {
         uint256 updatedAt_,
         uint80 answeredInRound_
     ) {
-        uint80 roundId = uint80(rateL1Timestamp);
+        uint80 roundId = uint80(_loadTokenRateData().rateL1Timestamp);
 
         return (
             roundId,
-            int256(tokenRate),
-            rateL1Timestamp,
-            rateL1Timestamp,
+            int256(uint(_loadTokenRateData().tokenRate)),
+            _loadTokenRateData().rateL1Timestamp,
+            _loadTokenRateData().rateL1Timestamp,
             roundId
         );
     }
 
     /// @inheritdoc IChainlinkAggregatorInterface
     function latestAnswer() external view returns (int256) {
-        return int256(tokenRate);
+        return int256(uint(_loadTokenRateData().tokenRate));
     }
 
     /// @inheritdoc IChainlinkAggregatorInterface
@@ -82,12 +91,12 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle {
     /// @inheritdoc ITokenRateUpdatable
     function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external {
 
-        if (_isNoRightsToCall(msg.sender)) {
+        if (!_isAuthorized(msg.sender)) {
             revert ErrorNoRights(msg.sender);
         }
 
-        if (rateL1Timestamp_ < rateL1Timestamp) {
-            emit NewTokenRateOutdated(tokenRate_, rateL1Timestamp, rateL1Timestamp_);
+        if (rateL1Timestamp_ < _loadTokenRateData().rateL1Timestamp) {
+            emit NewTokenRateOutdated(tokenRate_, _loadTokenRateData().rateL1Timestamp, rateL1Timestamp_);
             return;
         }
 
@@ -99,26 +108,38 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle {
             revert ErrorTokenRateIsOutOfRange(tokenRate_, rateL1Timestamp_);
         }
 
-        if (tokenRate_ == tokenRate && rateL1Timestamp_ == rateL1Timestamp) {
+        if (tokenRate_ == _loadTokenRateData().tokenRate && rateL1Timestamp_ == _loadTokenRateData().rateL1Timestamp) {
             return;
         }
 
-        tokenRate = tokenRate_;
-        rateL1Timestamp = rateL1Timestamp_;
+        _loadTokenRateData().tokenRate = uint192(tokenRate_);
+        _loadTokenRateData().rateL1Timestamp = uint64(rateL1Timestamp_);
 
-        emit RateUpdated(tokenRate, rateL1Timestamp);
+        emit RateUpdated(_loadTokenRateData().tokenRate, _loadTokenRateData().rateL1Timestamp);
     }
 
     /// @notice Returns flag that shows that token rate can be considered outdated.
     function isLikelyOutdated() external view returns (bool) {
-        return block.timestamp - rateL1Timestamp > TOKEN_RATE_OUTDATED_DELAY;
+        return block.timestamp - _loadTokenRateData().rateL1Timestamp > TOKEN_RATE_OUTDATED_DELAY;
     }
 
-    function _isNoRightsToCall(address caller_) internal view returns (bool) {
+    function _isAuthorized(address caller_) internal view returns (bool) {
         bool isCalledFromL1TokenRatePusher = caller_ == address(MESSENGER) &&
             MESSENGER.xDomainMessageSender() == L1_TOKEN_RATE_PUSHER;
         bool isCalledFromERC20TokenRateBridge = caller_ == L2_ERC20_TOKEN_BRIDGE;
-        return !isCalledFromL1TokenRatePusher && !isCalledFromERC20TokenRateBridge;
+        return isCalledFromL1TokenRatePusher || isCalledFromERC20TokenRateBridge;
+    }
+
+    /// @dev Returns the reference to the slot with TokenRateData struct
+    function _loadTokenRateData()
+        private
+        pure
+        returns (TokenRateData storage r)
+    {
+        bytes32 slot = TOKEN_RATE_DATA_SLOT;
+        assembly {
+            r.slot := slot
+        }
     }
 
     event RateUpdated(uint256 tokenRate_, uint256 rateL1Timestamp_);
