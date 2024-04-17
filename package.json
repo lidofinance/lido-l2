@@ -64,7 +64,6 @@
     "@ethersproject/providers": "^5.6.8",
     "@lidofinance/evm-script-decoder": "^0.2.2",
     "@openzeppelin/contracts": "4.6.0",
-    "@openzeppelin/contracts-v4.9": "npm:@openzeppelin/contracts@4.9.6",
     "chalk": "4.1.2"
   }
 }
