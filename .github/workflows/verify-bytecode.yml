@@ -49,9 +49,3 @@ jobs:
           file: artifacts-opt.json
           rpcUrl: ${{ secrets.OPTIMISM_RPC }}
 
-      - name: Verify bytecode of contracts on Arbitrum chain
-        uses: lidofinance/action-verify-bytecode@master
-        if: always()
-        with:
-          file: artifacts-arb.json
-          rpcUrl: ${{ secrets.ARBITRUM_RPC }}

@@ -4,29 +4,6 @@ export default {
   USE_DEPLOYED_CONTRACTS(defaultValue: boolean = false) {
     return env.bool("TESTING_USE_DEPLOYED_CONTRACTS", defaultValue);
   },
-
-  ARB_L1_TOKEN() {
-    return env.address("TESTING_ARB_L1_TOKEN");
-  },
-  ARB_L2_TOKEN() {
-    return env.address("TESTING_ARB_L2_TOKEN");
-  },
-  ARB_L1_ERC20_TOKEN_GATEWAY() {
-    return env.address("TESTING_ARB_L1_ERC20_TOKEN_GATEWAY");
-  },
-  ARB_L2_ERC20_TOKEN_GATEWAY() {
-    return env.address("TESTING_ARB_L2_ERC20_TOKEN_GATEWAY");
-  },
-  ARB_L1_GATEWAY_ROUTER(defaultValue?: string) {
-    return env.address("TESTING_ARB_L1_GATEWAY_ROUTER", defaultValue);
-  },
-  ARB_L2_GATEWAY_ROUTER(defaultValue?: string) {
-    return env.address("TESTING_ARB_L2_GATEWAY_ROUTER", defaultValue);
-  },
-  ARB_GOV_BRIDGE_EXECUTOR() {
-    return env.address("TESTING_ARB_GOV_BRIDGE_EXECUTOR");
-  },
-
   OPT_L1_TOKEN() {
     return env.address("TESTING_OPT_L1_TOKEN");
   },

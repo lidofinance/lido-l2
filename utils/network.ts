@@ -6,7 +6,7 @@ import { HardhatRuntimeEnvironment, HttpNetworkConfig } from "hardhat/types";
 
 import env from "./env";
 
-type ChainNameShort = "arb" | "opt" | "eth";
+type ChainNameShort = "opt" | "eth";
 export type NetworkName = "sepolia" | "mainnet";
 export type SignerOrProvider = Signer | Provider;
 
@@ -14,10 +14,6 @@ const HARDHAT_NETWORK_NAMES = {
   eth: {
     sepolia: "eth_sepolia",
     mainnet: "eth_mainnet",
-  },
-  arb: {
-    sepolia: "arb_sepolia",
-    mainnet: "arb_mainnet",
   },
   opt: {
     sepolia: "opt_sepolia",
@@ -29,10 +25,6 @@ const HARDHAT_NETWORK_NAMES_FORK = {
   eth: {
     sepolia: "eth_sepolia_fork",
     mainnet: "eth_mainnet_fork",
-  },
-  arb: {
-    sepolia: "arb_sepolia_fork",
-    mainnet: "arb_mainnet_fork",
   },
   opt: {
     sepolia: "opt_sepolia_fork",
@@ -125,10 +117,6 @@ function getChainId(protocol: ChainNameShort, networkName: NetworkName) {
       mainnet: 10,
       sepolia: 11155420,
     },
-    arb: {
-      mainnet: 42161,
-      sepolia: 421613,
-    },
   };
   const chainId = chainIds[protocol][networkName];
   if (!chainId) {
@@ -142,9 +130,6 @@ function getBlockExplorerBaseUrlByChainId(chainId: number) {
     // ethereum
     1: "https://etherscan.io",
     11155111: "https://sepolia.etherscan.io",
-    // arbitrum
-    42161: "https://arbiscan.io",
-    421613: "https://sepolia-rollup-explorer.arbitrum.io",
     // optimism
     10: "https://optimistic.etherscan.io",
     11155420: "https://blockscout.com/optimism/sepolia",
