@@ -3,8 +3,6 @@
 
 pragma solidity 0.8.10;
 
-import {UnstructuredRefStorage} from "../token/UnstructuredRefStorage.sol";
-
 /// @author psirex, kovalgek
 /// @notice Contains the logic for validation of tokens used in the bridging process
 contract RebasableAndNonRebasableTokens {
@@ -39,28 +37,16 @@ contract RebasableAndNonRebasableTokens {
 
     /// @dev Validates that passed l1Token_ and l2Token_ tokens pair is supported by the bridge.
     modifier onlySupportedL1L2TokensPair(address l1Token_, address l2Token_) {
-        if (l1Token_ != L1_TOKEN_NON_REBASABLE && l1Token_ != L1_TOKEN_REBASABLE) {
-            revert ErrorUnsupportedL1Token();
-        }
-        if (l2Token_ != L2_TOKEN_NON_REBASABLE && l2Token_ != L2_TOKEN_REBASABLE) {
-            revert ErrorUnsupportedL2Token();
-        }
         if (!_isSupportedL1L2TokensPair(l1Token_, l2Token_)) {
-            revert ErrorUnsupportedL1L2TokensPair();
+            revert ErrorUnsupportedL1L2TokensPair(l1Token_, l2Token_);
         }
         _;
-    }
-
-    function _isSupportedL1L2TokensPair(address l1Token_, address l2Token_) internal view returns (bool) {
-        bool isNonRebasablePair = l1Token_ == L1_TOKEN_NON_REBASABLE && l2Token_ == L2_TOKEN_NON_REBASABLE;
-        bool isRebasablePair = l1Token_ == L1_TOKEN_REBASABLE && l2Token_ == L2_TOKEN_REBASABLE;
-        return isNonRebasablePair || isRebasablePair;
     }
 
     /// @dev Validates that passed l1Token_ is supported by the bridge
     modifier onlySupportedL1Token(address l1Token_) {
         if (l1Token_ != L1_TOKEN_NON_REBASABLE && l1Token_ != L1_TOKEN_REBASABLE) {
-            revert ErrorUnsupportedL1Token();
+            revert ErrorUnsupportedL1Token(l1Token_);
         }
         _;
     }
@@ -68,7 +54,7 @@ contract RebasableAndNonRebasableTokens {
     /// @dev Validates that passed l2Token_ is supported by the bridge
     modifier onlySupportedL2Token(address l2Token_) {
         if (l2Token_ != L2_TOKEN_NON_REBASABLE && l2Token_ != L2_TOKEN_REBASABLE) {
-            revert ErrorUnsupportedL2Token();
+            revert ErrorUnsupportedL2Token(l2Token_);
         }
         _;
     }
@@ -81,16 +67,18 @@ contract RebasableAndNonRebasableTokens {
         _;
     }
 
-    function _isRebasable(address token_) internal view returns (bool) {
-        return token_ == L1_TOKEN_REBASABLE || token_ == L2_TOKEN_REBASABLE;
+    function _isSupportedL1L2TokensPair(address l1Token_, address l2Token_) internal view returns (bool) {
+        bool isNonRebasablePair = l1Token_ == L1_TOKEN_NON_REBASABLE && l2Token_ == L2_TOKEN_NON_REBASABLE;
+        bool isRebasablePair = l1Token_ == L1_TOKEN_REBASABLE && l2Token_ == L2_TOKEN_REBASABLE;
+        return isNonRebasablePair || isRebasablePair;
     }
 
-    function _l1Token(address l2Token_) internal view returns (address) {
-        return _isRebasable(l2Token_) ? L1_TOKEN_REBASABLE : L1_TOKEN_NON_REBASABLE;
+    function _getL1Token(address l2Token_) internal view returns (address) {
+        return (l2Token_ == L2_TOKEN_REBASABLE) ? L1_TOKEN_REBASABLE : L1_TOKEN_NON_REBASABLE;
     }
 
-    error ErrorUnsupportedL1Token();
-    error ErrorUnsupportedL2Token();
-    error ErrorUnsupportedL1L2TokensPair();
+    error ErrorUnsupportedL1Token(address l1Token);
+    error ErrorUnsupportedL2Token(address l2Token);
+    error ErrorUnsupportedL1L2TokensPair(address l1Token, address l2Token);
     error ErrorAccountIsZeroAddress();
 }

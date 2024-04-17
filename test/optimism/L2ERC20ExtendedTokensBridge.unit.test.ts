@@ -67,7 +67,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
         } = ctx;
         await assert.revertsWith(
             l2TokenBridge.withdraw(stranger.address, wei`1 ether`, wei`1 gwei`, "0x"),
-            "ErrorUnsupportedL2Token()"
+            "ErrorUnsupportedL2Token(\""+stranger.address+"\")"
         );
     })
 
@@ -402,7 +402,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
                 wei`1 gwei`,
                 "0x"
             ),
-            "ErrorUnsupportedL2Token()"
+            "ErrorUnsupportedL2Token(\""+stranger.address+"\")"
         );
     })
 
@@ -724,7 +724,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
                     wei`1 ether`,
                     "0x"
                 ),
-            "ErrorUnsupportedL1Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+stranger.address+"\", \""+l2TokenNonRebasable.address+"\")"
         );
         await assert.revertsWith(
             l2TokenBridge
@@ -737,7 +737,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
                     wei`1 ether`,
                     "0x"
                 ),
-            "ErrorUnsupportedL1Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+stranger.address+"\", \""+l2TokenRebasable.address+"\")"
         );
     })
 
@@ -759,7 +759,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
                     wei`1 ether`,
                     "0x"
                 ),
-            "ErrorUnsupportedL2Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+l1TokenNonRebasable.address+"\", \""+stranger.address+"\")"
         );
         await assert.revertsWith(
             l2TokenBridge
@@ -772,7 +772,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
                     wei`1 ether`,
                     "0x"
                 ),
-            "ErrorUnsupportedL2Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+l1TokenRebasable.address+"\", \""+stranger.address+"\")"
         );
     })
 
@@ -794,7 +794,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
                     wei`1 ether`,
                     "0x"
                 ),
-            "ErrorUnsupportedL1L2TokensPair()"
+            "ErrorUnsupportedL1L2TokensPair(\""+l1TokenNonRebasable.address+"\", \""+l2TokenRebasable.address+"\")"
         );
         await assert.revertsWith(
             l2TokenBridge
@@ -807,7 +807,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
                     wei`1 ether`,
                     "0x"
                 ),
-            "ErrorUnsupportedL1L2TokensPair()"
+            "ErrorUnsupportedL1L2TokensPair(\""+l1TokenRebasable.address+"\", \""+l2TokenNonRebasable.address+"\")"
         );
     })
 

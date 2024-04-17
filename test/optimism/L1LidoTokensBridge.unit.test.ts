@@ -63,7 +63,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                 wei`1 gwei`,
                 "0x"
             ),
-            "ErrorUnsupportedL1Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+ctx.accounts.stranger.address+"\", \""+ctx.stubs.l2TokenNonRebasable.address+"\")"
         );
         await assert.revertsWith(
             ctx.l1TokenBridge.depositERC20(
@@ -73,7 +73,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                 wei`1 gwei`,
                 "0x"
             ),
-            "ErrorUnsupportedL1Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+ctx.accounts.stranger.address+"\", \""+ctx.stubs.l2TokenRebasable.address+"\")"
         );
     })
 
@@ -86,7 +86,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                 wei`1 gwei`,
                 "0x"
             ),
-            "ErrorUnsupportedL2Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+ctx.stubs.l1TokenNonRebasable.address+"\", \""+ctx.accounts.stranger.address+"\")"
         );
         await assert.revertsWith(
             ctx.l1TokenBridge.depositERC20(
@@ -96,7 +96,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                 wei`1 gwei`,
                 "0x"
             ),
-            "ErrorUnsupportedL2Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+ctx.stubs.l1TokenRebasable.address+"\", \""+ctx.accounts.stranger.address+"\")"
         );
     })
 
@@ -109,7 +109,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                 wei`1 gwei`,
                 "0x"
             ),
-            "ErrorUnsupportedL1L2TokensPair()"
+            "ErrorUnsupportedL1L2TokensPair(\""+ctx.stubs.l1TokenRebasable.address+"\", \""+ctx.stubs.l2TokenNonRebasable.address+"\")"
         );
         await assert.revertsWith(
             ctx.l1TokenBridge.depositERC20(
@@ -119,7 +119,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                 wei`1 gwei`,
                 "0x"
             ),
-            "ErrorUnsupportedL1L2TokensPair()"
+            "ErrorUnsupportedL1L2TokensPair(\""+ctx.stubs.l1TokenNonRebasable.address+"\", \""+ctx.stubs.l2TokenRebasable.address+"\")"
         );
     })
 
@@ -335,7 +335,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                 wei`1 gwei`,
                 "0x"
             ),
-            "ErrorUnsupportedL1Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+stranger.address+"\", \""+l2TokenNonRebasable.address+"\")"
         );
         await assert.revertsWith(
             l1TokenBridge.depositERC20To(
@@ -346,38 +346,38 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                 wei`1 gwei`,
                 "0x"
             ),
-            "ErrorUnsupportedL1Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+stranger.address+"\", \""+l2TokenRebasable.address+"\")"
         );
     })
 
     .test("depositERC20To() :: wrong l2Token address", async (ctx) => {
         const {
             l1TokenBridge,
-            stubs: { l2TokenNonRebasable, l2TokenRebasable },
+            stubs: { l1TokenNonRebasable, l1TokenRebasable },
             accounts: { recipient, stranger },
         } = ctx;
 
         await assert.revertsWith(
             l1TokenBridge.depositERC20To(
+                l1TokenNonRebasable.address,
                 stranger.address,
-                l2TokenNonRebasable.address,
                 recipient.address,
                 wei`1 ether`,
                 wei`1 gwei`,
                 "0x"
             ),
-            "ErrorUnsupportedL1Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+l1TokenNonRebasable.address+"\", \""+stranger.address+"\")"
         );
         await assert.revertsWith(
             l1TokenBridge.depositERC20To(
+                l1TokenRebasable.address,
                 stranger.address,
-                l2TokenRebasable.address,
                 recipient.address,
                 wei`1 ether`,
                 wei`1 gwei`,
                 "0x"
             ),
-            "ErrorUnsupportedL1Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+l1TokenRebasable.address+"\", \""+stranger.address+"\")"
         );
     })
 
@@ -397,7 +397,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                 wei`1 gwei`,
                 "0x"
             ),
-            "ErrorUnsupportedL1L2TokensPair()"
+            "ErrorUnsupportedL1L2TokensPair(\""+l1TokenNonRebasable.address+"\", \""+l2TokenRebasable.address+"\")"
         );
         await assert.revertsWith(
             l1TokenBridge.depositERC20To(
@@ -408,7 +408,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                 wei`1 gwei`,
                 "0x"
             ),
-            "ErrorUnsupportedL1L2TokensPair()"
+            "ErrorUnsupportedL1L2TokensPair(\""+l1TokenRebasable.address+"\", \""+l2TokenNonRebasable.address+"\")"
         );
     })
 
@@ -641,7 +641,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                     wei`1 ether`,
                     "0x"
                 ),
-            "ErrorUnsupportedL1Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+stranger.address+"\", \""+l2TokenNonRebasable.address+"\")"
         );
 
         await assert.revertsWith(
@@ -655,7 +655,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                     wei`1 ether`,
                     "0x"
                 ),
-            "ErrorUnsupportedL1Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+stranger.address+"\", \""+l2TokenRebasable.address+"\")"
         );
     })
 
@@ -679,7 +679,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                     wei`1 ether`,
                     "0x"
                 ),
-            "ErrorUnsupportedL2Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+l1TokenNonRebasable.address+"\", \""+stranger.address+"\")"
         );
 
         await assert.revertsWith(
@@ -693,7 +693,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                     wei`1 ether`,
                     "0x"
                 ),
-            "ErrorUnsupportedL2Token()"
+            "ErrorUnsupportedL1L2TokensPair(\""+l1TokenRebasable.address+"\", \""+stranger.address+"\")"
         );
     })
 
@@ -716,7 +716,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                     wei`1 ether`,
                     "0x"
                 ),
-            "ErrorUnsupportedL1L2TokensPair()"
+            "ErrorUnsupportedL1L2TokensPair(\""+l1TokenNonRebasable.address+"\", \""+l2TokenRebasable.address+"\")"
         );
 
         await assert.revertsWith(
@@ -730,7 +730,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
                     wei`1 ether`,
                     "0x"
                 ),
-            "ErrorUnsupportedL1L2TokensPair()"
+            "ErrorUnsupportedL1L2TokensPair(\""+l1TokenRebasable.address+"\", \""+l2TokenNonRebasable.address+"\")"
         );
     })
 

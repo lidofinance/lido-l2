@@ -119,7 +119,7 @@ abstract contract L1ERC20ExtendedTokensBridge is
         onlyFromCrossDomainAccount(L2_TOKEN_BRIDGE)
         onlySupportedL1L2TokensPair(l1Token_, l2Token_)
     {
-        uint256 amountToWithdraw = (_isRebasable(l1Token_) && amount_ != 0) ?
+        uint256 amountToWithdraw = (l1Token_ == L1_TOKEN_REBASABLE && amount_ != 0) ?
             IERC20Wrapper(L1_TOKEN_NON_REBASABLE).unwrap(amount_) :
             amount_;
         IERC20(l1Token_).safeTransfer(to_, amountToWithdraw);
@@ -167,8 +167,8 @@ abstract contract L1ERC20ExtendedTokensBridge is
     ) internal returns (uint256) {
         if (amount_ != 0) {
             IERC20(l1Token_).safeTransferFrom(from_, address(this), amount_);
-            if(_isRebasable(l1Token_)) {
-                if(!IERC20(l1Token_).approve(L1_TOKEN_NON_REBASABLE, amount_)) revert ErrorRebasableTokenApprove();
+            if(l1Token_ == L1_TOKEN_REBASABLE) {
+                IERC20(l1Token_).safeIncreaseAllowance(L1_TOKEN_NON_REBASABLE, amount_);
                 return IERC20Wrapper(L1_TOKEN_NON_REBASABLE).wrap(amount_);
             }
         }
@@ -176,5 +176,4 @@ abstract contract L1ERC20ExtendedTokensBridge is
     }
 
     error ErrorSenderNotEOA();
-    error ErrorRebasableTokenApprove();
 }
