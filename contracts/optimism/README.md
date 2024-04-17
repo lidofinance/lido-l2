@@ -39,7 +39,7 @@ A high-level overview of the proposed solution might be found in the below diagr
 ![](https://i.imgur.com/yAF9gbl.png)
 
 - [**`BridgingManager`**](#BridgingManager) - contains administrative methods to retrieve and control the state of the bridging process.
-- [**`BridgeableTokens`**](#BridgeableTokens) - contains the logic for validation of tokens used in the bridging process.
+- [**`RebasableAndNonRebasableTokens`**](#RebasableAndNonRebasableTokens) - contains the logic for validation of tokens used in the bridging process.
 - [**`CrossDomainEnabled`**](#CrossDomainEnabled) - helper contract for contracts performing cross-domain communications
 - [**`L1ERC20ExtendedTokensBridge`**](#L1ERC20ExtendedTokensBridge) - Ethereum's counterpart of the bridge to bridge registered ERC20 compatible tokens between Ethereum and Optimism chains.
 - [**`L2ERC20ExtendedTokensBridge`**](#L2ERC20ExtendedTokensBridge) - Optimism's counterpart of the bridge to bridge registered ERC20 compatible tokens between Ethereum and Optimism chains
@@ -165,7 +165,7 @@ Validates that deposits are enabled. Reverts with the error `ErrorDepositsDisabl
 
 Validates that withdrawals are enabled. Reverts with the error `ErrorWithdrawalsDisabled()` when called on contract with disabled withdrawals.
 
-## BridgeableTokens
+## RebasableAndNonRebasableTokens
 
 Contains the logic for validation of tokens used in the bridging process
 
@@ -219,7 +219,7 @@ Enforces that the modified function is only callable by a specific cross-domain 
 ## `L1ERC20ExtendedTokensBridge`
 
 **Implements:** [`IL1ERC20Bridge`](https://github.com/ethereum-optimism/optimism/blob/develop/packages/contracts/contracts/L1/messaging/IL1ERC20Bridge.sol)
-**Inherits:** [`BridgingManager`](#BridgingManager) [`BridgeableTokens`](#BridgeableTokens) [`CrossDomainEnabled`](#CrossDomainEnabled)
+**Inherits:** [`BridgingManager`](#BridgingManager) [`RebasableAndNonRebasableTokens`](#RebasableAndNonRebasableTokens) [`CrossDomainEnabled`](#CrossDomainEnabled)
 
 The L1 Standard bridge is a contract that locks bridged token on L1 side, send deposit messages on L2 side and finalize token withdrawals from L2.
 
@@ -303,7 +303,7 @@ Performs the logic for deposits by informing the L2 Deposited Token contract of 
 ## `L2ERC20ExtendedTokensBridge`
 
 **Implements:** [`IL2ERC20Bridge`](https://github.com/ethereum-optimism/optimism/blob/develop/packages/contracts/contracts/L2/messaging/IL2ERC20Bridge.sol)
-**Extends** [`BridgingManager`](#BridgingManager) [`BridgeableTokens`](#BridgeableTokens) [`CrossDomainEnabled`](#CrossDomainEnabled)
+**Extends** [`BridgingManager`](#BridgingManager) [`RebasableAndNonRebasableTokens`](#RebasableAndNonRebasableTokens) [`CrossDomainEnabled`](#CrossDomainEnabled)
 
 The L2 token bridge is a contract that works with the L1 Token bridge to enable ERC20 token bridging between L1 and L2. This contract acts as a minter for new tokens when it hears about deposits into the L1 token bridge. This contract also acts as a burner of the tokens intended for withdrawal, informing the L1 bridge to release L1 funds.
 
