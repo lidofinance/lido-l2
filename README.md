@@ -42,7 +42,7 @@ Fill the newly created `.env` file with the required variables. See the [Project
 The configuration of the deployment scripts happens via the ENV variables. The following variables are required:
 
 - [`TOKEN`](#TOKEN) - address of the token to deploy a new bridge on the Ethereum chain.
-- [`NETWORK`](#NETWORK) - name of the network environments used by deployment scripts. Allowed values: `mainnet`, `goerli`.
+- [`NETWORK`](#NETWORK) - name of the network environments used by deployment scripts. Allowed values: `mainnet`, `sepolia`.
 - [`FORKING`](#FORKING) - run deployment in the forking network instead of real ones
 - [`ETH_DEPLOYER_PRIVATE_KEY`](#ETH_DEPLOYER_PRIVATE_KEY) - The private key of the deployer account in the Ethereum network is used during the deployment process.
 - [`OPT_DEPLOYER_PRIVATE_KEY`](#OPT_DEPLOYER_PRIVATE_KEY) - The private key of the deployer account in the Optimism network is used during the deployment process.
@@ -196,13 +196,13 @@ The configuration of the project happens via set of ENV variables. The full list
 
 Address of the RPC node for **Mainnet** Ethereum network.
 
-#### `RPC_ETH_GOERLI`
+#### `RPC_ETH_SEPOLIA`
 
-Address of the RPC node for **Goerli** Ethereum network.
+Address of the RPC node for **Sepolia** Ethereum network.
 
-#### `RPC_OPT_GOERLI`
+#### `RPC_OPT_SEPOLIA`
 
-Address of the RPC node for **Goerli** Optimism network.
+Address of the RPC node for **Sepolia** Optimism network.
 
 #### `RPC_OPT_MAINNET`
 
@@ -240,7 +240,7 @@ Address of the token to deploy a new bridge on the Ethereum chain.
 
 > Default value: `mainnet`
 
-Name of the network environments used by deployment scripts. Might be one of: `mainnet`, `goerli`.
+Name of the network environments used by deployment scripts. Might be one of: `mainnet`, `sepolia`.
 
 #### `FORKING`
 
@@ -358,7 +358,7 @@ The following variables are used in the process of the Integration & E2E testing
 
 #### `TESTING_OPT_NETWORK`
 
-Name of the network environments used for Optimism Integration & E2E testing. Might be one of: `mainnet`, `goerli`.
+Name of the network environments used for Optimism Integration & E2E testing. Might be one of: `mainnet`, `sepolia`.
 
 #### `TESTING_OPT_L1_TOKEN`
 
@@ -404,7 +404,7 @@ Address of the deployed Governance Bridge Executor in the Optimism network. If s
 
 The private key from the address which holds:
 
-- Goerli and Optimistic Goerli Ether to launch Optimism E2E tests
+- Sepolia and Optimistic Sepolia Ether to launch Optimism E2E tests
 
 The test Ether might be retrived via [Paradigm Faucet](https://faucet.paradigm.xyz/).
 
