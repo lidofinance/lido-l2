@@ -554,119 +554,97 @@ unit("ERC20RebasableBridged", ctxFactory)
     assert.equalBN(await rebasableProxied.totalSupply(), premintTokens);
   })
 
-  .test("transferFrom() :: happy path", async (ctx) => {
+
+  .test("transferShares() :: sender is zero address", async (ctx) => {
     const { rebasableProxied } = ctx.contracts;
-    const { premintTokens } = ctx.constants;
-    const { recipient, holder, spender } = ctx.accounts;
 
-    const initialAllowance = wei`2 ether`;
-
-    // holder sets allowance for spender
-    await rebasableProxied.approve(spender.address, initialAllowance);
-
-    // validate allowance is set
-    assert.equalBN(
-      await rebasableProxied.allowance(holder.address, spender.address),
-      initialAllowance
+    const {
+      accounts: { zero, recipient },
+    } = ctx;
+    await assert.revertsWith(
+        rebasableProxied.connect(zero).transferShares(recipient.address, wei`1 ether`),
+        "ErrorAccountIsZeroAddress()"
     );
-
-    // validate balance before transfer
-    assert.equalBN(await rebasableProxied.balanceOf(holder.address), premintTokens);
-
-    const amount = wei`1 ether`;
-
-    const holderBalanceBefore = await rebasableProxied.balanceOf(holder.address);
-
-    // transfer tokens
-    const tx = await rebasableProxied
-      .connect(spender)
-      .transferFrom(holder.address, recipient.address, amount);
-
-    // validate Approval event was emitted
-    await assert.emits(rebasableProxied, tx, "Approval", [
-      holder.address,
-      spender.address,
-      wei.toBigNumber(initialAllowance).sub(amount),
-    ]);
-
-    // validate Transfer event was emitted
-    await assert.emits(rebasableProxied, tx, "Transfer", [
-      holder.address,
-      recipient.address,
-      amount,
-    ]);
-
-    // validate allowance updated
-    assert.equalBN(
-      await rebasableProxied.allowance(holder.address, spender.address),
-      wei.toBigNumber(initialAllowance).sub(amount)
-    );
-
-    // validate holder balance updated
-    assert.equalBN(
-      await rebasableProxied.balanceOf(holder.address),
-      holderBalanceBefore.sub(amount)
-    );
-
-    const recipientBalance = await rebasableProxied.balanceOf(recipient.address);
-
-    // validate recipient balance updated
-    assert.equalBN(BigNumber.from(amount).sub(recipientBalance), "1");
   })
 
-  .test("transferFrom() :: max allowance", async (ctx) => {
+  .test("transferShares() :: recipient is zero address", async (ctx) => {
+    const { zero, holder } = ctx.accounts;
+    await assert.revertsWith(
+      ctx.contracts.rebasableProxied.connect(holder).transferShares(zero.address, wei`1 ether`),
+      "ErrorAccountIsZeroAddress()"
+    );
+  })
+
+  .test("transferShares() :: zero balance", async (ctx) => {
     const { rebasableProxied } = ctx.contracts;
     const { premintTokens } = ctx.constants;
-    const { recipient, holder, spender } = ctx.accounts;
-
-    const initialAllowance = hre.ethers.constants.MaxUint256;
-
-    // set allowance
-    await rebasableProxied.approve(spender.address, initialAllowance);
-
-    // validate allowance is set
-    assert.equalBN(
-      await rebasableProxied.allowance(holder.address, spender.address),
-      initialAllowance
-    );
+    const { recipient, holder } = ctx.accounts;
 
     // validate balance before transfer
     assert.equalBN(await rebasableProxied.balanceOf(holder.address), premintTokens);
 
-    const amount = wei`1 ether`;
+    // transfer tokens
+    await rebasableProxied.connect(holder).transferShares(recipient.address, "0");
 
-    const holderBalanceBefore = await rebasableProxied.balanceOf(holder.address);
+    // validate balance stays same
+    assert.equalBN(await rebasableProxied.balanceOf(holder.address), premintTokens);
+  })
+
+  .test("transferShares() :: not enough balance", async (ctx) => {
+    const { rebasableProxied } = ctx.contracts;
+    const { premintTokens } = ctx.constants;
+    const { recipient, holder } = ctx.accounts;
+
+    // validate balance before transfer
+    assert.equalBN(await rebasableProxied.balanceOf(holder.address), premintTokens);
+
+    const amount = premintTokens.add(wei`1 ether`);
+
+    // transfer tokens
+    await assert.revertsWith(
+        rebasableProxied.connect(holder).transferShares(recipient.address, amount),
+      "ErrorNotEnoughBalance()"
+    );
+  })
+
+  .test("transferShares() :: happy path", async (ctx) => {
+    const { rebasableProxied } = ctx.contracts;
+    const { premintTokens } = ctx.constants;
+    const { recipient, holder } = ctx.accounts;
+
+    // validate balance before transfer
+    assert.equalBN(await rebasableProxied.balanceOf(holder.address), premintTokens);
+
+    //
+    const sharesToTransfer = wei`1 ether`;
+    const tokensToTransfer = await rebasableProxied.getTokensByShares(sharesToTransfer);
 
     // transfer tokens
     const tx = await rebasableProxied
-      .connect(spender)
-      .transferFrom(holder.address, recipient.address, amount);
-
-    // validate Approval event was not emitted
-    await assert.notEmits(rebasableProxied, tx, "Approval");
+      .connect(holder)
+      .transferShares(recipient.address, sharesToTransfer);
 
     // validate Transfer event was emitted
     await assert.emits(rebasableProxied, tx, "Transfer", [
       holder.address,
       recipient.address,
-      amount,
+      tokensToTransfer,
     ]);
 
-    // validate allowance wasn't changed
-    assert.equalBN(
-      await rebasableProxied.allowance(holder.address, spender.address),
-      initialAllowance
-    );
+    await assert.emits(rebasableProxied, tx, "TransferShares", [
+      holder.address,
+      recipient.address,
+      sharesToTransfer,
+    ]);
 
-    // validate holder balance updated
+    // validate balance was updated
     assert.equalBN(
       await rebasableProxied.balanceOf(holder.address),
-      holderBalanceBefore.sub(amount)
+      premintTokens.sub(tokensToTransfer)
     );
 
-    // validate recipient balance updated
-    const recipientBalance = await rebasableProxied.balanceOf(recipient.address);
-    assert.equalBN(BigNumber.from(amount).sub(recipientBalance), "1");
+    // validate total supply stays same
+    assert.equalBN(await rebasableProxied.totalSupply(), premintTokens);
   })
 
   .test("transferFrom() :: not enough allowance", async (ctx) => {
@@ -696,6 +674,300 @@ unit("ERC20RebasableBridged", ctxFactory)
         .connect(spender)
         .transferFrom(holder.address, recipient.address, amount),
       "ErrorNotEnoughAllowance()"
+    );
+  })
+
+  .test("transferFrom() :: max allowance", async (ctx) => {
+    const { rebasableProxied } = ctx.contracts;
+    const { premintTokens } = ctx.constants;
+    const { recipient, holder, spender } = ctx.accounts;
+
+    const initialAllowance = hre.ethers.constants.MaxUint256;
+
+    // set allowance
+    await rebasableProxied.approve(spender.address, initialAllowance);
+
+    // validate allowance is set
+    assert.equalBN(
+      await rebasableProxied.allowance(holder.address, spender.address),
+      initialAllowance
+    );
+
+    // validate balance before transfer
+    assert.equalBN(await rebasableProxied.balanceOf(holder.address), premintTokens);
+
+    const tokensAmount = wei`1 ether`;
+    const sharesAmount = await rebasableProxied.getSharesByTokens(tokensAmount);
+
+    const holderBalanceBefore = await rebasableProxied.balanceOf(holder.address);
+    const recepientBalanceBefore = await rebasableProxied.balanceOf(recipient.address);
+
+    // transfer tokens
+    const tx = await rebasableProxied
+      .connect(spender)
+      .transferFrom(holder.address, recipient.address, tokensAmount);
+
+    // validate Approval event was not emitted
+    await assert.notEmits(rebasableProxied, tx, "Approval");
+
+    // validate Transfer event was emitted
+    await assert.emits(rebasableProxied, tx, "Transfer", [
+      holder.address,
+      recipient.address,
+      tokensAmount,
+    ]);
+
+    await assert.emits(rebasableProxied, tx, "TransferShares", [
+        holder.address,
+        recipient.address,
+        sharesAmount,
+      ]);
+
+    // validate allowance wasn't changed
+    assert.equalBN(
+      await rebasableProxied.allowance(holder.address, spender.address),
+      initialAllowance
+    );
+
+    // validate holder balance updated
+    assert.equalBN(
+      await rebasableProxied.balanceOf(holder.address),
+      holderBalanceBefore.sub(tokensAmount)
+    );
+
+    // validate recipient balance updated
+    const recipientBalanceAfter = await rebasableProxied.balanceOf(recipient.address);
+    const balanceDelta = recipientBalanceAfter.sub(recepientBalanceBefore);
+    const oneTwoWei = wei.toBigNumber(tokensAmount).sub(balanceDelta);
+    assert.isTrue(oneTwoWei.gte(0) && oneTwoWei.lte(2));
+  })
+
+  .test("transferFrom() :: happy path", async (ctx) => {
+    const { rebasableProxied } = ctx.contracts;
+    const { premintTokens } = ctx.constants;
+    const { recipient, holder, spender } = ctx.accounts;
+
+    const tokensAmountToApprove = wei`2 ether`;
+    const tokensAmountToTransfer = wei`1 ether`;
+    const sharesAmountToApprove = await rebasableProxied.getSharesByTokens(tokensAmountToApprove);
+    const sharesAmountToTransfer = await rebasableProxied.getSharesByTokens(tokensAmountToTransfer);
+
+    // holder sets allowance for spender
+    await rebasableProxied.approve(spender.address, tokensAmountToApprove);
+
+    // validate allowance is set
+    assert.equalBN(
+      await rebasableProxied.allowance(holder.address, spender.address),
+      tokensAmountToApprove
+    );
+
+    // validate balance before transfer
+    assert.equalBN(await rebasableProxied.balanceOf(holder.address), premintTokens);
+
+    const recepientBalanceBefore = await rebasableProxied.balanceOf(recipient.address);
+    const holderBalanceBefore = await rebasableProxied.balanceOf(holder.address);
+
+    // transfer tokens
+    const tx = await rebasableProxied
+      .connect(spender)
+      .transferFrom(holder.address, recipient.address, tokensAmountToTransfer);
+
+    // validate Approval event was emitted
+    await assert.emits(rebasableProxied, tx, "Approval", [
+      holder.address,
+      spender.address,
+      wei.toBigNumber(tokensAmountToApprove).sub(tokensAmountToTransfer),
+    ]);
+
+    // validate Transfer event was emitted
+    await assert.emits(rebasableProxied, tx, "Transfer", [
+      holder.address,
+      recipient.address,
+      tokensAmountToTransfer,
+    ]);
+
+    await assert.emits(rebasableProxied, tx, "TransferShares", [
+        holder.address,
+        recipient.address,
+        sharesAmountToTransfer,
+      ]);
+
+    // validate allowance updated
+    assert.equalBN(
+      await rebasableProxied.allowance(holder.address, spender.address),
+      wei.toBigNumber(tokensAmountToApprove).sub(tokensAmountToTransfer)
+    );
+
+    // validate holder balance updated
+    assert.equalBN(
+      await rebasableProxied.balanceOf(holder.address),
+      holderBalanceBefore.sub(tokensAmountToTransfer)
+    );
+
+    // validate recipient balance updated
+    const recipientBalanceAfter = await rebasableProxied.balanceOf(recipient.address);
+    const balanceDelta = recipientBalanceAfter.sub(recepientBalanceBefore);
+    const oneTwoWei = wei.toBigNumber(tokensAmountToTransfer).sub(balanceDelta);
+    assert.isTrue(oneTwoWei.gte(0) && oneTwoWei.lte(2));
+  })
+
+  .test("transferSharesFrom() :: not enough allowance", async (ctx) => {
+    const { rebasableProxied } = ctx.contracts;
+    const { recipient, holder, spender } = ctx.accounts;
+
+    const sharesAmount = wei`1 ether`;
+    const tokenAllowance = await rebasableProxied.getTokensByShares(wei.toBigNumber(sharesAmount).sub(1000));
+
+    // set allowance
+    await rebasableProxied.approve(recipient.address, tokenAllowance);
+
+    // validate allowance is set
+    assert.equalBN(
+      await rebasableProxied.allowance(holder.address, recipient.address),
+      tokenAllowance
+    );
+
+    // transfer tokens
+    await assert.revertsWith(
+        rebasableProxied
+        .connect(spender)
+        .transferSharesFrom(holder.address, recipient.address, sharesAmount),
+      "ErrorNotEnoughAllowance()"
+    );
+  })
+
+  .test("transferSharesFrom() :: max allowance", async (ctx) => {
+    const { rebasableProxied } = ctx.contracts;
+    const { premintTokens } = ctx.constants;
+    const { recipient, holder, spender } = ctx.accounts;
+
+    const tokenAllowance = hre.ethers.constants.MaxUint256;
+
+    // set allowance
+    await rebasableProxied.approve(spender.address, tokenAllowance);
+
+    // validate allowance is set
+    assert.equalBN(
+      await rebasableProxied.allowance(holder.address, spender.address),
+      tokenAllowance
+    );
+
+    // validate balance before transfer
+    assert.equalBN(await rebasableProxied.balanceOf(holder.address), premintTokens);
+
+    const sharesAmount = wei`1 ether`;
+    const tokensAmount = await rebasableProxied.getTokensByShares(sharesAmount);
+
+    const holderBalanceBefore = await rebasableProxied.balanceOf(holder.address);
+
+    // transfer tokens
+    const tx = await rebasableProxied
+      .connect(spender)
+      .transferSharesFrom(holder.address, recipient.address, sharesAmount);
+
+    // validate Approval event was not emitted
+    await assert.notEmits(rebasableProxied, tx, "Approval");
+
+    // validate Transfer event was emitted
+    await assert.emits(rebasableProxied, tx, "Transfer", [
+      holder.address,
+      recipient.address,
+      tokensAmount,
+    ]);
+
+    await assert.emits(rebasableProxied, tx, "TransferShares", [
+      holder.address,
+      recipient.address,
+      sharesAmount,
+    ]);
+
+    // validate allowance wasn't changed
+    assert.equalBN(
+      await rebasableProxied.allowance(holder.address, spender.address),
+      tokenAllowance
+    );
+
+    // validate holder balance updated
+    assert.equalBN(
+      await rebasableProxied.balanceOf(holder.address),
+      holderBalanceBefore.sub(tokensAmount)
+    );
+
+    // validate recipient balance updated
+    assert.equalBN(
+      await rebasableProxied.balanceOf(recipient.address),
+      tokensAmount
+    );
+  })
+
+  .test("transferSharesFrom() :: happy path", async (ctx) => {
+    const { rebasableProxied } = ctx.contracts;
+    const { premintTokens } = ctx.constants;
+    const { recipient, holder, spender } = ctx.accounts;
+
+    const sharesAmountToApprove = wei`2 ether`;
+    const sharesAmountToTransfer = wei`1 ether`;
+
+    const tokensAmountToApprove = await rebasableProxied.getTokensByShares(sharesAmountToApprove);
+    const tokensAmountToTransfer = await rebasableProxied.getTokensByShares(sharesAmountToTransfer);
+
+
+    // holder sets allowance for spender
+    await rebasableProxied.approve(spender.address, tokensAmountToApprove);
+
+    // validate allowance is set
+    assert.equalBN(
+      await rebasableProxied.allowance(holder.address, spender.address),
+      tokensAmountToApprove
+    );
+
+    // validate balance before transfer
+    assert.equalBN(await rebasableProxied.balanceOf(holder.address), premintTokens);
+
+
+    const holderBalanceBefore = await rebasableProxied.balanceOf(holder.address);
+
+    // transfer tokens
+    const tx = await rebasableProxied
+      .connect(spender)
+      .transferSharesFrom(holder.address, recipient.address, sharesAmountToTransfer);
+
+    // validate Approval event was emitted
+    await assert.emits(rebasableProxied, tx, "Approval", [
+      holder.address,
+      spender.address,
+      tokensAmountToApprove.sub(tokensAmountToTransfer),
+    ]);
+
+    // validate Transfer event was emitted
+    await assert.emits(rebasableProxied, tx, "Transfer", [
+      holder.address,
+      recipient.address,
+      tokensAmountToTransfer,
+    ]);
+
+    await assert.emits(rebasableProxied, tx, "TransferShares", [
+      holder.address,
+      recipient.address,
+      sharesAmountToTransfer,
+    ]);
+
+    // validate allowance updated
+    assert.equalBN(
+      await rebasableProxied.allowance(holder.address, spender.address),
+      tokensAmountToApprove.sub(tokensAmountToTransfer)
+    );
+
+    // validate holder balance updated
+    assert.equalBN(
+      await rebasableProxied.balanceOf(holder.address),
+      holderBalanceBefore.sub(tokensAmountToTransfer)
+    );
+
+    // validate recipient balance updated
+    assert.equalBN(
+      await rebasableProxied.balanceOf(recipient.address),
+      tokensAmountToTransfer
     );
   })
 

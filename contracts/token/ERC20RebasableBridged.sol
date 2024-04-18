@@ -145,10 +145,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
     }
 
     /// @inheritdoc IERC20
-    function approve(address spender_, uint256 amount_)
-        external
-        returns (bool)
-    {
+    function approve(address spender_, uint256 amount_) external returns (bool) {
         _approve(msg.sender, spender_, amount_);
         return true;
     }
@@ -160,14 +157,54 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
     }
 
     /// @inheritdoc IERC20
-    function transferFrom(
-        address from_,
-        address to_,
-        uint256 amount_
-    ) external returns (bool) {
+    function transferFrom(address from_, address to_, uint256 amount_) external returns (bool) {
         _spendAllowance(from_, msg.sender, amount_);
         _transfer(from_, to_, amount_);
         return true;
+    }
+
+    /// @notice Moves `sharesAmount_` token shares from the caller's account to the `recipient_` account.
+    ///
+    /// @return amount of transferred tokens.
+    /// Emits a `TransferShares` event.
+    /// Emits a `Transfer` event.
+    ///
+    /// Requirements:
+    ///
+    /// - `recipient_` cannot be the zero address.
+    /// - the caller must have at least `sharesAmount_` shares.
+    ///
+    /// @dev The `sharesAmount_` argument is the amount of shares, not tokens.
+    ///
+    function transferShares(address recipient_, uint256 sharesAmount_) external returns (uint256) {
+        _transferShares(msg.sender, recipient_, sharesAmount_);
+        uint256 tokensAmount = _getTokensByShares(sharesAmount_);
+        _emitTransferEvents(msg.sender, recipient_, tokensAmount, sharesAmount_);
+        return tokensAmount;
+    }
+
+    /// @notice Moves `sharesAmount_` token shares from the `sender_` account to the `_recipient` account.
+    ///
+    /// @return amount of transferred tokens.
+    /// Emits a `TransferShares` event.
+    /// Emits a `Transfer` event.
+    ///
+    /// Requirements:
+    ///
+    /// - `sender_` and `_recipient` cannot be the zero addresses.
+    /// - `sender_` must have at least `sharesAmount_` shares.
+    /// - the caller must have allowance for `sender_`'s tokens of at least `_getTokensByShares(sharesAmount_)`.
+    ///
+    /// @dev The `_sharesAmount` argument is the amount of shares, not tokens.
+    ///
+    function transferSharesFrom(
+        address sender_, address recipient_, uint256 sharesAmount_
+    ) external returns (uint256) {
+        uint256 tokensAmount = _getTokensByShares(sharesAmount_);
+        _spendAllowance(sender_, msg.sender, tokensAmount);
+        _transferShares(sender_, recipient_, sharesAmount_);
+        _emitTransferEvents(sender_, recipient_, tokensAmount, sharesAmount_);
+        return tokensAmount;
     }
 
     /// @notice Sets the name and the symbol of the tokens if they both are empty
@@ -202,9 +239,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
     /// @param to_  An address of the recipient of the tokens
     /// @param amount_ An amount of tokens to transfer
     function _transfer(
-        address from_,
-        address to_,
-        uint256 amount_
+        address from_, address to_, uint256 amount_
     ) internal onlyNonZeroAccount(from_) onlyNonZeroAccount(to_) {
         uint256 sharesToTransfer = _getSharesByTokens(amount_);
         _transferShares(from_, to_, sharesToTransfer);
