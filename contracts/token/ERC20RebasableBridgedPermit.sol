@@ -6,9 +6,10 @@ pragma solidity 0.8.10;
 import {ERC20RebasableBridged} from "./ERC20RebasableBridged.sol";
 import {PermitExtension} from "./PermitExtension.sol";
 import {Versioned} from "../utils/Versioned.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /// @author kovalgek
-contract ERC20RebasableBridgedPermit is ERC20RebasableBridged, PermitExtension, Versioned {
+contract ERC20RebasableBridgedPermit is ERC20RebasableBridged, PermitExtension, Versioned, Initializable {
 
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
@@ -29,13 +30,14 @@ contract ERC20RebasableBridgedPermit is ERC20RebasableBridged, PermitExtension, 
         ERC20RebasableBridged(name_, symbol_, decimals_, tokenToWrapFrom_, tokenRateOracle_, bridge_)
         PermitExtension(name_, version_)
     {
+        _disableInitializers();
     }
 
     /// @notice Sets the name, the symbol and the version of the tokens if they are empty
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
     /// @param version_ The version of the token
-    function initialize(string memory name_, string memory symbol_, string memory version_) external {
+    function initialize(string memory name_, string memory symbol_, string memory version_) external initializer {
         _initializeContractVersionTo(1);
         _initializeERC20Metadata(name_, symbol_);
         _initializeEIP5267Metadata(name_, version_);
