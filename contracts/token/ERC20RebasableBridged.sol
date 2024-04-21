@@ -342,7 +342,6 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
         address recipient_,
         uint256 sharesAmount_
     ) internal onlyNonZeroAccount(sender_) onlyNonZeroAccount(recipient_) {
-
         if (recipient_ == address(this)) revert ErrorTrasferToRebasableContract();
 
         uint256 currentSenderShares = _getShares()[sender_];

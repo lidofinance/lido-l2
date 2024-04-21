@@ -95,6 +95,7 @@ contract L2ERC20ExtendedTokensBridge is
         bytes calldata data_
     ) external
         whenWithdrawalsEnabled
+        onlyNonZeroAccount(to_)
         onlySupportedL2Token(l2Token_)
     {
         _withdrawTo(l2Token_, msg.sender, to_, amount_, l1Gas_, data_);
@@ -119,8 +120,8 @@ contract L2ERC20ExtendedTokensBridge is
         ITokenRateUpdatable tokenRateOracle = ERC20RebasableBridged(L2_TOKEN_REBASABLE).TOKEN_RATE_ORACLE();
         tokenRateOracle.updateRate(depositData.rate, depositData.timestamp);
 
-        uint256 depositedAmount = _mintTokens(l2Token_, to_, amount_);
-        emit DepositFinalized(l1Token_, l2Token_, from_, to_, depositedAmount, depositData.data);
+        uint256 depositedL2TokenAmount = _mintTokens(l2Token_, to_, amount_);
+        emit DepositFinalized(l1Token_, l2Token_, from_, to_, depositedL2TokenAmount, depositData.data);
     }
 
     /// @notice Performs the logic for withdrawals by burning the token and informing
@@ -141,11 +142,11 @@ contract L2ERC20ExtendedTokensBridge is
         uint32 l1Gas_,
         bytes calldata data_
     ) internal {
-        uint256 amountToWithdraw = _burnTokens(l2Token_, from_, amount_);
+        uint256 nonRebaseableAmountToWithdraw = _burnTokens(l2Token_, from_, amount_);
 
         bytes memory message = abi.encodeWithSelector(
             IL1ERC20Bridge.finalizeERC20Withdrawal.selector,
-            _getL1Token(l2Token_), l2Token_, from_, to_, amountToWithdraw, data_
+            _getL1Token(l2Token_), l2Token_, from_, to_, nonRebaseableAmountToWithdraw, data_
         );
         sendCrossDomainMessage(L1_TOKEN_BRIDGE, l1Gas_, message);
     }

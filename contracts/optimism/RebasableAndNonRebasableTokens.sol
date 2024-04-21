@@ -43,14 +43,6 @@ contract RebasableAndNonRebasableTokens {
         _;
     }
 
-    /// @dev Validates that passed l1Token_ is supported by the bridge
-    modifier onlySupportedL1Token(address l1Token_) {
-        if (l1Token_ != L1_TOKEN_NON_REBASABLE && l1Token_ != L1_TOKEN_REBASABLE) {
-            revert ErrorUnsupportedL1Token(l1Token_);
-        }
-        _;
-    }
-
     /// @dev Validates that passed l2Token_ is supported by the bridge
     modifier onlySupportedL2Token(address l2Token_) {
         if (l2Token_ != L2_TOKEN_NON_REBASABLE && l2Token_ != L2_TOKEN_REBASABLE) {
@@ -74,7 +66,9 @@ contract RebasableAndNonRebasableTokens {
     }
 
     function _getL1Token(address l2Token_) internal view returns (address) {
-        return (l2Token_ == L2_TOKEN_REBASABLE) ? L1_TOKEN_REBASABLE : L1_TOKEN_NON_REBASABLE;
+        if (l2Token_ == L2_TOKEN_NON_REBASABLE) { return L1_TOKEN_NON_REBASABLE; }
+        if (l2Token_ == L2_TOKEN_REBASABLE) { return L1_TOKEN_REBASABLE; }
+        revert ErrorUnsupportedL2Token(l2Token_);
     }
 
     error ErrorUnsupportedL1Token(address l1Token);

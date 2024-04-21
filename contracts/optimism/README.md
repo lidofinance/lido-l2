@@ -178,9 +178,9 @@ The contract keeps the addresses of L1/L2 tokens used in the bridging:
 
 ### Modifiers
 
-#### `onlySupportedL1Token(address l1Token_)`
+#### `onlySupportedL1L2TokensPair(address l1Token_, address l2Token_)`
 
-Validates that passed `l1Token_` is supported by the bridge. Reverts with error `ErrorUnsupportedL1Token()` when addresses mismatch.
+Validates that passed `l1Token_` and `l2Token_` are supported by the bridge. Reverts with error `ErrorUnsupportedL1L2TokensPair()` when addresses mismatch.
 
 #### `onlySupportedL2Token(address l2Token_)`
 

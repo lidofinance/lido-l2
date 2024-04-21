@@ -73,11 +73,7 @@ abstract contract L1ERC20ExtendedTokensBridge is
         if (Address.isContract(msg.sender)) {
             revert ErrorSenderNotEOA();
         }
-        bytes memory encodedDepositData  = DepositDataCodec.encodeDepositData(DepositDataCodec.DepositData({
-            rate: uint96(tokenRate()),
-            timestamp: uint40(block.timestamp),
-            data: data_
-        }));
+        bytes memory encodedDepositData  = _encodeInputDepositData(data_);
         _depositERC20To(l1Token_, l2Token_, msg.sender, msg.sender, amount_, l2Gas_, encodedDepositData);
         emit ERC20DepositInitiated(l1Token_, l2Token_, msg.sender, msg.sender, amount_, encodedDepositData);
     }
@@ -96,11 +92,7 @@ abstract contract L1ERC20ExtendedTokensBridge is
         onlyNonZeroAccount(to_)
         onlySupportedL1L2TokensPair(l1Token_, l2Token_)
     {
-        bytes memory encodedDepositData  = DepositDataCodec.encodeDepositData(DepositDataCodec.DepositData({
-            rate: uint96(tokenRate()),
-            timestamp: uint40(block.timestamp),
-            data: data_
-        }));
+        bytes memory encodedDepositData  = _encodeInputDepositData(data_);
         _depositERC20To(l1Token_, l2Token_, msg.sender, to_, amount_, l2Gas_, encodedDepositData);
         emit ERC20DepositInitiated(l1Token_, l2Token_, msg.sender, to_, amount_, encodedDepositData);
     }
@@ -119,11 +111,11 @@ abstract contract L1ERC20ExtendedTokensBridge is
         onlyFromCrossDomainAccount(L2_TOKEN_BRIDGE)
         onlySupportedL1L2TokensPair(l1Token_, l2Token_)
     {
-        uint256 amountToWithdraw = (l1Token_ == L1_TOKEN_REBASABLE && amount_ != 0) ?
+        uint256 withdrawnL1TokenAmount = (l1Token_ == L1_TOKEN_REBASABLE && amount_ != 0) ?
             IERC20Wrapper(L1_TOKEN_NON_REBASABLE).unwrap(amount_) :
             amount_;
-        IERC20(l1Token_).safeTransfer(to_, amountToWithdraw);
-        emit ERC20WithdrawalFinalized(l1Token_, l2Token_, from_, to_, amountToWithdraw, data_);
+        IERC20(l1Token_).safeTransfer(to_, withdrawnL1TokenAmount);
+        emit ERC20WithdrawalFinalized(l1Token_, l2Token_, from_, to_, withdrawnL1TokenAmount, data_);
     }
 
     /// @dev Performs the logic for deposits by informing the L2 token bridge contract
@@ -145,11 +137,11 @@ abstract contract L1ERC20ExtendedTokensBridge is
         uint32 l2Gas_,
         bytes memory encodedDepositData_
     ) internal {
-        uint256 amountToDeposit = _transferToBridge(l1Token_, from_, amount_);
+        uint256 nonRebaseableAmountToDeposit = _transferToBridge(l1Token_, from_, amount_);
 
         bytes memory message = abi.encodeWithSelector(
             IL2ERC20Bridge.finalizeDeposit.selector,
-            l1Token_, l2Token_, from_, to_, amountToDeposit, encodedDepositData_
+            l1Token_, l2Token_, from_, to_, nonRebaseableAmountToDeposit, encodedDepositData_
         );
 
         sendCrossDomainMessage(L2_TOKEN_BRIDGE, l2Gas_, message);
@@ -173,6 +165,14 @@ abstract contract L1ERC20ExtendedTokensBridge is
             }
         }
         return amount_;
+    }
+
+    function _encodeInputDepositData(bytes calldata data_) internal view returns (bytes memory)  {
+        return DepositDataCodec.encodeDepositData(DepositDataCodec.DepositData({
+            rate: uint96(tokenRate()),
+            timestamp: uint40(block.timestamp),
+            data: data_
+        }));
     }
 
     error ErrorSenderNotEOA();
