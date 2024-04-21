@@ -3,7 +3,7 @@
 
 pragma solidity 0.8.10;
 
-import {UnstructuredRefStorage} from "./UnstructuredRefStorage.sol";
+import {UnstructuredRefStorage} from "../lib//UnstructuredRefStorage.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import {IERC2612} from "@openzeppelin/contracts/interfaces/draft-IERC2612.sol";
 import {SignatureChecker} from "../lib/SignatureChecker.sol";
@@ -33,13 +33,13 @@ abstract contract PermitExtension is IERC2612, EIP712 {
     /// @param name_ The name of the token
     /// @param version_ The current major version of the signing domain (aka token version)
     constructor(string memory name_, string memory version_) EIP712(name_, version_) {
-        initializeEIP5267Metadata(name_, version_);
+        _initializeEIP5267Metadata(name_, version_);
     }
 
     /// @notice Sets the name and the version of the tokens if they both are empty
     /// @param name_ The name of the token
     /// @param version_ The version of the token
-    function initializeEIP5267Metadata(string memory name_, string memory version_) public {
+    function _initializeEIP5267Metadata(string memory name_, string memory version_) internal {
         _setEIP5267MetadataName(name_);
         _setEIP5267MetadataVersion(version_);
     }
@@ -142,22 +142,14 @@ abstract contract PermitExtension is IERC2612, EIP712 {
 
     /// @dev Sets the name of the token. Might be called only when the name is empty
     function _setEIP5267MetadataName(string memory name_) internal {
-        if (bytes(_loadEIP5267Metadata().name).length > 0) {
-            revert ErrorEIP5267NameAlreadySet();
-        }
         _loadEIP5267Metadata().name = name_;
     }
 
     /// @dev Sets the version of the token. Might be called only when the version is empty
     function _setEIP5267MetadataVersion(string memory version_) internal {
-        if (bytes(_loadEIP5267Metadata().version).length > 0) {
-            revert ErrorEIP5267VersionAlreadySet();
-        }
         _loadEIP5267Metadata().version = version_;
     }
 
     error ErrorInvalidSignature();
     error ErrorDeadlineExpired();
-    error ErrorEIP5267NameAlreadySet();
-    error ErrorEIP5267VersionAlreadySet();
 }

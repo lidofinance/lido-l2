@@ -5,9 +5,10 @@ pragma solidity 0.8.10;
 
 import {ERC20RebasableBridged} from "./ERC20RebasableBridged.sol";
 import {PermitExtension} from "./PermitExtension.sol";
+import {Versioned} from "../utils/Versioned.sol";
 
 /// @author kovalgek
-contract ERC20RebasableBridgedPermit is ERC20RebasableBridged, PermitExtension {
+contract ERC20RebasableBridgedPermit is ERC20RebasableBridged, PermitExtension, Versioned {
 
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
@@ -35,8 +36,9 @@ contract ERC20RebasableBridgedPermit is ERC20RebasableBridged, PermitExtension {
     /// @param symbol_ The symbol of the token
     /// @param version_ The version of the token
     function initialize(string memory name_, string memory symbol_, string memory version_) external {
-        initializeERC20Metadata(name_, symbol_);
-        initializeEIP5267Metadata(name_, version_);
+        _initializeContractVersionTo(1);
+        _initializeERC20Metadata(name_, symbol_);
+        _initializeEIP5267Metadata(name_, version_);
     }
 
     /// @inheritdoc PermitExtension

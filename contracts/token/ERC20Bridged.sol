@@ -56,7 +56,7 @@ contract ERC20Bridged is IERC20Bridged, ERC20Core, ERC20Metadata {
     /// @notice Sets the name and the symbol of the tokens if they both are empty
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
-    function initializeERC20Metadata(string memory name_, string memory symbol_) public {
+    function _initializeERC20Metadata(string memory name_, string memory symbol_) internal {
         _setERC20MetadataName(name_);
         _setERC20MetadataSymbol(symbol_);
     }

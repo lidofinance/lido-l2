@@ -8,8 +8,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20Wrapper} from "./interfaces/IERC20Wrapper.sol";
 import {ITokenRateOracle} from "../optimism/TokenRateOracle.sol";
 import {ERC20Metadata} from "./ERC20Metadata.sol";
-import {UnstructuredRefStorage} from "./UnstructuredRefStorage.sol";
-import {UnstructuredStorage} from "./UnstructuredStorage.sol";
+import {UnstructuredRefStorage} from "../lib/UnstructuredRefStorage.sol";
+import {UnstructuredStorage} from "../lib/UnstructuredStorage.sol";
 
 /// @author kovalgek
 /// @notice Extends the ERC20 functionality that allows the bridge to mint/burn shares
@@ -207,14 +207,6 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
         return tokensAmount;
     }
 
-    /// @notice Sets the name and the symbol of the tokens if they both are empty
-    /// @param name_ The name of the token
-    /// @param symbol_ The symbol of the token
-    function initializeERC20Metadata(string memory name_, string memory symbol_) public {
-        _setERC20MetadataName(name_);
-        _setERC20MetadataSymbol(symbol_);
-    }
-
     function _getTokenAllowance() internal pure returns (mapping(address => mapping(address => uint256)) storage) {
         return TOKEN_ALLOWANCE_POSITION.storageMapAddressMapAddressUint256();
     }
@@ -369,6 +361,14 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
     ) internal {
         emit Transfer(_from, _to, _tokenAmount);
         emit TransferShares(_from, _to, _sharesAmount);
+    }
+
+    /// @notice Sets the name and the symbol of the tokens if they both are empty
+    /// @param name_ The name of the token
+    /// @param symbol_ The symbol of the token
+    function _initializeERC20Metadata(string memory name_, string memory symbol_) internal {
+        _setERC20MetadataName(name_);
+        _setERC20MetadataSymbol(symbol_);
     }
 
     /// @dev validates that account_ is not zero address
