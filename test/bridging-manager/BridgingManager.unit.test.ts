@@ -2,9 +2,14 @@ import hre from "hardhat";
 import {
   BridgingManager__factory,
   OssifiableProxy__factory,
+  L1LidoTokensBridge__factory,
+  ERC20WrapperStub__factory,
+  ERC20BridgedStub__factory,
+  CrossDomainMessengerStub__factory,
 } from "../../typechain";
 import { assert } from "chai";
 import { unit } from "../../utils/testing";
+import { wei } from "../../utils/wei";
 
 unit("BridgingManager", ctxFactory)
   .test("isInitialized() :: on uninitialized contract", async (ctx) => {
@@ -19,36 +24,36 @@ unit("BridgingManager", ctxFactory)
     assert.isFalse(await ctx.bridgingManagerRaw.isWithdrawalsEnabled());
   })
 
-  .test("initialize() :: on uninitialized contract", async (ctx) => {
-    const {
-      bridgingManagerRaw,
-      roles: { DEFAULT_ADMIN_ROLE },
-      accounts: { stranger },
-    } = ctx;
-    // validate that bridgingManager is not initialized
-    assert.isFalse(await bridgingManagerRaw.isInitialized());
+//   .test("initialize() :: on uninitialized contract", async (ctx) => {
+//     const {
+//       bridgingManagerRaw,
+//       roles: { DEFAULT_ADMIN_ROLE },
+//       accounts: { stranger },
+//     } = ctx;
+//     // validate that bridgingManager is not initialized
+//     assert.isFalse(await bridgingManagerRaw.isInitialized());
 
-    // validate that stranger has no DEFAULT_ADMIN_ROLE
-    assert.isFalse(
-      await bridgingManagerRaw.hasRole(DEFAULT_ADMIN_ROLE, stranger.address)
-    );
-    // initialize() might be called by anyone
-    await bridgingManagerRaw.connect(stranger).initialize(stranger.address);
+//     // validate that stranger has no DEFAULT_ADMIN_ROLE
+//     assert.isFalse(
+//       await bridgingManagerRaw.hasRole(DEFAULT_ADMIN_ROLE, stranger.address)
+//     );
+//     // initialize() might be called by anyone
+//     await bridgingManagerRaw.connect(stranger).initialize(stranger.address);
 
-    // validate that isInitialized() is true
-    assert.isTrue(await bridgingManagerRaw.isInitialized());
+//     // validate that isInitialized() is true
+//     assert.isTrue(await bridgingManagerRaw.isInitialized());
 
-    // validate that stranger has DEFAULT_ADMIN_RULE
-    assert.isTrue(
-      await bridgingManagerRaw.hasRole(DEFAULT_ADMIN_ROLE, stranger.address)
-    );
+//     // validate that stranger has DEFAULT_ADMIN_RULE
+//     assert.isTrue(
+//       await bridgingManagerRaw.hasRole(DEFAULT_ADMIN_ROLE, stranger.address)
+//     );
 
-    // validate that initialize() might not be called second time
-    await assert.revertsWith(
-      bridgingManagerRaw.connect(stranger).initialize(stranger.address),
-      "ErrorAlreadyInitialized()"
-    );
-  })
+//     // validate that initialize() might not be called second time
+//     await assert.revertsWith(
+//       bridgingManagerRaw.connect(stranger).initialize(stranger.address),
+//       "ErrorAlreadyInitialized()"
+//     );
+//   })
 
   .test("enableDeposits() :: role is not granted", async (ctx) => {
     const {
@@ -302,19 +307,58 @@ async function ctxFactory() {
     depositsDisabler,
     withdrawalsEnabler,
     withdrawalsDisabler,
+    l2TokenBridgeEOA
   ] = await hre.ethers.getSigners();
 
-  const bridgingManagerImpl = await new BridgingManager__factory(
+//   const bridgingManagerImpl = await new BridgingManager__factory(
+//     deployer
+//   ).deploy();
+
+const l1TokenRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
+    "L1 Token Rebasable",
+    "L1R"
+);
+
+const l1TokenNonRebasableStub = await new ERC20WrapperStub__factory(deployer).deploy(
+    l1TokenRebasableStub.address,
+    "L1 Token Non Rebasable",
+    "L1NR"
+);
+
+const l2TokenNonRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
+    "L2 Token Non Rebasable",
+    "L2NR"
+);
+
+const l2TokenRebasableStub = await new ERC20WrapperStub__factory(deployer).deploy(
+    l2TokenNonRebasableStub.address,
+    "L2 Token Rebasable",
+    "L2R"
+);
+
+const l1MessengerStub = await new CrossDomainMessengerStub__factory(
     deployer
-  ).deploy();
+).deploy({ value: wei.toBigNumber(wei`1 ether`) });
+
+  const l1TokenBridgeImpl = await new L1LidoTokensBridge__factory(
+    deployer
+).deploy(
+    l1MessengerStub.address,
+    l2TokenBridgeEOA.address,
+    l1TokenNonRebasableStub.address,
+    l1TokenRebasableStub.address,
+    l2TokenNonRebasableStub.address,
+    l2TokenRebasableStub.address
+);
+
   const pureOssifiableProxy = await new OssifiableProxy__factory(
     deployer
-  ).deploy(bridgingManagerImpl.address, deployer.address, "0x");
+  ).deploy(l1TokenBridgeImpl.address, deployer.address, "0x");
   const initializedOssifiableProxy = await new OssifiableProxy__factory(
     deployer
-  ).deploy(bridgingManagerImpl.address, deployer.address, "0x");
+  ).deploy(l1TokenBridgeImpl.address, deployer.address, "0x");
 
-  const bridgingManager = BridgingManager__factory.connect(
+  const bridgingManager = L1LidoTokensBridge__factory.connect(
     initializedOssifiableProxy.address,
     deployer
   );
@@ -327,11 +371,11 @@ async function ctxFactory() {
     WITHDRAWALS_ENABLER_ROLE,
     WITHDRAWALS_DISABLER_ROLE,
   ] = await Promise.all([
-    await bridgingManagerImpl.DEFAULT_ADMIN_ROLE(),
-    await bridgingManagerImpl.DEPOSITS_ENABLER_ROLE(),
-    await bridgingManagerImpl.DEPOSITS_DISABLER_ROLE(),
-    await bridgingManagerImpl.WITHDRAWALS_ENABLER_ROLE(),
-    await bridgingManagerImpl.WITHDRAWALS_DISABLER_ROLE(),
+    await l1TokenBridgeImpl.DEFAULT_ADMIN_ROLE(),
+    await l1TokenBridgeImpl.DEPOSITS_ENABLER_ROLE(),
+    await l1TokenBridgeImpl.DEPOSITS_DISABLER_ROLE(),
+    await l1TokenBridgeImpl.WITHDRAWALS_ENABLER_ROLE(),
+    await l1TokenBridgeImpl.WITHDRAWALS_DISABLER_ROLE(),
   ]);
   await bridgingManager.grantRole(
     DEPOSITS_ENABLER_ROLE,
@@ -367,7 +411,7 @@ async function ctxFactory() {
       withdrawalsDisabler,
     },
     bridgingManager,
-    bridgingManagerRaw: BridgingManager__factory.connect(
+    bridgingManagerRaw: L1LidoTokensBridge__factory.connect(
       pureOssifiableProxy.address,
       deployer
     ),

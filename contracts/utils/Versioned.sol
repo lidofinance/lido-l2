@@ -53,7 +53,7 @@ contract Versioned {
         _setContractVersion(newVersion);
     }
 
-    function _setContractVersion(uint256 version) private {
+    function _setContractVersion(uint256 version) internal {
         CONTRACT_VERSION_POSITION.setStorageUint256(version);
         emit ContractVersionSet(version);
     }

@@ -4,7 +4,7 @@ import {
   L2ERC20ExtendedTokensBridge__factory,
   OssifiableProxy__factory,
   OptimismBridgeExecutor__factory,
-  ERC20Bridged__factory,
+  ERC20BridgedPermit__factory,
   ERC20WrapperStub__factory,
 } from "../../typechain";
 import { wei } from "../../utils/wei";
@@ -262,7 +262,7 @@ async function ctxFactory() {
 
   await optDeployScript.run();
 
-  const l2Token = ERC20Bridged__factory.connect(
+  const l2Token = ERC20BridgedPermit__factory.connect(
     optDeployScript.tokenProxyAddress,
     l2Deployer
   );

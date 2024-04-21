@@ -5,8 +5,8 @@ import { OptDeploymentOptions, DeployScriptParams } from "./types";
 import network, { NetworkName } from "../network";
 import { DeployScript, Logger } from "../deployment/DeployScript";
 import {
-    ERC20Bridged__factory,
-    ERC20RebasableBridged__factory,
+    ERC20BridgedPermit__factory,
+    ERC20RebasableBridgedPermit__factory,
     IERC20Metadata__factory,
     L1LidoTokensBridge__factory,
     L2ERC20ExtendedTokensBridge__factory,
@@ -21,11 +21,13 @@ interface OptL1DeployScriptParams extends DeployScriptParams {
 interface OptL2DeployScriptParams extends DeployScriptParams {
     l2Token?: {
         name?: string;
-        symbol?: string
+        symbol?: string;
+        version?: string;
     };
     l2TokenRebasable?: {
         name?: string;
-        symbol?: string
+        symbol?: string;
+        version?: string;
     };
 }
 
@@ -191,10 +193,11 @@ export default function deploymentAll(
                 l1TokenRebasable,
                 l1Params.deployer
             );
-            const [decimals, l2TokenName, l2TokenSymbol, l2TokenRebasableName, l2TokenRebasableSymbol] = await Promise.all([
+            const [decimals, l2TokenName, l2TokenSymbol, l2TokenVersion, l2TokenRebasableName, l2TokenRebasableSymbol] = await Promise.all([
                 l1TokenInfo.decimals(),
                 l2Params.l2Token?.name ?? l1TokenInfo.name(),
                 l2Params.l2Token?.symbol ?? l1TokenInfo.symbol(),
+                l2Params.l2Token?.version ?? "1",
                 l2Params.l2TokenRebasable?.name ?? l1TokenRebasableInfo.name(),
                 l2Params.l2TokenRebasable?.symbol ?? l1TokenRebasableInfo.symbol(),
             ]);
@@ -212,10 +215,11 @@ export default function deploymentAll(
                 options?.logger
             )
                 .addStep({
-                    factory: ERC20Bridged__factory,
+                    factory: ERC20BridgedPermit__factory,
                     args: [
                         l2TokenName,
                         l2TokenSymbol,
+                        l2TokenVersion,
                         decimals,
                         expectedL2TokenBridgeProxyAddress,
                         options?.overrides,
@@ -228,9 +232,9 @@ export default function deploymentAll(
                     args: [
                         expectedL2TokenImplAddress,
                         l2Params.admins.proxy,
-                        ERC20Bridged__factory.createInterface().encodeFunctionData(
-                            "initializeERC20Metadata",
-                            [l2TokenName, l2TokenSymbol]
+                        ERC20BridgedPermit__factory.createInterface().encodeFunctionData(
+                            "initialize",
+                            [l2TokenName, l2TokenSymbol, l2TokenVersion]
                         ),
                         options?.overrides,
                     ],
@@ -238,10 +242,11 @@ export default function deploymentAll(
                         assert.equal(c.address, expectedL2TokenProxyAddress),
                 })
                 .addStep({
-                    factory: ERC20RebasableBridged__factory,
+                    factory: ERC20RebasableBridgedPermit__factory,
                     args: [
                         l2TokenRebasableName,
                         l2TokenRebasableSymbol,
+                        l2TokenVersion,
                         decimals,
                         expectedL2TokenProxyAddress,
                         expectedL2TokenRateOracleProxyAddress,
@@ -256,9 +261,9 @@ export default function deploymentAll(
                     args: [
                         expectedL2TokenRebasableImplAddress,
                         l2Params.admins.proxy,
-                        ERC20RebasableBridged__factory.createInterface().encodeFunctionData(
-                            "initializeERC20Metadata",
-                            [l2TokenRebasableName, l2TokenRebasableSymbol]
+                        ERC20RebasableBridgedPermit__factory.createInterface().encodeFunctionData(
+                            "initialize",
+                            [l2TokenRebasableName, l2TokenRebasableSymbol, l2TokenVersion]
                         ),
                         options?.overrides,
                     ],

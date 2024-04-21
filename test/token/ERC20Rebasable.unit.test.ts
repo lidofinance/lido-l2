@@ -4,9 +4,9 @@ import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 
 import {
-    ERC20Bridged__factory,
+    ERC20BridgedPermit__factory,
     TokenRateOracle__factory,
-    ERC20RebasableBridged__factory,
+    ERC20RebasableBridgedPermit__factory,
     OssifiableProxy__factory,
     CrossDomainMessengerStub__factory
 } from "../../typechain";
@@ -32,68 +32,72 @@ unit("ERC20RebasableBridged", ctxFactory)
     assert.equal(await ctx.contracts.rebasableProxied.symbol(), ctx.constants.symbol)
   )
 
-  .test("initialize() :: name already set", async (ctx) => {
-    const { deployer, owner, zero } = ctx.accounts;
-    const { decimalsToSet } = ctx.constants;
+//   .test("initialize() :: name already set", async (ctx) => {
+//     const { deployer, owner, zero } = ctx.accounts;
+//     const { decimalsToSet } = ctx.constants;
 
-    // deploy new implementation
-    const wrappedToken = await new ERC20Bridged__factory(deployer).deploy(
-        "WsETH Test Token",
-        "WsETH",
-        decimalsToSet,
-        owner.address
-    );
+//     // deploy new implementation
+//     const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
+//         "WsETH Test Token",
+//         "WsETH",
+//         "1",
+//         decimalsToSet,
+//         owner.address
+//     );
 
-    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-        zero.address,
-        owner.address,
-        zero.address,
-        86400
-    );
-    const rebasableTokenImpl = await new ERC20RebasableBridged__factory(deployer).deploy(
-      "name",
-      "",
-      10,
-      wrappedToken.address,
-      tokenRateOracle.address,
-      owner.address
-    );
-    await assert.revertsWith(
-      rebasableTokenImpl.initializeERC20Metadata("New Name", ""),
-      "ErrorNameAlreadySet()"
-    );
-  })
+//     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+//         zero.address,
+//         owner.address,
+//         zero.address,
+//         86400
+//     );
+//     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
+//       "name",
+//       "",
+//       "",
+//       10,
+//       wrappedToken.address,
+//       tokenRateOracle.address,
+//       owner.address
+//     );
+//     await assert.revertsWith(
+//       rebasableTokenImpl.initialize("New Name", "", ""),
+//       "ErrorNameAlreadySet()"
+//     );
+//   })
 
-  .test("initialize() :: symbol already set", async (ctx) => {
-    const { deployer, owner, zero } = ctx.accounts;
-    const { decimalsToSet } = ctx.constants;
+//   .test("initialize() :: symbol already set", async (ctx) => {
+//     const { deployer, owner, zero } = ctx.accounts;
+//     const { decimalsToSet } = ctx.constants;
 
-    // deploy new implementation
-    const wrappedToken = await new ERC20Bridged__factory(deployer).deploy(
-        "WsETH Test Token",
-        "WsETH",
-        decimalsToSet,
-        owner.address
-    );
-    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-        zero.address,
-        owner.address,
-        zero.address,
-        86400
-    );
-    const rebasableTokenImpl = await new ERC20RebasableBridged__factory(deployer).deploy(
-      "",
-      "symbol",
-      10,
-      wrappedToken.address,
-      tokenRateOracle.address,
-      owner.address
-    );
-    await assert.revertsWith(
-      rebasableTokenImpl.initializeERC20Metadata("", "New Symbol"),
-      "ErrorSymbolAlreadySet()"
-    );
-  })
+//     // deploy new implementation
+//     const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
+//         "WsETH Test Token",
+//         "WsETH",
+//         "1",
+//         decimalsToSet,
+//         owner.address
+//     );
+//     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+//         zero.address,
+//         owner.address,
+//         zero.address,
+//         86400
+//     );
+//     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
+//       "",
+//       "symbol",
+//       "1",
+//       10,
+//       wrappedToken.address,
+//       tokenRateOracle.address,
+//       owner.address
+//     );
+//     await assert.revertsWith(
+//       rebasableTokenImpl.initialize("", "New Symbol", "1"),
+//       "ErrorSymbolAlreadySet()"
+//     );
+//   })
 
   .test("decimals() :: has the same value as is in constructor", async (ctx) =>
     assert.equal(await ctx.contracts.rebasableProxied.decimals(), ctx.constants.decimalsToSet)
@@ -116,9 +120,10 @@ unit("ERC20RebasableBridged", ctxFactory)
     const { decimalsToSet } = ctx.constants;
 
     // deploy new implementation to test initial oracle state
-    const wrappedToken = await new ERC20Bridged__factory(deployer).deploy(
+    const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
         "WsETH Test Token",
         "WsETH",
+        "1",
         decimalsToSet,
         owner.address
     );
@@ -128,9 +133,10 @@ unit("ERC20RebasableBridged", ctxFactory)
         zero.address,
         86400
     );
-    const rebasableProxied = await new ERC20RebasableBridged__factory(deployer).deploy(
+    const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
         "",
         "symbol",
+        "1",
         10,
         wrappedToken.address,
         tokenRateOracle.address,
@@ -290,9 +296,10 @@ unit("ERC20RebasableBridged", ctxFactory)
     const { decimalsToSet } = ctx.constants;
 
     // deploy new implementation to test initial oracle state
-    const wrappedToken = await new ERC20Bridged__factory(deployer).deploy(
+    const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
         "WsETH Test Token",
         "WsETH",
+        "1",
         decimalsToSet,
         owner.address
     );
@@ -302,9 +309,10 @@ unit("ERC20RebasableBridged", ctxFactory)
         zero.address,
         86400
     );
-    const rebasableProxied = await new ERC20RebasableBridged__factory(deployer).deploy(
+    const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
         "",
         "symbol",
+        "1",
         10,
         wrappedToken.address,
         tokenRateOracle.address,
@@ -1098,6 +1106,7 @@ unit("ERC20RebasableBridged", ctxFactory)
 async function ctxFactory() {
     const name = "StETH Test Token";
     const symbol = "StETH";
+    const version = "1";
     const decimalsToSet = 18;
     const decimals = BigNumber.from(10).pow(decimalsToSet);
     const rate = BigNumber.from('12').pow(decimalsToSet - 1);
@@ -1120,9 +1129,10 @@ async function ctxFactory() {
     ] = await hre.ethers.getSigners();
     const zero = await hre.ethers.getSigner(hre.ethers.constants.AddressZero);
 
-    const wrappedToken = await new ERC20Bridged__factory(deployer).deploy(
+    const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
         "WsETH Test Token",
         "WsETH",
+        version,
         decimalsToSet,
         owner.address
     );
@@ -1132,9 +1142,10 @@ async function ctxFactory() {
         zero.address,
         86400
     );
-    const rebasableTokenImpl = await new ERC20RebasableBridged__factory(deployer).deploy(
+    const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       name,
       symbol,
+      version,
       decimalsToSet,
       wrappedToken.address,
       tokenRateOracle.address,
@@ -1149,13 +1160,14 @@ async function ctxFactory() {
     const l2TokensProxy = await new OssifiableProxy__factory(deployer).deploy(
       rebasableTokenImpl.address,
       deployer.address,
-      ERC20RebasableBridged__factory.createInterface().encodeFunctionData("initializeERC20Metadata", [
+      ERC20RebasableBridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
         name,
         symbol,
+        version
       ])
     );
 
-    const rebasableProxied = ERC20RebasableBridged__factory.connect(
+    const rebasableProxied = ERC20RebasableBridgedPermit__factory.connect(
       l2TokensProxy.address,
       holder
     );

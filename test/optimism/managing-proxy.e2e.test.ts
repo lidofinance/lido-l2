@@ -2,7 +2,7 @@ import { assert } from "chai";
 import { TransactionResponse } from "@ethersproject/providers";
 
 import {
-  ERC20Bridged__factory,
+  ERC20BridgedPermit__factory,
   GovBridgeExecutor__factory,
   OssifiableProxy__factory,
   L2ERC20ExtendedTokensBridge__factory,
@@ -200,7 +200,7 @@ async function ctxFactory() {
     l1Tester,
     l2Tester,
     l1LDOHolder,
-    l2Token: ERC20Bridged__factory.connect(
+    l2Token: ERC20BridgedPermit__factory.connect(
       E2E_TEST_CONTRACTS.l2.l2Token,
       l2Tester
     ),

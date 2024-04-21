@@ -5,8 +5,8 @@ import { CommonOptions } from "./types";
 import network, { NetworkName } from "../network";
 import { DeployScript, Logger } from "../deployment/DeployScript";
 import {
-    ERC20Bridged__factory,
-    ERC20RebasableBridged__factory,
+    ERC20BridgedPermit__factory,
+    ERC20RebasableBridgedPermit__factory,
     IERC20Metadata__factory,
     L1LidoTokensBridge__factory,
     L2ERC20ExtendedTokensBridge__factory,
@@ -168,7 +168,7 @@ export default function deployment(
         options?.logger
       )
         .addStep({
-          factory: ERC20Bridged__factory,
+          factory: ERC20BridgedPermit__factory,
           args: [
             l2TokenName,
             l2TokenSymbol,
@@ -184,7 +184,7 @@ export default function deployment(
           args: [
             expectedL2TokenImplAddress,
             l2Params.admins.proxy,
-            ERC20Bridged__factory.createInterface().encodeFunctionData(
+            ERC20BridgedPermit__factory.createInterface().encodeFunctionData(
               "initializeERC20Metadata",
               [l2TokenName, l2TokenSymbol]
             ),
@@ -194,7 +194,7 @@ export default function deployment(
             assert.equal(c.address, expectedL2TokenProxyAddress),
         })
         .addStep({
-          factory: ERC20RebasableBridged__factory,
+          factory: ERC20RebasableBridgedPermit__factory,
           args: [
             l2TokenRebasableName,
             l2TokenRebasableSymbol,
@@ -212,7 +212,7 @@ export default function deployment(
           args: [
             expectedL2TokenRebasableImplAddress,
             l2Params.admins.proxy,
-            ERC20RebasableBridged__factory.createInterface().encodeFunctionData(
+            ERC20RebasableBridgedPermit__factory.createInterface().encodeFunctionData(
               "initializeERC20Metadata",
               [l2TokenRebasableName, l2TokenRebasableSymbol]
             ),

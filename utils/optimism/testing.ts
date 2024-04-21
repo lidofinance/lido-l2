@@ -7,14 +7,14 @@ import {
   IERC20__factory,
   L1LidoTokensBridge,
   L2ERC20ExtendedTokensBridge,
-  ERC20Bridged__factory,
+  ERC20BridgedPermit__factory,
   ERC20BridgedStub__factory,
   ERC20WrapperStub__factory,
   TokenRateOracle__factory,
   L1LidoTokensBridge__factory,
   L2ERC20ExtendedTokensBridge__factory,
   CrossDomainMessengerStub__factory,
-  ERC20RebasableBridged__factory,
+  ERC20RebasableBridgedPermit__factory,
 } from "../../typechain";
 import addresses from "./addresses";
 import contracts from "./contracts";
@@ -276,11 +276,11 @@ function connectBridgeContracts(
     addresses.l2ERC20ExtendedTokensBridge,
     optSignerOrProvider
   );
-  const l2Token = ERC20Bridged__factory.connect(
+  const l2Token = ERC20BridgedPermit__factory.connect(
     addresses.l2Token,
     optSignerOrProvider
   );
-  const l2TokenRebasable = ERC20RebasableBridged__factory.connect(
+  const l2TokenRebasable = ERC20RebasableBridgedPermit__factory.connect(
     addresses.l2TokenRebasable,
     optSignerOrProvider
   );

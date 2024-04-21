@@ -51,7 +51,7 @@ contract ERC20BridgedPermit is ERC20Bridged, PermitExtension, Versioned, Initial
     }
 
     function _initialize_v2(string memory name_, string memory version_) internal {
-        _updateContractVersion(2);
+        _setContractVersion(2);
         _initializeEIP5267Metadata(name_, version_);
     }
 

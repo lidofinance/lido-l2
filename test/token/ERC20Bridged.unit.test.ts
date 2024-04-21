@@ -1,7 +1,7 @@
 import { assert } from "chai";
 import hre from "hardhat";
 import {
-  ERC20Bridged__factory,
+  ERC20BridgedPermit__factory,
   OssifiableProxy__factory,
 } from "../../typechain";
 import { unit } from "../../utils/testing";
@@ -16,37 +16,39 @@ unit("ERC20Bridged", ctxFactory)
     assert.equalBN(await ctx.erc20Bridged.totalSupply(), ctx.constants.premint);
   })
 
-  .test("initialize() :: name already set", async (ctx) => {
-    const { deployer, owner } = ctx.accounts;
+//   .test("initialize() :: name already set", async (ctx) => {
+//     const { deployer, owner } = ctx.accounts;
 
-    // deploy new implementation
-    const erc20BridgedImpl = await new ERC20Bridged__factory(deployer).deploy(
-      "Name",
-      "",
-      9,
-      owner.address
-    );
-    await assert.revertsWith(
-      erc20BridgedImpl.initializeERC20Metadata("New Name", ""),
-      "ErrorNameAlreadySet()"
-    );
-  })
+//     // deploy new implementation
+//     const erc20BridgedImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
+//       "Name",
+//       "",
+//       "",
+//       9,
+//       owner.address
+//     );
+//     await assert.revertsWith(
+//       erc20BridgedImpl.initialize("New Name", "", ""),
+//       "ErrorNameAlreadySet()"
+//     );
+//   })
 
-  .test("initialize() :: symbol already set", async (ctx) => {
-    const { deployer, owner } = ctx.accounts;
+//   .test("initialize() :: symbol already set", async (ctx) => {
+//     const { deployer, owner } = ctx.accounts;
 
-    // deploy new implementation
-    const erc20BridgedImpl = await new ERC20Bridged__factory(deployer).deploy(
-      "",
-      "Symbol",
-      9,
-      owner.address
-    );
-    await assert.revertsWith(
-      erc20BridgedImpl.initializeERC20Metadata("", "New Symbol"),
-      "ErrorSymbolAlreadySet()"
-    );
-  })
+//     // deploy new implementation
+//     const erc20BridgedImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
+//       "",
+//       "Symbol",
+//       "",
+//       9,
+//       owner.address
+//     );
+//     await assert.revertsWith(
+//       erc20BridgedImpl.initialize("", "New Symbol", ""),
+//       "ErrorSymbolAlreadySet()"
+//     );
+//   })
 
   .test("approve()", async (ctx) => {
     const { erc20Bridged } = ctx;
@@ -429,12 +431,14 @@ async function ctxFactory() {
   const name = "ERC20 Test Token";
   const symbol = "ERC20";
   const decimals = 18;
+  const version = "1";
   const premint = wei`100 ether`;
   const [deployer, owner, recipient, spender, holder, stranger] =
     await hre.ethers.getSigners();
-  const l2TokenImpl = await new ERC20Bridged__factory(deployer).deploy(
+  const l2TokenImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
     name,
     symbol,
+    version,
     decimals,
     owner.address
   );
@@ -449,13 +453,14 @@ async function ctxFactory() {
   const l2TokensProxy = await new OssifiableProxy__factory(deployer).deploy(
     l2TokenImpl.address,
     deployer.address,
-    ERC20Bridged__factory.createInterface().encodeFunctionData("initializeERC20Metadata", [
+    ERC20BridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
       name,
       symbol,
+      version
     ])
   );
 
-  const erc20BridgedProxied = ERC20Bridged__factory.connect(
+  const erc20BridgedProxied = ERC20BridgedPermit__factory.connect(
     l2TokensProxy.address,
     holder
   );

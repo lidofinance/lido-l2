@@ -3,7 +3,7 @@ import {
     ERC20BridgedStub__factory,
     ERC20WrapperStub__factory,
     TokenRateOracle__factory,
-    ERC20RebasableBridged__factory,
+    ERC20RebasableBridgedPermit__factory,
     L1LidoTokensBridge__factory,
     L2ERC20ExtendedTokensBridge__factory,
     OssifiableProxy__factory,
@@ -1018,9 +1018,10 @@ async function ctxFactory() {
         86400
     );
 
-    const l2TokenRebasableStub = await new ERC20RebasableBridged__factory(deployer).deploy(
+    const l2TokenRebasableStub = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
         "L2 Token Rebasable",
         "L2R",
+        "1",
         decimals,
         l2TokenNonRebasableStub.address,
         tokenRateOracle.address,

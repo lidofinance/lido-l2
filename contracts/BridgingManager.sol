@@ -35,12 +35,7 @@ contract BridgingManager is AccessControl {
     /// @dev This method might be called only once
     /// @param admin_ Address of the account to grant the DEFAULT_ADMIN_ROLE
     function _initialize(address admin_) internal {
-        State storage s = _loadState();
-        if (s.isInitialized) {
-            revert ErrorAlreadyInitialized();
-        }
         _setupRole(DEFAULT_ADMIN_ROLE, admin_);
-        s.isInitialized = true;
         emit Initialized(admin_);
     }
 
