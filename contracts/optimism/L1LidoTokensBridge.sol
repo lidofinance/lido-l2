@@ -4,6 +4,7 @@
 pragma solidity 0.8.10;
 
 import {L1ERC20ExtendedTokensBridge} from "./L1ERC20ExtendedTokensBridge.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /// @author kovalgek
 /// @notice A subset of wstETH token interface of core LIDO protocol.
@@ -15,8 +16,14 @@ interface IERC20WstETH {
 
 /// @author kovalgek
 /// @notice Hides wstETH concept from other contracts to keep `L1ERC20ExtendedTokensBridge` reusable.
-contract L1LidoTokensBridge is L1ERC20ExtendedTokensBridge {
+contract L1LidoTokensBridge is L1ERC20ExtendedTokensBridge, Initializable {
 
+    /// @param messenger_ L1 messenger address being used for cross-chain communications
+    /// @param l2TokenBridge_ Address of the corresponding L2 bridge
+    /// @param l1TokenNonRebasable_ Address of the bridged token in the L1 chain
+    /// @param l1TokenRebasable_ Address of the bridged token in the L1 chain
+    /// @param l2TokenNonRebasable_ Address of the token minted on the L2 chain when token bridged
+    /// @param l2TokenRebasable_ Address of the token minted on the L2 chain when token bridged
     constructor(
         address messenger_,
         address l2TokenBridge_,
@@ -32,6 +39,13 @@ contract L1LidoTokensBridge is L1ERC20ExtendedTokensBridge {
         l2TokenNonRebasable_,
         l2TokenRebasable_
     ) {
+        _disableInitializers();
+    }
+
+    /// @notice Initializes the contract from scratch.
+    /// @param admin_ Address of the account to grant the DEFAULT_ADMIN_ROLE
+    function initialize(address admin_) external initializer {
+        _initialize(admin_);
     }
 
     function tokenRate() override internal view returns (uint256) {

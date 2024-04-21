@@ -33,7 +33,7 @@ contract ERC20RebasableBridgedPermit is ERC20RebasableBridged, PermitExtension, 
         _disableInitializers();
     }
 
-    /// @notice Sets the name, the symbol and the version of the tokens if they are empty
+    /// @notice Initializes the contract from scratch.
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
     /// @param version_ The version of the token
