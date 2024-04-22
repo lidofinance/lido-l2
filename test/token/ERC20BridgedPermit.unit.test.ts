@@ -7,48 +7,101 @@ import {
 import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 
-unit("ERC20Bridged", ctxFactory)
-  .test("bridge()", async (ctx) => {
-    assert.equal(await ctx.erc20Bridged.bridge(), ctx.accounts.owner.address);
+unit("ERC20BridgedPermit", ctxFactory)
+  .test("initial state", async (ctx) => {
+    const { erc20Bridged } = ctx;
+    const { decimals, name, symbol, version, premint } = ctx.constants;
+    const { owner } = ctx.accounts;
+    const [,eip712Name,eip712Version,,,,] = await erc20Bridged.eip712Domain();
+
+    assert.equal(eip712Name, name);
+    assert.equal(eip712Version, version);
+    assert.equal(await erc20Bridged.name(), name);
+    assert.equal(await erc20Bridged.symbol(), symbol);
+    assert.equalBN(await erc20Bridged.decimals(), decimals);
+    assert.equal(await erc20Bridged.bridge(), owner.address);
+    assert.equalBN(await erc20Bridged.totalSupply(), premint);
   })
 
-  .test("totalSupply()", async (ctx) => {
-    assert.equalBN(await ctx.erc20Bridged.totalSupply(), ctx.constants.premint);
+  .test("initialize() :: petrified", async (ctx) => {
+    const { deployer, owner } = ctx.accounts;
+
+    // deploy new implementation
+    const erc20BridgedImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
+      "name",
+      "symbol",
+      "version",
+      9,
+      owner.address
+    );
+
+    const petrifiedVersionMark = hre.ethers.constants.MaxUint256;
+    assert.equalBN(await erc20BridgedImpl.getContractVersion(), petrifiedVersionMark);
+
+    await assert.revertsWith(
+        erc20BridgedImpl.initialize("name", "symbol", "version"),
+      "NonZeroContractVersionOnInit()"
+    );
   })
 
-//   .test("initialize() :: name already set", async (ctx) => {
-//     const { deployer, owner } = ctx.accounts;
+  .test("initialize() :: reinit", async (ctx) => {
+    const { deployer, owner, holder } = ctx.accounts;
+    const { name, symbol, version } = ctx.constants;
 
-//     // deploy new implementation
-//     const erc20BridgedImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
-//       "Name",
-//       "",
-//       "",
-//       9,
-//       owner.address
-//     );
-//     await assert.revertsWith(
-//       erc20BridgedImpl.initialize("New Name", "", ""),
-//       "ErrorNameAlreadySet()"
-//     );
-//   })
+    // deploy new implementation
+    const l2TokenImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
+      "",
+      "Symbol",
+      "",
+      9,
+      owner.address
+    );
 
-//   .test("initialize() :: symbol already set", async (ctx) => {
-//     const { deployer, owner } = ctx.accounts;
+    const l2TokensProxy = await new OssifiableProxy__factory(deployer).deploy(
+        l2TokenImpl.address,
+        deployer.address,
+        ERC20BridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
+          name,
+          symbol,
+          version
+        ])
+      );
 
-//     // deploy new implementation
-//     const erc20BridgedImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
-//       "",
-//       "Symbol",
-//       "",
-//       9,
-//       owner.address
-//     );
-//     await assert.revertsWith(
-//       erc20BridgedImpl.initialize("", "New Symbol", ""),
-//       "ErrorSymbolAlreadySet()"
-//     );
-//   })
+      const erc20BridgedProxied = ERC20BridgedPermit__factory.connect(
+        l2TokensProxy.address,
+        holder
+      );
+
+    assert.equalBN(await erc20BridgedProxied.getContractVersion(), 2);
+
+    await assert.revertsWith(
+        erc20BridgedProxied.initialize(name, symbol, version),
+      "NonZeroContractVersionOnInit()"
+    );
+  })
+
+  .test("finalizeUpgrade_v2() :: metadata uninitialized", async (ctx) => {
+    const { deployer, owner } = ctx.accounts;
+    const { name, version } = ctx.constants;
+
+    // deploy new implementation
+    const l2TokenImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
+      "",
+      "Symbol",
+      "",
+      9,
+      owner.address
+    );
+
+    await assert.revertsWith(new OssifiableProxy__factory(deployer).deploy(
+        l2TokenImpl.address,
+        deployer.address,
+        ERC20BridgedPermit__factory.createInterface().encodeFunctionData("finalizeUpgrade_v2", [
+          name,
+          version
+        ])
+      ), "ErrorMetadataNotInitialized()");
+  })
 
   .test("approve()", async (ctx) => {
     const { erc20Bridged } = ctx;
@@ -469,7 +522,7 @@ async function ctxFactory() {
 
   return {
     accounts: { deployer, owner, recipient, spender, holder, zero, stranger },
-    constants: { name, symbol, decimals, premint },
+    constants: { name, symbol, version, decimals, premint },
     erc20Bridged: erc20BridgedProxied,
   };
 }

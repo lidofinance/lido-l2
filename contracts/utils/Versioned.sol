@@ -5,6 +5,8 @@ pragma solidity 0.8.10;
 
 import {UnstructuredStorage} from "../lib//UnstructuredStorage.sol";
 
+/// @dev A copy of Versioned.sol contract from Lido Core Protocol
+/// https://github.com/lidofinance/lido-dao/blob/master/contracts/0.8.9/utils/Versioned.sol
 contract Versioned {
     using UnstructuredStorage for bytes32;
 
@@ -53,7 +55,7 @@ contract Versioned {
         _setContractVersion(newVersion);
     }
 
-    function _setContractVersion(uint256 version) internal {
+    function _setContractVersion(uint256 version) private {
         CONTRACT_VERSION_POSITION.setStorageUint256(version);
         emit ContractVersionSet(version);
     }

@@ -68,6 +68,10 @@ contract ERC20Metadata is IERC20Metadata {
         _loadDynamicMetadata().symbol = symbol_;
     }
 
+    function _isMetadataInitialized() internal view returns (bool) {
+        return bytes(name()).length != 0 && bytes(symbol()).length != 0;
+    }
+
     /// @dev Returns the reference to the slot with DynamicMetadata struct
     function _loadDynamicMetadata()
         private

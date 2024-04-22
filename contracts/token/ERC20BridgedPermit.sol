@@ -6,10 +6,9 @@ pragma solidity 0.8.10;
 import {ERC20Bridged} from "./ERC20Bridged.sol";
 import {PermitExtension} from "./PermitExtension.sol";
 import {Versioned} from "../utils/Versioned.sol";
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /// @author kovalgek
-contract ERC20BridgedPermit is ERC20Bridged, PermitExtension, Versioned, Initializable {
+contract ERC20BridgedPermit is ERC20Bridged, PermitExtension, Versioned {
 
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
@@ -26,32 +25,27 @@ contract ERC20BridgedPermit is ERC20Bridged, PermitExtension, Versioned, Initial
         ERC20Bridged(name_, symbol_, decimals_, bridge_)
         PermitExtension(name_, version_)
     {
-        _disableInitializers();
     }
 
     /// @notice Initializes the contract from scratch.
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
     /// @param version_ The version of the token
-    function initialize(string memory name_, string memory symbol_, string memory version_) external initializer {
+    function initialize(string memory name_, string memory symbol_, string memory version_) external {
         _initializeERC20Metadata(name_, symbol_);
         _initialize_v2(name_, version_);
     }
 
     /// @notice A function to finalize upgrade to v2 (from v1).
     function finalizeUpgrade_v2(string memory name_, string memory version_) external {
-        _checkContractVersion(0);
-
-        // check if name and symbol from ERCMetadata wasn't set up in storage,
-        // then current contract is not in v1
-        if (bytes(name()).length == 0 || bytes(symbol()).length == 0) {
-            revert ErrorFailedToUpgrade();
+        if (!_isMetadataInitialized()) {
+            revert ErrorMetadataNotInitialized();
         }
         _initialize_v2(name_, version_);
     }
 
     function _initialize_v2(string memory name_, string memory version_) internal {
-        _setContractVersion(2);
+        _initializeContractVersionTo(2);
         _initializeEIP5267Metadata(name_, version_);
     }
 
@@ -60,5 +54,5 @@ contract ERC20BridgedPermit is ERC20Bridged, PermitExtension, Versioned, Initial
         _approve(owner_, spender_, amount_);
     }
 
-    error ErrorFailedToUpgrade();
+    error ErrorMetadataNotInitialized();
 }

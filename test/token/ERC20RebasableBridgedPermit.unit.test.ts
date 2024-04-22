@@ -1,103 +1,119 @@
 import hre from "hardhat";
 import { assert } from "chai";
+import { BigNumber } from "ethers";
 import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
-
 import {
     ERC20BridgedPermit__factory,
     TokenRateOracle__factory,
     ERC20RebasableBridgedPermit__factory,
-    OssifiableProxy__factory,
-    CrossDomainMessengerStub__factory
+    OssifiableProxy__factory
 } from "../../typechain";
-import { BigNumber } from "ethers";
 
-unit("ERC20RebasableBridged", ctxFactory)
+unit("ERC20RebasableBridgedPermit", ctxFactory)
 
-  .test("wrappedToken() :: has the same address is in constructor", async (ctx) => {
-      const { rebasableProxied, wrappedToken } = ctx.contracts;
-      assert.equal(await rebasableProxied.TOKEN_TO_WRAP_FROM(), wrappedToken.address)
+  .test("initial state", async (ctx) => {
+      const { rebasableProxied, wrappedToken, tokenRateOracle } = ctx.contracts;
+      const { owner } = ctx.accounts;
+      const { decimalsToSet, name, symbol, version } = ctx.constants;
+      const [,eip712Name,eip712Version,,,,] = await rebasableProxied.eip712Domain();
+      assert.equal(eip712Name, name);
+      assert.equal(eip712Version, version);
+      assert.equal(await rebasableProxied.name(), name);
+      assert.equal(await rebasableProxied.symbol(), symbol)
+      assert.equalBN(await rebasableProxied.decimals(), decimalsToSet)
+      assert.equal(await rebasableProxied.TOKEN_TO_WRAP_FROM(), wrappedToken.address);
+      assert.equal(await rebasableProxied.TOKEN_RATE_ORACLE(), tokenRateOracle.address);
+      assert.equal(await rebasableProxied.L2_ERC20_TOKEN_BRIDGE(), owner.address);
   })
 
-  .test("tokenRateOracle() :: has the same address is in constructor", async (ctx) => {
-    const { rebasableProxied, tokenRateOracle } = ctx.contracts;
-    assert.equal(await rebasableProxied.TOKEN_RATE_ORACLE(), tokenRateOracle.address)
+  .test("initialize() :: failed to init implementation", async (ctx) => {
+    const { deployer, owner, zero } = ctx.accounts;
+    const { decimalsToSet } = ctx.constants;
+
+    // deploy new implementation
+    const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
+        "WsETH Test Token",
+        "WsETH",
+        "1",
+        decimalsToSet,
+        owner.address
+    );
+    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+        zero.address,
+        owner.address,
+        zero.address,
+        86400
+    );
+    const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
+      "stETH Test Token",
+      "stETH",
+      "1",
+      10,
+      wrappedToken.address,
+      tokenRateOracle.address,
+      owner.address
+    );
+
+    const petrifiedVersionMark = hre.ethers.constants.MaxUint256;
+    assert.equalBN(await rebasableTokenImpl.getContractVersion(), petrifiedVersionMark);
+
+    await assert.revertsWith(
+      rebasableTokenImpl.initialize("name", "symbol", "version"),
+      "NonZeroContractVersionOnInit()"
+    );
   })
 
-  .test("name() :: has the same value is in constructor", async (ctx) =>
-    assert.equal(await ctx.contracts.rebasableProxied.name(), ctx.constants.name)
-  )
+  .test("initialize() :: reinitilization", async (ctx) => {
+    const { deployer, owner, zero, holder } = ctx.accounts;
+    const { decimalsToSet, name, symbol, version } = ctx.constants;
 
-  .test("symbol() :: has the same value is in constructor", async (ctx) =>
-    assert.equal(await ctx.contracts.rebasableProxied.symbol(), ctx.constants.symbol)
-  )
+    // deploy new implementation
+    const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
+        "WsETH Test Token",
+        "WsETH",
+        "1",
+        decimalsToSet,
+        owner.address
+    );
+    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+        zero.address,
+        owner.address,
+        zero.address,
+        86400
+    );
+    const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
+      "",
+      "symbol",
+      "1",
+      10,
+      wrappedToken.address,
+      tokenRateOracle.address,
+      owner.address
+    );
 
-//   .test("initialize() :: name already set", async (ctx) => {
-//     const { deployer, owner, zero } = ctx.accounts;
-//     const { decimalsToSet } = ctx.constants;
+    const l2TokensProxy = await new OssifiableProxy__factory(deployer).deploy(
+      rebasableTokenImpl.address,
+      deployer.address,
+      ERC20RebasableBridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
+        name,
+        symbol,
+        version
+      ])
+    );
 
-//     // deploy new implementation
-//     const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
-//         "WsETH Test Token",
-//         "WsETH",
-//         "1",
-//         decimalsToSet,
-//         owner.address
-//     );
+    const rebasableProxied = ERC20RebasableBridgedPermit__factory.connect(
+      l2TokensProxy.address,
+      holder
+    );
 
-//     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-//         zero.address,
-//         owner.address,
-//         zero.address,
-//         86400
-//     );
-//     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
-//       "name",
-//       "",
-//       "",
-//       10,
-//       wrappedToken.address,
-//       tokenRateOracle.address,
-//       owner.address
-//     );
-//     await assert.revertsWith(
-//       rebasableTokenImpl.initialize("New Name", "", ""),
-//       "ErrorNameAlreadySet()"
-//     );
-//   })
+    assert.equalBN(await rebasableProxied.getContractVersion(), 1);
 
-//   .test("initialize() :: symbol already set", async (ctx) => {
-//     const { deployer, owner, zero } = ctx.accounts;
-//     const { decimalsToSet } = ctx.constants;
-
-//     // deploy new implementation
-//     const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
-//         "WsETH Test Token",
-//         "WsETH",
-//         "1",
-//         decimalsToSet,
-//         owner.address
-//     );
-//     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-//         zero.address,
-//         owner.address,
-//         zero.address,
-//         86400
-//     );
-//     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
-//       "",
-//       "symbol",
-//       "1",
-//       10,
-//       wrappedToken.address,
-//       tokenRateOracle.address,
-//       owner.address
-//     );
-//     await assert.revertsWith(
-//       rebasableTokenImpl.initialize("", "New Symbol", "1"),
-//       "ErrorSymbolAlreadySet()"
-//     );
-//   })
+    await assert.revertsWith(
+      rebasableProxied.initialize(name, symbol, version),
+      "NonZeroContractVersionOnInit()"
+    );
+  })
 
   .test("decimals() :: has the same value as is in constructor", async (ctx) =>
     assert.equal(await ctx.contracts.rebasableProxied.decimals(), ctx.constants.decimalsToSet)
@@ -1177,7 +1193,7 @@ async function ctxFactory() {
 
     return {
       accounts: { deployer, owner, recipient, spender, holder, stranger, zero, user1, user2 },
-      constants: { name, symbol, decimalsToSet, decimals, premintShares, premintTokens, rate, blockTimestamp },
+      constants: { name, symbol, version, decimalsToSet, decimals, premintShares, premintTokens, rate, blockTimestamp },
       contracts: { rebasableProxied, wrappedToken, tokenRateOracle }
     };
 }

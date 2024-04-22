@@ -16,7 +16,7 @@ import {BridgingManager} from "../BridgingManager.sol";
 import {RebasableAndNonRebasableTokens} from "./RebasableAndNonRebasableTokens.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {DepositDataCodec} from "../lib/DepositDataCodec.sol";
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {Versioned} from "../utils/Versioned.sol";
 
 /// @author psirex, kovalgek
 /// @notice The L2 token bridge works with the L1 token bridge to enable ERC20 token bridging
@@ -29,7 +29,7 @@ contract L2ERC20ExtendedTokensBridge is
     BridgingManager,
     RebasableAndNonRebasableTokens,
     CrossDomainEnabled,
-    Initializable
+    Versioned
 {
     using SafeERC20 for IERC20;
 
@@ -55,13 +55,21 @@ contract L2ERC20ExtendedTokensBridge is
         l2TokenRebasable_
     ) {
         L1_TOKEN_BRIDGE = l1TokenBridge_;
-        _disableInitializers();
     }
 
     /// @notice Initializes the contract from scratch.
     /// @param admin_ Address of the account to grant the DEFAULT_ADMIN_ROLE
-    function initialize(address admin_) external initializer {
+    function initialize(address admin_) external {
+        _initializeContractVersionTo(2);
         _initialize(admin_);
+    }
+
+    /// @notice A function to finalize upgrade to v2 (from v1).
+    function finalizeUpgrade_v2() external {
+        if(!_isBridgingManagerInitialized()) {
+            revert ErrorBridgingManagerWasInitialized();
+        }
+        _initializeContractVersionTo(2);
     }
 
     /// @inheritdoc IL2ERC20Bridge
