@@ -6,7 +6,6 @@ pragma solidity 0.8.10;
 import {ITokenRateUpdatable} from "./interfaces/ITokenRateUpdatable.sol";
 import {IChainlinkAggregatorInterface} from "./interfaces/IChainlinkAggregatorInterface.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {Versioned} from "../utils/Versioned.sol";
 
 interface ITokenRateOracle is ITokenRateUpdatable, IChainlinkAggregatorInterface {}
@@ -14,7 +13,7 @@ interface ITokenRateOracle is ITokenRateUpdatable, IChainlinkAggregatorInterface
 /// @author kovalgek
 /// @notice Oracle for storing token rate.
 /// @dev Token rate updates can be delivered from two sources: L1 token rate pusher and L2 bridge.
-contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned, Initializable {
+contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
 
     /// @dev Stores the dynamic data of the oracle. Allows safely use of this
     ///     contract with upgradable proxies
@@ -38,14 +37,15 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned, Ini
     /// @notice A time period when token rate can be considered outdated.
     uint256 public immutable TOKEN_RATE_OUTDATED_DELAY;
 
-    /// @notice A time period when token rate can be considered outdated.
-    uint256 public constant MAX_ALLOWED_L1_L2_TIME_DIFFERENCE = 86400;
+    /// @notice A time difference between received l1Timestamp and L2 block.timestamp
+    ///         when token rate can be considered outdated.
+    uint256 public immutable MAX_ALLOWED_L2_TO_L1_CLOCK_LAG;
+
+    /// @notice Allowed token rate deviation per day in basic points.
+    uint256 public immutable MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY;
 
     /// @notice Number of seconds in one day.
     uint256 public constant ONE_DAY_SECONDS = 86400;
-
-    /// @notice Allowed token rate deviation per day in basic points.
-    uint256 public constant TOKEN_RATE_DEVIATION = 500;
 
     /// @notice Decimals of the oracle response.
     uint8 public constant DECIMALS = 18;
@@ -57,22 +57,27 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned, Ini
     /// @param l2ERC20TokenBridge_ the bridge address that has a right to updates oracle.
     /// @param l1TokenRatePusher_ An address of account on L1 that can update token rate.
     /// @param tokenRateOutdatedDelay_ time period when token rate can be considered outdated.
+    /// @param maxAllowedL2ToL1ClockLag_ A time difference between received l1Timestamp and L2 block.timestamp
+    ///         when token rate can be considered outdated.
+    /// @param maxAllowedTokenRateDeviationPerDay_ Allowed token rate deviation per day in basic points.
     constructor(
         address messenger_,
         address l2ERC20TokenBridge_,
         address l1TokenRatePusher_,
-        uint256 tokenRateOutdatedDelay_
+        uint256 tokenRateOutdatedDelay_,
+        uint256 maxAllowedL2ToL1ClockLag_,
+        uint256 maxAllowedTokenRateDeviationPerDay_
     ) CrossDomainEnabled(messenger_) {
         L2_ERC20_TOKEN_BRIDGE = l2ERC20TokenBridge_;
         L1_TOKEN_RATE_PUSHER = l1TokenRatePusher_;
         TOKEN_RATE_OUTDATED_DELAY = tokenRateOutdatedDelay_;
-
-        _disableInitializers();
+        MAX_ALLOWED_L2_TO_L1_CLOCK_LAG = maxAllowedL2ToL1ClockLag_;
+        MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY = maxAllowedTokenRateDeviationPerDay_;
     }
 
-    function initialize(uint256 tokenRate_, uint256 rateL1Timestamp_) external initializer {
+    function initialize(uint256 tokenRate_, uint256 rateL1Timestamp_) external {
         _initializeContractVersionTo(1);
-        _updateRate(tokenRate_, rateL1Timestamp_);
+        _setTokenRateAndL1Timestamp(uint192(tokenRate_), uint64(rateL1Timestamp_));
     }
 
     /// @inheritdoc IChainlinkAggregatorInterface
@@ -83,20 +88,20 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned, Ini
         uint256 updatedAt_,
         uint80 answeredInRound_
     ) {
-        uint80 roundId = uint80(_rateL1Timestamp());
+        uint80 roundId = uint80(_getRateL1Timestamp());
 
         return (
             roundId,
-            int256(uint256(_tokenRate())),
-            _rateL1Timestamp(),
-            _rateL1Timestamp(),
+            int256(uint256(_getTokenRate())),
+            _getRateL1Timestamp(),
+            _getRateL1Timestamp(),
             roundId
         );
     }
 
     /// @inheritdoc IChainlinkAggregatorInterface
     function latestAnswer() external view returns (int256) {
-        return int256(uint256(_tokenRate()));
+        return int256(uint256(_getTokenRate()));
     }
 
     /// @inheritdoc IChainlinkAggregatorInterface
@@ -105,41 +110,79 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned, Ini
     }
 
     /// @inheritdoc ITokenRateUpdatable
-    function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external onlyAuthorized {
-        _updateRate(tokenRate_, rateL1Timestamp_);
-    }
+    function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external onlyBridgeOrTokenRatePusher {
 
-    /// @notice Returns flag that shows that token rate can be considered outdated.
-    function isLikelyOutdated() external view returns (bool) {
-        return block.timestamp - _rateL1Timestamp() > TOKEN_RATE_OUTDATED_DELAY;
-    }
-
-    function _updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) internal {
-        if (rateL1Timestamp_ < _rateL1Timestamp()) {
-            emit ATryToUpdateTokenRateWithOutdatedTime(tokenRate_, _rateL1Timestamp(), rateL1Timestamp_);
-            return;
+        /// @dev checks if the time difference between L1 and L2 exceeds the configurable threshold
+        if (rateL1Timestamp_ - block.timestamp > MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
+            revert ErrorL1TimestampExceededAllowedClockLag(tokenRate_, rateL1Timestamp_);
         }
 
-        if (rateL1Timestamp_ - block.timestamp > MAX_ALLOWED_L1_L2_TIME_DIFFERENCE) {
-            revert ErrorInvalidTime(tokenRate_, rateL1Timestamp_);
-        }
-
-        if (rateL1Timestamp_ > block.timestamp) {
-            emit TokenRateL1TimestampAheadOfL2Time();
-        }
-
+        /// @dev allow token rate to be within some configurable range that depens on time it wasn't updated.
         if (!_isTokenRateWithinAllowedRange(tokenRate_, rateL1Timestamp_)) {
             revert ErrorTokenRateIsOutOfRange(tokenRate_, rateL1Timestamp_);
         }
 
-        if (tokenRate_ == _tokenRate() && rateL1Timestamp_ == _rateL1Timestamp()) {
+        /// @dev use only the more actual token rate
+        if (rateL1Timestamp_ <= _getRateL1Timestamp()) {
+            emit DormantTokenRateUpdateIgnored(tokenRate_, _getRateL1Timestamp(), rateL1Timestamp_);
             return;
         }
 
-        _setTokenRate(uint192(tokenRate_));
-        _setRateL1Timestamp(uint64(rateL1Timestamp_));
+        /// @dev notify that there is a differnce L1 and L2 time.
+        if (rateL1Timestamp_ > block.timestamp) {
+            emit TokenRateL1TimestampAheadOfL2Time();
+        }
 
-        emit RateUpdated(_tokenRate(), _rateL1Timestamp());
+        _setTokenRateAndL1Timestamp(uint192(tokenRate_), uint64(rateL1Timestamp_));
+        emit RateUpdated(_getTokenRate(), _getRateL1Timestamp());
+    }
+
+    /// @notice Returns flag that shows that token rate can be considered outdated.
+    function isLikelyOutdated() external view returns (bool) {
+        return block.timestamp - _getRateL1Timestamp() > TOKEN_RATE_OUTDATED_DELAY;
+    }
+
+    /// @dev Allow tokenRate deviation from the previous value to be
+    ///      ±`MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY`% per day.
+    function _isTokenRateWithinAllowedRange(
+        uint256 newTokenRate_, uint256 newRateL1Timestamp_
+    ) internal view returns (bool) {
+        uint256 rateL1TimestampDiff = newRateL1Timestamp_ - _getRateL1Timestamp();
+        uint256 roundedUpNumberOfDays = rateL1TimestampDiff / ONE_DAY_SECONDS + 1;
+        uint256 allowedTokenRateDeviation = roundedUpNumberOfDays * MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY;
+        uint256 topTokenRateLimit = _getTokenRate() * (BASIS_POINT_SCALE + allowedTokenRateDeviation) /
+            BASIS_POINT_SCALE;
+        uint256 bottomTokenRateLimit = 0;
+        if(allowedTokenRateDeviation <= BASIS_POINT_SCALE) {
+            bottomTokenRateLimit = (_getTokenRate() * (BASIS_POINT_SCALE - allowedTokenRateDeviation) /
+            BASIS_POINT_SCALE);
+        }
+
+        return newTokenRate_ <= topTokenRateLimit &&
+               newTokenRate_ >= bottomTokenRateLimit;
+    }
+
+    function _isCallerBridgeOrMessegerWithTokenRatePusher(address caller_) internal view returns (bool) {
+        if(caller_ == L2_ERC20_TOKEN_BRIDGE) {
+            return true;
+        }
+        if(caller_ == address(MESSENGER) && MESSENGER.xDomainMessageSender() == L1_TOKEN_RATE_PUSHER) {
+            return true;
+        }
+        return false;
+    }
+
+    function _getTokenRate() private view returns (uint192) {
+        return _loadTokenRateData().tokenRate;
+    }
+
+    function _getRateL1Timestamp() private view returns (uint64) {
+        return _loadTokenRateData().rateL1Timestamp;
+    }
+
+    function _setTokenRateAndL1Timestamp(uint192 tokenRate_, uint64 rateL1Timestamp_) internal {
+        _loadTokenRateData().tokenRate = tokenRate_;
+        _loadTokenRateData().rateL1Timestamp = rateL1Timestamp_;
     }
 
     /// @dev Returns the reference to the slot with TokenRateData struct
@@ -154,57 +197,25 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned, Ini
         }
     }
 
-    function _isTokenRateWithinAllowedRange(uint256 tokenRate_, uint256 rateL1Timestamp_) internal view returns (bool) {
-        uint256 rateL1TimestampDiff = rateL1Timestamp_ - _rateL1Timestamp();
-        uint256 roundedUpNumberOfDays = rateL1TimestampDiff / ONE_DAY_SECONDS + 1;
-        uint256 allowedTokenRateDeviation = roundedUpNumberOfDays * TOKEN_RATE_DEVIATION;
-        uint256 topTokenRateLimitFactor = 1 + allowedTokenRateDeviation / BASIS_POINT_SCALE;
-        uint256 bottomTokenRateLimitFactor =
-            allowedTokenRateDeviation <= BASIS_POINT_SCALE ?
-            (1 - allowedTokenRateDeviation / BASIS_POINT_SCALE) : 0;
-
-        return tokenRate_ <= _tokenRate() * topTokenRateLimitFactor &&
-               tokenRate_ >= _tokenRate() * bottomTokenRateLimitFactor;
-    }
-
-    function _isAuthorized(address caller_) internal view returns (bool) {
-        if(caller_ == address(MESSENGER) && MESSENGER.xDomainMessageSender() == L1_TOKEN_RATE_PUSHER) {
-            return true;
-        }
-        if(caller_ == L2_ERC20_TOKEN_BRIDGE) {
-            return true;
-        }
-        return false;
-    }
-
-    function _tokenRate() private view returns (uint192) {
-        return _loadTokenRateData().tokenRate;
-    }
-
-    function _rateL1Timestamp() private view returns (uint64) {
-        return _loadTokenRateData().rateL1Timestamp;
-    }
-
-    function _setTokenRate(uint192 tokenRate_) internal {
-        _loadTokenRateData().tokenRate = tokenRate_;
-    }
-
-    function _setRateL1Timestamp(uint64 rateL1Timestamp_) internal {
-        _loadTokenRateData().rateL1Timestamp = rateL1Timestamp_;
-    }
-
-    modifier onlyAuthorized() {
-        if(!_isAuthorized(msg.sender)) {
-            revert ErrorNoRights(msg.sender);
+    modifier onlyBridgeOrTokenRatePusher() {
+        if(!_isCallerBridgeOrMessegerWithTokenRatePusher(msg.sender)) {
+            revert ErrorNotBridgeOrTokenRatePusher();
         }
         _;
     }
 
-    event RateUpdated(uint256 tokenRate_, uint256 rateL1Timestamp_);
-    event ATryToUpdateTokenRateWithOutdatedTime(uint256 tokenRate_, uint256 rateL1Timestamp_, uint256 newTateL1Timestamp_);
+    event RateUpdated(
+        uint256 tokenRate_,
+        uint256 indexed rateL1Timestamp_
+    );
+    event DormantTokenRateUpdateIgnored(
+        uint256 tokenRate_,
+        uint256 indexed currentRateL1Timestamp_,
+        uint256 indexed newRateL1Timestamp_
+    );
     event TokenRateL1TimestampAheadOfL2Time();
 
-    error ErrorNoRights(address caller);
-    error ErrorInvalidTime(uint256 tokenRate_, uint256 rateL1Timestamp_);
+    error ErrorNotBridgeOrTokenRatePusher();
+    error ErrorL1TimestampExceededAllowedClockLag(uint256 tokenRate_, uint256 rateL1Timestamp_);
     error ErrorTokenRateIsOutOfRange(uint256 tokenRate_, uint256 rateL1Timestamp_);
 }
