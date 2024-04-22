@@ -113,13 +113,9 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
     function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external onlyBridgeOrTokenRatePusher {
 
         /// @dev checks if the time difference between L1 and L2 exceeds the configurable threshold
-        if (rateL1Timestamp_ - block.timestamp > MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
+        if (rateL1Timestamp_ > block.timestamp &&
+            rateL1Timestamp_ - block.timestamp > MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
             revert ErrorL1TimestampExceededAllowedClockLag(tokenRate_, rateL1Timestamp_);
-        }
-
-        /// @dev allow token rate to be within some configurable range that depens on time it wasn't updated.
-        if (!_isTokenRateWithinAllowedRange(tokenRate_, rateL1Timestamp_)) {
-            revert ErrorTokenRateIsOutOfRange(tokenRate_, rateL1Timestamp_);
         }
 
         /// @dev use only the more actual token rate
@@ -128,9 +124,14 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
             return;
         }
 
+        /// @dev allow token rate to be within some configurable range that depens on time it wasn't updated.
+        if (!_isTokenRateWithinAllowedRange(tokenRate_, rateL1Timestamp_)) {
+            revert ErrorTokenRateIsOutOfRange(tokenRate_, rateL1Timestamp_);
+        }
+
         /// @dev notify that there is a differnce L1 and L2 time.
         if (rateL1Timestamp_ > block.timestamp) {
-            emit TokenRateL1TimestampAheadOfL2Time();
+            emit TokenRateL1TimestampAheadOfL2Time(tokenRate_, rateL1Timestamp_);
         }
 
         _setTokenRateAndL1Timestamp(uint192(tokenRate_), uint64(rateL1Timestamp_));
@@ -213,7 +214,10 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         uint256 indexed currentRateL1Timestamp_,
         uint256 indexed newRateL1Timestamp_
     );
-    event TokenRateL1TimestampAheadOfL2Time();
+    event TokenRateL1TimestampAheadOfL2Time(
+        uint256 tokenRate_,
+        uint256 indexed rateL1Timestamp_
+    );
 
     error ErrorNotBridgeOrTokenRatePusher();
     error ErrorL1TimestampExceededAllowedClockLag(uint256 tokenRate_, uint256 rateL1Timestamp_);

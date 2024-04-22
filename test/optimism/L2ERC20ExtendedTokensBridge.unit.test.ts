@@ -1015,7 +1015,9 @@ async function ctxFactory() {
         l2MessengerStub.address,
         l2TokenBridgeProxyAddress,
         l1TokenBridgeEOA.address,
-        86400
+        86400,
+        86400,
+        500
     );
 
     const l2TokenRebasableStub = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(

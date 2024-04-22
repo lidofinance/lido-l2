@@ -44,7 +44,7 @@ unit("ERC20BridgedPermit", ctxFactory)
     );
   })
 
-  .test("initialize() :: reinit", async (ctx) => {
+  .test("initialize() :: re-initialization", async (ctx) => {
     const { deployer, owner, holder } = ctx.accounts;
     const { name, symbol, version } = ctx.constants;
 

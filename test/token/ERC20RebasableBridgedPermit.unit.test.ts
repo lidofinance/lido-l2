@@ -27,7 +27,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       assert.equal(await rebasableProxied.L2_ERC20_TOKEN_BRIDGE(), owner.address);
   })
 
-  .test("initialize() :: failed to init implementation", async (ctx) => {
+  .test("initialize() :: petrified version", async (ctx) => {
     const { deployer, owner, zero } = ctx.accounts;
     const { decimalsToSet } = ctx.constants;
 
@@ -43,7 +43,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
         zero.address,
         owner.address,
         zero.address,
-        86400
+        86400,
+        86400,
+        500
     );
     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       "stETH Test Token",
@@ -80,7 +82,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
         zero.address,
         owner.address,
         zero.address,
-        86400
+        86400,
+        86400,
+        500
     );
     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       "",
@@ -147,7 +151,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
         zero.address,
         owner.address,
         zero.address,
-        86400
+        86400,
+        86400,
+        500
     );
     const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
         "",
@@ -323,7 +329,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
         zero.address,
         owner.address,
         zero.address,
-        86400
+        86400,
+        86400,
+        500
     );
     const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
         "",
@@ -1156,7 +1164,9 @@ async function ctxFactory() {
         zero.address,
         owner.address,
         zero.address,
-        86400
+        86400,
+        86400,
+        500
     );
     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       name,

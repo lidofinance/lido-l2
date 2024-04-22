@@ -402,7 +402,9 @@ async function tokenProxied(
             hre.ethers.constants.AddressZero,
             owner.address,
             hre.ethers.constants.AddressZero,
-            86400
+            86400,
+            86400,
+            500
         );
         const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
             name,
