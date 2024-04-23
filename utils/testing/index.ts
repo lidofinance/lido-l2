@@ -11,5 +11,5 @@ export default {
   env,
   accounts,
   impersonate,
-  setBalance,
+  setBalance
 };

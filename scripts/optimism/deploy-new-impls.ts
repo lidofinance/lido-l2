@@ -4,6 +4,7 @@ import network from "../../utils/network";
 import deployment from "../../utils/deployment";
 
 import deploymentNewImplementations from "../../utils/optimism/deploymentNewImplementations";
+import { BigNumber } from "ethers";
 
 async function main() {
     const networkName = env.network();
@@ -47,8 +48,22 @@ async function main() {
                 contractsShift: 0,
                 tokenBridgeProxyAddress: deploymentConfig.l2TokenBridge,
                 tokenProxyAddress: deploymentConfig.l2Token,
-                tokenRateOracleProxyAddress: deploymentConfig.l2TokenRateOracle,
-                tokenRateOracleRateOutdatedDelay: deploymentConfig.tokenRateOutdatedDelay,
+                tokenRateOracle: {
+                    proxyAddress: deploymentConfig.l2TokenRateOracle,
+                    rateOutdatedDelay: BigNumber.from(deploymentConfig.tokenRateOutdatedDelay),
+                    maxAllowedL2ToL1ClockLag: BigNumber.from(86400),
+                    maxAllowedTokenRateDeviationPerDay: BigNumber.from(500)
+                },
+                token: {
+                    name: "name",
+                    symbol: "symbol",
+                    version: "1"
+                },
+                tokenRebasable: {
+                    name: "name",
+                    symbol: "symbol",
+                    version: "1"
+                }
             }
         );
 

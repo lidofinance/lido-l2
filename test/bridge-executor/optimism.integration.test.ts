@@ -1,4 +1,5 @@
 import { assert } from "chai";
+import { BigNumber } from 'ethers'
 import {
   ERC20BridgedStub__factory,
   L2ERC20ExtendedTokensBridge__factory,
@@ -216,7 +217,8 @@ async function ctxFactory() {
   const l1TokenRebasable = await new ERC20WrapperStub__factory(l1Deployer).deploy(
     l1Token.address,
     "Test Token",
-    "TT"
+    "TT",
+    BigNumber.from('1164454276599657236')
   );
 
   const optAddresses = optimism.addresses(networkName);
@@ -256,7 +258,11 @@ async function ctxFactory() {
         proxy: govBridgeExecutor.address,
         bridge: govBridgeExecutor.address,
       },
-      contractsShift: 0
+      contractsShift: 0,
+      tokenRateOracle: {
+        tokenRate:10,
+        l1Timestamp:2
+      }
     }
   );
 

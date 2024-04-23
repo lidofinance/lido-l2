@@ -156,6 +156,7 @@ export default function deployment(
         l2Params.l2TokenRebasable?.name ?? l1TokenRebasableInfo.name(),
         l2Params.l2TokenRebasable?.symbol ?? l1TokenRebasableInfo.symbol(),
       ]);
+      const l2TokenVersion = "1";
 
       const l2DeployScript = new BridgeL2DeployScript(
         l2Params.deployer,
@@ -172,6 +173,7 @@ export default function deployment(
           args: [
             l2TokenName,
             l2TokenSymbol,
+            l2TokenVersion,
             decimals,
             expectedL2TokenBridgeProxyAddress,
             options?.overrides,
@@ -185,8 +187,8 @@ export default function deployment(
             expectedL2TokenImplAddress,
             l2Params.admins.proxy,
             ERC20BridgedPermit__factory.createInterface().encodeFunctionData(
-              "initializeERC20Metadata",
-              [l2TokenName, l2TokenSymbol]
+              "initialize",
+              [l2TokenName, l2TokenSymbol, l2TokenVersion]
             ),
             options?.overrides,
           ],

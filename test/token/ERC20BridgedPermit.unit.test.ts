@@ -6,6 +6,8 @@ import {
 } from "../../typechain";
 import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
+import { erc20BridgedPermitUnderProxy } from "../../utils/testing/contractsFactory";
+import { BigNumber } from "ethers";
 
 unit("ERC20BridgedPermit", ctxFactory)
   .test("initial state", async (ctx) => {
@@ -50,9 +52,9 @@ unit("ERC20BridgedPermit", ctxFactory)
 
     // deploy new implementation
     const l2TokenImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
-      "",
-      "Symbol",
-      "",
+      "wstETH",
+      "wst",
+      "1",
       9,
       owner.address
     );
@@ -88,7 +90,7 @@ unit("ERC20BridgedPermit", ctxFactory)
     const l2TokenImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
       "",
       "Symbol",
-      "",
+      "1",
       9,
       owner.address
     );
@@ -483,18 +485,11 @@ unit("ERC20BridgedPermit", ctxFactory)
 async function ctxFactory() {
   const name = "ERC20 Test Token";
   const symbol = "ERC20";
-  const decimals = 18;
   const version = "1";
+  const decimals = BigNumber.from('18');
   const premint = wei`100 ether`;
-  const [deployer, owner, recipient, spender, holder, stranger] =
-    await hre.ethers.getSigners();
-  const l2TokenImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
-    name,
-    symbol,
-    version,
-    decimals,
-    owner.address
-  );
+
+  const [deployer, owner, recipient, spender, holder, stranger] = await hre.ethers.getSigners();
 
   await hre.network.provider.request({
     method: "hardhat_impersonateAccount",
@@ -503,20 +498,15 @@ async function ctxFactory() {
 
   const zero = await hre.ethers.getSigner(hre.ethers.constants.AddressZero);
 
-  const l2TokensProxy = await new OssifiableProxy__factory(deployer).deploy(
-    l2TokenImpl.address,
-    deployer.address,
-    ERC20BridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
-      name,
-      symbol,
-      version
-    ])
-  );
-
-  const erc20BridgedProxied = ERC20BridgedPermit__factory.connect(
-    l2TokensProxy.address,
-    holder
-  );
+  const erc20BridgedProxied = await erc20BridgedPermitUnderProxy(
+    deployer,
+    holder,
+    name,
+    symbol,
+    version,
+    decimals,
+    owner.address
+  )
 
   await erc20BridgedProxied.connect(owner).bridgeMint(holder.address, premint);
 

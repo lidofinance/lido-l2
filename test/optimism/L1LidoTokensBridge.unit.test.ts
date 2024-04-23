@@ -985,7 +985,8 @@ async function ctxFactory() {
     const l1TokenNonRebasableStub = await new ERC20WrapperStub__factory(deployer).deploy(
         l1TokenRebasableStub.address,
         "L1 Token Non Rebasable",
-        "L1NR"
+        "L1NR",
+        BigNumber.from('1164454276599657236')
     );
 
     const l2TokenNonRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
@@ -996,7 +997,8 @@ async function ctxFactory() {
     const l2TokenRebasableStub = await new ERC20WrapperStub__factory(deployer).deploy(
         l2TokenNonRebasableStub.address,
         "L2 Token Rebasable",
-        "L2R"
+        "L2R",
+        BigNumber.from('1164454276599657236')
     );
 
     const emptyContract = await new EmptyContractStub__factory(deployer).deploy({

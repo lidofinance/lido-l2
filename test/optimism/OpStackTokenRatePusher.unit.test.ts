@@ -1,9 +1,8 @@
 import { ethers } from "hardhat";
 import { assert } from "chai";
-import { utils } from 'ethers'
+import { utils, BigNumber } from 'ethers'
 import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
-
 import {
     OpStackTokenRatePusher__factory,
     CrossDomainMessengerStub__factory,
@@ -68,7 +67,8 @@ async function ctxFactory() {
     const l1TokenNonRebasableStub = await new ERC20WrapperStub__factory(deployer).deploy(
       l1TokenRebasableStub.address,
       "L1 Token Non Rebasable",
-      "L1NR"
+      "L1NR",
+      BigNumber.from('1164454276599657236')
     );
 
     const l1MessengerStub = await new CrossDomainMessengerStub__factory(

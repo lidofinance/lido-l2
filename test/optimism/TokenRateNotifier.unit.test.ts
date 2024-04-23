@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { assert } from "chai";
-import { utils } from 'ethers'
+import { utils, BigNumber } from 'ethers'
 import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -256,7 +256,8 @@ async function getOpStackTokenRatePusher(
     const l1TokenNonRebasableStub = await new ERC20WrapperStub__factory(deployer).deploy(
         l1TokenRebasableStub.address,
         "L1 Token Non Rebasable",
-        "L1NR"
+        "L1NR",
+        BigNumber.from('1164454276599657236')
     );
 
     const opStackTokenRatePusher = await new OpStackTokenRatePusher__factory(deployer).deploy(

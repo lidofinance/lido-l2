@@ -10,6 +10,8 @@ import {
     OssifiableProxy__factory
 } from "../../typechain";
 
+import { tokenRateOracleUnderProxy } from "../../utils/testing/contractsFactory";
+
 unit("ERC20RebasableBridgedPermit", ctxFactory)
 
   .test("initial state", async (ctx) => {
@@ -183,18 +185,18 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
 
     const { rebasableProxied, wrappedToken, tokenRateOracle } = ctx.contracts;
     const {user1, user2, owner, zero } = ctx.accounts;
-    const { rate, decimals, premintShares } = ctx.constants;
+    const { tokenRate, decimals, premintShares } = ctx.constants;
 
-    await tokenRateOracle.connect(owner).updateRate(rate, 1000);
+    await tokenRateOracle.connect(owner).updateRate(tokenRate, 1000);
 
-    const totalSupply = rate.mul(premintShares).div(decimals);
+    const totalSupply = tokenRate.mul(premintShares).div(decimals);
 
     assert.equalBN(await rebasableProxied.getTotalShares(), premintShares);
     assert.equalBN(await rebasableProxied.totalSupply(), totalSupply);
 
     // user1
     const user1Shares = wei`100 ether`;
-    const user1Tokens = rate.mul(user1Shares).div(decimals);
+    const user1Tokens = tokenRate.mul(user1Shares).div(decimals);
 
     assert.equalBN(await rebasableProxied.sharesOf(user1.address), 0);
     assert.equalBN(await rebasableProxied.balanceOf(user1.address), 0);
@@ -221,7 +223,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     assert.equalBN(await rebasableProxied.balanceOf(user2.address), 0);
 
     const user2Shares = wei`50 ether`;
-    const user2Tokens = rate.mul(user2Shares).div(decimals);
+    const user2Tokens = tokenRate.mul(user2Shares).div(decimals);
 
     await wrappedToken.connect(owner).bridgeMint(user2.address, user2Tokens);
     await wrappedToken.connect(user2).approve(rebasableProxied.address, user2Shares);
@@ -251,9 +253,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
 
     const { rebasableProxied, wrappedToken } = ctx.contracts;
     const {user1, user2, owner } = ctx.accounts;
-    const { rate, decimals, premintShares } = ctx.constants;
+    const { tokenRate, decimals, premintShares } = ctx.constants;
 
-    const totalSupply = BigNumber.from(rate).mul(premintShares).div(decimals);
+    const totalSupply = BigNumber.from(tokenRate).mul(premintShares).div(decimals);
 
     assert.equalBN(await rebasableProxied.getTotalShares(), premintShares);
     assert.equalBN(await rebasableProxied.totalSupply(), totalSupply);
@@ -265,10 +267,10 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
 
     const user1SharesToWrap = wei`100 ether`;
     const user1SharesToUnwrap = wei`59 ether`;
-    const user1TokensToUnwrap = rate.mul(user1SharesToUnwrap).div(decimals);
+    const user1TokensToUnwrap = tokenRate.mul(user1SharesToUnwrap).div(decimals);
 
     const user1Shares = BigNumber.from(user1SharesToWrap).sub(user1SharesToUnwrap);
-    const user1Tokens = BigNumber.from(rate).mul(user1Shares).div(decimals);
+    const user1Tokens = BigNumber.from(tokenRate).mul(user1Shares).div(decimals);
 
     await wrappedToken.connect(owner).bridgeMint(user1.address, user1SharesToWrap);
     await wrappedToken.connect(user1).approve(rebasableProxied.address, user1SharesToWrap);
@@ -288,10 +290,10 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     // user2
     const user2SharesToWrap = wei`145 ether`;
     const user2SharesToUnwrap = wei`14 ether`;
-    const user2TokensToUnwrap = rate.mul(user2SharesToUnwrap).div(decimals);
+    const user2TokensToUnwrap = tokenRate.mul(user2SharesToUnwrap).div(decimals);
 
     const user2Shares = BigNumber.from(user2SharesToWrap).sub(user2SharesToUnwrap);
-    const user2Tokens = BigNumber.from(rate).mul(user2Shares).div(decimals);
+    const user2Tokens = BigNumber.from(tokenRate).mul(user2Shares).div(decimals);
 
     assert.equalBN(await rebasableProxied.sharesOf(user2.address), 0);
     assert.equalBN(await rebasableProxied.balanceOf(user2.address), 0);
@@ -360,14 +362,14 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
 
     const { rebasableProxied } = ctx.contracts;
     const {user1, user2, owner, zero } = ctx.accounts;
-    const { rate, decimals, premintShares, premintTokens } = ctx.constants;
+    const { tokenRate, decimals, premintShares, premintTokens } = ctx.constants;
 
     assert.equalBN(await rebasableProxied.getTotalShares(), premintShares);
     assert.equalBN(await rebasableProxied.totalSupply(), premintTokens);
 
     // user1
     const user1SharesToMint = wei`44 ether`;
-    const user1TokensMinted = rate.mul(user1SharesToMint).div(decimals);
+    const user1TokensMinted = tokenRate.mul(user1SharesToMint).div(decimals);
 
     assert.equalBN(await rebasableProxied.sharesOf(user1.address), 0);
     assert.equalBN(await rebasableProxied.balanceOf(user1.address), 0);
@@ -385,7 +387,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
 
     // // user2
     const user2SharesToMint = wei`75 ether`;
-    const user2TokensMinted = rate.mul(user2SharesToMint).div(decimals);
+    const user2TokensMinted = tokenRate.mul(user2SharesToMint).div(decimals);
 
     assert.equalBN(await rebasableProxied.sharesOf(user2.address), 0);
     assert.equalBN(await rebasableProxied.balanceOf(user2.address), 0);
@@ -406,17 +408,17 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
 
     const { rebasableProxied } = ctx.contracts;
     const {user1, user2, owner } = ctx.accounts;
-    const { rate, decimals, premintShares, premintTokens } = ctx.constants;
+    const { tokenRate, decimals, premintShares, premintTokens } = ctx.constants;
 
     assert.equalBN(await rebasableProxied.getTotalShares(), premintShares);
     assert.equalBN(await rebasableProxied.totalSupply(), premintTokens);
 
     // user1
     const user1SharesToMint = wei`12 ether`;
-    const user1TokensMinted = rate.mul(user1SharesToMint).div(decimals);
+    const user1TokensMinted = tokenRate.mul(user1SharesToMint).div(decimals);
 
     const user1SharesToBurn = wei`4 ether`;
-    const user1TokensBurned = rate.mul(user1SharesToBurn).div(decimals);
+    const user1TokensBurned = tokenRate.mul(user1SharesToBurn).div(decimals);
 
     const user1Shares = BigNumber.from(user1SharesToMint).sub(user1SharesToBurn);
     const user1Tokens = user1TokensMinted.sub(user1TokensBurned);
@@ -438,10 +440,10 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
 
     // // user2
     const user2SharesToMint = wei`64 ether`;
-    const user2TokensMinted = rate.mul(user2SharesToMint).div(decimals);
+    const user2TokensMinted = tokenRate.mul(user2SharesToMint).div(decimals);
 
     const user2SharesToBurn = wei`22 ether`;
-    const user2TokensBurned = rate.mul(user2SharesToBurn).div(decimals);
+    const user2TokensBurned = tokenRate.mul(user2SharesToBurn).div(decimals);
 
     const user2Shares = BigNumber.from(user2SharesToMint).sub(user2SharesToBurn);
     const user2Tokens = user2TokensMinted.sub(user2TokensBurned);
@@ -1133,9 +1135,10 @@ async function ctxFactory() {
     const version = "1";
     const decimalsToSet = 18;
     const decimals = BigNumber.from(10).pow(decimalsToSet);
-    const rate = BigNumber.from('12').pow(decimalsToSet - 1);
+    const tokenRate = BigNumber.from('1164454276599657236');
+
     const premintShares = wei.toBigNumber(wei`100 ether`);
-    const premintTokens = BigNumber.from(rate).mul(premintShares).div(decimals);
+    const premintTokens = BigNumber.from(tokenRate).mul(premintShares).div(decimals);
 
     const provider = await hre.ethers.provider;
     const blockNumber = await provider.getBlockNumber();
@@ -1160,14 +1163,19 @@ async function ctxFactory() {
         decimalsToSet,
         owner.address
     );
-    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+
+    const tokenRateOracle = await tokenRateOracleUnderProxy(
+        deployer,
         zero.address,
         owner.address,
         zero.address,
-        86400,
-        86400,
-        500
-    );
+        BigNumber.from('86400'),
+        BigNumber.from('86400'),
+        BigNumber.from('500'),
+        tokenRate,
+        BigNumber.from(blockTimestamp)
+    )
+
     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       name,
       symbol,
@@ -1177,11 +1185,6 @@ async function ctxFactory() {
       tokenRateOracle.address,
       owner.address
     );
-
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [hre.ethers.constants.AddressZero],
-    });
 
     const l2TokensProxy = await new OssifiableProxy__factory(deployer).deploy(
       rebasableTokenImpl.address,
@@ -1198,12 +1201,16 @@ async function ctxFactory() {
       holder
     );
 
-    await tokenRateOracle.connect(owner).updateRate(rate, blockTimestamp - 1000);
     await rebasableProxied.connect(owner).bridgeMintShares(holder.address, premintShares);
+
+    await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [hre.ethers.constants.AddressZero],
+      });
 
     return {
       accounts: { deployer, owner, recipient, spender, holder, stranger, zero, user1, user2 },
-      constants: { name, symbol, version, decimalsToSet, decimals, premintShares, premintTokens, rate, blockTimestamp },
+      constants: { name, symbol, version, decimalsToSet, decimals, premintShares, premintTokens, tokenRate, blockTimestamp },
       contracts: { rebasableProxied, wrappedToken, tokenRateOracle }
     };
 }

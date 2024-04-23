@@ -1,6 +1,6 @@
 import { Signer } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
-
+import { BigNumber } from "ethers";
 import {
   IERC20,
   ERC20Bridged,
@@ -194,7 +194,8 @@ async function deployTestBridge(
   const l1Token = await new ERC20WrapperStub__factory(ethDeployer).deploy(
     l1TokenRebasable.address,
     "Test Token",
-    "TT"
+    "TT",
+    BigNumber.from('1164454276599657236')
   );
 
   const [ethDeployScript, optDeployScript] = await deploymentAll(
@@ -210,7 +211,11 @@ async function deployTestBridge(
     {
       deployer: optDeployer,
       admins: { proxy: optDeployer.address, bridge: optDeployer.address },
-      contractsShift: 0
+      contractsShift: 0,
+      tokenRateOracle: {
+        tokenRate: BigNumber.from('1164454276599657236'),
+        l1Timestamp: BigNumber.from('1000')
+      }
     }
   );
 

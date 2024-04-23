@@ -972,7 +972,7 @@ async function ctxFactory() {
 
     const decimals = 18;
     const decimalsBN = BigNumber.from(10).pow(decimals);
-    const exchangeRate = BigNumber.from('12').pow(decimals - 1);
+    const exchangeRate = BigNumber.from('1164454276599657236')
 
     const l2MessengerStub = await new CrossDomainMessengerStub__factory(
         deployer
@@ -992,8 +992,9 @@ async function ctxFactory() {
         ,
         ,
         ,
+        ,
         l2TokenBridgeProxyAddress
-    ] = await predictAddresses(deployer, 7);
+    ] = await predictAddresses(deployer, 8);
 
     const l1TokenRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
         "L1 Token Rebasable",
@@ -1003,7 +1004,8 @@ async function ctxFactory() {
     const l1TokenNonRebasableStub = await new ERC20WrapperStub__factory(deployer).deploy(
         l1TokenRebasableStub.address,
         "L1 Token Non Rebasable",
-        "L1NR"
+        "L1NR",
+        exchangeRate
     );
 
     const l2TokenNonRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
@@ -1011,7 +1013,7 @@ async function ctxFactory() {
         "L2NR"
     );
 
-    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+    const tokenRateOracleImpl = await new TokenRateOracle__factory(deployer).deploy(
         l2MessengerStub.address,
         l2TokenBridgeProxyAddress,
         l1TokenBridgeEOA.address,
@@ -1019,6 +1021,26 @@ async function ctxFactory() {
         86400,
         500
     );
+
+    const provider = await hre.ethers.provider;
+    const blockNumber = await provider.getBlockNumber();
+    const blockTimestamp = (await provider.getBlock(blockNumber)).timestamp;
+    const tokenRateOracleProxy = await new OssifiableProxy__factory(
+        deployer
+    ).deploy(
+        tokenRateOracleImpl.address,
+        deployer.address,
+        tokenRateOracleImpl.interface.encodeFunctionData("initialize", [
+            exchangeRate,
+            blockTimestamp
+        ])
+    );
+
+    const tokenRateOracle = TokenRateOracle__factory.connect(
+        tokenRateOracleProxy.address,
+        deployer
+    );
+
 
     const l2TokenRebasableStub = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
         "L2 Token Rebasable",

@@ -328,9 +328,9 @@ function ctxFactoryFactory(
     return async () => {
         const decimalsToSet = 18;
         const decimals = BigNumber.from(10).pow(decimalsToSet);
-        const rate = BigNumber.from('12').pow(decimalsToSet - 1);
+        const tokenRate = BigNumber.from('1164454276599657236');
         const premintShares = wei.toBigNumber(wei`100 ether`);
-        const premintTokens = BigNumber.from(rate).mul(premintShares).div(decimals);
+        const premintTokens = tokenRate.mul(premintShares).div(decimals);
 
         const [
             deployer,
@@ -354,7 +354,7 @@ function ctxFactoryFactory(
             name,
             symbol,
             decimalsToSet,
-            rate,
+            tokenRate,
             isRebasable,
             owner,
             deployer,
@@ -365,7 +365,7 @@ function ctxFactoryFactory(
 
         return {
             accounts: { deployer, owner, recipient, spender, holder, stranger, zero, user1, user2 },
-            constants: { name, symbol, decimalsToSet, decimals, premintShares, premintTokens, rate },
+            constants: { name, symbol, decimalsToSet, decimals, premintShares, premintTokens, tokenRate },
             contracts: { rebasableProxied },
             permitParams: {
                 owner: alice,
@@ -383,7 +383,7 @@ async function tokenProxied(
     name: string,
     symbol: string,
     decimalsToSet: number,
-    rate: BigNumber,
+    tokenRate: BigNumber,
     isRebasable: boolean,
     owner: SignerWithAddress,
     deployer: SignerWithAddress,
@@ -398,7 +398,7 @@ async function tokenProxied(
             decimalsToSet,
             owner.address
         );
-        const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+        const tokenRateOracleImpl = await new TokenRateOracle__factory(deployer).deploy(
             hre.ethers.constants.AddressZero,
             owner.address,
             hre.ethers.constants.AddressZero,
@@ -406,6 +406,26 @@ async function tokenProxied(
             86400,
             500
         );
+        const provider = await hre.ethers.provider;
+        const blockNumber = await provider.getBlockNumber();
+        const blockTimestamp = (await provider.getBlock(blockNumber)).timestamp;
+
+        const tokenRateOracleProxy = await new OssifiableProxy__factory(
+            deployer
+        ).deploy(
+            tokenRateOracleImpl.address,
+            deployer.address,
+            tokenRateOracleImpl.interface.encodeFunctionData("initialize", [
+                tokenRate,
+                blockTimestamp
+            ])
+        );
+
+        const tokenRateOracle = TokenRateOracle__factory.connect(
+            tokenRateOracleProxy.address,
+            deployer
+        );
+
         const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
             name,
             symbol,
@@ -431,7 +451,6 @@ async function tokenProxied(
             holder
         );
 
-        await tokenRateOracle.connect(owner).updateRate(rate, 1000);
         const premintShares = wei.toBigNumber(wei`100 ether`);
         await rebasableProxied.connect(owner).bridgeMintShares(holder.address, premintShares);
 

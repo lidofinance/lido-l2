@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import { Wallet } from "ethers";
+import { BigNumber, Wallet } from "ethers";
 import addresses from "./addresses";
 import { OptDeploymentOptions, DeployScriptParams } from "./types";
 import network, { NetworkName } from "../network";
@@ -29,6 +29,10 @@ interface OptL2DeployScriptParams extends DeployScriptParams {
         symbol?: string;
         version?: string;
     };
+    tokenRateOracle: {
+        tokenRate: BigNumber;
+        l1Timestamp: BigNumber;
+    }
 }
 
 export class L1DeployAllScript extends DeployScript {
@@ -303,6 +307,8 @@ export default function deploymentAll(
                         expectedL2TokenBridgeProxyAddress,
                         expectedL1OpStackTokenRatePusherImplAddress,
                         86400,
+                        86400,
+                        500,
                         options?.overrides,
                     ],
                     afterDeploy: (c) =>
@@ -313,7 +319,13 @@ export default function deploymentAll(
                     args: [
                         expectedL2TokenRateOracleImplAddress,
                         l2Params.admins.proxy,
-                        [],
+                        TokenRateOracle__factory.createInterface().encodeFunctionData(
+                            "initialize",
+                            [
+                                l2Params.tokenRateOracle.tokenRate,
+                                l2Params.tokenRateOracle.l1Timestamp
+                            ]
+                        ),
                         options?.overrides,
                     ],
                     afterDeploy: (c) =>

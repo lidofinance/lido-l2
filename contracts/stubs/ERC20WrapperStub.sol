@@ -16,12 +16,11 @@ contract ERC20WrapperStub is IERC20Wrapper, IERC20WstETH, ERC20 {
     address public bridge;
     uint256 public tokensRate;
 
-    constructor(IERC20 stETH_, string memory name_, string memory symbol_)
+    constructor(IERC20 stETH_, string memory name_, string memory symbol_, uint256 tokensRate_)
         ERC20(name_, symbol_)
     {
         stETH = stETH_;
-
-        tokensRate = 2 * 10 **18;
+        tokensRate = tokensRate_;
         _mint(msg.sender, 1000000 * 10**18);
     }
 

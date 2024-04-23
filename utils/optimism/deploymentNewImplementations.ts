@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import { Wallet } from "ethers";
+import { BigNumber, Wallet } from "ethers";
 import addresses from "./addresses";
 import { OptDeploymentOptions, DeployScriptParams } from "./types";
 import network, { NetworkName } from "../network";
@@ -30,15 +30,21 @@ interface OptL1DeployScriptParams extends DeployScriptParams {
 interface OptL2DeployScriptParams extends DeployScriptParams {
     tokenBridgeProxyAddress: string;
     tokenProxyAddress: string;
-    tokenRateOracleProxyAddress: string;
-    tokenRateOracleRateOutdatedDelay: number;
-    token?: {
-        name?: string;
-        symbol?: string
+    tokenRateOracle: {
+        proxyAddress: string;
+        rateOutdatedDelay: BigNumber;
+        maxAllowedL2ToL1ClockLag: BigNumber;
+        maxAllowedTokenRateDeviationPerDay: BigNumber;
+    }
+    token: {
+        name: string;
+        symbol: string;
+        version: string;
     };
-    tokenRebasable?: {
-        name?: string;
-        symbol?: string
+    tokenRebasable: {
+        name: string;
+        symbol: string;
+        version: string;
     };
 }
 
@@ -161,6 +167,7 @@ export default function deploymentNewImplementations(
                     args: [
                         l2TokenName,
                         l2TokenSymbol,
+                        l2Params.token.version,
                         decimals,
                         l2Params.tokenBridgeProxyAddress,
                         options?.overrides,
@@ -173,9 +180,10 @@ export default function deploymentNewImplementations(
                     args: [
                         l2TokenRebasableName,
                         l2TokenRebasableSymbol,
+                        l2Params.tokenRebasable.version,
                         decimals,
                         l2Params.tokenProxyAddress,
-                        l2Params.tokenRateOracleProxyAddress,
+                        l2Params.tokenRateOracle.proxyAddress,
                         l2Params.tokenBridgeProxyAddress,
                         options?.overrides,
                     ],
@@ -188,8 +196,8 @@ export default function deploymentNewImplementations(
                         expectedL2TokenRebasableImplAddress,
                         l2Params.admins.proxy,
                         ERC20RebasableBridgedPermit__factory.createInterface().encodeFunctionData(
-                            "initializeERC20Metadata",
-                            [l2TokenRebasableName, l2TokenRebasableSymbol]
+                            "initialize",
+                            [l2TokenRebasableName, l2TokenRebasableSymbol, l2Params.tokenRebasable.version]
                         ),
                         options?.overrides,
                     ],
@@ -216,7 +224,9 @@ export default function deploymentNewImplementations(
                         optAddresses.L2CrossDomainMessenger,
                         l2Params.tokenBridgeProxyAddress,
                         l1Params.opStackTokenRatePusherImplAddress,
-                        l2Params.tokenRateOracleRateOutdatedDelay,
+                        l2Params.tokenRateOracle.rateOutdatedDelay,
+                        l2Params.tokenRateOracle.maxAllowedL2ToL1ClockLag,
+                        l2Params.tokenRateOracle.maxAllowedTokenRateDeviationPerDay,
                         options?.overrides,
                     ],
                     afterDeploy: (c) =>

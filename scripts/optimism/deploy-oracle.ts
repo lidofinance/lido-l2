@@ -19,6 +19,9 @@ async function main() {
         }
     );
 
+    const blockNumber = await optDeployer.provider.getBlockNumber();
+    const blockTimestamp = (await optDeployer.provider.getBlock(blockNumber)).timestamp;
+
     const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
 
     const [l1DeployScript, l2DeployScript] = await optimism
@@ -41,7 +44,13 @@ async function main() {
                     proxy: deploymentConfig.l2.proxyAdmin,
                     bridge: optDeployer.address,
                 },
-                contractsShift: 0
+                contractsShift: 0,
+                tokenRateOracle: {
+                    maxAllowedL2ToL1ClockLag: 86400,
+                    maxAllowedTokenRateDeviationPerDay: 500,
+                    tokenRate: 1164454276599657236,
+                    l1Timestamp: blockTimestamp
+                }
             }
         );
 

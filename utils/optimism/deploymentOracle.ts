@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import { Wallet } from "ethers";
+import { BigNumber, Wallet } from "ethers";
 import { ethers } from "hardhat";
 import addresses from "./addresses";
 import { DeployScriptParams, OptDeploymentOptions } from "./types";
@@ -13,6 +13,16 @@ import {
 } from "../../typechain";
 
 interface OptDeployScriptParams extends DeployScriptParams {}
+
+interface OptL2DeployScriptParams extends DeployScriptParams {
+    tokenRateOracle: {
+        maxAllowedL2ToL1ClockLag: BigNumber;
+        maxAllowedTokenRateDeviationPerDay: BigNumber;
+        tokenRate: BigNumber;
+        l1Timestamp: BigNumber;
+    }
+}
+
 export class OracleL1DeployScript extends DeployScript {
     constructor(
         deployer: Wallet,
@@ -56,7 +66,7 @@ export default function deploymentOracle(
             l2GasLimitForPushingTokenRate: number,
             tokenRateOutdatedDelay: number,
             l1Params: OptDeployScriptParams,
-            l2Params: OptDeployScriptParams,
+            l2Params: OptL2DeployScriptParams,
         ): Promise<[OracleL1DeployScript, OracleL2DeployScript]> {
 
             const [
@@ -110,6 +120,8 @@ export default function deploymentOracle(
                         ethers.constants.AddressZero,
                         expectedL1OpStackTokenRatePusherImplAddress,
                         tokenRateOutdatedDelay,
+                        l2Params.tokenRateOracle.maxAllowedL2ToL1ClockLag,
+                        l2Params.tokenRateOracle.maxAllowedTokenRateDeviationPerDay,
                         options?.overrides,
                     ],
                     afterDeploy: (c) =>
@@ -120,7 +132,13 @@ export default function deploymentOracle(
                     args: [
                         expectedL2TokenRateOracleImplAddress,
                         l2Params.admins.proxy,
-                        [],
+                        TokenRateOracle__factory.createInterface().encodeFunctionData(
+                            "initialize",
+                            [
+                                l2Params.tokenRateOracle.tokenRate,
+                                l2Params.tokenRateOracle.l1Timestamp
+                            ]
+                        ),
                         options?.overrides,
                     ],
                     afterDeploy: (c) =>
