@@ -2,13 +2,6 @@
 =======================
 
 =======================
-➡ BridgeableTokens
-=======================
-
-| Name | Type | Slot | Offset | Bytes | Contract |
-|------|------|------|--------|-------|----------|
-
-=======================
 ➡ BridgingManager
 =======================
 
@@ -37,14 +30,11 @@
 ➡ ERC20BridgedPermit
 =======================
 
-| Name             | Type                                            | Slot | Offset | Bytes | Contract                                                  |
-|------------------|-------------------------------------------------|------|--------|-------|-----------------------------------------------------------|
-| totalSupply      | uint256                                         | 0    | 0      | 32    | contracts/token/ERC20BridgedPermit.sol:ERC20BridgedPermit |
-| balanceOf        | mapping(address => uint256)                     | 1    | 0      | 32    | contracts/token/ERC20BridgedPermit.sol:ERC20BridgedPermit |
-| allowance        | mapping(address => mapping(address => uint256)) | 2    | 0      | 32    | contracts/token/ERC20BridgedPermit.sol:ERC20BridgedPermit |
-| _nameFallback    | string                                          | 3    | 0      | 32    | contracts/token/ERC20BridgedPermit.sol:ERC20BridgedPermit |
-| _versionFallback | string                                          | 4    | 0      | 32    | contracts/token/ERC20BridgedPermit.sol:ERC20BridgedPermit |
-| noncesByAddress  | mapping(address => uint256)                     | 5    | 0      | 32    | contracts/token/ERC20BridgedPermit.sol:ERC20BridgedPermit |
+| Name        | Type                                            | Slot | Offset | Bytes | Contract                                                  |
+|-------------|-------------------------------------------------|------|--------|-------|-----------------------------------------------------------|
+| totalSupply | uint256                                         | 0    | 0      | 32    | contracts/token/ERC20BridgedPermit.sol:ERC20BridgedPermit |
+| balanceOf   | mapping(address => uint256)                     | 1    | 0      | 32    | contracts/token/ERC20BridgedPermit.sol:ERC20BridgedPermit |
+| allowance   | mapping(address => mapping(address => uint256)) | 2    | 0      | 32    | contracts/token/ERC20BridgedPermit.sol:ERC20BridgedPermit |
 
 =======================
 ➡ ERC20Core
@@ -74,11 +64,8 @@
 ➡ ERC20RebasableBridgedPermit
 =======================
 
-| Name             | Type                        | Slot | Offset | Bytes | Contract                                                                    |
-|------------------|-----------------------------|------|--------|-------|-----------------------------------------------------------------------------|
-| _nameFallback    | string                      | 0    | 0      | 32    | contracts/token/ERC20RebasableBridgedPermit.sol:ERC20RebasableBridgedPermit |
-| _versionFallback | string                      | 1    | 0      | 32    | contracts/token/ERC20RebasableBridgedPermit.sol:ERC20RebasableBridgedPermit |
-| noncesByAddress  | mapping(address => uint256) | 2    | 0      | 32    | contracts/token/ERC20RebasableBridgedPermit.sol:ERC20RebasableBridgedPermit |
+| Name | Type | Slot | Offset | Bytes | Contract |
+|------|------|------|--------|-------|----------|
 
 =======================
 ➡ L1LidoTokensBridge
@@ -130,7 +117,12 @@
 ➡ TokenRateOracle
 =======================
 
-| Name            | Type    | Slot | Offset | Bytes | Contract                                               |
-|-----------------|---------|------|--------|-------|--------------------------------------------------------|
-| tokenRate       | uint256 | 0    | 0      | 32    | contracts/optimism/TokenRateOracle.sol:TokenRateOracle |
-| rateL1Timestamp | uint256 | 1    | 0      | 32    | contracts/optimism/TokenRateOracle.sol:TokenRateOracle |
+| Name | Type | Slot | Offset | Bytes | Contract |
+|------|------|------|--------|-------|----------|
+
+=======================
+➡ Versioned
+=======================
+
+| Name | Type | Slot | Offset | Bytes | Contract |
+|------|------|------|--------|-------|----------|
