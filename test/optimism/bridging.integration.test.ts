@@ -91,7 +91,7 @@ scenario("Optimism :: Bridging non-rebasable token integration test", ctxFactory
       tokenHolderA.address
     );
     const l1ERC20ExtendedTokensBridgeBalanceBefore = await l1Token.balanceOf(
-        l1LidoTokensBridge.address
+      l1LidoTokensBridge.address
     );
 
     const tx = await l1LidoTokensBridge
@@ -251,7 +251,7 @@ scenario("Optimism :: Bridging non-rebasable token integration test", ctxFactory
       tokenHolderA.address
     );
     const l1ERC20ExtendedTokensBridgeBalanceBefore = await l1Token.balanceOf(
-        l1LidoTokensBridge.address
+      l1LidoTokensBridge.address
     );
 
     await l1CrossDomainMessenger
@@ -318,7 +318,7 @@ scenario("Optimism :: Bridging non-rebasable token integration test", ctxFactory
       tokenHolderA.address
     );
     const l1ERC20ExtendedTokensBridgeBalanceBefore = await l1Token.balanceOf(
-        l1LidoTokensBridge.address
+      l1LidoTokensBridge.address
     );
 
     const tx = await l1LidoTokensBridge
@@ -496,7 +496,7 @@ scenario("Optimism :: Bridging non-rebasable token integration test", ctxFactory
       tokenHolderA.address
     );
     const l1ERC20ExtendedTokensBridgeBalanceBefore = await l1Token.balanceOf(
-        l1LidoTokensBridge.address
+      l1LidoTokensBridge.address
     );
 
     await l1CrossDomainMessenger
@@ -623,10 +623,10 @@ async function ctxFactory() {
 }
 
 async function packedTokenRateAndTimestamp(l1Provider: JsonRpcProvider, l1Token: ERC20WrapperStub) {
-    const stEthPerToken = await l1Token.stEthPerToken();
-    const blockNumber = await l1Provider.getBlockNumber();
-    const blockTimestamp = (await l1Provider.getBlock(blockNumber)).timestamp;
-    const stEthPerTokenStr = ethers.utils.hexZeroPad(stEthPerToken.toHexString(), 12);
-    const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 5);
-    return ethers.utils.hexConcat([stEthPerTokenStr, blockTimestampStr]);
+  const stEthPerToken = await l1Token.stEthPerToken();
+  const blockNumber = await l1Provider.getBlockNumber();
+  const blockTimestamp = (await l1Provider.getBlock(blockNumber)).timestamp;
+  const stEthPerTokenStr = ethers.utils.hexZeroPad(stEthPerToken.toHexString(), 12);
+  const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 5);
+  return ethers.utils.hexConcat([stEthPerTokenStr, blockTimestampStr]);
 }

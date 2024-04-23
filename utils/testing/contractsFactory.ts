@@ -4,7 +4,9 @@ import {
     ERC20BridgedPermit__factory,
     TokenRateOracle__factory,
     ERC20RebasableBridgedPermit__factory,
-    OssifiableProxy__factory
+    OssifiableProxy__factory,
+    TokenRateOracle,
+    ERC20BridgedPermit
 } from "../../typechain";
 
 export async function erc20BridgedPermitUnderProxy(
@@ -22,34 +24,34 @@ export async function erc20BridgedPermitUnderProxy(
         version,
         decimals,
         bridge
-      );
+    );
 
-      const erc20BridgedPermitProxy = await new OssifiableProxy__factory(deployer).deploy(
+    const erc20BridgedPermitProxy = await new OssifiableProxy__factory(deployer).deploy(
         erc20BridgedPermitImpl.address,
         deployer.address,
         ERC20BridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
-          name,
-          symbol,
-          version
+            name,
+            symbol,
+            version
         ])
-      );
+    );
 
-      const erc20BridgedPermit = ERC20BridgedPermit__factory.connect(
+    return ERC20BridgedPermit__factory.connect(
         erc20BridgedPermitProxy.address,
         holder
-      );
-
-      return erc20BridgedPermit;
+    );
 }
 
 export async function tokenRateOracleUnderProxy(
     deployer: SignerWithAddress,
+
     messenger: string,
     l2ERC20TokenBridge: string,
     l1TokenRatePusher: string,
     tokenRateOutdatedDelay: BigNumber,
     maxAllowedL2ToL1ClockLag: BigNumber,
     maxAllowedTokenRateDeviationPerDay: BigNumber,
+
     tokenRate: BigNumber,
     blockTimestamp: BigNumber
 ) {
@@ -71,60 +73,27 @@ export async function tokenRateOracleUnderProxy(
             blockTimestamp
         ])
     );
-    const tokenRateOracle = TokenRateOracle__factory.connect(
+    return TokenRateOracle__factory.connect(
         tokenRateOracleProxy.address,
         deployer
     );
-    return tokenRateOracle;
 }
 
 export async function erc20RebasableBridgedPermitUnderProxy(
     deployer: SignerWithAddress,
-
-    erc20BridgedPermitName: string,
-    erc20BridgedPermitSymbol: string,
-    erc20BridgedPermitVersion: string,
-
-    erc20RebasableBridgedPermitName: string,
-    erc20RebasableBridgedPermitSymbol: string,
-    erc20RebasableBridgedPermitVersion: string,
-
+    holder: SignerWithAddress,
+    name: string,
+    symbol: string,
+    version: string,
     decimals: BigNumber,
-    bridge: string,
-
-    messenger: string,
-    l1TokenRatePusher: string,
-    tokenRateOutdatedDelay: BigNumber,
-    maxAllowedL2ToL1ClockLag: BigNumber,
-    maxAllowedTokenRateDeviationPerDay: BigNumber,
-    tokenRate: BigNumber,
-    blockTimestamp: BigNumber
+    tokenRateOracle: TokenRateOracle,
+    erc20BridgedPermit: ERC20BridgedPermit,
+    bridge: string
 ) {
-    const erc20BridgedPermit = await erc20BridgedPermitUnderProxy(
-        deployer,
-        erc20BridgedPermitName,
-        erc20BridgedPermitSymbol,
-        erc20BridgedPermitVersion,
-        decimals,
-        bridge
-    );
-
-    const tokenRateOracle = await tokenRateOracleUnderProxy(
-        deployer,
-        messenger,
-        bridge,
-        l1TokenRatePusher,
-        tokenRateOutdatedDelay,
-        maxAllowedL2ToL1ClockLag,
-        maxAllowedTokenRateDeviationPerDay,
-        tokenRate,
-        BigNumber.from(blockTimestamp)
-    )
-
     const erc20RebasableBridgedPermitImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
-        erc20RebasableBridgedPermitName,
-        erc20RebasableBridgedPermitSymbol,
-        erc20RebasableBridgedPermitVersion,
+        name,
+        symbol,
+        version,
         decimals,
         erc20BridgedPermit.address,
         tokenRateOracle.address,
@@ -135,16 +104,14 @@ export async function erc20RebasableBridgedPermitUnderProxy(
         erc20RebasableBridgedPermitImpl.address,
         deployer.address,
         ERC20RebasableBridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
-            erc20RebasableBridgedPermitName,
-            erc20RebasableBridgedPermitSymbol,
-            erc20RebasableBridgedPermitVersion
+            name,
+            symbol,
+            version,
         ])
     );
 
-    const erc20RebasableBridgedPermit = ERC20RebasableBridgedPermit__factory.connect(
+    return ERC20RebasableBridgedPermit__factory.connect(
         erc20RebasableBridgedPermitProxy.address,
-        deployer
+        holder
     );
-
-    return { tokenRateOracle, erc20BridgedPermit, erc20RebasableBridgedPermit };
 }

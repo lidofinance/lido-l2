@@ -39,7 +39,7 @@ contract ERC20BridgedPermit is ERC20Bridged, PermitExtension, Versioned {
     /// @notice A function to finalize upgrade to v2 (from v1).
     function finalizeUpgrade_v2(string memory name_, string memory version_) external {
         if (!_isMetadataInitialized()) {
-            revert ErrorMetadataNotInitialized();
+            revert ErrorMetadataIsNotInitialized();
         }
         _initialize_v2(name_, version_);
     }
@@ -54,5 +54,5 @@ contract ERC20BridgedPermit is ERC20Bridged, PermitExtension, Versioned {
         _approve(owner_, spender_, amount_);
     }
 
-    error ErrorMetadataNotInitialized();
+    error ErrorMetadataIsNotInitialized();
 }

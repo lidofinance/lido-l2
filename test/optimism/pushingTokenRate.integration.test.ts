@@ -9,226 +9,226 @@ import deploymentOracle from "../../utils/optimism/deploymentOracle";
 import { getBridgeExecutorParams } from "../../utils/bridge-executor";
 import { BigNumber } from "ethers";
 import {
-    ERC20BridgedStub__factory,
-    ERC20WrapperStub__factory,
-    OptimismBridgeExecutor__factory,
-    TokenRateNotifier__factory,
-    TokenRateOracle__factory
+  ERC20BridgedStub__factory,
+  ERC20WrapperStub__factory,
+  OptimismBridgeExecutor__factory,
+  TokenRateNotifier__factory,
+  TokenRateOracle__factory
 } from "../../typechain";
 
 scenario("Optimism :: Token Rate Oracle integration test", ctxFactory)
 
-    .step("Push Token Rate", async (ctx) => {
-        const {
-            tokenRateNotifier,
-            tokenRateOracle,
-            opTokenRatePusher,
-            l1CrossDomainMessenger,
-            l1Token,
-            l1Provider
-        } = ctx;
+  .step("Push Token Rate", async (ctx) => {
+    const {
+      tokenRateNotifier,
+      tokenRateOracle,
+      opTokenRatePusher,
+      l1CrossDomainMessenger,
+      l1Token,
+      l1Provider
+    } = ctx;
 
-        const tokenRate = await l1Token.stEthPerToken();
+    const tokenRate = await l1Token.stEthPerToken();
 
-        const account = ctx.accounts.accountA;
+    const account = ctx.accounts.accountA;
 
-        const tx = await tokenRateNotifier
-            .connect(account.l1Signer)
-            .handlePostTokenRebase(1, 2, 3, 4, 5, 6, 7);
+    const tx = await tokenRateNotifier
+      .connect(account.l1Signer)
+      .handlePostTokenRebase(1, 2, 3, 4, 5, 6, 7);
 
-        const blockNumber = await l1Provider.getBlockNumber();
-        const blockTimestamp = BigNumber.from((await l1Provider.getBlock(blockNumber)).timestamp);
+    const blockNumber = await l1Provider.getBlockNumber();
+    const blockTimestamp = BigNumber.from((await l1Provider.getBlock(blockNumber)).timestamp);
 
-        const messageNonce = await l1CrossDomainMessenger.messageNonce();
-        const [stEthPerTokenStr, blockTimestampStr] = await tokenRateAndTimestamp(tokenRate, blockTimestamp);
-        const l2Calldata = tokenRateOracle.interface.encodeFunctionData(
-            "updateRate",
-            [
-                stEthPerTokenStr,
-                blockTimestampStr
-            ]
-        );
+    const messageNonce = await l1CrossDomainMessenger.messageNonce();
+    const [stEthPerTokenStr, blockTimestampStr] = await tokenRateAndTimestamp(tokenRate, blockTimestamp);
+    const l2Calldata = tokenRateOracle.interface.encodeFunctionData(
+      "updateRate",
+      [
+        stEthPerTokenStr,
+        blockTimestampStr
+      ]
+    );
 
-        await assert.emits(l1CrossDomainMessenger, tx, "SentMessage", [
-            tokenRateOracle.address,
-            opTokenRatePusher,
-            l2Calldata,
-            messageNonce,
-            1000,
-        ]);
-    })
+    await assert.emits(l1CrossDomainMessenger, tx, "SentMessage", [
+      tokenRateOracle.address,
+      opTokenRatePusher,
+      l2Calldata,
+      messageNonce,
+      1000,
+    ]);
+  })
 
-    .step("Finalize pushing rate", async (ctx) => {
-        const {
-            opTokenRatePusher,
-            tokenRateOracle,
-            l1Token,
-            l1Provider,
-            l1CrossDomainMessenger
-        } = ctx;
+  .step("Finalize pushing rate", async (ctx) => {
+    const {
+      opTokenRatePusher,
+      tokenRateOracle,
+      l1Token,
+      l1Provider,
+      l1CrossDomainMessenger
+    } = ctx;
 
-        const account = ctx.accounts.accountA;
-        await l1CrossDomainMessenger
-            .connect(account.l1Signer)
-            .setXDomainMessageSender(opTokenRatePusher);
+    const account = ctx.accounts.accountA;
+    await l1CrossDomainMessenger
+      .connect(account.l1Signer)
+      .setXDomainMessageSender(opTokenRatePusher);
 
-        const blockNumber = await l1Provider.getBlockNumber();
-        const blockTimestamp = BigNumber.from((await l1Provider.getBlock(blockNumber)).timestamp);
+    const blockNumber = await l1Provider.getBlockNumber();
+    const blockTimestamp = BigNumber.from((await l1Provider.getBlock(blockNumber)).timestamp);
 
-        const tokenRate = await l1Token.stEthPerToken();
-        const [stEthPerTokenStr, blockTimestampStr] = await tokenRateAndTimestamp(tokenRate, blockTimestamp);
+    const tokenRate = await l1Token.stEthPerToken();
+    const [stEthPerTokenStr, blockTimestampStr] = await tokenRateAndTimestamp(tokenRate, blockTimestamp);
 
-        const tx = await ctx.l2CrossDomainMessenger
-            .connect(ctx.accounts.l1CrossDomainMessengerAliased)
-            .relayMessage(
-                1,
-                opTokenRatePusher,
-                tokenRateOracle.address,
-                0,
-                300_000,
-                tokenRateOracle.interface.encodeFunctionData("updateRate", [
-                    stEthPerTokenStr,
-                    blockTimestampStr
-                ]),
-                { gasLimit: 5_000_000 }
-            );
+    const tx = await ctx.l2CrossDomainMessenger
+      .connect(ctx.accounts.l1CrossDomainMessengerAliased)
+      .relayMessage(
+        1,
+        opTokenRatePusher,
+        tokenRateOracle.address,
+        0,
+        300_000,
+        tokenRateOracle.interface.encodeFunctionData("updateRate", [
+          stEthPerTokenStr,
+          blockTimestampStr
+        ]),
+        { gasLimit: 5_000_000 }
+      );
 
-        const answer = await tokenRateOracle.latestAnswer();
-        assert.equalBN(answer, tokenRate);
+    const answer = await tokenRateOracle.latestAnswer();
+    assert.equalBN(answer, tokenRate);
 
-        const [
-            ,
-            tokenRateAnswer,
-            ,
-            updatedAt,
+    const [
+      ,
+      tokenRateAnswer,
+      ,
+      updatedAt,
 
-        ] = await tokenRateOracle.latestRoundData();
+    ] = await tokenRateOracle.latestRoundData();
 
-        assert.equalBN(tokenRateAnswer, tokenRate);
-        assert.equalBN(updatedAt, blockTimestampStr);
-    })
+    assert.equalBN(tokenRateAnswer, tokenRate);
+    assert.equalBN(updatedAt, blockTimestampStr);
+  })
 
-    .run();
+  .run();
 
 async function ctxFactory() {
-    const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
-    const [l1Provider, l2Provider] = network
-        .multichain(["eth", "opt"], networkName)
-        .getProviders({ forking: true });
-    const l1Deployer = testing.accounts.deployer(l1Provider);
-    const l2Deployer = testing.accounts.deployer(l2Provider);
+  const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
+  const [l1Provider, l2Provider] = network
+    .multichain(["eth", "opt"], networkName)
+    .getProviders({ forking: true });
+  const l1Deployer = testing.accounts.deployer(l1Provider);
+  const l2Deployer = testing.accounts.deployer(l2Provider);
 
-    const blockNumber = await l2Provider.getBlockNumber();
-    const blockTimestamp = BigNumber.from((await l2Provider.getBlock(blockNumber)).timestamp);
+  const blockNumber = await l2Provider.getBlockNumber();
+  const blockTimestamp = BigNumber.from((await l2Provider.getBlock(blockNumber)).timestamp);
 
-    const blockTimestampInPast = BigNumber.from((await l2Provider.getBlock(blockNumber)).timestamp).sub(86400);
-    const tokenRate = BigNumber.from('1164454276599657236');
+  const blockTimestampInPast = BigNumber.from((await l2Provider.getBlock(blockNumber)).timestamp).sub(86400);
+  const tokenRate = BigNumber.from('1164454276599657236');
 
-    const optContracts = optimism.contracts(networkName, { forking: true });
-    const l2CrossDomainMessenger = optContracts.L2CrossDomainMessenger;
-    const testingOnDeployedContracts = testing.env.USE_DEPLOYED_CONTRACTS(false);
-    const optAddresses = optimism.addresses(networkName);
+  const optContracts = optimism.contracts(networkName, { forking: true });
+  const l2CrossDomainMessenger = optContracts.L2CrossDomainMessenger;
+  const testingOnDeployedContracts = testing.env.USE_DEPLOYED_CONTRACTS(false);
+  const optAddresses = optimism.addresses(networkName);
 
-    const govBridgeExecutor = testingOnDeployedContracts
-        ? OptimismBridgeExecutor__factory.connect(
-            testing.env.OPT_GOV_BRIDGE_EXECUTOR(),
-            l2Provider
-        )
-        : await new OptimismBridgeExecutor__factory(l2Deployer).deploy(
-            optAddresses.L2CrossDomainMessenger,
-            l1Deployer.address,
-            ...getBridgeExecutorParams(),
-            l2Deployer.address
-        );
-
-    const l1TokenRebasable = await new ERC20BridgedStub__factory(l1Deployer).deploy(
-        "Test Token Rebasable",
-        "TTR"
-    );
-    const l1Token = await new ERC20WrapperStub__factory(l1Deployer).deploy(
-        l1TokenRebasable.address,
-        "Test Token",
-        "TT",
-        tokenRate
-    );
-    const [ethDeployScript, optDeployScript] = await deploymentOracle(
-        networkName
-    ).oracleDeployScript(
-        l1Token.address,
-        1000,
-        86400,
-        {
-            deployer: l1Deployer,
-            admins: {
-                proxy: l1Deployer.address,
-                bridge: l1Deployer.address
-            },
-            contractsShift: 0
-        },
-        {
-            deployer: l2Deployer,
-            admins: {
-                proxy: govBridgeExecutor.address,
-                bridge: govBridgeExecutor.address,
-            },
-            contractsShift: 0,
-            tokenRateOracle: {
-                maxAllowedL2ToL1ClockLag: BigNumber.from(86400),
-                maxAllowedTokenRateDeviationPerDay: BigNumber.from(500),
-                tokenRate: tokenRate,
-                l1Timestamp: BigNumber.from(blockTimestampInPast)
-            }
-        }
+  const govBridgeExecutor = testingOnDeployedContracts
+    ? OptimismBridgeExecutor__factory.connect(
+      testing.env.OPT_GOV_BRIDGE_EXECUTOR(),
+      l2Provider
+    )
+    : await new OptimismBridgeExecutor__factory(l2Deployer).deploy(
+      optAddresses.L2CrossDomainMessenger,
+      l1Deployer.address,
+      ...getBridgeExecutorParams(),
+      l2Deployer.address
     );
 
-    await ethDeployScript.run();
-    await optDeployScript.run();
+  const l1TokenRebasable = await new ERC20BridgedStub__factory(l1Deployer).deploy(
+    "Test Token Rebasable",
+    "TTR"
+  );
+  const l1Token = await new ERC20WrapperStub__factory(l1Deployer).deploy(
+    l1TokenRebasable.address,
+    "Test Token",
+    "TT",
+    tokenRate
+  );
+  const [ethDeployScript, optDeployScript] = await deploymentOracle(
+    networkName
+  ).oracleDeployScript(
+    l1Token.address,
+    1000,
+    86400,
+    {
+      deployer: l1Deployer,
+      admins: {
+        proxy: l1Deployer.address,
+        bridge: l1Deployer.address
+      },
+      contractsShift: 0
+    },
+    {
+      deployer: l2Deployer,
+      admins: {
+        proxy: govBridgeExecutor.address,
+        bridge: govBridgeExecutor.address,
+      },
+      contractsShift: 0,
+      tokenRateOracle: {
+        maxAllowedL2ToL1ClockLag: BigNumber.from(86400),
+        maxAllowedTokenRateDeviationPerDay: BigNumber.from(500),
+        tokenRate: tokenRate,
+        l1Timestamp: BigNumber.from(blockTimestampInPast)
+      }
+    }
+  );
 
-    await optimism.testing(networkName).stubL1CrossChainMessengerContract();
+  await ethDeployScript.run();
+  await optDeployScript.run();
 
-    const l1CrossDomainMessengerAliased = await testing.impersonate(
-        testing.accounts.applyL1ToL2Alias(optContracts.L1CrossDomainMessengerStub.address),
-        l2Provider
-    );
-    await testing.setBalance(
-        await l1CrossDomainMessengerAliased.getAddress(),
-        wei.toBigNumber(wei`1 ether`),
-        l2Provider
-    );
+  await optimism.testing(networkName).stubL1CrossChainMessengerContract();
 
-    const tokenRateNotifier = TokenRateNotifier__factory.connect(
-        ethDeployScript.tokenRateNotifierImplAddress,
-        l1Provider
-    );
-    await tokenRateNotifier
-        .connect(l1Deployer)
-        .addObserver(ethDeployScript.opStackTokenRatePusherImplAddress);
-    const tokenRateOracle = TokenRateOracle__factory.connect(
-        optDeployScript.tokenRateOracleProxyAddress,
-        l2Provider
-    );
+  const l1CrossDomainMessengerAliased = await testing.impersonate(
+    testing.accounts.applyL1ToL2Alias(optContracts.L1CrossDomainMessengerStub.address),
+    l2Provider
+  );
+  await testing.setBalance(
+    await l1CrossDomainMessengerAliased.getAddress(),
+    wei.toBigNumber(wei`1 ether`),
+    l2Provider
+  );
 
-    const accountA = testing.accounts.accountA(l1Provider, l2Provider);
-    const l1CrossDomainMessenger = optContracts.L1CrossDomainMessengerStub;
+  const tokenRateNotifier = TokenRateNotifier__factory.connect(
+    ethDeployScript.tokenRateNotifierImplAddress,
+    l1Provider
+  );
+  await tokenRateNotifier
+    .connect(l1Deployer)
+    .addObserver(ethDeployScript.opStackTokenRatePusherImplAddress);
+  const tokenRateOracle = TokenRateOracle__factory.connect(
+    optDeployScript.tokenRateOracleProxyAddress,
+    l2Provider
+  );
 
-    return {
-        tokenRateNotifier,
-        tokenRateOracle,
-        opTokenRatePusher: ethDeployScript.opStackTokenRatePusherImplAddress,
-        l1CrossDomainMessenger,
-        l2CrossDomainMessenger,
-        l1Token,
-        l1Provider,
-        blockTimestamp,
-        accounts: {
-            accountA,
-            l1CrossDomainMessengerAliased
-        }
-    };
+  const accountA = testing.accounts.accountA(l1Provider, l2Provider);
+  const l1CrossDomainMessenger = optContracts.L1CrossDomainMessengerStub;
+
+  return {
+    tokenRateNotifier,
+    tokenRateOracle,
+    opTokenRatePusher: ethDeployScript.opStackTokenRatePusherImplAddress,
+    l1CrossDomainMessenger,
+    l2CrossDomainMessenger,
+    l1Token,
+    l1Provider,
+    blockTimestamp,
+    accounts: {
+      accountA,
+      l1CrossDomainMessengerAliased
+    }
+  };
 }
 
 async function tokenRateAndTimestamp(tokenRate: BigNumber, blockTimestamp: BigNumber) {
-    const stEthPerTokenStr = ethers.utils.hexZeroPad(tokenRate.toHexString(), 12);
-    const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 5);
-    return [stEthPerTokenStr, blockTimestampStr];
+  const stEthPerTokenStr = ethers.utils.hexZeroPad(tokenRate.toHexString(), 12);
+  const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 5);
+  return [stEthPerTokenStr, blockTimestampStr];
 }

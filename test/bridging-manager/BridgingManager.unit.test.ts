@@ -301,8 +301,7 @@ async function ctxFactory() {
     depositsEnabler,
     depositsDisabler,
     withdrawalsEnabler,
-    withdrawalsDisabler,
-    l2TokenBridgeEOA
+    withdrawalsDisabler
   ] = await hre.ethers.getSigners();
 
   const bridgingManagerImpl = await new BridgingManagerStub__factory(

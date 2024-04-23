@@ -61,13 +61,13 @@ contract L2ERC20ExtendedTokensBridge is
     /// @param admin_ Address of the account to grant the DEFAULT_ADMIN_ROLE
     function initialize(address admin_) external {
         _initializeContractVersionTo(2);
-        _initialize(admin_);
+        _initializeBridgingManager(admin_);
     }
 
     /// @notice A function to finalize upgrade to v2 (from v1).
     function finalizeUpgrade_v2() external {
         if(!_isBridgingManagerInitialized()) {
-            revert ErrorBridgingManagerWasInitialized();
+            revert ErrorBridgingManagerIsNotInitialized();
         }
         _initializeContractVersionTo(2);
     }

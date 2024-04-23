@@ -1,20 +1,21 @@
 import { assert } from "chai";
 import hre from "hardhat";
-import {
-  ERC20BridgedPermit__factory,
-  OssifiableProxy__factory,
-} from "../../typechain";
+import { BigNumber } from "ethers";
 import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 import { erc20BridgedPermitUnderProxy } from "../../utils/testing/contractsFactory";
-import { BigNumber } from "ethers";
+import {
+  ERC20BridgedPermit__factory,
+  ERC20BridgedWithInitializerStub__factory,
+  OssifiableProxy__factory,
+} from "../../typechain";
 
 unit("ERC20BridgedPermit", ctxFactory)
   .test("initial state", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { decimals, name, symbol, version, premint } = ctx.constants;
     const { owner } = ctx.accounts;
-    const [,eip712Name,eip712Version,,,,] = await erc20Bridged.eip712Domain();
+    const [, eip712Name, eip712Version, , , ,] = await erc20Bridged.eip712Domain();
 
     assert.equal(eip712Name, name);
     assert.equal(eip712Version, version);
@@ -41,12 +42,12 @@ unit("ERC20BridgedPermit", ctxFactory)
     assert.equalBN(await erc20BridgedImpl.getContractVersion(), petrifiedVersionMark);
 
     await assert.revertsWith(
-        erc20BridgedImpl.initialize("name", "symbol", "version"),
+      erc20BridgedImpl.initialize("name", "symbol", "version"),
       "NonZeroContractVersionOnInit()"
     );
   })
 
-  .test("initialize() :: re-initialization", async (ctx) => {
+  .test("initialize() :: don't allow to initialize twice", async (ctx) => {
     const { deployer, owner, holder } = ctx.accounts;
     const { name, symbol, version } = ctx.constants;
 
@@ -60,24 +61,24 @@ unit("ERC20BridgedPermit", ctxFactory)
     );
 
     const l2TokensProxy = await new OssifiableProxy__factory(deployer).deploy(
-        l2TokenImpl.address,
-        deployer.address,
-        ERC20BridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
-          name,
-          symbol,
-          version
-        ])
-      );
+      l2TokenImpl.address,
+      deployer.address,
+      ERC20BridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
+        name,
+        symbol,
+        version
+      ])
+    );
 
-      const erc20BridgedProxied = ERC20BridgedPermit__factory.connect(
-        l2TokensProxy.address,
-        holder
-      );
+    const erc20BridgedProxied = ERC20BridgedPermit__factory.connect(
+      l2TokensProxy.address,
+      holder
+    );
 
     assert.equalBN(await erc20BridgedProxied.getContractVersion(), 2);
 
     await assert.revertsWith(
-        erc20BridgedProxied.initialize(name, symbol, version),
+      erc20BridgedProxied.initialize(name, symbol, version),
       "NonZeroContractVersionOnInit()"
     );
   })
@@ -96,13 +97,58 @@ unit("ERC20BridgedPermit", ctxFactory)
     );
 
     await assert.revertsWith(new OssifiableProxy__factory(deployer).deploy(
-        l2TokenImpl.address,
-        deployer.address,
-        ERC20BridgedPermit__factory.createInterface().encodeFunctionData("finalizeUpgrade_v2", [
-          name,
-          version
-        ])
-      ), "ErrorMetadataNotInitialized()");
+      l2TokenImpl.address,
+      deployer.address,
+      ERC20BridgedPermit__factory.createInterface().encodeFunctionData("finalizeUpgrade_v2", [
+        name,
+        version
+      ])
+    ), "ErrorMetadataIsNotInitialized()");
+  })
+
+  .test("finalizeUpgrade_v2() :: metadata initialized", async (ctx) => {
+    const { deployer, owner } = ctx.accounts;
+    const { name, version } = ctx.constants;
+
+    const l2TokenOldImpl = await new ERC20BridgedWithInitializerStub__factory(deployer).deploy(
+      "name",
+      "symbol",
+      18,
+      owner.address
+    );
+
+    const l2TokenProxy = await new OssifiableProxy__factory(deployer).deploy(
+      l2TokenOldImpl.address,
+      deployer.address,
+      ERC20BridgedWithInitializerStub__factory.createInterface().encodeFunctionData("initializeERC20Metadata", [
+        "name",
+        "symbol"
+      ])
+    );
+
+    const erc20BridgedProxied = ERC20BridgedPermit__factory.connect(
+      l2TokenProxy.address,
+      owner
+    );
+
+    const l2TokenImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
+      "name",
+      "symbol",
+      "1",
+      18,
+      owner.address
+    );
+
+    await l2TokenProxy.proxy__upgradeToAndCall(
+      l2TokenImpl.address,
+      ERC20BridgedPermit__factory.createInterface().encodeFunctionData("finalizeUpgrade_v2", [
+        name,
+        version
+      ]),
+      false
+    );
+
+    assert.equalBN(await erc20BridgedProxied.getContractVersion(), 2);
   })
 
   .test("approve()", async (ctx) => {

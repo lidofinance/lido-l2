@@ -112,15 +112,14 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
     /// @inheritdoc ITokenRateUpdatable
     function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external onlyBridgeOrTokenRatePusher {
 
-        /// @dev checks if the time difference between L1 and L2 exceeds the configurable threshold
-        if (rateL1Timestamp_ > block.timestamp &&
-            rateL1Timestamp_ - block.timestamp > MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
+        /// @dev checks if the clock lag (i.e, time difference) between L1 and L2 exceeds the configurable threshold
+        if (rateL1Timestamp_ > block.timestamp + MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
             revert ErrorL1TimestampExceededAllowedClockLag(tokenRate_, rateL1Timestamp_);
         }
 
         /// @dev use only the more actual token rate
         if (rateL1Timestamp_ <= _getRateL1Timestamp()) {
-            emit DormantTokenRateUpdateIgnored(tokenRate_, _getRateL1Timestamp(), rateL1Timestamp_);
+            emit DormantTokenRateUpdateIgnored(tokenRate_, rateL1Timestamp_, _getRateL1Timestamp());
             return;
         }
 
@@ -131,7 +130,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
 
         /// @dev notify that there is a differnce L1 and L2 time.
         if (rateL1Timestamp_ > block.timestamp) {
-            emit TokenRateL1TimestampAheadOfL2Time(tokenRate_, rateL1Timestamp_);
+            emit TokenRateL1TimestampIsInFuture(tokenRate_, rateL1Timestamp_);
         }
 
         _setTokenRateAndL1Timestamp(uint192(tokenRate_), uint64(rateL1Timestamp_));
@@ -140,11 +139,11 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
 
     /// @notice Returns flag that shows that token rate can be considered outdated.
     function isLikelyOutdated() external view returns (bool) {
-        return block.timestamp - _getRateL1Timestamp() > TOKEN_RATE_OUTDATED_DELAY;
+        return block.timestamp > _getRateL1Timestamp() + TOKEN_RATE_OUTDATED_DELAY;
     }
 
     /// @dev Allow tokenRate deviation from the previous value to be
-    ///      ±`MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY`% per day.
+    ///      ±`MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY` BP per day.
     function _isTokenRateWithinAllowedRange(
         uint256 newTokenRate_, uint256 newRateL1Timestamp_
     ) internal view returns (bool) {
@@ -173,17 +172,17 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         return false;
     }
 
+    function _setTokenRateAndL1Timestamp(uint192 tokenRate_, uint64 rateL1Timestamp_) internal {
+        _loadTokenRateData().tokenRate = tokenRate_;
+        _loadTokenRateData().rateL1Timestamp = rateL1Timestamp_;
+    }
+
     function _getTokenRate() private view returns (uint192) {
         return _loadTokenRateData().tokenRate;
     }
 
     function _getRateL1Timestamp() private view returns (uint64) {
         return _loadTokenRateData().rateL1Timestamp;
-    }
-
-    function _setTokenRateAndL1Timestamp(uint192 tokenRate_, uint64 rateL1Timestamp_) internal {
-        _loadTokenRateData().tokenRate = tokenRate_;
-        _loadTokenRateData().rateL1Timestamp = rateL1Timestamp_;
     }
 
     /// @dev Returns the reference to the slot with TokenRateData struct
@@ -211,10 +210,10 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
     );
     event DormantTokenRateUpdateIgnored(
         uint256 tokenRate_,
-        uint256 indexed currentRateL1Timestamp_,
-        uint256 indexed newRateL1Timestamp_
+        uint256 indexed newRateL1Timestamp_,
+        uint256 indexed currentRateL1Timestamp_
     );
-    event TokenRateL1TimestampAheadOfL2Time(
+    event TokenRateL1TimestampIsInFuture(
         uint256 tokenRate_,
         uint256 indexed rateL1Timestamp_
     );

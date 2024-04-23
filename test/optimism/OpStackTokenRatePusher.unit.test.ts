@@ -4,12 +4,12 @@ import { utils, BigNumber } from 'ethers'
 import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 import {
-    OpStackTokenRatePusher__factory,
-    CrossDomainMessengerStub__factory,
-    ERC20BridgedStub__factory,
-    ERC20WrapperStub__factory,
-    ITokenRateOracle__factory,
-    ITokenRatePusher__factory
+  OpStackTokenRatePusher__factory,
+  CrossDomainMessengerStub__factory,
+  ERC20BridgedStub__factory,
+  ERC20WrapperStub__factory,
+  ITokenRateOracle__factory,
+  ITokenRatePusher__factory
 } from "../../typechain";
 
 unit("OpStackTokenRatePusher", ctxFactory)
@@ -39,7 +39,7 @@ unit("OpStackTokenRatePusher", ctxFactory)
     const blockNumber = await provider.getBlockNumber();
     const blockTimestamp = (await provider.getBlock(blockNumber)).timestamp;
 
-    await assert.emits(l1MessengerStub  , tx, "SentMessage", [
+    await assert.emits(l1MessengerStub, tx, "SentMessage", [
       tokenRateOracle.address,
       opStackTokenRatePusher.address,
       ITokenRateOracle__factory.createInterface().encodeFunctionData(
@@ -57,46 +57,48 @@ unit("OpStackTokenRatePusher", ctxFactory)
   .run();
 
 async function ctxFactory() {
-    const [deployer, bridge, stranger, tokenRateOracle, l1TokenBridgeEOA] = await ethers.getSigners();
+  const [deployer, bridge, stranger, tokenRateOracle, l1TokenBridgeEOA] = await ethers.getSigners();
 
-    const l1TokenRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
-      "L1 Token Rebasable",
-      "L1R"
-    );
+  const tokenRate = BigNumber.from('1164454276599657236');
 
-    const l1TokenNonRebasableStub = await new ERC20WrapperStub__factory(deployer).deploy(
-      l1TokenRebasableStub.address,
-      "L1 Token Non Rebasable",
-      "L1NR",
-      BigNumber.from('1164454276599657236')
-    );
+  const l1TokenRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
+    "L1 Token Rebasable",
+    "L1R"
+  );
 
-    const l1MessengerStub = await new CrossDomainMessengerStub__factory(
-        deployer
-    ).deploy({ value: wei.toBigNumber(wei`1 ether`) });
-    await l1MessengerStub.setXDomainMessageSender(l1TokenBridgeEOA.address);
+  const l1TokenNonRebasableStub = await new ERC20WrapperStub__factory(deployer).deploy(
+    l1TokenRebasableStub.address,
+    "L1 Token Non Rebasable",
+    "L1NR",
+    tokenRate
+  );
 
-    const l2GasLimitForPushingTokenRate = 123;
+  const l1MessengerStub = await new CrossDomainMessengerStub__factory(
+    deployer
+  ).deploy({ value: wei.toBigNumber(wei`1 ether`) });
+  await l1MessengerStub.setXDomainMessageSender(l1TokenBridgeEOA.address);
 
-    const opStackTokenRatePusher = await new OpStackTokenRatePusher__factory(deployer).deploy(
-        l1MessengerStub.address,
-        l1TokenNonRebasableStub.address,
-        tokenRateOracle.address,
-        l2GasLimitForPushingTokenRate
-    );
+  const l2GasLimitForPushingTokenRate = 123;
 
-    return {
-      accounts: { deployer, bridge, stranger, tokenRateOracle },
-      contracts: { opStackTokenRatePusher, l1MessengerStub, l1TokenNonRebasableStub },
-      constants: { l2GasLimitForPushingTokenRate }
-    };
+  const opStackTokenRatePusher = await new OpStackTokenRatePusher__factory(deployer).deploy(
+    l1MessengerStub.address,
+    l1TokenNonRebasableStub.address,
+    tokenRateOracle.address,
+    l2GasLimitForPushingTokenRate
+  );
+
+  return {
+    accounts: { deployer, bridge, stranger, tokenRateOracle },
+    contracts: { opStackTokenRatePusher, l1MessengerStub, l1TokenNonRebasableStub },
+    constants: { l2GasLimitForPushingTokenRate }
+  };
 }
 
 export function getInterfaceID(contractInterface: utils.Interface) {
-    let interfaceID = ethers.constants.Zero;
-    const functions: string[] = Object.keys(contractInterface.functions);
-    for (let i = 0; i < functions.length; i++) {
-        interfaceID = interfaceID.xor(contractInterface.getSighash(functions[i]));
-    }
-    return interfaceID;
+  let interfaceID = ethers.constants.Zero;
+  const functions: string[] = Object.keys(contractInterface.functions);
+  for (let i = 0; i < functions.length; i++) {
+    interfaceID = interfaceID.xor(contractInterface.getSighash(functions[i]));
+  }
+  return interfaceID;
 }

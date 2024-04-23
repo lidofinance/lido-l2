@@ -40,9 +40,9 @@ scenario(
         ["proxy__upgradeTo(address)"],
         [
           "0x" +
-            ctx.proxyToOssify.interface
-              .encodeFunctionData("proxy__upgradeTo", [ctx.l2Token.address])
-              .substring(10),
+          ctx.proxyToOssify.interface
+            .encodeFunctionData("proxy__upgradeTo", [ctx.l2Token.address])
+            .substring(10),
         ],
         [false],
       ]);

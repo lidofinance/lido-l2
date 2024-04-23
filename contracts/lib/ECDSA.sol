@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: 2024 Lido <info@lido.fi>
 // SPDX-License-Identifier: MIT
 
-// Extracted from:
-// https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.4.0/contracts/cryptography/ECDSA.sol#L53
+/// @dev Extracted from:
+/// https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.4.0/contracts/cryptography/ECDSA.sol#L53
+/// Also it is used in Lido Core Protocol.
 
 pragma solidity 0.8.10;
 

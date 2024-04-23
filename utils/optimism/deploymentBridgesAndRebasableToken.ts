@@ -5,13 +5,13 @@ import { CommonOptions } from "./types";
 import network, { NetworkName } from "../network";
 import { DeployScript, Logger } from "../deployment/DeployScript";
 import {
-    ERC20BridgedPermit__factory,
-    ERC20RebasableBridgedPermit__factory,
-    IERC20Metadata__factory,
-    L1LidoTokensBridge__factory,
-    L2ERC20ExtendedTokensBridge__factory,
-    OssifiableProxy__factory,
-  } from "../../typechain";
+  ERC20BridgedPermit__factory,
+  ERC20RebasableBridgedPermit__factory,
+  IERC20Metadata__factory,
+  L1LidoTokensBridge__factory,
+  L2ERC20ExtendedTokensBridge__factory,
+  OssifiableProxy__factory,
+} from "../../typechain";
 
 interface OptL1DeployScriptParams {
   deployer: Wallet;
@@ -31,48 +31,48 @@ interface OptDeploymentOptions extends CommonOptions {
 
 export class BridgeL1DeployScript extends DeployScript {
 
-    constructor(
-        deployer: Wallet,
-        bridgeImplAddress: string,
-        bridgeProxyAddress: string,
-        logger?: Logger
-    ) {
-        super(deployer, logger);
-        this.bridgeImplAddress = bridgeImplAddress;
-        this.bridgeProxyAddress = bridgeProxyAddress;
-    }
+  constructor(
+    deployer: Wallet,
+    bridgeImplAddress: string,
+    bridgeProxyAddress: string,
+    logger?: Logger
+  ) {
+    super(deployer, logger);
+    this.bridgeImplAddress = bridgeImplAddress;
+    this.bridgeProxyAddress = bridgeProxyAddress;
+  }
 
-    public bridgeImplAddress: string;
-    public bridgeProxyAddress: string;
+  public bridgeImplAddress: string;
+  public bridgeProxyAddress: string;
 }
 
 export class BridgeL2DeployScript extends DeployScript {
 
-    constructor(
-        deployer: Wallet,
-        tokenImplAddress: string,
-        tokenProxyAddress: string,
-        tokenRebasableImplAddress: string,
-        tokenRebasableProxyAddress: string,
-        tokenBridgeImplAddress: string,
-        tokenBridgeProxyAddress: string,
-        logger?: Logger
-    ) {
-        super(deployer, logger);
-        this.tokenImplAddress = tokenImplAddress;
-        this.tokenProxyAddress = tokenProxyAddress;
-        this.tokenRebasableImplAddress = tokenRebasableImplAddress;
-        this.tokenRebasableProxyAddress = tokenRebasableProxyAddress;
-        this.tokenBridgeImplAddress = tokenBridgeImplAddress;
-        this.tokenBridgeProxyAddress = tokenBridgeProxyAddress;
-      }
+  constructor(
+    deployer: Wallet,
+    tokenImplAddress: string,
+    tokenProxyAddress: string,
+    tokenRebasableImplAddress: string,
+    tokenRebasableProxyAddress: string,
+    tokenBridgeImplAddress: string,
+    tokenBridgeProxyAddress: string,
+    logger?: Logger
+  ) {
+    super(deployer, logger);
+    this.tokenImplAddress = tokenImplAddress;
+    this.tokenProxyAddress = tokenProxyAddress;
+    this.tokenRebasableImplAddress = tokenRebasableImplAddress;
+    this.tokenRebasableProxyAddress = tokenRebasableProxyAddress;
+    this.tokenBridgeImplAddress = tokenBridgeImplAddress;
+    this.tokenBridgeProxyAddress = tokenBridgeProxyAddress;
+  }
 
-    public tokenImplAddress: string;
-    public tokenProxyAddress: string;
-    public tokenRebasableImplAddress: string;
-    public tokenRebasableProxyAddress: string;
-    public tokenBridgeImplAddress: string;
-    public tokenBridgeProxyAddress: string;
+  public tokenImplAddress: string;
+  public tokenProxyAddress: string;
+  public tokenRebasableImplAddress: string;
+  public tokenRebasableProxyAddress: string;
+  public tokenBridgeImplAddress: string;
+  public tokenBridgeProxyAddress: string;
 }
 
 /// deploy Oracle first

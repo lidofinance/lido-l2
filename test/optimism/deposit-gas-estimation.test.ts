@@ -92,24 +92,24 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
     const tokenHolderABalanceBefore = await l1Token.balanceOf(
       tokenHolderA.address
     );
-    console.log("tokenHolderABalanceBefore=",tokenHolderABalanceBefore);
+    console.log("tokenHolderABalanceBefore=", tokenHolderABalanceBefore);
 
     const l1ERC20ExtendedTokensBridgeBalanceBefore = await l1TokenRebasable.balanceOf(
-        l1LidoTokensBridge.address
+      l1LidoTokensBridge.address
     );
 
     const tx0 = await l1LidoTokensBridge
-    .connect(tokenHolderA.l1Signer)
-    .depositERC20(
-      l1Token.address,
-      l2Token.address,
-      10,
-      200_000,
-      "0x"
-    );
+      .connect(tokenHolderA.l1Signer)
+      .depositERC20(
+        l1Token.address,
+        l2Token.address,
+        10,
+        200_000,
+        "0x"
+      );
 
     const receipt0 = await tx0.wait();
-    console.log("l1Token gasUsed=",receipt0.gasUsed);
+    console.log("l1Token gasUsed=", receipt0.gasUsed);
 
     const tx1 = await l1LidoTokensBridge
       .connect(tokenHolderA.l1Signer)
@@ -121,11 +121,11 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
         "0x"
       );
 
-      const receipt1 = await tx1.wait();
-      console.log("l1TokenRebasable gasUsed=",receipt1.gasUsed);
+    const receipt1 = await tx1.wait();
+    console.log("l1TokenRebasable gasUsed=", receipt1.gasUsed);
 
-      const gasDifference = receipt1.gasUsed.sub(receipt0.gasUsed);
-      console.log("gasUsed difference=", gasDifference);
+    const gasDifference = receipt1.gasUsed.sub(receipt0.gasUsed);
+    console.log("gasUsed difference=", gasDifference);
   })
 
 
@@ -134,7 +134,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
 
 async function ctxFactory() {
   const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
-  console.log("networkName=",networkName);
+  console.log("networkName=", networkName);
 
   const {
     l1Provider,
@@ -172,8 +172,8 @@ async function ctxFactory() {
   );
 
   await contracts.l1Token
-  .connect(contracts.l1TokensHolder)
-  .transfer(accountA.l1Signer.address, depositAmount);
+    .connect(contracts.l1TokensHolder)
+    .transfer(accountA.l1Signer.address, depositAmount);
 
   await contracts.l1TokenRebasable
     .connect(contracts.l1TokensHolder)
@@ -184,8 +184,8 @@ async function ctxFactory() {
     l2Provider
   );
 
-  console.log("l1CrossDomainMessengerAliased=",l1CrossDomainMessengerAliased);
-  console.log("contracts.l1CrossDomainMessenger.address=",contracts.l1CrossDomainMessenger.address);
+  console.log("l1CrossDomainMessengerAliased=", l1CrossDomainMessengerAliased);
+  console.log("contracts.l1CrossDomainMessenger.address=", contracts.l1CrossDomainMessenger.address);
 
   await testing.setBalance(
     await l1CrossDomainMessengerAliased.getAddress(),

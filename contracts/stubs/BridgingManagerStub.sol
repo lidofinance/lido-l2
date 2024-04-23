@@ -8,6 +8,6 @@ pragma solidity 0.8.10;
 /// @dev For testing purposes.
 contract BridgingManagerStub is BridgingManager {
     function initialize(address admin_) external {
-        _initialize(admin_);
+        _initializeBridgingManager(admin_);
     }
 }

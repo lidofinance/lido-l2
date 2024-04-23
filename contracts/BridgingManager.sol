@@ -13,7 +13,8 @@ contract BridgingManager is AccessControl {
     /// @param isDepositsEnabled Stores the state of the deposits
     /// @param isWithdrawalsEnabled Stores the state of the withdrawals
     struct State {
-        bool isInitialized; /// @dev DEPRECATED since bridges have their own code for versioning.
+        /// @dev DEPRECATED since v2 as bridges have their own code for initialization and storage versioning.
+        bool isInitialized;
         bool isDepositsEnabled;
         bool isWithdrawalsEnabled;
     }
@@ -34,7 +35,7 @@ contract BridgingManager is AccessControl {
     /// @notice Initializes the contract to grant DEFAULT_ADMIN_ROLE to the admin_ address
     /// @dev This method might be called only once
     /// @param admin_ Address of the account to grant the DEFAULT_ADMIN_ROLE
-    function _initialize(address admin_) internal {
+    function _initializeBridgingManager(address admin_) internal {
         State storage s = _loadState();
         if (s.isInitialized) {
             revert ErrorAlreadyInitialized();
@@ -137,5 +138,5 @@ contract BridgingManager is AccessControl {
     error ErrorWithdrawalsEnabled();
     error ErrorWithdrawalsDisabled();
     error ErrorAlreadyInitialized();
-    error ErrorBridgingManagerWasInitialized();
+    error ErrorBridgingManagerIsNotInitialized();
 }
