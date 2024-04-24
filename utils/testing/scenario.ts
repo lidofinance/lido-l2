@@ -1,6 +1,6 @@
 import { CtxFactory, StepTest, CtxFn } from "./types";
 
-class ScenarioTest<T extends object> {
+export class ScenarioTest<T extends object> {
   private afterFn?: CtxFn<T>;
   private beforeFn?: CtxFn<T>;
 
