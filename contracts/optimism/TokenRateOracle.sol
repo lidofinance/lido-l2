@@ -24,10 +24,6 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         uint64 rateL1Timestamp;
     } // occupy a single slot
 
-    /// @dev Location of the slot with TokenRateData
-    bytes32 private constant TOKEN_RATE_DATA_SLOT =
-        keccak256("TokenRateOracle.TOKEN_RATE_DATA_SLOT");
-
     /// @notice A bridge which can update oracle.
     address public immutable L2_ERC20_TOKEN_BRIDGE;
 
@@ -52,6 +48,9 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
 
     /// @notice Basic point scale.
     uint256 private constant BASIS_POINT_SCALE = 1e4;
+
+    /// @dev Location of the slot with TokenRateData
+    bytes32 private constant TOKEN_RATE_DATA_SLOT = keccak256("TokenRateOracle.TOKEN_RATE_DATA_SLOT");
 
     /// @param messenger_ L2 messenger address being used for cross-chain communications
     /// @param l2ERC20TokenBridge_ the bridge address that has a right to updates oracle.
@@ -142,8 +141,8 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         return block.timestamp > _getRateL1Timestamp() + TOKEN_RATE_OUTDATED_DELAY;
     }
 
-    /// @dev Allow tokenRate deviation from the previous value to be
-    ///      ±`MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY` BP per day.
+    /// @notice Allow tokenRate deviation from the previous value to be
+    ///         ±`MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY` BP per day.
     function _isTokenRateWithinAllowedRange(
         uint256 newTokenRate_, uint256 newRateL1Timestamp_
     ) internal view returns (bool) {

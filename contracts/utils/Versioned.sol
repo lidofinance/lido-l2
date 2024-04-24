@@ -5,8 +5,8 @@ pragma solidity 0.8.10;
 
 import {UnstructuredStorage} from "../lib//UnstructuredStorage.sol";
 
-/// @dev A copy of Versioned.sol contract from Lido Core Protocol
-/// https://github.com/lidofinance/lido-dao/blob/master/contracts/0.8.9/utils/Versioned.sol
+/// @dev A copy of Versioned.sol contract from Lido on Ethereum protocol
+///      https://github.com/lidofinance/lido-dao/blob/master/contracts/0.8.9/utils/Versioned.sol
 contract Versioned {
     using UnstructuredStorage for bytes32;
 

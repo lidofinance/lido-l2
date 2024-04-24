@@ -8,6 +8,7 @@ import {PermitExtension} from "./PermitExtension.sol";
 import {Versioned} from "../utils/Versioned.sol";
 
 /// @author kovalgek
+/// @notice extends ERC20Bridged functionality that allows to use permits and versioning.
 contract ERC20BridgedPermit is ERC20Bridged, PermitExtension, Versioned {
 
     /// @param name_ The name of the token

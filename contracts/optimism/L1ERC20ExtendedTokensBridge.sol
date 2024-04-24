@@ -50,9 +50,6 @@ abstract contract L1ERC20ExtendedTokensBridge is
         L2_TOKEN_BRIDGE = l2TokenBridge_;
     }
 
-    /// @notice required to abstact a way token rate is requested.
-    function tokenRate() virtual internal view returns (uint256);
-
     /// @inheritdoc IL1ERC20Bridge
     function l2TokenBridge() external view returns (address) {
         return L2_TOKEN_BRIDGE;
@@ -118,7 +115,7 @@ abstract contract L1ERC20ExtendedTokensBridge is
         emit ERC20WithdrawalFinalized(l1Token_, l2Token_, from_, to_, withdrawnL1TokenAmount, data_);
     }
 
-    /// @dev Performs the logic for deposits by informing the L2 token bridge contract
+    /// @notice Performs the logic for deposits by informing the L2 token bridge contract
     ///     of the deposit and calling safeTransferFrom to lock the L1 funds.
     /// @param l1Token_ Address of the L1 ERC20 we are depositing
     /// @param l2Token_ Address of the L1 respective L2 ERC20
@@ -147,7 +144,7 @@ abstract contract L1ERC20ExtendedTokensBridge is
         sendCrossDomainMessage(L2_TOKEN_BRIDGE, l2Gas_, message);
     }
 
-    /// @dev Transfers tokens to the bridge and wraps if needed.
+    /// @notice Transfers tokens to the bridge and wraps if needed.
     /// @param l1Token_ Address of the L1 ERC20 we are depositing.
     /// @param from_ Account to pull the deposit from on L1.
     /// @param amount_ Amount of the ERC20 to deposit.
@@ -169,11 +166,14 @@ abstract contract L1ERC20ExtendedTokensBridge is
 
     function _encodeInputDepositData(bytes calldata data_) internal view returns (bytes memory)  {
         return DepositDataCodec.encodeDepositData(DepositDataCodec.DepositData({
-            rate: uint96(tokenRate()),
+            rate: uint96(_tokenRate()),
             timestamp: uint40(block.timestamp),
             data: data_
         }));
     }
+
+    /// @notice required to abstact a way token rate is requested.
+    function _tokenRate() virtual internal view returns (uint256);
 
     error ErrorSenderNotEOA();
 }

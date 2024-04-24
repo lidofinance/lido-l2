@@ -26,7 +26,6 @@ library DepositDataCodec {
     }
 
     function decodeDepositData(bytes calldata buffer) internal pure returns (DepositData memory) {
-
         if (buffer.length < RATE_FIELD_SIZE + TIMESTAMP_FIELD_SIZE) {
             revert ErrorDepositDataLength();
         }

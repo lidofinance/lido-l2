@@ -3,9 +3,9 @@
 
 pragma solidity 0.8.10;
 
-import {UnstructuredRefStorage} from "../lib//UnstructuredRefStorage.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import {IERC2612} from "@openzeppelin/contracts/interfaces/draft-IERC2612.sol";
+import {UnstructuredRefStorage} from "../lib//UnstructuredRefStorage.sol";
 import {SignatureChecker} from "../lib/SignatureChecker.sol";
 
 /// @author arwer13, kovalgek
@@ -19,9 +19,6 @@ abstract contract PermitExtension is IERC2612, EIP712 {
         string version;
     }
 
-    /// @dev Location of the slot with EIP5267Metadata
-    bytes32 private constant EIP5267_METADATA_SLOT = keccak256("PermitExtension.eip5267MetadataSlot");
-
     /// @dev user shares slot position.
     bytes32 internal constant NONCE_BY_ADDRESS_POSITION = keccak256("PermitExtension.NONCE_BY_ADDRESS_POSITION");
 
@@ -30,18 +27,13 @@ abstract contract PermitExtension is IERC2612, EIP712 {
     bytes32 internal constant PERMIT_TYPEHASH =
         0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
 
+    /// @dev Location of the slot with EIP5267Metadata
+    bytes32 private constant EIP5267_METADATA_SLOT = keccak256("PermitExtension.eip5267MetadataSlot");
+
     /// @param name_ The name of the token
     /// @param version_ The current major version of the signing domain (aka token version)
     constructor(string memory name_, string memory version_) EIP712(name_, version_) {
         _initializeEIP5267Metadata(name_, version_);
-    }
-
-    /// @notice Sets the name and the version of the tokens if they both are empty
-    /// @param name_ The name of the token
-    /// @param version_ The version of the token
-    function _initializeEIP5267Metadata(string memory name_, string memory version_) internal {
-        _setEIP5267MetadataName(name_);
-        _setEIP5267MetadataVersion(version_);
     }
 
     /// @dev Sets `value` as the allowance of `spender` over ``owner``'s tokens,
@@ -118,6 +110,14 @@ abstract contract PermitExtension is IERC2612, EIP712 {
         );
     }
 
+    /// @notice Sets the name and the version of the tokens if they both are empty
+    /// @param name_ The name of the token
+    /// @param version_ The version of the token
+    function _initializeEIP5267Metadata(string memory name_, string memory version_) internal {
+        _setEIP5267MetadataName(name_);
+        _setEIP5267MetadataVersion(version_);
+    }
+
     /// @dev "Consume a nonce": return the current value and increment.
     function _useNonce(address _owner) internal returns (uint256 current) {
         current = _getNonceByAddress()[_owner];
@@ -132,14 +132,6 @@ abstract contract PermitExtension is IERC2612, EIP712 {
     /// @dev Override this function in the inherited contract to invoke the approve() function of ERC20.
     function _permitAccepted(address owner_, address spender_, uint256 amount_) internal virtual;
 
-    /// @dev Returns the reference to the slot with EIP5267Metadata struct
-    function _loadEIP5267Metadata() private pure returns (EIP5267Metadata storage r) {
-        bytes32 slot = EIP5267_METADATA_SLOT;
-        assembly {
-            r.slot := slot
-        }
-    }
-
     /// @dev Sets the name of the token. Might be called only when the name is empty
     function _setEIP5267MetadataName(string memory name_) internal {
         _loadEIP5267Metadata().name = name_;
@@ -148,6 +140,14 @@ abstract contract PermitExtension is IERC2612, EIP712 {
     /// @dev Sets the version of the token. Might be called only when the version is empty
     function _setEIP5267MetadataVersion(string memory version_) internal {
         _loadEIP5267Metadata().version = version_;
+    }
+
+    /// @dev Returns the reference to the slot with EIP5267Metadata struct
+    function _loadEIP5267Metadata() private pure returns (EIP5267Metadata storage r) {
+        bytes32 slot = EIP5267_METADATA_SLOT;
+        assembly {
+            r.slot := slot
+        }
     }
 
     error ErrorInvalidSignature();

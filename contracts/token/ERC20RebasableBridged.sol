@@ -306,7 +306,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
         return (uint256(answer), uint256(rateDecimals));
     }
 
-    /// @dev Creates amount_ shares and assigns them to account_, increasing the total shares supply
+    /// @dev Creates `amount_` shares and assigns them to `account_`, increasing the total shares supply
     /// @param recipient_ An address of the account to mint shares
     /// @param amount_ An amount of shares to mint
     function _mintShares(
@@ -319,7 +319,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
         _emitTransferEvents(address(0), recipient_, tokensAmount ,amount_);
     }
 
-    /// @dev Destroys amount_ shares from account_, reducing the total shares supply.
+    /// @dev Destroys `amount_` shares from `account_`, reducing the total shares supply.
     /// @param account_ An address of the account to mint shares
     /// @param amount_ An amount of shares to mint
     function _burnShares(
@@ -330,7 +330,8 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
         if (accountShares < amount_) revert ErrorNotEnoughBalance();
         _setTotalShares(_getTotalShares() - amount_);
         _getShares()[account_] = accountShares - amount_;
-        emit Transfer(account_, address(0), amount_);
+        uint256 tokensAmount = _getTokensByShares(amount_);
+        _emitTransferEvents(account_, address(0), tokensAmount ,amount_);
     }
 
     /// @dev  Moves `sharesAmount_` shares from `sender_` to `recipient_`.

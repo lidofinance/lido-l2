@@ -35,6 +35,18 @@ contract RebasableAndNonRebasableTokens {
         L2_TOKEN_REBASABLE = l2TokenRebasable_;
     }
 
+    function _isSupportedL1L2TokensPair(address l1Token_, address l2Token_) internal view returns (bool) {
+        bool isNonRebasablePair = l1Token_ == L1_TOKEN_NON_REBASABLE && l2Token_ == L2_TOKEN_NON_REBASABLE;
+        bool isRebasablePair = l1Token_ == L1_TOKEN_REBASABLE && l2Token_ == L2_TOKEN_REBASABLE;
+        return isNonRebasablePair || isRebasablePair;
+    }
+
+    function _getL1Token(address l2Token_) internal view returns (address) {
+        if (l2Token_ == L2_TOKEN_NON_REBASABLE) { return L1_TOKEN_NON_REBASABLE; }
+        if (l2Token_ == L2_TOKEN_REBASABLE) { return L1_TOKEN_REBASABLE; }
+        revert ErrorUnsupportedL2Token(l2Token_);
+    }
+
     /// @dev Validates that passed l1Token_ and l2Token_ tokens pair is supported by the bridge.
     modifier onlySupportedL1L2TokensPair(address l1Token_, address l2Token_) {
         if (!_isSupportedL1L2TokensPair(l1Token_, l2Token_)) {
@@ -57,18 +69,6 @@ contract RebasableAndNonRebasableTokens {
             revert ErrorAccountIsZeroAddress();
         }
         _;
-    }
-
-    function _isSupportedL1L2TokensPair(address l1Token_, address l2Token_) internal view returns (bool) {
-        bool isNonRebasablePair = l1Token_ == L1_TOKEN_NON_REBASABLE && l2Token_ == L2_TOKEN_NON_REBASABLE;
-        bool isRebasablePair = l1Token_ == L1_TOKEN_REBASABLE && l2Token_ == L2_TOKEN_REBASABLE;
-        return isNonRebasablePair || isRebasablePair;
-    }
-
-    function _getL1Token(address l2Token_) internal view returns (address) {
-        if (l2Token_ == L2_TOKEN_NON_REBASABLE) { return L1_TOKEN_NON_REBASABLE; }
-        if (l2Token_ == L2_TOKEN_REBASABLE) { return L1_TOKEN_REBASABLE; }
-        revert ErrorUnsupportedL2Token(l2Token_);
     }
 
     error ErrorUnsupportedL1Token(address l1Token);

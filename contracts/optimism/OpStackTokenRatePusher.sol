@@ -3,11 +3,11 @@
 
 pragma solidity 0.8.10;
 
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {ITokenRatePusher} from "../lido/interfaces/ITokenRatePusher.sol";
 import {IERC20WstETH} from "./L1LidoTokensBridge.sol";
 import {ITokenRateUpdatable} from "../optimism/interfaces/ITokenRateUpdatable.sol";
-import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 /// @author kovalgek
 /// @notice Pushes token rate to L2 Oracle.

@@ -5,8 +5,8 @@ pragma solidity 0.8.10;
 
 import {ECDSA} from "./ECDSA.sol";
 
-/// @dev A copy of SignatureUtils.sol contract from Lido Core Protocol
-/// https://github.com/lidofinance/lido-dao/blob/master/contracts/common/lib/SignatureUtils.sol
+/// @dev A copy of SignatureUtils.sol library from Lido on Ethereum protocol.
+///      https://github.com/lidofinance/lido-dao/blob/master/contracts/common/lib/SignatureUtils.sol
 library SignatureChecker {
     /**
      * @dev The selector of the ERC1271's `isValidSignature(bytes32 hash, bytes signature)` function,

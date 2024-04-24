@@ -10,7 +10,6 @@ import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
 import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
 import {IERC20Bridged} from "../token/ERC20Bridged.sol";
 import {ITokenRateUpdatable} from "../optimism/interfaces/ITokenRateUpdatable.sol";
-import {IERC20Wrapper} from "../token/interfaces/IERC20Wrapper.sol";
 import {ERC20RebasableBridged} from "../token/ERC20RebasableBridged.sol";
 import {BridgingManager} from "../BridgingManager.sol";
 import {RebasableAndNonRebasableTokens} from "./RebasableAndNonRebasableTokens.sol";
@@ -159,7 +158,7 @@ contract L2ERC20ExtendedTokensBridge is
         sendCrossDomainMessage(L1_TOKEN_BRIDGE, l1Gas_, message);
     }
 
-    /// @dev Mints tokens.
+    /// @notice Mints tokens and returns amount of minted tokens.
     /// @param l2Token_ Address of L2 token for which deposit is finalizing.
     /// @param to_ Account that token mints for.
     /// @param amount_ Amount of token or shares to mint.
@@ -178,7 +177,7 @@ contract L2ERC20ExtendedTokensBridge is
         return amount_;
     }
 
-    /// @dev Burns tokens
+    /// @notice Burns tokens and returns amount of non-rebasable token to withdraw.
     /// @param l2Token_ Address of L2 token where withdrawal was initiated.
     /// @param from_ Account which tokens are burns.
     /// @param amount_ Amount of token to burn.

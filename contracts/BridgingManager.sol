@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+// SPDX-FileCopyrightText: 2024 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
 pragma solidity 0.8.10;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
-/// @author psirex
+/// @author psirex, kovalgek
 /// @notice Contains administrative methods to retrieve and control the state of the bridging
 contract BridgingManager is AccessControl {
     /// @dev Stores the state of the bridging

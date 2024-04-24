@@ -1105,11 +1105,19 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
         .connect(owner)
         .bridgeBurnShares(holder.address, burnAmount);
 
+      const burnTokenAmount = await rebasableProxied.getTokensByShares(burnAmount);
+
       // validate Transfer event was emitted
       await assert.emits(rebasableProxied, tx, "Transfer", [
         holder.address,
         hre.ethers.constants.AddressZero,
-        burnAmount,
+        burnTokenAmount,
+      ]);
+
+      await assert.emits(rebasableProxied, tx, "TransferShares", [
+        holder.address,
+        hre.ethers.constants.AddressZero,
+        burnAmount
       ]);
 
       const expectedBalanceAndTotalSupply = premintShares

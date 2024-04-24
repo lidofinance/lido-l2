@@ -3,9 +3,9 @@
 
 pragma solidity 0.8.10;
 
-import {ITokenRatePusher} from "./interfaces/ITokenRatePusher.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import {ITokenRatePusher} from "./interfaces/ITokenRatePusher.sol";
 
 /// @notice An interface to subscribe on the `stETH` token rebases (defined in the `Lido` core contract)
 interface IPostTokenRebaseReceiver {
@@ -23,7 +23,7 @@ interface IPostTokenRebaseReceiver {
 }
 
 /// @author kovalgek
-/// @notice Notifies all observers when rebase event occures.
+/// @notice Notifies all `observers` when rebase event occures.
 contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
     using ERC165Checker for address;
 
@@ -70,7 +70,6 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
     /// @notice Remove a observer at the given `observer_` position
     /// @param observer_ observer remove position
     function removeObserver(address observer_) external onlyOwner {
-
         uint256 observerIndexToRemove = _observerIndex(observer_);
 
         if (observerIndexToRemove == INDEX_NOT_FOUND) {
@@ -114,7 +113,7 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
     }
 
     /// @notice Observer length
-    /// @return Added observers count
+    /// @return Added `observers` count
     function observersLength() external view returns (uint256) {
         return observers.length;
     }
