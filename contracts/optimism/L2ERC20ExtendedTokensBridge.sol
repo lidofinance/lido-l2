@@ -169,10 +169,15 @@ contract L2ERC20ExtendedTokensBridge is
         uint256 amount_
     ) internal returns (uint256) {
         if(l2Token_ == L2_TOKEN_REBASABLE) {
-            ERC20RebasableBridged(l2Token_).bridgeMintShares(to_, amount_);
-            return ERC20RebasableBridged(l2Token_).getTokensByShares(amount_);
+            IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeMint(address(this), amount_);
+            IERC20(L2_TOKEN_NON_REBASABLE).safeIncreaseAllowance(l2Token_, amount_);
+            uint256 rebasableTokensAmount;
+            if (amount_ != 0) {
+                rebasableTokensAmount = ERC20RebasableBridged(l2Token_).wrap(amount_);
+            }
+            ERC20RebasableBridged(l2Token_).transferShares(to_, amount_);
+            return rebasableTokensAmount;
         }
-
         IERC20Bridged(l2Token_).bridgeMint(to_, amount_);
         return amount_;
     }
@@ -188,11 +193,14 @@ contract L2ERC20ExtendedTokensBridge is
         uint256 amount_
     ) internal returns (uint256) {
         if(l2Token_ == L2_TOKEN_REBASABLE) {
-            uint256 shares = ERC20RebasableBridged(l2Token_).getSharesByTokens(amount_);
-            ERC20RebasableBridged(l2Token_).bridgeBurnShares(from_, shares);
-            return shares;
+            ERC20RebasableBridged(l2Token_).transferFrom(from_, address(this), amount_);
+            uint256 nonRebasableTokensAmount;
+            if (amount_ != 0) {
+                nonRebasableTokensAmount = ERC20RebasableBridged(l2Token_).unwrap(amount_);
+            }
+            IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeBurn(address(this), nonRebasableTokensAmount);
+            return nonRebasableTokensAmount;
         }
-
         IERC20Bridged(l2Token_).bridgeBurn(from_, amount_);
         return amount_;
     }
