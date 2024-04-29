@@ -278,6 +278,8 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
     const recipientBalanceBefore = await l2TokenRebasable.balanceOf(recipient.address);
     const totalSupplyBefore = await l2TokenRebasable.totalSupply();
 
+    await l2TokenRebasable.connect(recipient).approve(l2TokenBridge.address, amountToWithdraw);
+
     const tx = await l2TokenBridge.connect(recipient).withdraw(
       l2TokenRebasable.address,
       amountToWithdraw,
@@ -565,7 +567,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
       },
     } = ctx;
 
-    const amountToDeposit = wei`1 ether`;
+    const amountToDeposit = wei`1 ether`; // shares
     const amountToWithdraw = wei.toBigNumber(amountToDeposit).mul(ctx.exchangeRate).div(ctx.decimalsBN);
     const l1Gas = wei`1 wei`;
     const data = "0xdeadbeaf";
@@ -585,6 +587,8 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
 
     const deployerBalanceBefore = await l2TokenRebasable.balanceOf(deployer.address);
     const totalSupplyBefore = await l2TokenRebasable.totalSupply();
+
+    await l2TokenRebasable.approve(l2TokenBridge.address, amountToWithdraw);
 
     const tx = await l2TokenBridge.connect(deployer).withdrawTo(
       l2TokenRebasable.address,
@@ -1015,8 +1019,8 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
 
     await l2Messenger.setXDomainMessageSender(l1TokenBridgeEOA.address);
 
-    const amountToDeposit = wei`1 ether`;
-    const amountToEmit = wei.toBigNumber(amountToDeposit).mul(ctx.exchangeRate).div(ctx.decimalsBN);
+    const amountOfSharesToDeposit = wei`1 ether`;
+    const amountOfRebasableToken = wei.toBigNumber(amountOfSharesToDeposit).mul(ctx.exchangeRate).div(ctx.decimalsBN);
     const data = "0xdeadbeaf";
     const provider = await hre.ethers.provider;
     const packedTokenRateAndTimestampData = await packedTokenRateAndTimestamp(provider, ctx.exchangeRate);
@@ -1029,7 +1033,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
         l2TokenRebasable.address,
         deployer.address,
         recipient.address,
-        amountToDeposit,
+        amountOfSharesToDeposit,
         dataToReceive
       );
 
@@ -1038,11 +1042,11 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
       l2TokenRebasable.address,
       deployer.address,
       recipient.address,
-      amountToEmit,
+      amountOfRebasableToken,
       data,
     ]);
 
-    assert.equalBN(await l2TokenRebasable.balanceOf(recipient.address), amountToEmit);
+    assert.equalBN(await l2TokenRebasable.balanceOf(recipient.address), amountOfRebasableToken);
   })
 
   .run();
