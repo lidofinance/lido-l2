@@ -444,9 +444,6 @@ async function tokenProxied(
       holder
     );
 
-    const premintShares = wei.toBigNumber(wei`100 ether`);
-    await rebasableProxied.connect(owner).bridgeMintShares(holder.address, premintShares);
-
     return rebasableProxied;
   }
 
