@@ -242,10 +242,6 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
       const tokenHolderABalanceBefore = await l2TokenRebasable.balanceOf(tokenHolderA.address);
       const l2TotalSupplyBefore = await l2TokenRebasable.totalSupply();
 
-      await l2TokenRebasable
-        .connect(tokenHolderA.l2Signer)
-        .approve(l2ERC20ExtendedTokensBridge.address, withdrawalAmountOfRebasableToken);
-
       const tx = await l2ERC20ExtendedTokensBridge
         .connect(tokenHolderA.l2Signer)
         .withdraw(
@@ -512,10 +508,6 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
 
       const tokenHolderBBalanceBefore = await l2TokenRebasable.balanceOf(tokenHolderB.address);
       const l2TotalSupplyBefore = await l2TokenRebasable.totalSupply();
-
-      await l2TokenRebasable
-        .connect(tokenHolderB.l2Signer)
-        .approve(l2ERC20ExtendedTokensBridge.address, withdrawalAmountOfRebasableToken);
 
       const tx = await l2ERC20ExtendedTokensBridge
         .connect(tokenHolderB.l2Signer)

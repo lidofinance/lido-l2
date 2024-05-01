@@ -278,8 +278,6 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
     const recipientBalanceBefore = await l2TokenRebasable.balanceOf(recipient.address);
     const totalSupplyBefore = await l2TokenRebasable.totalSupply();
 
-    await l2TokenRebasable.connect(recipient).approve(l2TokenBridge.address, amountToWithdraw);
-
     const tx = await l2TokenBridge.connect(recipient).withdraw(
       l2TokenRebasable.address,
       amountToWithdraw,
@@ -587,8 +585,6 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
 
     const deployerBalanceBefore = await l2TokenRebasable.balanceOf(deployer.address);
     const totalSupplyBefore = await l2TokenRebasable.totalSupply();
-
-    await l2TokenRebasable.approve(l2TokenBridge.address, amountToWithdraw);
 
     const tx = await l2TokenBridge.connect(deployer).withdrawTo(
       l2TokenRebasable.address,

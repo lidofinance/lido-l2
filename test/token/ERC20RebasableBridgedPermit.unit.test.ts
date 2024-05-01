@@ -360,6 +360,125 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     await assert.revertsWith(rebasableProxied.connect(user1).unwrap(wei`4 ether`), "ErrorNotEnoughBalance()");
   })
 
+  .test("bridgeUnwrap() :: revert if not bridge", async (ctx) => {
+    const { rebasableProxied } = ctx.contracts;
+    const { user1, user2 } = ctx.accounts;
+    await assert.revertsWith(rebasableProxied.connect(user1).bridgeUnwrap(user2.address, 10), "ErrorNotBridge()");
+  })
+
+  .test("bridgeUnwrap() :: revert if unwrap 0 wstETH", async (ctx) => {
+    const { rebasableProxied } = ctx.contracts;
+    const { user1, owner } = ctx.accounts;
+    await assert.revertsWith(rebasableProxied.connect(owner).bridgeUnwrap(user1.address, 0), "ErrorZeroTokensUnwrap()");
+  })
+
+  .test("bridgeUnwrap() :: when no balance", async (ctx) => {
+    const { rebasableProxied } = ctx.contracts;
+    const { user1, owner } = ctx.accounts;
+
+    await assert.revertsWith(rebasableProxied.connect(owner).bridgeUnwrap(user1.address,  wei`4 ether`), "ErrorNotEnoughBalance()");
+  })
+
+  .test("bridgeUnwrap() :: with wrong oracle update time", async (ctx) => {
+
+    const { deployer, user1, owner, zero } = ctx.accounts;
+    const { decimals } = ctx.constants;
+
+    // deploy new implementation to test initial oracle state
+    const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
+      "WsETH Test Token",
+      "WsETH",
+      "1",
+      decimals,
+      owner.address
+    );
+    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+      zero.address,
+      owner.address,
+      zero.address,
+      86400,
+      86400,
+      500
+    );
+    const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
+      "",
+      "symbol",
+      "1",
+      10,
+      wrappedToken.address,
+      tokenRateOracle.address,
+      owner.address
+    );
+
+    await wrappedToken.connect(owner).bridgeMint(user1.address, 1000);
+    await assert.revertsWith(rebasableProxied.connect(owner).bridgeUnwrap(user1.address, 5), "ErrorWrongOracleUpdateTime()");
+  })
+
+  .test("bridgeUnwrap() :: happy path", async (ctx) => {
+
+    const { rebasableProxied, wrappedToken } = ctx.contracts;
+    const { user1, user2, owner } = ctx.accounts;
+    const { tokenRate, tenPowDecimals, premintShares } = ctx.constants;
+
+    const totalSupply = BigNumber.from(tokenRate).mul(premintShares).div(tenPowDecimals);
+
+    assert.equalBN(await rebasableProxied.getTotalShares(), premintShares);
+    assert.equalBN(await rebasableProxied.totalSupply(), totalSupply);
+
+    // user1
+
+    assert.equalBN(await rebasableProxied.sharesOf(user1.address), 0);
+    assert.equalBN(await rebasableProxied.balanceOf(user1.address), 0);
+
+    const user1SharesToWrap = wei`100 ether`;
+    const user1SharesToUnwrap = wei`59 ether`;
+    const user1TokensToUnwrap = tokenRate.mul(user1SharesToUnwrap).div(tenPowDecimals);
+
+    const user1Shares = BigNumber.from(user1SharesToWrap).sub(user1SharesToUnwrap);
+    const user1Tokens = BigNumber.from(tokenRate).mul(user1Shares).div(tenPowDecimals);
+
+    await wrappedToken.connect(owner).bridgeMint(user1.address, user1SharesToWrap);
+    await wrappedToken.connect(user1).approve(rebasableProxied.address, user1SharesToWrap);
+
+    const tx0 = await rebasableProxied.connect(user1).wrap(user1SharesToWrap);
+    assert.equalBN(await rebasableProxied.connect(owner).callStatic.bridgeUnwrap(user1.address, user1TokensToUnwrap), user1SharesToUnwrap);
+    const tx = await rebasableProxied.connect(owner).bridgeUnwrap(user1.address, user1TokensToUnwrap);
+
+    assert.equalBN(await rebasableProxied.sharesOf(user1.address), user1Shares);
+    assert.equalBN(await rebasableProxied.balanceOf(user1.address), user1Tokens);
+    assert.equalBN(await wrappedToken.balanceOf(rebasableProxied.address), user1Shares);
+
+    // common state changes
+    assert.equalBN(await rebasableProxied.getTotalShares(), premintShares.add(user1Shares));
+    assert.equalBN(await rebasableProxied.totalSupply(), totalSupply.add(user1Tokens));
+
+    // user2
+    const user2SharesToWrap = wei`145 ether`;
+    const user2SharesToUnwrap = wei`14 ether`;
+    const user2TokensToUnwrap = tokenRate.mul(user2SharesToUnwrap).div(tenPowDecimals);
+
+    const user2Shares = BigNumber.from(user2SharesToWrap).sub(user2SharesToUnwrap);
+    const user2Tokens = BigNumber.from(tokenRate).mul(user2Shares).div(tenPowDecimals);
+
+    assert.equalBN(await rebasableProxied.sharesOf(user2.address), 0);
+    assert.equalBN(await rebasableProxied.balanceOf(user2.address), 0);
+
+    await wrappedToken.connect(owner).bridgeMint(user2.address, user2SharesToWrap);
+    await wrappedToken.connect(user2).approve(rebasableProxied.address, user2SharesToWrap);
+
+    await rebasableProxied.connect(user2).wrap(user2SharesToWrap);
+    assert.equalBN(await rebasableProxied.connect(owner).callStatic.bridgeUnwrap(user2.address, user2TokensToUnwrap), user2SharesToUnwrap);
+    const tx2 = await rebasableProxied.connect(owner).bridgeUnwrap(user2.address, user2TokensToUnwrap);
+
+    assert.equalBN(await rebasableProxied.sharesOf(user2.address), user2Shares);
+    assert.equalBN(await rebasableProxied.balanceOf(user2.address), user2Tokens);
+    assert.equalBN(await wrappedToken.balanceOf(rebasableProxied.address), BigNumber.from(user1Shares).add(user2Shares));
+
+    // common state changes
+    assert.equalBN(await rebasableProxied.getTotalShares(), premintShares.add(user1Shares).add(user2Shares));
+    assert.equalBN(await rebasableProxied.totalSupply(), totalSupply.add(user1Tokens).add(user2Tokens));
+  })
+
   .test("bridgeMintShares() :: happy path", async (ctx) => {
 
     const { rebasableProxied } = ctx.contracts;
