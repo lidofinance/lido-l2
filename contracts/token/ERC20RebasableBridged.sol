@@ -12,20 +12,10 @@ import {UnstructuredRefStorage} from "../lib/UnstructuredRefStorage.sol";
 import {UnstructuredStorage} from "../lib/UnstructuredStorage.sol";
 
 /// @author kovalgek
-/// @notice Extends the ERC20 functionality that allows the bridge to mint/burn shares
-interface IERC20BridgedShares is IERC20 {
-    /// @notice Returns bridge which can mint and burn shares on L2
+/// @notice Extends the ERC20 functionality that allows the bridge to unwrap token.
+interface IBridgeUnwrappable {
+    /// @notice Returns bridge which can unwrap token on L2.
     function L2_ERC20_TOKEN_BRIDGE() external view returns (address);
-
-    /// @notice Creates amount_ shares and assigns them to account_, increasing the total shares supply
-    /// @param account_ An address of the account to mint shares
-    /// @param amount_ An amount of shares to mint
-    function bridgeMintShares(address account_, uint256 amount_) external;
-
-    /// @notice Destroys amount_ shares from account_, reducing the total shares supply
-    /// @param account_ An address of the account to burn shares
-    /// @param amount_ An amount of shares to burn
-    function bridgeBurnShares(address account_, uint256 amount_) external;
 
     /// @notice Exchanges wrapper token to wrappable one. Can be called by bridge only.
     /// @param account_ An address of the account to unwrap token for
@@ -36,12 +26,12 @@ interface IERC20BridgedShares is IERC20 {
 
 /// @author kovalgek
 /// @notice Rebasable token that wraps/unwraps non-rebasable token and allow to mint/burn tokens by bridge.
-contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Metadata {
+contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeUnwrappable, ERC20Metadata {
     using SafeERC20 for IERC20;
     using UnstructuredRefStorage for bytes32;
     using UnstructuredStorage for bytes32;
 
-    /// @inheritdoc IERC20BridgedShares
+    /// @inheritdoc IBridgeUnwrappable
     address public immutable L2_ERC20_TOKEN_BRIDGE;
 
     /// @notice Contract of non-rebasable token to wrap from.
@@ -93,19 +83,9 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
         return _unwrap(msg.sender, tokenAmount_);
     }
 
-    /// @inheritdoc IERC20BridgedShares
+    /// @inheritdoc IBridgeUnwrappable
     function bridgeUnwrap(address account_, uint256 amount_) external onlyBridge returns (uint256) {
         return _unwrap(account_, amount_);
-    }
-
-    /// @inheritdoc IERC20BridgedShares
-    function bridgeMintShares(address account_, uint256 amount_) external onlyBridge {
-        _mintShares(account_, amount_);
-    }
-
-    /// @inheritdoc IERC20BridgedShares
-    function bridgeBurnShares(address account_, uint256 amount_) external onlyBridge {
-        _burnShares(account_, amount_);
     }
 
     /// @inheritdoc IERC20
