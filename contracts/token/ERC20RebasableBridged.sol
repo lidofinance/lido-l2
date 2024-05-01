@@ -26,6 +26,12 @@ interface IERC20BridgedShares is IERC20 {
     /// @param account_ An address of the account to burn shares
     /// @param amount_ An amount of shares to burn
     function bridgeBurnShares(address account_, uint256 amount_) external;
+
+    /// @notice Exchanges wrapper token to wrappable one. Can be called by bridge only.
+    /// @param account_ An address of the account to unwrap token for
+    /// @param amount_ amount of wrapper token to uwrap in exchange for wrappable.
+    /// @return Amount of wrappable token user receives after unwrap.
+    function bridgeUnwrap(address account_, uint256 amount_) external returns (uint256);
 }
 
 /// @author kovalgek
@@ -84,13 +90,12 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
 
     /// @inheritdoc IERC20Wrapper
     function unwrap(uint256 tokenAmount_) external returns (uint256) {
-        if (tokenAmount_ == 0) revert ErrorZeroTokensUnwrap();
+        return _unwrap(msg.sender, tokenAmount_);
+    }
 
-        uint256 sharesAmount = _getSharesByTokens(tokenAmount_);
-        _burnShares(msg.sender, sharesAmount);
-        TOKEN_TO_WRAP_FROM.safeTransfer(msg.sender, sharesAmount);
-
-        return sharesAmount;
+    /// @inheritdoc IERC20BridgedShares
+    function bridgeUnwrap(address account_, uint256 amount_) external onlyBridge returns (uint256) {
+        return _unwrap(account_, amount_);
     }
 
     /// @inheritdoc IERC20BridgedShares
@@ -369,6 +374,16 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
     function _initializeERC20Metadata(string memory name_, string memory symbol_) internal {
         _setERC20MetadataName(name_);
         _setERC20MetadataSymbol(symbol_);
+    }
+
+    function _unwrap(address account_, uint256 tokenAmount_) internal returns (uint256) {
+        if (tokenAmount_ == 0) revert ErrorZeroTokensUnwrap();
+
+        uint256 sharesAmount = _getSharesByTokens(tokenAmount_);
+        _burnShares(account_, sharesAmount);
+        TOKEN_TO_WRAP_FROM.safeTransfer(account_, sharesAmount);
+
+        return sharesAmount;
     }
 
     /// @dev validates that account_ is not zero address
