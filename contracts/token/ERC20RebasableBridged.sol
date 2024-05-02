@@ -13,7 +13,7 @@ import {UnstructuredStorage} from "../lib/UnstructuredStorage.sol";
 
 /// @author kovalgek
 /// @notice Extends the ERC20 functionality that allows the bridge to wrap/unwrap token.
-interface IBridgeWrappable {
+interface IBridgeWrapper {
     /// @notice Returns bridge which can wrap/unwrap token on L2.
     function L2_ERC20_TOKEN_BRIDGE() external view returns (address);
 
@@ -32,12 +32,12 @@ interface IBridgeWrappable {
 
 /// @author kovalgek
 /// @notice Rebasable token that wraps/unwraps non-rebasable token and allow to mint/burn tokens by bridge.
-contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrappable, ERC20Metadata {
+contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Metadata {
     using SafeERC20 for IERC20;
     using UnstructuredRefStorage for bytes32;
     using UnstructuredStorage for bytes32;
 
-    /// @inheritdoc IBridgeWrappable
+    /// @inheritdoc IBridgeWrapper
     address public immutable L2_ERC20_TOKEN_BRIDGE;
 
     /// @notice Contract of non-rebasable token to wrap from.
@@ -84,12 +84,12 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrappable, ERC20
         return _unwrap(msg.sender, tokenAmount_);
     }
 
-    /// @inheritdoc IBridgeWrappable
+    /// @inheritdoc IBridgeWrapper
     function bridgeWrap(address account_, uint256 sharesAmount_) external onlyBridge returns (uint256) {
         return _wrap(L2_ERC20_TOKEN_BRIDGE, account_, sharesAmount_);
     }
 
-    /// @inheritdoc IBridgeWrappable
+    /// @inheritdoc IBridgeWrapper
     function bridgeUnwrap(address account_, uint256 tokenAmount_) external onlyBridge returns (uint256) {
         return _unwrap(account_, tokenAmount_);
     }
