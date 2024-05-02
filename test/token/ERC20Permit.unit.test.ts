@@ -53,12 +53,6 @@ const getAccountsEIP1271 = async () => {
 
 function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
   unitInstance
-
-    //   .test("wrappedToken() :: has the same address is in constructor", async (ctx) => {
-    //       const { rebasableProxied, wrappedToken } = ctx.contracts;
-    //       assert.equal(await rebasableProxied.TOKEN_TO_WRAP_FROM(), wrappedToken.address)
-    //   })
-
     .test('eip712Domain() is correct', async (ctx) => {
       const token = ctx.contracts.rebasableProxied
       const [, name, version, chainId, verifyingContract, ,] = await token.eip712Domain()
@@ -449,9 +443,6 @@ async function tokenProxied(
       l2TokensProxy.address,
       holder
     );
-
-    const premintShares = wei.toBigNumber(wei`100 ether`);
-    await rebasableProxied.connect(owner).bridgeMintShares(holder.address, premintShares);
 
     return rebasableProxied;
   }

@@ -6,6 +6,7 @@ import optimism from "../../utils/optimism";
 import testing, { scenario } from "../../utils/testing";
 import { BridgingManagerRole } from "../../utils/bridging-management";
 import { L1LidoTokensBridge__factory } from "../../typechain";
+import { BigNumber } from 'ethers'
 
 const REVERT = env.bool("REVERT", true);
 
@@ -57,7 +58,7 @@ async function ctxFactory() {
 
   const { l1Provider, l2Provider, l1LidoTokensBridge } = await optimism
     .testing(networkName)
-    .getIntegrationTestSetup();
+    .getIntegrationTestSetup(BigNumber.from('1164454276599657236'));
 
   const hasDeployedContracts = testing.env.USE_DEPLOYED_CONTRACTS(false);
   const l1DevMultisig = hasDeployedContracts

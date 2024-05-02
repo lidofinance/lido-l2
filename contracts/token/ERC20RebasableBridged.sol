@@ -12,30 +12,32 @@ import {UnstructuredRefStorage} from "../lib/UnstructuredRefStorage.sol";
 import {UnstructuredStorage} from "../lib/UnstructuredStorage.sol";
 
 /// @author kovalgek
-/// @notice Extends the ERC20 functionality that allows the bridge to mint/burn shares
-interface IERC20BridgedShares is IERC20 {
-    /// @notice Returns bridge which can mint and burn shares on L2
+/// @notice Extends the ERC20 functionality that allows the bridge to wrap/unwrap token.
+interface IBridgeWrapper {
+    /// @notice Returns bridge which can wrap/unwrap token on L2.
     function L2_ERC20_TOKEN_BRIDGE() external view returns (address);
 
-    /// @notice Creates amount_ shares and assigns them to account_, increasing the total shares supply
-    /// @param account_ An address of the account to mint shares
-    /// @param amount_ An amount of shares to mint
-    function bridgeMintShares(address account_, uint256 amount_) external;
+    /// @notice Exchanges non-rebaseable token (shares) to rebaseable token. Can be called by bridge only.
+    /// @param account_ an address of the account to exchange shares for.
+    /// @param sharesAmount_ amount of non-rebaseable token (shares).
+    /// @return Amount of rebaseable token.
+    function bridgeWrap(address account_, uint256 sharesAmount_) external returns (uint256);
 
-    /// @notice Destroys amount_ shares from account_, reducing the total shares supply
-    /// @param account_ An address of the account to burn shares
-    /// @param amount_ An amount of shares to burn
-    function bridgeBurnShares(address account_, uint256 amount_) external;
+    /// @notice Exchanges rebaseable token to non-rebasable (shares). Can be called by bridge only.
+    /// @param account_ an address of the account to exchange token for.
+    /// @param tokenAmount_ amount of rebaseable token to uwrap in exchange for non-rebaseable token (shares).
+    /// @return Amount of non-rebaseable token (shares) user receives after unwrap.
+    function bridgeUnwrap(address account_, uint256 tokenAmount_) external returns (uint256);
 }
 
 /// @author kovalgek
 /// @notice Rebasable token that wraps/unwraps non-rebasable token and allow to mint/burn tokens by bridge.
-contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ERC20Metadata {
+contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Metadata {
     using SafeERC20 for IERC20;
     using UnstructuredRefStorage for bytes32;
     using UnstructuredStorage for bytes32;
 
-    /// @inheritdoc IERC20BridgedShares
+    /// @inheritdoc IBridgeWrapper
     address public immutable L2_ERC20_TOKEN_BRIDGE;
 
     /// @notice Contract of non-rebasable token to wrap from.
@@ -74,33 +76,22 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
 
     /// @inheritdoc IERC20Wrapper
     function wrap(uint256 sharesAmount_) external returns (uint256) {
-        if (sharesAmount_ == 0) revert ErrorZeroSharesWrap();
-
-        _mintShares(msg.sender, sharesAmount_);
-        TOKEN_TO_WRAP_FROM.safeTransferFrom(msg.sender, address(this), sharesAmount_);
-
-        return _getTokensByShares(sharesAmount_);
+        return _wrap(msg.sender, msg.sender, sharesAmount_);
     }
 
     /// @inheritdoc IERC20Wrapper
     function unwrap(uint256 tokenAmount_) external returns (uint256) {
-        if (tokenAmount_ == 0) revert ErrorZeroTokensUnwrap();
-
-        uint256 sharesAmount = _getSharesByTokens(tokenAmount_);
-        _burnShares(msg.sender, sharesAmount);
-        TOKEN_TO_WRAP_FROM.safeTransfer(msg.sender, sharesAmount);
-
-        return sharesAmount;
+        return _unwrap(msg.sender, tokenAmount_);
     }
 
-    /// @inheritdoc IERC20BridgedShares
-    function bridgeMintShares(address account_, uint256 amount_) external onlyBridge {
-        _mintShares(account_, amount_);
+    /// @inheritdoc IBridgeWrapper
+    function bridgeWrap(address account_, uint256 sharesAmount_) external onlyBridge returns (uint256) {
+        return _wrap(L2_ERC20_TOKEN_BRIDGE, account_, sharesAmount_);
     }
 
-    /// @inheritdoc IERC20BridgedShares
-    function bridgeBurnShares(address account_, uint256 amount_) external onlyBridge {
-        _burnShares(account_, amount_);
+    /// @inheritdoc IBridgeWrapper
+    function bridgeUnwrap(address account_, uint256 tokenAmount_) external onlyBridge returns (uint256) {
+        return _unwrap(account_, tokenAmount_);
     }
 
     /// @inheritdoc IERC20
@@ -369,6 +360,25 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IERC20BridgedShares, ER
     function _initializeERC20Metadata(string memory name_, string memory symbol_) internal {
         _setERC20MetadataName(name_);
         _setERC20MetadataSymbol(symbol_);
+    }
+
+   function _wrap(address from_, address to_, uint256 sharesAmount_) internal returns (uint256) {
+        if (sharesAmount_ == 0) revert ErrorZeroSharesWrap();
+
+        TOKEN_TO_WRAP_FROM.safeTransferFrom(from_, address(this), sharesAmount_);
+        _mintShares(to_, sharesAmount_);
+
+        return _getTokensByShares(sharesAmount_);
+    }
+
+    function _unwrap(address account_, uint256 tokenAmount_) internal returns (uint256) {
+        if (tokenAmount_ == 0) revert ErrorZeroTokensUnwrap();
+
+        uint256 sharesAmount = _getSharesByTokens(tokenAmount_);
+        _burnShares(account_, sharesAmount);
+        TOKEN_TO_WRAP_FROM.safeTransfer(account_, sharesAmount);
+
+        return sharesAmount;
     }
 
     /// @dev validates that account_ is not zero address

@@ -96,6 +96,9 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
         .approve(l1LidoTokensBridge.address, depositAmountOfRebasableToken);
 
       const rebasableTokenHolderBalanceBefore = await l1TokenRebasable.balanceOf(tokenHolderA.address);
+
+      ctx.balances.accountABalanceBeforeDeposit = rebasableTokenHolderBalanceBefore;
+
       const nonRebasableTokenBridgeBalanceBefore = await l1Token.balanceOf(l1LidoTokensBridge.address);
       const warappedRebasableTokenBalanceBefore = await l1TokenRebasable.balanceOf(l1Token.address);
 
@@ -144,20 +147,21 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
 
       const rebasableTokenHolderBalanceAfter = await l1TokenRebasable.balanceOf(tokenHolderA.address);
       const nonRebasableTokenBridgeBalanceAfter = await l1Token.balanceOf(l1LidoTokensBridge.address);
-      const warappedRebasableTokenBalanceAfter = await l1TokenRebasable.balanceOf(l1Token.address);
-
+      const wrappedRebasableTokenBalanceAfter = await l1TokenRebasable.balanceOf(l1Token.address);
 
       assert.equalBN(
         rebasableTokenHolderBalanceAfter,
         rebasableTokenHolderBalanceBefore.sub(depositAmountOfRebasableToken)
       );
 
-      const balanceDelta = nonRebasableTokenBridgeBalanceAfter.sub(nonRebasableTokenBridgeBalanceBefore);
-      const oneTwoWei = BigNumber.from(depositAmountNonRebasable).sub(balanceDelta);
-      assert.isTrue(oneTwoWei.gte(0) && oneTwoWei.lte(2));
+      // during wrapping 1-2 wei can be lost
+      assert.isTrue(almostEqual(
+          depositAmountNonRebasable,
+          nonRebasableTokenBridgeBalanceAfter.sub(nonRebasableTokenBridgeBalanceBefore))
+      );
 
       assert.equalBN(
-        warappedRebasableTokenBalanceAfter,
+        wrappedRebasableTokenBalanceAfter,
         warappedRebasableTokenBalanceBefore.add(depositAmountOfRebasableToken)
       );
     })
@@ -213,13 +217,16 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
         "0x",
       ]);
 
+      const tokenHolderABalanceAfter = await l2TokenRebasable.balanceOf(tokenHolderA.address);
+      const l2TokenRebasableTotalSupplyAfter = await l2TokenRebasable.totalSupply();
+
       assert.equalBN(
-        await l2TokenRebasable.balanceOf(tokenHolderA.address),
-        tokenHolderABalanceBefore.add(depositAmountRebasable)
+        tokenHolderABalanceBefore.add(depositAmountRebasable),
+        tokenHolderABalanceAfter
       );
       assert.equalBN(
-        await l2TokenRebasable.totalSupply(),
-        l2TokenRebasableTotalSupplyBefore.add(depositAmountRebasable)
+        l2TokenRebasableTotalSupplyBefore.add(depositAmountRebasable),
+        l2TokenRebasableTotalSupplyAfter
       );
     })
 
@@ -256,6 +263,7 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
       const tokenHolderABalanceAfter = await l2TokenRebasable.balanceOf(tokenHolderA.address);
       const l2TotalSupplyAfter = await l2TokenRebasable.totalSupply()
 
+      // during unwrapping 1-2 wei can be lost
       assert.isTrue(almostEqual(tokenHolderABalanceAfter, tokenHolderABalanceBefore.sub(withdrawalAmountOfRebasableToken)));
       assert.isTrue(almostEqual(l2TotalSupplyAfter, l2TotalSupplyBefore.sub(withdrawalAmountOfRebasableToken)));
     })
@@ -271,7 +279,7 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
         l2ERC20ExtendedTokensBridge,
       } = ctx;
       const { accountA: tokenHolderA, l1Stranger } = ctx.accounts;
-      const { withdrawalAmountOfRebasableToken, tokenRate } = ctx.constants;
+      const { depositAmountOfRebasableToken, withdrawalAmountOfRebasableToken, tokenRate } = ctx.constants;
 
       const withdrawalAmountNonRebasable = nonRebasableFromRebasable(withdrawalAmountOfRebasableToken, tokenRate);
       const withdrawalAmountRebasable = rebasableFromNonRebasable(withdrawalAmountNonRebasable, tokenRate);
@@ -323,6 +331,13 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
         tokenHolderABalanceAfter,
         tokenHolderABalanceBefore.add(withdrawalAmountRebasable)
       );
+
+      /// check that user balance is correct after depositing and withdrawal.
+      const deltaDepositWithdrawal = depositAmountOfRebasableToken.sub(withdrawalAmountOfRebasableToken);
+      assert.isTrue(almostEqual(
+        ctx.balances.accountABalanceBeforeDeposit,
+        tokenHolderABalanceAfter.add(deltaDepositWithdrawal))
+      );
     })
 
     .step("L1 -> L2 deposit via depositERC20To()", async (ctx) => {
@@ -340,12 +355,15 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
       assert.notEqual(tokenHolderA.address, tokenHolderB.address);
 
       const { depositAmountOfRebasableToken, tokenRate } = ctx.constants;
-
       const depositAmountNonRebasable = nonRebasableFromRebasable(depositAmountOfRebasableToken, tokenRate);
 
-      const rebasableTokenHolderBalanceBefore = await l1TokenRebasable.balanceOf(tokenHolderA.address);
+      const rebasableTokenHolderABalanceBefore = await l1TokenRebasable.balanceOf(tokenHolderA.address);
       const nonRebasableTokenBridgeBalanceBefore = await l1Token.balanceOf(l1LidoTokensBridge.address);
       const warappedRebasableTokenBalanceBefore = await l1TokenRebasable.balanceOf(l1Token.address);
+
+      // save to check balance later
+      ctx.balances.accountABalanceBeforeDeposit = rebasableTokenHolderABalanceBefore;
+      ctx.balances.accountBBalanceBeforeDeposit = await l2TokenRebasable.balanceOf(tokenHolderB.address);
 
       await l1TokenRebasable
         .connect(tokenHolderA.l1Signer)
@@ -395,18 +413,20 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
         200_000,
       ]);
 
-      const rebasableTokenHolderBalanceAfter = await l1TokenRebasable.balanceOf(tokenHolderA.address);
+      const rebasableTokenHolderABalanceAfter = await l1TokenRebasable.balanceOf(tokenHolderA.address);
       const nonRebasableTokenBridgeBalanceAfter = await l1Token.balanceOf(l1LidoTokensBridge.address);
       const warappedRebasableTokenBalanceAfter = await l1TokenRebasable.balanceOf(l1Token.address);
 
       assert.equalBN(
-        rebasableTokenHolderBalanceAfter,
-        rebasableTokenHolderBalanceBefore.sub(depositAmountOfRebasableToken)
+        rebasableTokenHolderABalanceAfter,
+        rebasableTokenHolderABalanceBefore.sub(depositAmountOfRebasableToken)
       );
 
-      const balanceDelta = nonRebasableTokenBridgeBalanceAfter.sub(nonRebasableTokenBridgeBalanceBefore);
-      const oneTwoWei = BigNumber.from(depositAmountNonRebasable).sub(balanceDelta);
-      assert.isTrue(oneTwoWei.gte(0) && oneTwoWei.lte(2));
+      // during wrapping 1-2 wei can be lost
+      assert.isTrue(almostEqual(
+        depositAmountNonRebasable,
+        nonRebasableTokenBridgeBalanceAfter.sub(nonRebasableTokenBridgeBalanceBefore))
+      );
 
       assert.equalBN(
         warappedRebasableTokenBalanceAfter,
@@ -439,10 +459,7 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
       const dataToReceive = await packedTokenRateAndTimestamp(l2Provider, l1Token);
 
       const l2TokenRebasableTotalSupplyBefore = await l2TokenRebasable.totalSupply();
-
-      const tokenHolderBBalanceBefore = await l2TokenRebasable.balanceOf(
-        tokenHolderB.address
-      );
+      const tokenHolderBBalanceBefore = await l2TokenRebasable.balanceOf(tokenHolderB.address);
 
       const tx = await l2CrossDomainMessenger
         .connect(l1CrossDomainMessengerAliased)
@@ -534,7 +551,7 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
         l1Stranger,
       } = ctx.accounts;
 
-      const { withdrawalAmountOfRebasableToken, tokenRate } = ctx.constants;
+      const { depositAmountOfRebasableToken, withdrawalAmountOfRebasableToken, tokenRate } = ctx.constants;
 
       const withdrawalAmountNonRebasable = nonRebasableFromRebasable(withdrawalAmountOfRebasableToken, tokenRate);
       const withdrawalAmountRebasable = rebasableFromNonRebasable(withdrawalAmountNonRebasable, tokenRate);
@@ -576,6 +593,7 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
 
       const l1LidoTokensBridgeBalanceAfter = await l1Token.balanceOf(l1LidoTokensBridge.address);
       const tokenHolderABalanceAfter = await l1TokenRebasable.balanceOf(tokenHolderA.address);
+      const tokenHolderBBalanceAfter = await l2TokenRebasable.balanceOf(tokenHolderB.address);
 
       assert.equalBN(
         l1LidoTokensBridgeBalanceAfter,
@@ -586,13 +604,26 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
         tokenHolderABalanceAfter,
         tokenHolderABalanceBefore.add(withdrawalAmountRebasable)
       );
+
+      /// check that user balance is correct after depositing and withdrawal.
+      const deltaDepositWithdrawal = depositAmountOfRebasableToken.sub(withdrawalAmountOfRebasableToken);
+      assert.isTrue(almostEqual(
+        ctx.balances.accountABalanceBeforeDeposit,
+        tokenHolderABalanceAfter.add(deltaDepositWithdrawal))
+      );
+      assert.isTrue(almostEqual(
+        ctx.balances.accountBBalanceBeforeDeposit,
+        tokenHolderBBalanceAfter.sub(deltaDepositWithdrawal))
+      );
     })
+
     .run();
 }
 
 function ctxFactory(depositAmountOfRebasableToken: BigNumber, withdrawalAmountOfRebasableToken: BigNumber) {
   return async () => {
     const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
+    const exchangeRate = BigNumber.from('1164454276599657236');
 
     const {
       l1Provider,
@@ -600,7 +631,7 @@ function ctxFactory(depositAmountOfRebasableToken: BigNumber, withdrawalAmountOf
       l1ERC20ExtendedTokensBridgeAdmin,
       l2ERC20ExtendedTokensBridgeAdmin,
       ...contracts
-    } = await optimism.testing(networkName).getIntegrationTestSetup();
+    } = await optimism.testing(networkName).getIntegrationTestSetup(exchangeRate);
 
     const l1Snapshot = await l1Provider.send("evm_snapshot", []);
     const l2Snapshot = await l2Provider.send("evm_snapshot", []);
@@ -610,8 +641,6 @@ function ctxFactory(depositAmountOfRebasableToken: BigNumber, withdrawalAmountOf
     const accountA = testing.accounts.accountA(l1Provider, l2Provider);
     const accountB = testing.accounts.accountB(l1Provider, l2Provider);
 
-    const exchangeRate = BigNumber.from('1164454276599657236');
-    const depositAmountRebasable = wei.toBigNumber(wei`0.15 ether`);
 
     await testing.setBalance(
       await contracts.l1TokensHolder.getAddress(),
@@ -631,10 +660,6 @@ function ctxFactory(depositAmountOfRebasableToken: BigNumber, withdrawalAmountOf
       l2Provider
     );
 
-    await contracts.l1TokenRebasable
-      .connect(contracts.l1TokensHolder)
-      .transfer(accountA.l1Signer.address, depositAmountRebasable);
-
     const l1CrossDomainMessengerAliased = await testing.impersonate(
       testing.accounts.applyL1ToL2Alias(contracts.l1CrossDomainMessenger.address),
       l2Provider
@@ -645,6 +670,13 @@ function ctxFactory(depositAmountOfRebasableToken: BigNumber, withdrawalAmountOf
       wei.toBigNumber(wei`1 ether`),
       l2Provider
     );
+
+    await contracts.l1TokenRebasable
+      .connect(contracts.l1TokensHolder)
+      .transfer(accountA.l1Signer.address, depositAmountOfRebasableToken.mul(2));
+
+    var accountABalanceBeforeDeposit = BigNumber.from(0);
+    var accountBBalanceBeforeDeposit = BigNumber.from(0);
 
     return {
       l1Provider,
@@ -662,6 +694,10 @@ function ctxFactory(depositAmountOfRebasableToken: BigNumber, withdrawalAmountOf
         depositAmountOfRebasableToken,
         withdrawalAmountOfRebasableToken,
         tokenRate: exchangeRate
+      },
+      balances: {
+        accountABalanceBeforeDeposit,
+        accountBBalanceBeforeDeposit
       },
       snapshot: {
         l1: l1Snapshot,
@@ -704,20 +740,20 @@ bridgingTestsSuit(
 
 bridgingTestsSuit(
   scenario(
-    "Optimism :: Bridging Zero rebasable token integration test",
+    "Optimism :: Bridging 1 wei rebasable token integration test",
     ctxFactory(
-      BigNumber.from('0'),
-      BigNumber.from('0')
+      wei.toBigNumber(wei`1 wei`),
+      wei.toBigNumber(wei`1 wei`)
     )
   )
 );
 
 bridgingTestsSuit(
   scenario(
-    "Optimism :: Bridging 1 wei rebasable token integration test",
+    "Optimism :: Bridging Zero rebasable token integration test",
     ctxFactory(
-      wei.toBigNumber(wei`1 wei`),
-      wei.toBigNumber(wei`1 wei`)
+      BigNumber.from('0'),
+      BigNumber.from('0')
     )
   )
 );

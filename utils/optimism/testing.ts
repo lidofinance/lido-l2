@@ -46,7 +46,7 @@ export default function testing(networkName: NetworkName) {
         ...bridgeContracts,
       };
     },
-    async getIntegrationTestSetup() {
+    async getIntegrationTestSetup(tokenRate: BigNumber) {
       const hasDeployedContracts =
         testingUtils.env.USE_DEPLOYED_CONTRACTS(false);
 
@@ -56,7 +56,7 @@ export default function testing(networkName: NetworkName) {
 
       const bridgeContracts = hasDeployedContracts
         ? await loadDeployedBridges(ethProvider, optProvider)
-        : await deployTestBridge(networkName, ethProvider, optProvider);
+        : await deployTestBridge(networkName, tokenRate, ethProvider, optProvider);
 
       const [l1ERC20ExtendedTokensAdminAddress] =
         await BridgingManagement.getAdmins(bridgeContracts.l1LidoTokensBridge);
@@ -180,6 +180,7 @@ async function loadDeployedBridges(
 
 async function deployTestBridge(
   networkName: NetworkName,
+  tokenRate: BigNumber,
   ethProvider: JsonRpcProvider,
   optProvider: JsonRpcProvider
 ) {
@@ -195,7 +196,7 @@ async function deployTestBridge(
     l1TokenRebasable.address,
     "Test Token",
     "TT",
-    BigNumber.from('1164454276599657236')
+    tokenRate
   );
 
   const [ethDeployScript, optDeployScript] = await deploymentAll(
@@ -213,7 +214,7 @@ async function deployTestBridge(
       admins: { proxy: optDeployer.address, bridge: optDeployer.address },
       contractsShift: 0,
       tokenRateOracle: {
-        tokenRate: BigNumber.from('1164454276599657236'),
+        tokenRate: tokenRate,
         l1Timestamp: BigNumber.from('1000')
       }
     }

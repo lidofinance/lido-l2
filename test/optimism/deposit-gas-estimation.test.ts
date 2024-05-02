@@ -4,6 +4,7 @@ import env from "../../utils/env";
 import { wei } from "../../utils/wei";
 import optimism from "../../utils/optimism";
 import testing, { scenario } from "../../utils/testing";
+import { BigNumber } from 'ethers'
 
 scenario("Optimism :: Bridging integration test", ctxFactory)
   .after(async (ctx) => {
@@ -135,6 +136,7 @@ scenario("Optimism :: Bridging integration test", ctxFactory)
 async function ctxFactory() {
   const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
   console.log("networkName=", networkName);
+  const exchangeRate = BigNumber.from('1164454276599657236');
 
   const {
     l1Provider,
@@ -142,7 +144,7 @@ async function ctxFactory() {
     l1ERC20ExtendedTokensBridgeAdmin,
     l2ERC20ExtendedTokensBridgeAdmin,
     ...contracts
-  } = await optimism.testing(networkName).getIntegrationTestSetup();
+  } = await optimism.testing(networkName).getIntegrationTestSetup(exchangeRate);
 
   const l1Snapshot = await l1Provider.send("evm_snapshot", []);
   const l2Snapshot = await l2Provider.send("evm_snapshot", []);
