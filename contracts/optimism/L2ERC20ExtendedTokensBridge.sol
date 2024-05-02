@@ -59,7 +59,7 @@ contract L2ERC20ExtendedTokensBridge is
     /// @notice Initializes the contract from scratch.
     /// @param admin_ Address of the account to grant the DEFAULT_ADMIN_ROLE
     function initialize(address admin_) external {
-        _initializeContractVersionTo(2);
+        _initializeExtendedTokensBridge();
         _initializeBridgingManager(admin_);
     }
 
@@ -68,7 +68,7 @@ contract L2ERC20ExtendedTokensBridge is
         if(!_isBridgingManagerInitialized()) {
             revert ErrorBridgingManagerIsNotInitialized();
         }
-        _initializeContractVersionTo(2);
+        _initializeExtendedTokensBridge();
     }
 
     /// @inheritdoc IL2ERC20Bridge
@@ -131,6 +131,12 @@ contract L2ERC20ExtendedTokensBridge is
         emit DepositFinalized(l1Token_, l2Token_, from_, to_, depositedL2TokenAmount, depositData.data);
     }
 
+    function _initializeExtendedTokensBridge() internal {
+        _initializeContractVersionTo(2);
+        // used for `bridgeWrap` call to succeed in the `_mintTokens` method
+        IERC20(L2_TOKEN_NON_REBASABLE).safeIncreaseAllowance(L2_TOKEN_REBASABLE, type(uint256).max);
+    }
+
     /// @notice Performs the logic for withdrawals by burning the token and informing
     ///     the L1 token Gateway of the withdrawal
     /// @param l2Token_ Address of L2 token where withdrawal was initiated.
@@ -168,16 +174,16 @@ contract L2ERC20ExtendedTokensBridge is
         address to_,
         uint256 amount_
     ) internal returns (uint256) {
+        uint256 tokenAmount = amount_;
         if(l2Token_ == L2_TOKEN_REBASABLE) {
             IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeMint(address(this), amount_);
-            IERC20(L2_TOKEN_NON_REBASABLE).safeIncreaseAllowance(l2Token_, amount_);
             if (amount_ != 0) {
-                ERC20RebasableBridged(l2Token_).wrap(amount_);
+                tokenAmount = ERC20RebasableBridged(l2Token_).bridgeWrap(to_, amount_);
             }
-            return ERC20RebasableBridged(l2Token_).transferShares(to_, amount_);
+        } else {
+            IERC20Bridged(l2Token_).bridgeMint(to_, amount_);
         }
-        IERC20Bridged(l2Token_).bridgeMint(to_, amount_);
-        return amount_;
+        return tokenAmount;
     }
 
     /// @notice Unwraps if needed, burns tokens and returns amount of non-rebasable token to withdraw.
@@ -190,16 +196,12 @@ contract L2ERC20ExtendedTokensBridge is
         address from_,
         uint256 amount_
     ) internal returns (uint256) {
-        if(l2Token_ == L2_TOKEN_REBASABLE) {
-            uint256 nonRebasableTokenAmount;
-            if (amount_ != 0) {
-                nonRebasableTokenAmount = ERC20RebasableBridged(l2Token_).bridgeUnwrap(from_, amount_);
-            }
-            IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeBurn(from_, nonRebasableTokenAmount);
-            return nonRebasableTokenAmount;
+        uint256 nonRebasableTokenAmount = amount_;
+        if(l2Token_ == L2_TOKEN_REBASABLE && (amount_ != 0)) {
+            nonRebasableTokenAmount = ERC20RebasableBridged(L2_TOKEN_REBASABLE).bridgeUnwrap(from_, amount_);
         }
-        IERC20Bridged(l2Token_).bridgeBurn(from_, amount_);
-        return amount_;
+        IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeBurn(from_, nonRebasableTokenAmount);
+        return nonRebasableTokenAmount;
     }
 
     error ErrorSenderNotEOA();
