@@ -360,6 +360,128 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     await assert.revertsWith(rebasableProxied.connect(user1).unwrap(wei`4 ether`), "ErrorNotEnoughBalance()");
   })
 
+  .test("bridgeWrap() :: revert if not bridge", async (ctx) => {
+    const { rebasableProxied } = ctx.contracts;
+    const { user1, user2 } = ctx.accounts;
+    await assert.revertsWith(rebasableProxied.connect(user1).bridgeWrap(user2.address, 10), "ErrorNotBridge()");
+  })
+
+  .test("bridgeWrap() :: revert if wrap 0 wstETH", async (ctx) => {
+    const { rebasableProxied } = ctx.contracts;
+    const { user1, owner } = ctx.accounts;
+    await assert.revertsWith(rebasableProxied.connect(owner).bridgeWrap(user1.address, 0), "ErrorZeroSharesWrap()");
+  })
+
+  .test("bridgeWrap() :: wrong oracle update time", async (ctx) => {
+    const { deployer, user1, owner, zero } = ctx.accounts;
+    const { decimals } = ctx.constants;
+
+    // deploy new implementation to test initial oracle state
+    const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
+      "WsETH Test Token",
+      "WsETH",
+      "1",
+      decimals,
+      owner.address
+    );
+    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+      zero.address,
+      owner.address,
+      zero.address,
+      86400,
+      86400,
+      500
+    );
+    const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
+      "",
+      "symbol",
+      "1",
+      10,
+      wrappedToken.address,
+      tokenRateOracle.address,
+      owner.address
+    );
+
+    await wrappedToken.connect(owner).bridgeMint(owner.address, 1000);
+    await wrappedToken.connect(owner).approve(rebasableProxied.address, 1000);
+
+    await assert.revertsWith(
+      rebasableProxied.connect(owner).bridgeWrap(user1.address, 5),
+      "ErrorWrongOracleUpdateTime()"
+    );
+  })
+
+  .test("bridgeWrap() :: when no balance", async (ctx) => {
+    const { rebasableProxied, wrappedToken } = ctx.contracts;
+    const { owner, user1 } = ctx.accounts;
+
+    await wrappedToken.connect(owner).approve(rebasableProxied.address, 1000);
+    await assert.revertsWith(rebasableProxied.connect(owner).bridgeWrap(user1.address, 2), "ErrorNotEnoughBalance()");
+  })
+
+  .test("bridgeWrap() :: happy path", async (ctx) => {
+
+    const { rebasableProxied, wrappedToken, tokenRateOracle } = ctx.contracts;
+    const { user1, user2, owner, zero } = ctx.accounts;
+    const { tokenRate, tenPowDecimals, premintShares } = ctx.constants;
+
+    await wrappedToken.connect(owner).bridgeMint(owner.address, wei`1000 ether`);
+    await tokenRateOracle.connect(owner).updateRate(tokenRate, 1000);
+
+    const totalSupply = tokenRate.mul(premintShares).div(tenPowDecimals);
+
+    assert.equalBN(await rebasableProxied.getTotalShares(), premintShares);
+    assert.equalBN(await rebasableProxied.totalSupply(), totalSupply);
+
+    // user1
+    const user1Shares = wei`100 ether`;
+    const user1Tokens = tokenRate.mul(user1Shares).div(tenPowDecimals);
+
+    assert.equalBN(await rebasableProxied.sharesOf(user1.address), 0);
+    assert.equalBN(await rebasableProxied.balanceOf(user1.address), 0);
+
+    await wrappedToken.connect(owner).bridgeMint(user1.address, user1Tokens);
+    await wrappedToken.connect(owner).approve(rebasableProxied.address, user1Shares);
+
+    assert.equalBN(await rebasableProxied.connect(owner).callStatic.bridgeWrap(user1.address, user1Shares), user1Tokens);
+    const tx = await rebasableProxied.connect(owner).bridgeWrap(user1.address, user1Shares);
+
+    await assert.emits(rebasableProxied, tx, "Transfer", [zero.address, user1.address, user1Tokens]);
+    await assert.emits(rebasableProxied, tx, "TransferShares", [zero.address, user1.address, user1Shares]);
+
+    assert.equalBN(await rebasableProxied.sharesOf(user1.address), user1Shares);
+    assert.equalBN(await rebasableProxied.balanceOf(user1.address), user1Tokens);
+    assert.equalBN(await wrappedToken.balanceOf(rebasableProxied.address), premintShares.add(user1Shares));
+
+    // common state changes
+    assert.equalBN(await rebasableProxied.getTotalShares(), BigNumber.from(premintShares).add(user1Shares));
+    assert.equalBN(await rebasableProxied.totalSupply(), totalSupply.add(user1Tokens));
+
+    // user2
+    assert.equalBN(await rebasableProxied.sharesOf(user2.address), 0);
+    assert.equalBN(await rebasableProxied.balanceOf(user2.address), 0);
+
+    const user2Shares = wei`50 ether`;
+    const user2Tokens = tokenRate.mul(user2Shares).div(tenPowDecimals);
+
+    await wrappedToken.connect(owner).bridgeMint(user2.address, user2Tokens);
+    await wrappedToken.connect(owner).approve(rebasableProxied.address, user2Shares);
+
+    assert.equalBN(await rebasableProxied.connect(owner).callStatic.bridgeWrap(user2.address, user2Shares), user2Tokens);
+    const tx2 = await rebasableProxied.connect(owner).bridgeWrap(user2.address, user2Shares);
+
+    await assert.emits(rebasableProxied, tx2, "Transfer", [zero.address, user2.address, user2Tokens]);
+    await assert.emits(rebasableProxied, tx2, "TransferShares", [zero.address, user2.address, user2Shares]);
+
+    assert.equalBN(await rebasableProxied.sharesOf(user2.address), user2Shares);
+    assert.equalBN(await rebasableProxied.balanceOf(user2.address), user2Tokens);
+    assert.equalBN(await wrappedToken.balanceOf(rebasableProxied.address), premintShares.add(BigNumber.from(user1Shares).add(user2Shares)));
+
+    // common state changes
+    assert.equalBN(await rebasableProxied.getTotalShares(), BigNumber.from(premintShares).add(user1Shares).add(user2Shares));
+    assert.equalBN(await rebasableProxied.totalSupply(), totalSupply.add(user1Tokens).add(user2Tokens));
+  })
+
   .test("bridgeUnwrap() :: revert if not bridge", async (ctx) => {
     const { rebasableProxied } = ctx.contracts;
     const { user1, user2 } = ctx.accounts;
