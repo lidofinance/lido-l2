@@ -19,7 +19,7 @@ abstract contract PermitExtension is IERC2612, EIP712 {
         string version;
     }
 
-    /// @dev user shares slot position.
+    /// @dev user nonce slot position.
     bytes32 internal constant NONCE_BY_ADDRESS_POSITION = keccak256("PermitExtension.NONCE_BY_ADDRESS_POSITION");
 
     /// @dev Typehash constant for ERC-2612 (Permit)

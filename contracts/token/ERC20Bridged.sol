@@ -33,7 +33,7 @@ contract ERC20Bridged is IERC20Bridged, ERC20Core, ERC20Metadata {
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
     /// @param decimals_ The decimals places of the token
-    /// @param bridge_ The bridge address which allowd to mint/burn tokens
+    /// @param bridge_ The bridge address which allows to mint/burn tokens
     constructor(
         string memory name_,
         string memory symbol_,
