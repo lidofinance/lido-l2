@@ -11,7 +11,9 @@ import {Versioned} from "../utils/Versioned.sol";
 interface ITokenRateOracle is ITokenRateUpdatable, IChainlinkAggregatorInterface {}
 
 /// @author kovalgek
-/// @notice Oracle for storing token rate.
+/// @notice Oracle for storing and providing token rate.
+///         CEXes should fetch the token rate specific to the chain for deposits/withdrawals;
+///         otherwise, utilizing the token rate from L1 for L2 transactions might lead to bad debt for the exchange.
 /// @dev Token rate updates can be delivered from two sources: L1 token rate pusher and L2 bridge.
 contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
 
