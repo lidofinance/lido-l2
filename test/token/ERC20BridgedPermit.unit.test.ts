@@ -47,6 +47,44 @@ unit("ERC20BridgedPermit", ctxFactory)
     );
   })
 
+  .test("initialize() :: don't allow to initialize with empty metadata", async (ctx) => {
+    const { deployer, owner } = ctx.accounts;
+    const { name, symbol, version } = ctx.constants;
+
+    const l2TokenImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
+      "wstETH",
+      "wst",
+      "1",
+      9,
+      owner.address
+    );
+
+    await assert.revertsWith(
+      new OssifiableProxy__factory(deployer).deploy(
+        l2TokenImpl.address,
+        deployer.address,
+        ERC20BridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
+          "",
+          symbol,
+          version
+        ])
+      ),
+      "ErrorNameIsEmpty()"
+    );
+    await assert.revertsWith(
+      new OssifiableProxy__factory(deployer).deploy(
+        l2TokenImpl.address,
+        deployer.address,
+        ERC20BridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
+          name,
+          "",
+          version
+        ])
+      ),
+      "ErrorSymbolIsEmpty()"
+    );
+  })
+
   .test("initialize() :: don't allow to initialize twice", async (ctx) => {
     const { deployer, owner, holder } = ctx.accounts;
     const { name, symbol, version } = ctx.constants;
@@ -89,7 +127,7 @@ unit("ERC20BridgedPermit", ctxFactory)
 
     // deploy new implementation
     const l2TokenImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
-      "",
+      "name",
       "Symbol",
       "1",
       9,

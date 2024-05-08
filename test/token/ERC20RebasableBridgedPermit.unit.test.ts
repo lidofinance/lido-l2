@@ -70,6 +70,62 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     );
   })
 
+  .test("initialize() :: don't allow to initialize with empty metadata", async (ctx) => {
+    const { deployer, owner, zero } = ctx.accounts;
+    const { decimals, name, symbol, version } = ctx.constants;
+
+    // deploy new implementation
+    const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
+      "WsETH Test Token",
+      "WsETH",
+      "1",
+      decimals,
+      owner.address
+    );
+    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+      zero.address,
+      owner.address,
+      zero.address,
+      86400,
+      86400,
+      500
+    );
+    const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
+      "name",
+      "symbol",
+      "1",
+      10,
+      wrappedToken.address,
+      tokenRateOracle.address,
+      owner.address
+    );
+
+    await assert.revertsWith(
+      new OssifiableProxy__factory(deployer).deploy(
+        rebasableTokenImpl.address,
+        deployer.address,
+        ERC20RebasableBridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
+          "",
+          symbol,
+          version
+        ])
+      ),
+      "ErrorNameIsEmpty()"
+    );
+    await assert.revertsWith(
+      new OssifiableProxy__factory(deployer).deploy(
+        rebasableTokenImpl.address,
+        deployer.address,
+        ERC20RebasableBridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
+          name,
+          "",
+          version
+        ])
+      ),
+      "ErrorSymbolIsEmpty()"
+    );
+  })
+
   .test("initialize() :: don't allow to initialize twice", async (ctx) => {
     const { deployer, owner, zero, holder } = ctx.accounts;
     const { decimals, name, symbol, version } = ctx.constants;
@@ -91,7 +147,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       500
     );
     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
-      "",
+      "name",
       "symbol",
       "1",
       10,
@@ -160,7 +216,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       500
     );
     const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
-      "",
+      "name",
       "symbol",
       "1",
       10,
@@ -273,7 +329,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       500
     );
     const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
-      "",
+      "name",
       "symbol",
       "1",
       10,
@@ -437,7 +493,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       500
     );
     const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
-      "",
+      "name",
       "symbol",
       "1",
       10,
@@ -567,7 +623,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       500
     );
     const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
-      "",
+      "name",
       "symbol",
       "1",
       10,

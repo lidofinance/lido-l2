@@ -58,13 +58,19 @@ contract ERC20Metadata is IERC20Metadata {
         return _loadDynamicMetadata().symbol;
     }
 
-    /// @dev Sets the name of the token. Might be called only when the name is empty
+    /// @dev Sets the name of the token.
     function _setERC20MetadataName(string memory name_) internal {
+        if (bytes(name_).length == 0) {
+            revert ErrorNameIsEmpty();
+        }
         _loadDynamicMetadata().name = name_;
     }
 
-    /// @dev Sets the symbol of the token. Might be called only when the symbol is empty
+    /// @dev Sets the symbol of the token.
     function _setERC20MetadataSymbol(string memory symbol_) internal {
+        if (bytes(symbol_).length == 0) {
+            revert ErrorSymbolIsEmpty();
+        }
         _loadDynamicMetadata().symbol = symbol_;
     }
 
@@ -83,4 +89,7 @@ contract ERC20Metadata is IERC20Metadata {
             r.slot := slot
         }
     }
+
+    error ErrorNameIsEmpty();
+    error ErrorSymbolIsEmpty();
 }
