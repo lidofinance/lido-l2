@@ -76,6 +76,25 @@ unit("TokenRateOracle", ctxFactory)
     );
   })
 
+  .test("initialize() :: wrong maxAllowedTokenRateDeviationPerDay", async (ctx) => {
+    const { deployer, bridge, l1TokenBridgeEOA } = ctx.accounts;
+    const { l2MessengerStub } = ctx.contracts;
+
+    const maxAllowedTokenRateDeviationPerDay = 10001;
+
+    await assert.revertsWith(
+      new TokenRateOracle__factory(deployer).deploy(
+        l2MessengerStub.address,
+        bridge.address,
+        l1TokenBridgeEOA.address,
+        86400,
+        86400,
+        maxAllowedTokenRateDeviationPerDay
+      ),
+      "ErrorMaxAllowedTokenRateDeviationPerDayBiggerThanBasicPointScale()"
+    );
+  })
+
   .test("updateRate() :: called by non-bridge account", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
     const { stranger } = ctx.accounts;

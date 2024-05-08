@@ -61,6 +61,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
     /// @param maxAllowedL2ToL1ClockLag_ A time difference between received l1Timestamp and L2 block.timestamp
     ///         when token rate can be considered outdated.
     /// @param maxAllowedTokenRateDeviationPerDay_ Allowed token rate deviation per day in basic points.
+    ///        Can't be bigger than BASIS_POINT_SCALE.
     constructor(
         address messenger_,
         address l2ERC20TokenBridge_,
@@ -69,6 +70,9 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         uint256 maxAllowedL2ToL1ClockLag_,
         uint256 maxAllowedTokenRateDeviationPerDay_
     ) CrossDomainEnabled(messenger_) {
+        if (maxAllowedTokenRateDeviationPerDay_ > BASIS_POINT_SCALE) {
+            revert ErrorMaxAllowedTokenRateDeviationPerDayBiggerThanBasicPointScale();
+        }
         L2_ERC20_TOKEN_BRIDGE = l2ERC20TokenBridge_;
         L1_TOKEN_RATE_PUSHER = l1TokenRatePusher_;
         TOKEN_RATE_OUTDATED_DELAY = tokenRateOutdatedDelay_;
@@ -222,4 +226,5 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
     error ErrorNotBridgeOrTokenRatePusher();
     error ErrorL1TimestampExceededAllowedClockLag(uint256 tokenRate_, uint256 rateL1Timestamp_);
     error ErrorTokenRateIsOutOfRange(uint256 tokenRate_, uint256 rateL1Timestamp_);
+    error ErrorMaxAllowedTokenRateDeviationPerDayBiggerThanBasicPointScale();
 }
