@@ -84,6 +84,16 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         return _unwrap(msg.sender, tokenAmount_);
     }
 
+    /// @notice Exchanges rebaseable token to non-rebasable by providing rebaseable token shares.
+    /// @param sharesAmount_ amount of rebaseable token shares to unwrap.
+    /// @return amount of non-rebaseable token user receives after unwrap.
+    function unwrapShares(uint256 sharesAmount_) external returns (uint256) {
+        if (sharesAmount_ == 0) revert ErrorZeroSharesUnwrap();
+        _burnShares(msg.sender, sharesAmount_);
+        TOKEN_TO_WRAP_FROM.safeTransfer(msg.sender, sharesAmount_);
+        return sharesAmount_;
+    }
+
     /// @inheritdoc IBridgeWrapper
     function bridgeWrap(address account_, uint256 sharesAmount_) external onlyBridge returns (uint256) {
         return _wrap(L2_ERC20_TOKEN_BRIDGE, account_, sharesAmount_);
@@ -407,6 +417,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
 
     error ErrorZeroSharesWrap();
     error ErrorZeroTokensUnwrap();
+    error ErrorZeroSharesUnwrap();
     error ErrorTokenRateDecimalsIsZero();
     error ErrorWrongOracleUpdateTime();
     error ErrorTrasferToRebasableContract();
