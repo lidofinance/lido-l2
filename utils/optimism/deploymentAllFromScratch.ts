@@ -254,6 +254,7 @@ export default function deploymentAll(
             decimals,
             expectedL2TokenProxyAddress,
             expectedL2TokenRateOracleProxyAddress,
+            decimals,
             expectedL2TokenBridgeProxyAddress,
             options?.overrides,
           ],

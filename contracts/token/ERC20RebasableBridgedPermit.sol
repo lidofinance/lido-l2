@@ -25,9 +25,18 @@ contract ERC20RebasableBridgedPermit is ERC20RebasableBridged, PermitExtension, 
         uint8 decimals_,
         address tokenToWrapFrom_,
         address tokenRateOracle_,
+        uint8 tokenRateOracleDecimals_,
         address bridge_
     )
-        ERC20RebasableBridged(name_, symbol_, decimals_, tokenToWrapFrom_, tokenRateOracle_, bridge_)
+        ERC20RebasableBridged(
+            name_,
+            symbol_,
+            decimals_,
+            tokenToWrapFrom_,
+            tokenRateOracle_,
+            tokenRateOracleDecimals_,
+            bridge_
+        )
         PermitExtension(name_, version_)
     {
     }

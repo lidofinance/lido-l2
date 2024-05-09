@@ -426,6 +426,7 @@ async function tokenProxied(
       decimalsToSet,
       wrappedToken.address,
       tokenRateOracle.address,
+      18,
       owner.address
     );
 

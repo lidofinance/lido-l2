@@ -63,6 +63,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     /// @param decimals_ The decimals places of the token
     /// @param tokenToWrapFrom_ address of the ERC20 token to wrap
     /// @param tokenRateOracle_ address of oracle that returns tokens rate
+    /// @param tokenRateOracleDecimals_ Decimals of the oracle response.
     /// @param l2ERC20TokenBridge_ The bridge address which allows to mint/burn tokens
     constructor(
         string memory name_,
@@ -70,14 +71,12 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         uint8 decimals_,
         address tokenToWrapFrom_,
         address tokenRateOracle_,
+        uint8 tokenRateOracleDecimals_,
         address l2ERC20TokenBridge_
     ) ERC20Metadata(name_, symbol_, decimals_) {
-        if (ITokenRateOracle(tokenRateOracle_).decimals() == uint8(0)) {
-            revert ErrorTokenRateDecimalsIsZero();
-        }
         TOKEN_TO_WRAP_FROM = IERC20(tokenToWrapFrom_);
         TOKEN_RATE_ORACLE = ITokenRateOracle(tokenRateOracle_);
-        TOKEN_RATE_ORACLE_DECIMALS = TOKEN_RATE_ORACLE.decimals();
+        TOKEN_RATE_ORACLE_DECIMALS = tokenRateOracleDecimals_;
         L2_ERC20_TOKEN_BRIDGE = l2ERC20TokenBridge_;
     }
 

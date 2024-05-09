@@ -1140,6 +1140,7 @@ async function ctxFactory() {
     decimals,
     l2TokenNonRebasableStub.address,
     tokenRateOracle.address,
+    18,
     l2TokenBridgeProxyAddress
   );
 
@@ -1319,6 +1320,7 @@ async function getL2TokenBridgeImpl(deployer: SignerWithAddress, l1TokenBridgeEO
     decimals,
     l2TokenNonRebasableStub.address,
     tokenRateOracle.address,
+    18,
     l2TokenBridgeProxyAddress
   );
 

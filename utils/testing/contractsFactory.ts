@@ -97,6 +97,7 @@ export async function erc20RebasableBridgedPermitUnderProxy(
         decimals,
         erc20BridgedPermit.address,
         tokenRateOracle.address,
+        18,
         bridge
     );
 
