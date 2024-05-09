@@ -31,7 +31,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
   .test("initialize() :: petrified", async (ctx) => {
     const { deployer, l2TokenBridgeEOA } = ctx.accounts;
 
-    const l1LidoTokensBridgeImpl = await getL1LidoTokensBridgeImpl(deployer, l2TokenBridgeEOA);
+    const l1LidoTokensBridgeImpl = await getL1LidoTokensBridgeImpl(deployer, l2TokenBridgeEOA.address);
 
     const petrifiedVersionMark = hre.ethers.constants.MaxUint256;
     assert.equalBN(await l1LidoTokensBridgeImpl.getContractVersion(), petrifiedVersionMark);
@@ -42,10 +42,19 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
     );
   })
 
+  .test("initialize() :: zero address L2 bridge", async (ctx) => {
+    const { deployer } = ctx.accounts;
+
+    await assert.revertsWith(
+      getL1LidoTokensBridgeImpl(deployer, hre.ethers.constants.AddressZero),
+      "ErrorZeroAddressL2Bridge()"
+    );
+  })
+
   .test("initialize() :: don't allow to initialize twice", async (ctx) => {
     const { deployer, l2TokenBridgeEOA } = ctx.accounts;
 
-    const l1LidoTokensBridgeImpl = await getL1LidoTokensBridgeImpl(deployer, l2TokenBridgeEOA);
+    const l1LidoTokensBridgeImpl = await getL1LidoTokensBridgeImpl(deployer, l2TokenBridgeEOA.address);
 
     const l1TokenBridgeProxy = await new OssifiableProxy__factory(
       deployer
@@ -73,7 +82,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
   .test("finalizeUpgrade_v2() :: bridging manager uninitialized", async (ctx) => {
     const { deployer, l2TokenBridgeEOA } = ctx.accounts;
 
-    const l1LidoTokensBridgeImpl = await getL1LidoTokensBridgeImpl(deployer, l2TokenBridgeEOA);
+    const l1LidoTokensBridgeImpl = await getL1LidoTokensBridgeImpl(deployer, l2TokenBridgeEOA.address);
 
     await assert.revertsWith(new OssifiableProxy__factory(deployer).deploy(
       l1LidoTokensBridgeImpl.address,
@@ -94,7 +103,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
       ])
     );
 
-    const l1LidoTokensBridgeImpl = await getL1LidoTokensBridgeImpl(deployer, l2TokenBridgeEOA);
+    const l1LidoTokensBridgeImpl = await getL1LidoTokensBridgeImpl(deployer, l2TokenBridgeEOA.address);
     await proxy.proxy__upgradeToAndCall(
       l1LidoTokensBridgeImpl.address,
       L1LidoTokensBridge__factory.createInterface().encodeFunctionData("finalizeUpgrade_v2"),
@@ -1167,7 +1176,7 @@ async function packedTokenRateAndTimestamp(l1Provider: JsonRpcProvider, l1Token:
   return ethers.utils.hexConcat([stEthPerTokenStr, blockTimestampStr]);
 }
 
-async function getL1LidoTokensBridgeImpl(deployer: SignerWithAddress, l2TokenBridgeEOA: SignerWithAddress) {
+async function getL1LidoTokensBridgeImpl(deployer: SignerWithAddress, l2TokenBridge: string) {
   const tokenRate = BigNumber.from('1164454276599657236');
 
   const l1MessengerStub = await new CrossDomainMessengerStub__factory(
@@ -1202,7 +1211,7 @@ async function getL1LidoTokensBridgeImpl(deployer: SignerWithAddress, l2TokenBri
     deployer
   ).deploy(
     l1MessengerStub.address,
-    l2TokenBridgeEOA.address,
+    l2TokenBridge,
     l1TokenNonRebasableStub.address,
     l1TokenRebasableStub.address,
     l2TokenNonRebasableStub.address,

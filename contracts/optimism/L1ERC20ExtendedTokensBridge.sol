@@ -47,6 +47,9 @@ abstract contract L1ERC20ExtendedTokensBridge is
         l2TokenNonRebasable_,
         l2TokenRebasable_
     ) {
+        if (l2TokenBridge_ == address(0)) {
+            revert ErrorZeroAddressL2Bridge();
+        }
         L2_TOKEN_BRIDGE = l2TokenBridge_;
     }
 
@@ -180,4 +183,5 @@ abstract contract L1ERC20ExtendedTokensBridge is
     function _tokenRate() virtual internal view returns (uint256);
 
     error ErrorSenderNotEOA();
+    error ErrorZeroAddressL2Bridge();
 }

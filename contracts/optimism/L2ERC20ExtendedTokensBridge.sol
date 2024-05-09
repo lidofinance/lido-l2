@@ -53,6 +53,9 @@ contract L2ERC20ExtendedTokensBridge is
         l2TokenNonRebasable_,
         l2TokenRebasable_
     ) {
+        if (l1TokenBridge_ == address(0)) {
+            revert ErrorZeroAddressL1Bridge();
+        }
         L1_TOKEN_BRIDGE = l1TokenBridge_;
     }
 
@@ -205,4 +208,5 @@ contract L2ERC20ExtendedTokensBridge is
     }
 
     error ErrorSenderNotEOA();
+    error ErrorZeroAddressL1Bridge();
 }
