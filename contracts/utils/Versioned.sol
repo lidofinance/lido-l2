@@ -3,7 +3,7 @@
 
 pragma solidity 0.8.10;
 
-import {UnstructuredStorage} from "../lib//UnstructuredStorage.sol";
+import {UnstructuredStorage} from "../lib/UnstructuredStorage.sol";
 
 /// @dev A copy of Versioned.sol contract from Lido on Ethereum protocol
 ///      https://github.com/lidofinance/lido-dao/blob/master/contracts/0.8.9/utils/Versioned.sol
@@ -36,23 +36,10 @@ contract Versioned {
         return CONTRACT_VERSION_POSITION.getStorageUint256();
     }
 
-    function _checkContractVersion(uint256 version) internal view {
-        uint256 expectedVersion = getContractVersion();
-        if (version != expectedVersion) {
-            revert UnexpectedContractVersion(expectedVersion, version);
-        }
-    }
-
     /// @dev Sets the contract version to N. Should be called from the initialize() function.
     function _initializeContractVersionTo(uint256 version) internal {
         if (getContractVersion() != 0) revert NonZeroContractVersionOnInit();
         _setContractVersion(version);
-    }
-
-    /// @dev Updates the contract version. Should be called from a finalizeUpgrade_vN() function.
-    function _updateContractVersion(uint256 newVersion) internal {
-        if (newVersion != getContractVersion() + 1) revert InvalidContractVersionIncrement();
-        _setContractVersion(newVersion);
     }
 
     function _setContractVersion(uint256 version) private {

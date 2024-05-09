@@ -71,7 +71,6 @@ contract RebasableAndNonRebasableTokens {
         _;
     }
 
-    error ErrorUnsupportedL1Token(address l1Token);
     error ErrorUnsupportedL2Token(address l2Token);
     error ErrorUnsupportedL1L2TokensPair(address l1Token, address l2Token);
     error ErrorAccountIsZeroAddress();

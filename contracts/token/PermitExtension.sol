@@ -86,7 +86,7 @@ abstract contract PermitExtension is IERC2612, EIP712 {
     /// @dev EIP-5267. Returns the fields and values that describe the domain separator
     /// used by this contract for EIP-712 signature.
     function eip712Domain()
-        public
+        external
         view
         virtual
         returns (

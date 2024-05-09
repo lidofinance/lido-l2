@@ -156,7 +156,7 @@ abstract contract L1ERC20ExtendedTokensBridge is
     ) internal returns (uint256) {
         if (amount_ != 0) {
             IERC20(l1Token_).safeTransferFrom(from_, address(this), amount_);
-            if(l1Token_ == L1_TOKEN_REBASABLE) {
+            if (l1Token_ == L1_TOKEN_REBASABLE) {
                 IERC20(l1Token_).safeIncreaseAllowance(L1_TOKEN_NON_REBASABLE, amount_);
                 return IERC20Wrapper(L1_TOKEN_NON_REBASABLE).wrap(amount_);
             }
@@ -164,6 +164,10 @@ abstract contract L1ERC20ExtendedTokensBridge is
         return amount_;
     }
 
+    /// @dev Helper that simplifies calling encoding by DepositDataCodec.
+    ///      Encodes token rate, it's L1 timestamp and optional data.
+    /// @param data_ Optional data to forward to L2.
+    /// @return encoded data in bytes form.
     function _encodeInputDepositData(bytes calldata data_) internal view returns (bytes memory)  {
         return DepositDataCodec.encodeDepositData(DepositDataCodec.DepositData({
             rate: uint96(_tokenRate()),

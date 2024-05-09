@@ -243,7 +243,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     ) internal onlyNonZeroAccount(from_) onlyNonZeroAccount(to_) {
         uint256 sharesToTransfer = _getSharesByTokens(amount_);
         _transferShares(from_, to_, sharesToTransfer);
-        _emitTransferEvents(from_, to_, amount_ ,sharesToTransfer);
+        _emitTransferEvents(from_, to_, amount_, sharesToTransfer);
     }
 
     /// @dev Updates owner_'s allowance for spender_ based on spent amount_. Does not update
@@ -286,16 +286,14 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     }
 
     function _getTokensByShares(uint256 sharesAmount_) internal view returns (uint256) {
-        (uint256 tokensRate, uint256 decimals) = _getTokenRateAndDecimal();
-        return (sharesAmount_ * tokensRate) / (10 ** decimals);
+        return (sharesAmount_ * _getTokenRate()) / (10 ** TOKEN_RATE_ORACLE_DECIMALS);
     }
 
     function _getSharesByTokens(uint256 tokenAmount_) internal view returns (uint256) {
-        (uint256 tokensRate, uint256 decimals) = _getTokenRateAndDecimal();
-        return (tokenAmount_ * (10 ** decimals)) / tokensRate;
+        return (tokenAmount_ * (10 ** TOKEN_RATE_ORACLE_DECIMALS)) / _getTokenRate();
     }
 
-    function _getTokenRateAndDecimal() internal view returns (uint256, uint256) {
+    function _getTokenRate() internal view returns (uint256) {
         //slither-disable-next-line unused-return
         (
             /* roundId_ */,
@@ -307,7 +305,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
 
         if (updatedAt == 0) revert ErrorWrongOracleUpdateTime();
 
-        return (uint256(answer), uint256(TOKEN_RATE_ORACLE_DECIMALS));
+        return uint256(answer);
     }
 
     /// @dev Creates `amount_` shares and assigns them to `account_`, increasing the total shares supply
@@ -320,7 +318,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         _setTotalShares(_getTotalShares() + amount_);
         _getShares()[recipient_] = _getShares()[recipient_] + amount_;
         uint256 tokensAmount = _getTokensByShares(amount_);
-        _emitTransferEvents(address(0), recipient_, tokensAmount ,amount_);
+        _emitTransferEvents(address(0), recipient_, tokensAmount, amount_);
     }
 
     /// @dev Destroys `amount_` shares from `account_`, reducing the total shares supply.
@@ -335,7 +333,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         _setTotalShares(_getTotalShares() - amount_);
         _getShares()[account_] = accountShares - amount_;
         uint256 tokensAmount = _getTokensByShares(amount_);
-        _emitTransferEvents(account_, address(0), tokensAmount ,amount_);
+        _emitTransferEvents(account_, address(0), tokensAmount, amount_);
     }
 
     /// @dev  Moves `sharesAmount_` shares from `sender_` to `recipient_`.

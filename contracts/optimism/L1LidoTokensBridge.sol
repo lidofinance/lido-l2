@@ -50,7 +50,7 @@ contract L1LidoTokensBridge is L1ERC20ExtendedTokensBridge, Versioned {
 
     /// @notice A function to finalize upgrade to v2 (from v1).
     function finalizeUpgrade_v2() external {
-        if(!_isBridgingManagerInitialized()) {
+        if (!_isBridgingManagerInitialized()) {
             revert ErrorBridgingManagerIsNotInitialized();
         }
         _initializeContractVersionTo(2);

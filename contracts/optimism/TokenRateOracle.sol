@@ -158,7 +158,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         uint256 topTokenRateLimit = _getTokenRate() * (BASIS_POINT_SCALE + allowedTokenRateDeviation) /
             BASIS_POINT_SCALE;
         uint256 bottomTokenRateLimit = 0;
-        if(allowedTokenRateDeviation <= BASIS_POINT_SCALE) {
+        if (allowedTokenRateDeviation <= BASIS_POINT_SCALE) {
             bottomTokenRateLimit = (_getTokenRate() * (BASIS_POINT_SCALE - allowedTokenRateDeviation) /
             BASIS_POINT_SCALE);
         }
@@ -167,11 +167,11 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
                newTokenRate_ >= bottomTokenRateLimit;
     }
 
-    function _isCallerBridgeOrMessegerWithTokenRatePusher(address caller_) internal view returns (bool) {
-        if(caller_ == L2_ERC20_TOKEN_BRIDGE) {
+    function _isCallerBridgeOrMessengerWithTokenRatePusher(address caller_) internal view returns (bool) {
+        if (caller_ == L2_ERC20_TOKEN_BRIDGE) {
             return true;
         }
-        if(caller_ == address(MESSENGER) && MESSENGER.xDomainMessageSender() == L1_TOKEN_RATE_PUSHER) {
+        if (caller_ == address(MESSENGER) && MESSENGER.xDomainMessageSender() == L1_TOKEN_RATE_PUSHER) {
             return true;
         }
         return false;
@@ -203,7 +203,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
     }
 
     modifier onlyBridgeOrTokenRatePusher() {
-        if(!_isCallerBridgeOrMessegerWithTokenRatePusher(msg.sender)) {
+        if (!_isCallerBridgeOrMessengerWithTokenRatePusher(msg.sender)) {
             revert ErrorNotBridgeOrTokenRatePusher();
         }
         _;

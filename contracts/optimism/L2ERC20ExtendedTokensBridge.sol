@@ -65,7 +65,7 @@ contract L2ERC20ExtendedTokensBridge is
 
     /// @notice A function to finalize upgrade to v2 (from v1).
     function finalizeUpgrade_v2() external {
-        if(!_isBridgingManagerInitialized()) {
+        if (!_isBridgingManagerInitialized()) {
             revert ErrorBridgingManagerIsNotInitialized();
         }
         _initializeExtendedTokensBridge();
@@ -119,7 +119,7 @@ contract L2ERC20ExtendedTokensBridge is
         bytes calldata data_
     )
         external
-        whenDepositsEnabled()
+        whenDepositsEnabled
         onlySupportedL1L2TokensPair(l1Token_, l2Token_)
         onlyFromCrossDomainAccount(L1_TOKEN_BRIDGE)
     {
@@ -175,7 +175,7 @@ contract L2ERC20ExtendedTokensBridge is
         uint256 amount_
     ) internal returns (uint256) {
         uint256 tokenAmount = amount_;
-        if(l2Token_ == L2_TOKEN_REBASABLE) {
+        if (l2Token_ == L2_TOKEN_REBASABLE) {
             IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeMint(address(this), amount_);
             if (amount_ != 0) {
                 tokenAmount = ERC20RebasableBridged(l2Token_).bridgeWrap(to_, amount_);
@@ -197,7 +197,7 @@ contract L2ERC20ExtendedTokensBridge is
         uint256 amount_
     ) internal returns (uint256) {
         uint256 nonRebasableTokenAmount = amount_;
-        if(l2Token_ == L2_TOKEN_REBASABLE && (amount_ != 0)) {
+        if (l2Token_ == L2_TOKEN_REBASABLE && (amount_ != 0)) {
             nonRebasableTokenAmount = ERC20RebasableBridged(L2_TOKEN_REBASABLE).bridgeUnwrap(from_, amount_);
         }
         IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeBurn(from_, nonRebasableTokenAmount);
