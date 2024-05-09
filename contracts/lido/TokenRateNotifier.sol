@@ -75,7 +75,7 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
         if (observerIndexToRemove == INDEX_NOT_FOUND) {
             revert ErrorNoObserverToRemove();
         }
-        if (observers.length > 1) {
+        if (observerIndexToRemove != observers.length - 1) {
             observers[observerIndexToRemove] = observers[observers.length - 1];
         }
         observers.pop();

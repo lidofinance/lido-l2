@@ -129,7 +129,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         }
 
         /// @dev allow token rate to be within some configurable range that depens on time it wasn't updated.
-        if (!_isTokenRateWithinAllowedRange(tokenRate_, rateL1Timestamp_)) {
+        if (tokenRate_ != _getTokenRate() && !_isTokenRateWithinAllowedRange(tokenRate_, rateL1Timestamp_)) {
             revert ErrorTokenRateIsOutOfRange(tokenRate_, rateL1Timestamp_);
         }
 

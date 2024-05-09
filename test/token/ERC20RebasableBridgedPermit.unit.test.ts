@@ -598,7 +598,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     const { rebasableProxied } = ctx.contracts;
     const { user1, owner } = ctx.accounts;
 
-    await assert.revertsWith(rebasableProxied.connect(owner).bridgeUnwrap(user1.address,  wei`4 ether`), "ErrorNotEnoughBalance()");
+    await assert.revertsWith(rebasableProxied.connect(owner).bridgeUnwrap(user1.address, wei`4 ether`), "ErrorNotEnoughBalance()");
   })
 
   .test("bridgeUnwrap() :: with wrong oracle update time", async (ctx) => {

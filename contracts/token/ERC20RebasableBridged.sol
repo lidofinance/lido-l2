@@ -46,6 +46,9 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     /// @notice Oracle contract used to get token rate for wrapping/unwrapping tokens.
     ITokenRateOracle public immutable TOKEN_RATE_ORACLE;
 
+    /// @notice Decimals of the oracle response.
+    uint8 public immutable TOKEN_RATE_ORACLE_DECIMALS;
+
     /// @dev token allowance slot position.
     bytes32 internal constant TOKEN_ALLOWANCE_POSITION = keccak256("ERC20RebasableBridged.TOKEN_ALLOWANCE_POSITION");
 
@@ -69,8 +72,12 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         address tokenRateOracle_,
         address l2ERC20TokenBridge_
     ) ERC20Metadata(name_, symbol_, decimals_) {
+        if (ITokenRateOracle(tokenRateOracle_).decimals() == uint8(0)) {
+            revert ErrorTokenRateDecimalsIsZero();
+        }
         TOKEN_TO_WRAP_FROM = IERC20(tokenToWrapFrom_);
         TOKEN_RATE_ORACLE = ITokenRateOracle(tokenRateOracle_);
+        TOKEN_RATE_ORACLE_DECIMALS = TOKEN_RATE_ORACLE.decimals();
         L2_ERC20_TOKEN_BRIDGE = l2ERC20TokenBridge_;
     }
 
@@ -289,10 +296,6 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     }
 
     function _getTokenRateAndDecimal() internal view returns (uint256, uint256) {
-        uint8 rateDecimals = TOKEN_RATE_ORACLE.decimals();
-
-        if (rateDecimals == uint8(0)) revert ErrorTokenRateDecimalsIsZero();
-
         //slither-disable-next-line unused-return
         (
             /* roundId_ */,
@@ -304,7 +307,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
 
         if (updatedAt == 0) revert ErrorWrongOracleUpdateTime();
 
-        return (uint256(answer), uint256(rateDecimals));
+        return (uint256(answer), uint256(TOKEN_RATE_ORACLE_DECIMALS));
     }
 
     /// @dev Creates `amount_` shares and assigns them to `account_`, increasing the total shares supply
