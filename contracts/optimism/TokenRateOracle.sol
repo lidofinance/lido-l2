@@ -48,14 +48,14 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
     /// @notice Decimals of the oracle response.
     uint8 public constant DECIMALS = 18;
 
-    /// @notice Basic point scale.
-    uint256 private constant BASIS_POINT_SCALE = 1e4;
-
     /// @notice Max allowed token rate value.
-    uint256 private constant MAX_ALLOWED_TOKEN_RATE = 2*10 ** 18;
+    uint256 public constant MAX_ALLOWED_TOKEN_RATE = 2*10 ** 18;
 
     /// @notice Min allowed token rate value.
-    uint256 private constant MIN_ALLOWED_TOKEN_RATE = 1*10 ** 18;
+    uint256 public constant MIN_ALLOWED_TOKEN_RATE = 1*10 ** 18;
+
+    /// @notice Basic point scale.
+    uint256 private constant BASIS_POINT_SCALE = 1e4;
 
     /// @dev Location of the slot with TokenRateData
     bytes32 private constant TOKEN_RATE_DATA_SLOT = keccak256("TokenRateOracle.TOKEN_RATE_DATA_SLOT");
@@ -88,10 +88,10 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
 
     function initialize(uint256 tokenRate_, uint256 rateL1Timestamp_) external {
         if (tokenRate_ < MIN_ALLOWED_TOKEN_RATE || tokenRate_ > MAX_ALLOWED_TOKEN_RATE) {
-            revert ErrorTokenRateIsOutOfRange(tokenRate_, rateL1Timestamp_);
+            revert ErrorTokenRateInitializationIsOutOfAllowedRange(tokenRate_);
         }
-        if (rateL1Timestamp_ > block.timestamp + MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
-            revert ErrorL1TimestampExceededAllowedClockLag(tokenRate_, rateL1Timestamp_);
+        if (rateL1Timestamp_ < block.timestamp || rateL1Timestamp_ > block.timestamp + MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
+            revert ErrorL1TimestampInitializationIsOutOfAllowedRange(rateL1Timestamp_);
         }
         _initializeContractVersionTo(1);
         _setTokenRateAndL1Timestamp(uint192(tokenRate_), uint64(rateL1Timestamp_));
@@ -172,7 +172,6 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
             bottomTokenRateLimit = (_getTokenRate() * (BASIS_POINT_SCALE - allowedTokenRateDeviation) /
             BASIS_POINT_SCALE);
         }
-
         return newTokenRate_ <= topTokenRateLimit &&
                newTokenRate_ >= bottomTokenRateLimit;
     }
@@ -237,4 +236,6 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
     error ErrorL1TimestampExceededAllowedClockLag(uint256 tokenRate_, uint256 rateL1Timestamp_);
     error ErrorTokenRateIsOutOfRange(uint256 tokenRate_, uint256 rateL1Timestamp_);
     error ErrorMaxAllowedTokenRateDeviationPerDayBiggerThanBasicPointScale();
+    error ErrorTokenRateInitializationIsOutOfAllowedRange(uint256 tokenRate_);
+    error ErrorL1TimestampInitializationIsOutOfAllowedRange(uint256 rateL1Timestamp_);
 }

@@ -93,13 +93,21 @@ unit("TokenRateOracle", ctxFactory)
       500
     );
 
+    const tokenRateMin = await tokenRateOracleImpl.MIN_ALLOWED_TOKEN_RATE();
+    const tokenRateMax = await tokenRateOracleImpl.MAX_ALLOWED_TOKEN_RATE();
+
     await assert.revertsWith(
-      tokenRateOracleImpl.initialize(10, blockTimestamp),
-      "ErrorTokenRateIsOutOfRange(" + 10 + ", " + blockTimestamp + ")"
+      tokenRateOracleImpl.initialize(tokenRateMin.sub(1), blockTimestamp),
+      "ErrorTokenRateInitializationIsOutOfAllowedRange(" + tokenRateMin.sub(1) + ")"
+    );
+
+    await assert.revertsWith(
+      tokenRateOracleImpl.initialize(tokenRateMax.add(1), blockTimestamp),
+      "ErrorTokenRateInitializationIsOutOfAllowedRange(" + tokenRateMax.add(1) + ")"
     );
   })
 
-  .test("initialize() :: time is wrong", async (ctx) => {
+  .test("initialize() :: time is out of init range", async (ctx) => {
     const { deployer, bridge, l1TokenBridgeEOA } = ctx.accounts;
     const { l2MessengerStub } = ctx.contracts;
     const { tokenRate, blockTimestamp, maxAllowedL2ToL1ClockLag } = ctx.constants;
@@ -113,11 +121,17 @@ unit("TokenRateOracle", ctxFactory)
       500
     );
 
-    const wrongTime = blockTimestamp.add(maxAllowedL2ToL1ClockLag).add(20);
+    const wrongTimeMax = blockTimestamp.add(maxAllowedL2ToL1ClockLag).add(20);
+    const wrongTimeMin = blockTimestamp.sub(20);
 
     await assert.revertsWith(
-      tokenRateOracleImpl.initialize(tokenRate, wrongTime),
-      "ErrorL1TimestampExceededAllowedClockLag(" + tokenRate + ", " + wrongTime + ")"
+      tokenRateOracleImpl.initialize(tokenRate, wrongTimeMax),
+      "ErrorL1TimestampInitializationIsOutOfAllowedRange(" + wrongTimeMax + ")"
+    );
+
+    await assert.revertsWith(
+      tokenRateOracleImpl.initialize(tokenRate, wrongTimeMin),
+      "ErrorL1TimestampInitializationIsOutOfAllowedRange(" + wrongTimeMin + ")"
     );
   })
 
@@ -371,7 +385,7 @@ async function ctxFactory() {
   const tokenRateOutdatedDelay = BigNumber.from(86400);            // 1 day
   const maxAllowedL2ToL1ClockLag = BigNumber.from(86400 * 2);      // 2 days
   const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);  // 5%
-  const blockTimestamp = await getBlockTimestamp(0);
+  const blockTimestamp = await getBlockTimestamp(10);
 
   const [deployer, bridge, stranger, l1TokenBridgeEOA] = await hre.ethers.getSigners();
 
