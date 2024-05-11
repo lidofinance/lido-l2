@@ -108,6 +108,11 @@ contract L2ERC20ExtendedTokensBridge is
         onlyNonZeroAccount(to_)
         onlySupportedL2Token(l2Token_)
     {
+        /// @dev L1_TOKEN_REBASABLE doesn't allow to transfer to itself.
+        ///      To prevent stucking tokens on L1 bridge this check was added.
+        if (to_ == L1_TOKEN_REBASABLE) {
+            revert ErrorTransferToL1TokenRebasableContract();
+        }
         _withdrawTo(l2Token_, msg.sender, to_, amount_, l1Gas_, data_);
         emit WithdrawalInitiated(_getL1Token(l2Token_), l2Token_, msg.sender, to_, amount_, data_);
     }
@@ -209,4 +214,5 @@ contract L2ERC20ExtendedTokensBridge is
 
     error ErrorSenderNotEOA();
     error ErrorZeroAddressL1Bridge();
+    error ErrorTransferToL1TokenRebasableContract();
 }

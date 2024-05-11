@@ -23,7 +23,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
   .test("initial state", async (ctx) => {
     const {
       l2TokenBridge,
-      accounts: {l1TokenBridgeEOA, l2MessengerStubEOA},
+      accounts: { l1TokenBridgeEOA, l2MessengerStubEOA },
       stubs: { l1TokenNonRebasable, l2TokenNonRebasable, l1TokenRebasable, l2TokenRebasable },
     } = ctx;
 
@@ -766,6 +766,32 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
 
     assert.equalBN(await l2TokenNonRebasable.balanceOf(recipient.address), recipientBalanceBefore);
     assert.equalBN(await l2TokenNonRebasable.totalSupply(), totalSupplyBefore);
+  })
+
+  .test("withdrawTo() :: sending to L1 stETH address", async (ctx) => {
+    const {
+      l2TokenBridge,
+      accounts: { recipient },
+      stubs: {
+        l1TokenRebasable,
+        l2TokenRebasable
+      },
+    } = ctx;
+
+    const l1Gas = wei`1 wei`;
+    const data = "0xdeadbeaf";
+
+    await assert.revertsWith(
+      l2TokenBridge
+        .connect(recipient)
+        .withdrawTo(
+          l2TokenRebasable.address,
+          l1TokenRebasable.address,
+          0,
+          l1Gas,
+          data),
+      "ErrorTransferToL1TokenRebasableContract()"
+    );
   })
 
   .test("finalizeDeposit() :: deposits disabled", async (ctx) => {
