@@ -187,6 +187,12 @@ unit("ERC20BridgedPermit", ctxFactory)
     );
 
     assert.equalBN(await erc20BridgedProxied.getContractVersion(), 2);
+
+    // can't initialize after finalizeUpgrade_v2
+    await assert.revertsWith(
+      erc20BridgedProxied.initialize("name", "symbol", "version"),
+      "NonZeroContractVersionOnInit()"
+    );
   })
 
   .test("approve()", async (ctx) => {
