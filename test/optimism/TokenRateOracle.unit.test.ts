@@ -122,16 +122,10 @@ unit("TokenRateOracle", ctxFactory)
     );
 
     const wrongTimeMax = blockTimestamp.add(maxAllowedL2ToL1ClockLag).add(20);
-    const wrongTimeMin = blockTimestamp.sub(20);
 
     await assert.revertsWith(
       tokenRateOracleImpl.initialize(tokenRate, wrongTimeMax),
       "ErrorL1TimestampInitializationIsOutOfAllowedRange(" + wrongTimeMax + ")"
-    );
-
-    await assert.revertsWith(
-      tokenRateOracleImpl.initialize(tokenRate, wrongTimeMin),
-      "ErrorL1TimestampInitializationIsOutOfAllowedRange(" + wrongTimeMin + ")"
     );
   })
 

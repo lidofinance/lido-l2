@@ -90,7 +90,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         if (tokenRate_ < MIN_ALLOWED_TOKEN_RATE || tokenRate_ > MAX_ALLOWED_TOKEN_RATE) {
             revert ErrorTokenRateInitializationIsOutOfAllowedRange(tokenRate_);
         }
-        if (rateL1Timestamp_ < block.timestamp || rateL1Timestamp_ > block.timestamp + MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
+        if (rateL1Timestamp_ > block.timestamp + MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
             revert ErrorL1TimestampInitializationIsOutOfAllowedRange(rateL1Timestamp_);
         }
         _initializeContractVersionTo(1);
@@ -134,7 +134,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
             revert ErrorL1TimestampExceededAllowedClockLag(tokenRate_, rateL1Timestamp_);
         }
 
-        /// @dev use only the more actual token rate
+        /// @dev Use only the most up-to-date token rate. Reverting should be avoided as it may occur occasionally.
         if (rateL1Timestamp_ <= _getRateL1Timestamp()) {
             emit DormantTokenRateUpdateIgnored(tokenRate_, rateL1Timestamp_, _getRateL1Timestamp());
             return;
