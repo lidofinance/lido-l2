@@ -12,8 +12,8 @@ interface ITokenRateOracle is ITokenRateUpdatable, IChainlinkAggregatorInterface
 
 /// @author kovalgek
 /// @notice Oracle for storing and providing token rate.
-///         CEXes should fetch the token rate specific to the chain for deposits/withdrawals;
-///         otherwise, utilizing the token rate from L1 for L2 transactions might lead to bad debt for the exchange.
+///         NB: Cross-chain apps and CEXes should fetch the token rate specific to the chain for deposits/withdrawals
+///         and compare against the token rate on L1 being a source of truth;
 /// @dev Token rate updates can be delivered from two sources: L1 token rate pusher and L2 bridge.
 contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
 
@@ -49,10 +49,10 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
     uint8 public constant DECIMALS = 18;
 
     /// @notice Max allowed token rate value.
-    uint256 public constant MAX_ALLOWED_TOKEN_RATE = 2*10 ** 18;
+    uint256 public constant MAX_ALLOWED_TOKEN_RATE = 1*10 ** 20;
 
     /// @notice Min allowed token rate value.
-    uint256 public constant MIN_ALLOWED_TOKEN_RATE = 1*10 ** 18;
+    uint256 public constant MIN_ALLOWED_TOKEN_RATE = 1*10 ** 16;
 
     /// @notice Basic point scale.
     uint256 private constant BASIS_POINT_SCALE = 1e4;
@@ -77,7 +77,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         uint256 maxAllowedTokenRateDeviationPerDay_
     ) CrossDomainEnabled(messenger_) {
         if (maxAllowedTokenRateDeviationPerDay_ > BASIS_POINT_SCALE) {
-            revert ErrorMaxAllowedTokenRateDeviationPerDayBiggerThanBasicPointScale();
+            revert ErrorMaxTokenRateDeviationIsOutOfRange();
         }
         L2_ERC20_TOKEN_BRIDGE = l2ERC20TokenBridge_;
         L1_TOKEN_RATE_PUSHER = l1TokenRatePusher_;
@@ -105,14 +105,14 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         uint256 updatedAt_,
         uint80 answeredInRound_
     ) {
-        uint80 roundId = uint80(_getRateL1Timestamp());
+        uint256 rateL1Timestamp = _getRateL1Timestamp();
 
         return (
-            roundId,
+            uint80(rateL1Timestamp),
             int256(uint256(_getTokenRate())),
-            _getRateL1Timestamp(),
-            _getRateL1Timestamp(),
-            roundId
+            rateL1Timestamp,
+            rateL1Timestamp,
+            uint80(rateL1Timestamp)
         );
     }
 
@@ -128,6 +128,8 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
 
     /// @inheritdoc ITokenRateUpdatable
     function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external onlyBridgeOrTokenRatePusher {
+        uint256 currentTokenRate = _getTokenRate();
+        uint256 currentRateL1Timestamp = _getRateL1Timestamp();
 
         /// @dev checks if the clock lag (i.e, time difference) between L1 and L2 exceeds the configurable threshold
         if (rateL1Timestamp_ > block.timestamp + MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
@@ -135,13 +137,14 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         }
 
         /// @dev Use only the most up-to-date token rate. Reverting should be avoided as it may occur occasionally.
-        if (rateL1Timestamp_ <= _getRateL1Timestamp()) {
-            emit DormantTokenRateUpdateIgnored(tokenRate_, rateL1Timestamp_, _getRateL1Timestamp());
+        if (rateL1Timestamp_ <= currentRateL1Timestamp) {
+            emit DormantTokenRateUpdateIgnored(tokenRate_, rateL1Timestamp_, currentRateL1Timestamp);
             return;
         }
 
         /// @dev allow token rate to be within some configurable range that depens on time it wasn't updated.
-        if (tokenRate_ != _getTokenRate() && !_isTokenRateWithinAllowedRange(tokenRate_, rateL1Timestamp_)) {
+        if (tokenRate_ != currentTokenRate &&
+            !_isTokenRateWithinAllowedRange(currentTokenRate, tokenRate_, currentRateL1Timestamp, rateL1Timestamp_)) {
             revert ErrorTokenRateIsOutOfRange(tokenRate_, rateL1Timestamp_);
         }
 
@@ -149,7 +152,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         if (rateL1Timestamp_ > block.timestamp) emit TokenRateL1TimestampIsInFuture(tokenRate_, rateL1Timestamp_);
 
         _setTokenRateAndL1Timestamp(uint192(tokenRate_), uint64(rateL1Timestamp_));
-        emit RateUpdated(_getTokenRate(), _getRateL1Timestamp());
+        emit RateUpdated(tokenRate_, rateL1Timestamp_);
     }
 
     /// @notice Returns flag that shows that token rate can be considered outdated.
@@ -160,20 +163,47 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
     /// @notice Allow tokenRate deviation from the previous value to be
     ///         ±`MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY` BP per day.
     function _isTokenRateWithinAllowedRange(
-        uint256 newTokenRate_, uint256 newRateL1Timestamp_
+        uint256 currentTokenRate_,
+        uint256 newTokenRate_,
+        uint256 currentRateL1Timestamp_,
+        uint256 newRateL1Timestamp_
     ) internal view returns (bool) {
-        uint256 rateL1TimestampDiff = newRateL1Timestamp_ - _getRateL1Timestamp();
+        uint256 allowedTokenRateDeviation = _allowedTokenRateDeviation(newRateL1Timestamp_, currentRateL1Timestamp_);
+        return newTokenRate_ <= _maxTokenRateLimit(currentTokenRate_, allowedTokenRateDeviation) &&
+               newTokenRate_ >= _minTokenRateLimit(currentTokenRate_, allowedTokenRateDeviation);
+    }
+
+    /// @dev Returns the allowed token deviation depending on the number of days passed since the last update.
+    function _allowedTokenRateDeviation(
+        uint256 newRateL1Timestamp_,
+        uint256 currentRateL1Timestamp_
+    ) internal view returns (uint256) {
+        uint256 rateL1TimestampDiff = newRateL1Timestamp_ - currentRateL1Timestamp_;
         uint256 roundedUpNumberOfDays = (rateL1TimestampDiff + ONE_DAY_SECONDS - 1) / ONE_DAY_SECONDS;
-        uint256 allowedTokenRateDeviation = roundedUpNumberOfDays * MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY;
-        uint256 topTokenRateLimit = _getTokenRate() * (BASIS_POINT_SCALE + allowedTokenRateDeviation) /
+        return roundedUpNumberOfDays * MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY;
+    }
+
+    /// @dev Returns the maximum allowable value for the token rate.
+    function _maxTokenRateLimit(
+        uint256 currentTokenRate,
+        uint256 allowedTokenRateDeviation
+    ) internal pure returns (uint256) {
+        uint256 maxTokenRateLimit = currentTokenRate * (BASIS_POINT_SCALE + allowedTokenRateDeviation) /
             BASIS_POINT_SCALE;
-        uint256 bottomTokenRateLimit = 0;
+        return (maxTokenRateLimit > MAX_ALLOWED_TOKEN_RATE) ? MAX_ALLOWED_TOKEN_RATE : maxTokenRateLimit;
+    }
+
+    /// @dev Returns the minimum allowable value for the token rate.
+    function _minTokenRateLimit(
+        uint256 currentTokenRate,
+        uint256 allowedTokenRateDeviation
+    ) internal pure returns (uint256) {
+        uint256 minTokenRateLimit = MIN_ALLOWED_TOKEN_RATE;
         if (allowedTokenRateDeviation <= BASIS_POINT_SCALE) {
-            bottomTokenRateLimit = (_getTokenRate() * (BASIS_POINT_SCALE - allowedTokenRateDeviation) /
+            minTokenRateLimit = (currentTokenRate * (BASIS_POINT_SCALE - allowedTokenRateDeviation) /
             BASIS_POINT_SCALE);
         }
-        return newTokenRate_ <= topTokenRateLimit &&
-               newTokenRate_ >= bottomTokenRateLimit;
+        return (minTokenRateLimit < MIN_ALLOWED_TOKEN_RATE) ? MIN_ALLOWED_TOKEN_RATE : minTokenRateLimit;
     }
 
     function _isCallerBridgeOrMessengerWithTokenRatePusher(address caller_) internal view returns (bool) {
@@ -235,7 +265,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
     error ErrorNotBridgeOrTokenRatePusher();
     error ErrorL1TimestampExceededAllowedClockLag(uint256 tokenRate_, uint256 rateL1Timestamp_);
     error ErrorTokenRateIsOutOfRange(uint256 tokenRate_, uint256 rateL1Timestamp_);
-    error ErrorMaxAllowedTokenRateDeviationPerDayBiggerThanBasicPointScale();
+    error ErrorMaxTokenRateDeviationIsOutOfRange();
     error ErrorTokenRateInitializationIsOutOfAllowedRange(uint256 tokenRate_);
     error ErrorL1TimestampInitializationIsOutOfAllowedRange(uint256 rateL1Timestamp_);
 }

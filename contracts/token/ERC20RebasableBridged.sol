@@ -17,16 +17,16 @@ interface IBridgeWrapper {
     /// @notice Returns bridge which can wrap/unwrap token on L2.
     function L2_ERC20_TOKEN_BRIDGE() external view returns (address);
 
-    /// @notice Exchanges non-rebaseable token (shares) to rebaseable token. Can be called by bridge only.
+    /// @notice Exchanges non-rebasable token (shares) to rebasable token. Can be called by bridge only.
     /// @param account_ an address of the account to exchange shares for.
-    /// @param sharesAmount_ amount of non-rebaseable token (shares).
-    /// @return Amount of rebaseable token.
+    /// @param sharesAmount_ amount of non-rebasable token (shares).
+    /// @return Amount of rebasable token.
     function bridgeWrap(address account_, uint256 sharesAmount_) external returns (uint256);
 
-    /// @notice Exchanges rebaseable token to non-rebasable (shares). Can be called by bridge only.
+    /// @notice Exchanges rebasable token to non-rebasable (shares). Can be called by bridge only.
     /// @param account_ an address of the account to exchange token for.
-    /// @param tokenAmount_ amount of rebaseable token to uwrap in exchange for non-rebaseable token (shares).
-    /// @return Amount of non-rebaseable token (shares) user receives after unwrap.
+    /// @param tokenAmount_ amount of rebasable token to uwrap in exchange for non-rebasable token (shares).
+    /// @return Amount of non-rebasable token (shares) user receives after unwrap.
     function bridgeUnwrap(address account_, uint256 tokenAmount_) external returns (uint256);
 }
 
@@ -63,7 +63,6 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     /// @param decimals_ The decimals places of the token
     /// @param tokenToWrapFrom_ address of the ERC20 token to wrap
     /// @param tokenRateOracle_ address of oracle that returns tokens rate
-    /// @param tokenRateOracleDecimals_ Decimals of the oracle response.
     /// @param l2ERC20TokenBridge_ The bridge address which allows to mint/burn tokens
     constructor(
         string memory name_,
@@ -71,12 +70,11 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         uint8 decimals_,
         address tokenToWrapFrom_,
         address tokenRateOracle_,
-        uint8 tokenRateOracleDecimals_,
         address l2ERC20TokenBridge_
     ) ERC20Metadata(name_, symbol_, decimals_) {
         TOKEN_TO_WRAP_FROM = IERC20(tokenToWrapFrom_);
         TOKEN_RATE_ORACLE = ITokenRateOracle(tokenRateOracle_);
-        TOKEN_RATE_ORACLE_DECIMALS = tokenRateOracleDecimals_;
+        TOKEN_RATE_ORACLE_DECIMALS = TOKEN_RATE_ORACLE.decimals();
         L2_ERC20_TOKEN_BRIDGE = l2ERC20TokenBridge_;
     }
 
@@ -90,14 +88,11 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         return _unwrap(msg.sender, tokenAmount_);
     }
 
-    /// @notice Exchanges rebaseable token to non-rebasable by providing rebaseable token shares.
-    /// @param sharesAmount_ amount of rebaseable token shares to unwrap.
-    /// @return amount of non-rebaseable token user receives after unwrap.
+    /// @notice Exchanges rebasable token to non-rebasable by providing rebasable token shares.
+    /// @param sharesAmount_ amount of rebasable token shares to unwrap.
+    /// @return amount of non-rebasable token user receives after unwrap.
     function unwrapShares(uint256 sharesAmount_) external returns (uint256) {
-        if (sharesAmount_ == 0) revert ErrorZeroSharesUnwrap();
-        _burnShares(msg.sender, sharesAmount_);
-        TOKEN_TO_WRAP_FROM.safeTransfer(msg.sender, sharesAmount_);
-        return sharesAmount_;
+        return _unwrapShares(msg.sender, sharesAmount_);
     }
 
     /// @inheritdoc IBridgeWrapper
@@ -383,12 +378,15 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
 
     function _unwrap(address account_, uint256 tokenAmount_) internal returns (uint256) {
         if (tokenAmount_ == 0) revert ErrorZeroTokensUnwrap();
-
         uint256 sharesAmount = _getSharesByTokens(tokenAmount_);
-        _burnShares(account_, sharesAmount);
-        TOKEN_TO_WRAP_FROM.safeTransfer(account_, sharesAmount);
+        return _unwrapShares(account_, sharesAmount);
+    }
 
-        return sharesAmount;
+    function _unwrapShares(address account_, uint256 sharesAmount_) internal returns (uint256) {
+        if (sharesAmount_ == 0) revert ErrorZeroSharesUnwrap();
+        _burnShares(account_, sharesAmount_);
+        TOKEN_TO_WRAP_FROM.safeTransfer(account_, sharesAmount_);
+        return sharesAmount_;
     }
 
     /// @dev validates that account_ is not zero address

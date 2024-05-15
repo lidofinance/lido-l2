@@ -110,8 +110,8 @@ contract L2ERC20ExtendedTokensBridge is
     {
         /// @dev L1_TOKEN_REBASABLE doesn't allow to transfer to itself.
         ///      To prevent stucking tokens on L1 bridge this check was added.
-        if (to_ == L1_TOKEN_REBASABLE) {
-            revert ErrorTransferToL1TokenRebasableContract();
+        if (to_ == L1_TOKEN_REBASABLE || to_ == L1_TOKEN_NON_REBASABLE) {
+            revert ErrorTransferToL1TokenContract();
         }
         _withdrawTo(l2Token_, msg.sender, to_, amount_, l1Gas_, data_);
         emit WithdrawalInitiated(_getL1Token(l2Token_), l2Token_, msg.sender, to_, amount_, data_);
@@ -163,11 +163,11 @@ contract L2ERC20ExtendedTokensBridge is
         uint32 l1Gas_,
         bytes calldata data_
     ) internal {
-        uint256 nonRebaseableAmountToWithdraw = _burnTokens(l2Token_, from_, amount_);
+        uint256 nonRebasableAmountToWithdraw = _burnTokens(l2Token_, from_, amount_);
 
         bytes memory message = abi.encodeWithSelector(
             IL1ERC20Bridge.finalizeERC20Withdrawal.selector,
-            _getL1Token(l2Token_), l2Token_, from_, to_, nonRebaseableAmountToWithdraw, data_
+            _getL1Token(l2Token_), l2Token_, from_, to_, nonRebasableAmountToWithdraw, data_
         );
         sendCrossDomainMessage(L1_TOKEN_BRIDGE, l1Gas_, message);
     }
@@ -204,15 +204,19 @@ contract L2ERC20ExtendedTokensBridge is
         address from_,
         uint256 amount_
     ) internal returns (uint256) {
-        uint256 nonRebasableTokenAmount = amount_;
-        if (l2Token_ == L2_TOKEN_REBASABLE && (amount_ != 0)) {
-            nonRebasableTokenAmount = ERC20RebasableBridged(L2_TOKEN_REBASABLE).bridgeUnwrap(from_, amount_);
+        if (l2Token_ == L2_TOKEN_REBASABLE) {
+            uint256 nonRebasableTokenAmount = ERC20RebasableBridged(L2_TOKEN_REBASABLE).getSharesByTokens(amount_);
+            if (amount_ != 0 && nonRebasableTokenAmount != 0) {
+                ERC20RebasableBridged(L2_TOKEN_REBASABLE).bridgeUnwrap(from_, amount_);
+                IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeBurn(from_, nonRebasableTokenAmount);
+            }
+            return nonRebasableTokenAmount;
         }
-        IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeBurn(from_, nonRebasableTokenAmount);
-        return nonRebasableTokenAmount;
+        IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeBurn(from_, amount_);
+        return amount_;
     }
 
     error ErrorSenderNotEOA();
     error ErrorZeroAddressL1Bridge();
-    error ErrorTransferToL1TokenRebasableContract();
+    error ErrorTransferToL1TokenContract();
 }

@@ -144,7 +144,7 @@ unit("TokenRateOracle", ctxFactory)
         86400,
         maxAllowedTokenRateDeviationPerDay
       ),
-      "ErrorMaxAllowedTokenRateDeviationPerDayBiggerThanBasicPointScale()"
+      "ErrorMaxTokenRateDeviationIsOutOfRange()"
     );
   })
 
@@ -292,6 +292,39 @@ unit("TokenRateOracle", ctxFactory)
     );
 
     await tokenRateOracle.connect(bridge).updateRate(tokenRateSizeDoesMatterAfterAll, blockTimestampMoreThanOneDays);
+  })
+
+  .test("updateRate() :: token rate limits", async (ctx) => {
+    const { deployer, bridge, l1TokenBridgeEOA } = ctx.accounts;
+    const { tokenRate, blockTimestamp } = ctx.constants;
+
+    const tokenRateOutdatedDelay = BigNumber.from(86400);              // 1 day
+    const maxAllowedL2ToL1ClockLag = BigNumber.from(86400 * 2);        // 2 days
+    const maxAllowedTokenRateDeviationPerDay = BigNumber.from(10000);  // 100%
+
+    const l2MessengerStub = await new CrossDomainMessengerStub__factory(
+      deployer
+    ).deploy({ value: wei.toBigNumber(wei`1 ether`) });
+
+    const tokenRateOracle = await tokenRateOracleUnderProxy(
+      deployer,
+      l2MessengerStub.address,
+      bridge.address,
+      l1TokenBridgeEOA.address,
+      tokenRateOutdatedDelay,
+      maxAllowedL2ToL1ClockLag,
+      maxAllowedTokenRateDeviationPerDay,
+      tokenRate,
+      BigNumber.from(0)
+    );
+
+    const maxAllowedTokenRate = await tokenRateOracle.MAX_ALLOWED_TOKEN_RATE();
+    await tokenRateOracle.connect(bridge).updateRate(maxAllowedTokenRate, blockTimestamp.add(1000));
+    assert.equalBN(await tokenRateOracle.latestAnswer(), maxAllowedTokenRate);
+
+    const minAllowedTokenRate = await tokenRateOracle.MIN_ALLOWED_TOKEN_RATE();
+    await tokenRateOracle.connect(bridge).updateRate(minAllowedTokenRate, blockTimestamp.add(2000));
+    assert.equalBN(await tokenRateOracle.latestAnswer(), minAllowedTokenRate);
   })
 
   .test("updateRate() :: happy path called by bridge", async (ctx) => {

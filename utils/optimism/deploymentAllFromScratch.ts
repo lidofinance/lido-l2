@@ -120,14 +120,14 @@ export default function deploymentAll(
       ] = await network.predictAddresses(l1Params.deployer, l1Params.contractsShift + 4);
 
       const [
+        expectedL2TokenRateOracleImplAddress,
+        expectedL2TokenRateOracleProxyAddress,
         expectedL2TokenImplAddress,
         expectedL2TokenProxyAddress,
         expectedL2TokenRebasableImplAddress,
         expectedL2TokenRebasableProxyAddress,
         expectedL2TokenBridgeImplAddress,
-        expectedL2TokenBridgeProxyAddress,
-        expectedL2TokenRateOracleImplAddress,
-        expectedL2TokenRateOracleProxyAddress
+        expectedL2TokenBridgeProxyAddress
       ] = await network.predictAddresses(l2Params.deployer, l2Params.contractsShift + 8);
 
       const l1DeployScript = new L1DeployAllScript(
@@ -218,6 +218,37 @@ export default function deploymentAll(
         expectedL2TokenRateOracleProxyAddress,
         options?.logger
       )
+      .addStep({
+        factory: TokenRateOracle__factory,
+        args: [
+          optAddresses.L2CrossDomainMessenger,
+          expectedL2TokenBridgeProxyAddress,
+          expectedL1OpStackTokenRatePusherImplAddress,
+          86400,
+          86400,
+          500,
+          options?.overrides,
+        ],
+        afterDeploy: (c) =>
+          assert.equal(c.address, expectedL2TokenRateOracleImplAddress),
+      })
+      .addStep({
+        factory: OssifiableProxy__factory,
+        args: [
+          expectedL2TokenRateOracleImplAddress,
+          l2Params.admins.proxy,
+          TokenRateOracle__factory.createInterface().encodeFunctionData(
+            "initialize",
+            [
+              l2Params.tokenRateOracle.tokenRate,
+              l2Params.tokenRateOracle.l1Timestamp
+            ]
+          ),
+          options?.overrides,
+        ],
+        afterDeploy: (c) =>
+          assert.equal(c.address, expectedL2TokenRateOracleProxyAddress),
+      })
         .addStep({
           factory: ERC20BridgedPermit__factory,
           args: [
@@ -254,7 +285,6 @@ export default function deploymentAll(
             decimals,
             expectedL2TokenProxyAddress,
             expectedL2TokenRateOracleProxyAddress,
-            decimals,
             expectedL2TokenBridgeProxyAddress,
             options?.overrides,
           ],
@@ -300,37 +330,6 @@ export default function deploymentAll(
             ),
             options?.overrides,
           ],
-        })
-        .addStep({
-          factory: TokenRateOracle__factory,
-          args: [
-            optAddresses.L2CrossDomainMessenger,
-            expectedL2TokenBridgeProxyAddress,
-            expectedL1OpStackTokenRatePusherImplAddress,
-            86400,
-            86400,
-            500,
-            options?.overrides,
-          ],
-          afterDeploy: (c) =>
-            assert.equal(c.address, expectedL2TokenRateOracleImplAddress),
-        })
-        .addStep({
-          factory: OssifiableProxy__factory,
-          args: [
-            expectedL2TokenRateOracleImplAddress,
-            l2Params.admins.proxy,
-            TokenRateOracle__factory.createInterface().encodeFunctionData(
-              "initialize",
-              [
-                l2Params.tokenRateOracle.tokenRate,
-                l2Params.tokenRateOracle.l1Timestamp
-              ]
-            ),
-            options?.overrides,
-          ],
-          afterDeploy: (c) =>
-            assert.equal(c.address, expectedL2TokenRateOracleProxyAddress),
         });
 
       return [l1DeployScript as L1DeployAllScript, l2DeployScript as L2DeployAllScript];

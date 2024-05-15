@@ -29,7 +29,7 @@ contract ERC20Metadata is IERC20Metadata {
     }
 
     /// @dev Location of the slot with DynamicMetdata
-    ///      The value has a misspelling but without it the contract storage will be broken.
+    ///      The slot's index string has a misspelling, but the contract storage will be broken without it.
     bytes32 private constant DYNAMIC_METADATA_SLOT =
         keccak256("ERC20Metdata.dynamicMetadata");
 

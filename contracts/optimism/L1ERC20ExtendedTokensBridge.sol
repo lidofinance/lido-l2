@@ -137,11 +137,11 @@ abstract contract L1ERC20ExtendedTokensBridge is
         uint32 l2Gas_,
         bytes memory encodedDepositData_
     ) internal {
-        uint256 nonRebaseableAmountToDeposit = _transferToBridge(l1Token_, from_, amount_);
+        uint256 nonRebasableAmountToDeposit = _transferToBridge(l1Token_, from_, amount_);
 
         bytes memory message = abi.encodeWithSelector(
             IL2ERC20Bridge.finalizeDeposit.selector,
-            l1Token_, l2Token_, from_, to_, nonRebaseableAmountToDeposit, encodedDepositData_
+            l1Token_, l2Token_, from_, to_, nonRebasableAmountToDeposit, encodedDepositData_
         );
 
         sendCrossDomainMessage(L2_TOKEN_BRIDGE, l2Gas_, message);
@@ -170,7 +170,7 @@ abstract contract L1ERC20ExtendedTokensBridge is
     /// @dev Helper that simplifies calling encoding by DepositDataCodec.
     ///      Encodes token rate, it's L1 timestamp and optional data.
     /// @param data_ Optional data to forward to L2.
-    /// @return encoded data in bytes form.
+    /// @return encoded data in the 'wired' bytes form.
     function _encodeInputDepositData(bytes calldata data_) internal view returns (bytes memory)  {
         return DepositDataCodec.encodeDepositData(DepositDataCodec.DepositData({
             rate: uint96(_tokenRate()),

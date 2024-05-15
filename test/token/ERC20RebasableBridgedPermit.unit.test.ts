@@ -58,7 +58,6 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       10,
       wrappedToken.address,
       tokenRateOracle.address,
-      18,
       owner.address
     );
 
@@ -98,7 +97,6 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       10,
       wrappedToken.address,
       tokenRateOracle.address,
-      18,
       owner.address
     );
 
@@ -155,7 +153,6 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       10,
       wrappedToken.address,
       tokenRateOracle.address,
-      18,
       owner.address
     );
 
@@ -225,7 +222,6 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       10,
       wrappedToken.address,
       tokenRateOracle.address,
-      18,
       owner.address
     );
 
@@ -339,7 +335,6 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       10,
       wrappedToken.address,
       tokenRateOracle.address,
-      18,
       owner.address
     );
 
@@ -504,7 +499,6 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       10,
       wrappedToken.address,
       tokenRateOracle.address,
-      18,
       owner.address
     );
 
@@ -635,7 +629,6 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       10,
       wrappedToken.address,
       tokenRateOracle.address,
-      18,
       owner.address
     );
 

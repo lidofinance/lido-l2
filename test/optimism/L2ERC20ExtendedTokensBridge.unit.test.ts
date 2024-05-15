@@ -790,7 +790,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
           0,
           l1Gas,
           data),
-      "ErrorTransferToL1TokenRebasableContract()"
+      "ErrorTransferToL1TokenContract()"
     );
   })
 
@@ -1175,7 +1175,6 @@ async function ctxFactory() {
     decimals,
     l2TokenNonRebasableStub.address,
     tokenRateOracle.address,
-    18,
     l2TokenBridgeProxyAddress
   );
 
@@ -1355,7 +1354,6 @@ async function getL2TokenBridgeImpl(deployer: SignerWithAddress, l1TokenBridge: 
     decimals,
     l2TokenNonRebasableStub.address,
     tokenRateOracle.address,
-    18,
     l2TokenBridgeProxyAddress
   );
 
