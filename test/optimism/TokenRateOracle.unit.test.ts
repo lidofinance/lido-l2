@@ -189,7 +189,6 @@ unit("TokenRateOracle", ctxFactory)
       .updateRate(tokenRate, blockTimestamp);
 
     await assert.emits(tokenRateOracle, tx0, "DormantTokenRateUpdateIgnored", [
-      tokenRate,
       blockTimestamp,
       blockTimestamp,
     ]);
@@ -201,7 +200,6 @@ unit("TokenRateOracle", ctxFactory)
       .updateRate(tokenRate, timeInPast);
 
     await assert.emits(tokenRateOracle, tx1, "DormantTokenRateUpdateIgnored", [
-      tokenRate,
       timeInPast,
       blockTimestamp,
     ]);

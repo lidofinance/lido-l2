@@ -138,7 +138,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
 
         /// @dev Use only the most up-to-date token rate. Reverting should be avoided as it may occur occasionally.
         if (rateL1Timestamp_ <= currentRateL1Timestamp) {
-            emit DormantTokenRateUpdateIgnored(tokenRate_, rateL1Timestamp_, currentRateL1Timestamp);
+            emit DormantTokenRateUpdateIgnored(rateL1Timestamp_, currentRateL1Timestamp);
             return;
         }
 
@@ -253,7 +253,6 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         uint256 indexed rateL1Timestamp_
     );
     event DormantTokenRateUpdateIgnored(
-        uint256 tokenRate_,
         uint256 indexed newRateL1Timestamp_,
         uint256 indexed currentRateL1Timestamp_
     );
