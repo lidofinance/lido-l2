@@ -7,6 +7,7 @@ import {ITokenRateUpdatable} from "./interfaces/ITokenRateUpdatable.sol";
 import {IChainlinkAggregatorInterface} from "./interfaces/IChainlinkAggregatorInterface.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {Versioned} from "../utils/Versioned.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 interface ITokenRateOracle is ITokenRateUpdatable, IChainlinkAggregatorInterface {}
 
@@ -190,7 +191,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
     ) internal pure returns (uint256) {
         uint256 maxTokenRateLimit = currentTokenRate * (BASIS_POINT_SCALE + allowedTokenRateDeviation) /
             BASIS_POINT_SCALE;
-        return (maxTokenRateLimit > MAX_ALLOWED_TOKEN_RATE) ? MAX_ALLOWED_TOKEN_RATE : maxTokenRateLimit;
+        return Math.min(maxTokenRateLimit, MAX_ALLOWED_TOKEN_RATE);
     }
 
     /// @dev Returns the minimum allowable value for the token rate.
@@ -203,7 +204,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
             minTokenRateLimit = (currentTokenRate * (BASIS_POINT_SCALE - allowedTokenRateDeviation) /
             BASIS_POINT_SCALE);
         }
-        return (minTokenRateLimit < MIN_ALLOWED_TOKEN_RATE) ? MIN_ALLOWED_TOKEN_RATE : minTokenRateLimit;
+        return Math.max(minTokenRateLimit, MIN_ALLOWED_TOKEN_RATE);
     }
 
     function _isCallerBridgeOrMessengerWithTokenRatePusher(address caller_) internal view returns (bool) {
