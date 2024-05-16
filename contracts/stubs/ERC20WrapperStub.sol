@@ -46,7 +46,7 @@ contract ERC20WrapperStub is IERC20Wrapper, IERC20WstETH, ERC20 {
         return stETHAmount;
     }
 
-    function stEthPerToken() external view returns (uint256) {
-        return tokensRate;
+    function getStETHByWstETH(uint256 _wstETHAmount) external view returns (uint256) {
+        return (tokensRate * 10**27) / _wstETHAmount;
     }
 }

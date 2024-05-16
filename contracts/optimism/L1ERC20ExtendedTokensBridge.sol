@@ -172,15 +172,16 @@ abstract contract L1ERC20ExtendedTokensBridge is
     /// @param data_ Optional data to forward to L2.
     /// @return encoded data in the 'wired' bytes form.
     function _encodeInputDepositData(bytes calldata data_) internal view returns (bytes memory)  {
+        (uint256 timestamp, uint256 rate) = tokenRate();
         return DepositDataCodec.encodeDepositData(DepositDataCodec.DepositData({
-            rate: uint96(_tokenRate()),
-            timestamp: uint40(block.timestamp),
+            rate: uint128(rate),
+            timestamp: uint40(timestamp),
             data: data_
         }));
     }
 
     /// @notice required to abstact a way token rate is requested.
-    function _tokenRate() virtual internal view returns (uint256);
+    function tokenRate() virtual public view returns (uint256 rate, uint256 updateTimestamp);
 
     error ErrorSenderNotEOA();
     error ErrorZeroAddressL2Bridge();

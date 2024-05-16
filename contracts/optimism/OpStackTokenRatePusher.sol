@@ -9,6 +9,13 @@ import {ITokenRatePusher} from "../lido/interfaces/ITokenRatePusher.sol";
 import {IERC20WstETH} from "./L1LidoTokensBridge.sol";
 import {ITokenRateUpdatable} from "../optimism/interfaces/ITokenRateUpdatable.sol";
 
+/// @author dzhon
+/// @notice Extracts of the L1ERC20ExtendedTokensBridge contract to support token rate retrieving
+interface IL1ERC20ExtendedTokensBridge {
+    /// @notice returns token rate and its update timestamp
+    function tokenRate() external view returns (uint256 rate, uint256 updateTimestamp);
+}
+
 /// @author kovalgek
 /// @notice Pushes token rate to L2 Oracle.
 contract OpStackTokenRatePusher is CrossDomainEnabled, ERC165, ITokenRatePusher {
@@ -16,8 +23,8 @@ contract OpStackTokenRatePusher is CrossDomainEnabled, ERC165, ITokenRatePusher 
     /// @notice Oracle address on L2 for receiving token rate.
     address public immutable L2_TOKEN_RATE_ORACLE;
 
-    /// @notice Non-rebasable token of Core Lido procotol.
-    address public immutable WSTETH;
+    /// @notice L1 token bridge
+    address public immutable L1_TOKEN_BRIDGE;
 
     /// @notice Gas limit for L2 required to finish pushing token rate on L2 side.
     ///         Client pays for gas on L2 by burning it on L1.
@@ -27,29 +34,25 @@ contract OpStackTokenRatePusher is CrossDomainEnabled, ERC165, ITokenRatePusher 
     uint32 public immutable L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE;
 
     /// @param messenger_ L1 messenger address being used for cross-chain communications
-    /// @param wstEth_ Non-rebasable token of Core Lido procotol.
+    /// @param l1TokenBridge_ L1 token bridge address
     /// @param tokenRateOracle_ Oracle address on L2 for receiving token rate.
     /// @param l2GasLimitForPushingTokenRate_ Gas limit required to complete pushing token rate on L2.
     constructor(
         address messenger_,
-        address wstEth_,
+        address l1TokenBridge_,
         address tokenRateOracle_,
         uint32 l2GasLimitForPushingTokenRate_
     ) CrossDomainEnabled(messenger_) {
-        WSTETH = wstEth_;
+        L1_TOKEN_BRIDGE = l1TokenBridge_;
         L2_TOKEN_RATE_ORACLE = tokenRateOracle_;
         L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE = l2GasLimitForPushingTokenRate_;
     }
 
     /// @inheritdoc ITokenRatePusher
     function pushTokenRate() external {
-        uint256 tokenRate = IERC20WstETH(WSTETH).stEthPerToken();
+        (uint256 rate, uint256 updateTimestamp) = IL1ERC20ExtendedTokensBridge(L1_TOKEN_BRIDGE).tokenRate();
 
-        bytes memory message = abi.encodeWithSelector(
-            ITokenRateUpdatable.updateRate.selector,
-            tokenRate,
-            block.timestamp
-        );
+        bytes memory message = abi.encodeWithSelector(ITokenRateUpdatable.updateRate.selector, rate, updateTimestamp);
 
         sendCrossDomainMessage(L2_TOKEN_RATE_ORACLE, L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE, message);
     }
