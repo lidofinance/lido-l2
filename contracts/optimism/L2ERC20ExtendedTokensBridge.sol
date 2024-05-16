@@ -108,8 +108,9 @@ contract L2ERC20ExtendedTokensBridge is
         onlyNonZeroAccount(to_)
         onlySupportedL2Token(l2Token_)
     {
-        /// @dev L1_TOKEN_REBASABLE doesn't allow to transfer to itself.
-        ///      To prevent stucking tokens on L1 bridge this check was added.
+        /// @dev L1_TOKEN_REBASABLE does not allow transfers to itself.
+        ///      Additionally, sending funds to L1_TOKEN_NON_REBASABLE would lock these funds permanently,
+        ///      as it is non-upgradeable. To prevent stucking tokens on L1 bridge or token this check was added.
         if (to_ == L1_TOKEN_REBASABLE || to_ == L1_TOKEN_NON_REBASABLE) {
             revert ErrorTransferToL1TokenContract();
         }
