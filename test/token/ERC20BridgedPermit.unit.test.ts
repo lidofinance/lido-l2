@@ -41,9 +41,10 @@ unit("ERC20BridgedPermit", ctxFactory)
     const petrifiedVersionMark = hre.ethers.constants.MaxUint256;
     assert.equalBN(await erc20BridgedImpl.getContractVersion(), petrifiedVersionMark);
 
+    // an early check of metadata won't allow to see NonZeroContractVersionOnInit() error
     await assert.revertsWith(
       erc20BridgedImpl.initialize("name", "symbol", "version"),
-      "NonZeroContractVersionOnInit()"
+      "ErrorMetadataIsAlreadyInitialized()"
     );
   })
 
@@ -117,7 +118,7 @@ unit("ERC20BridgedPermit", ctxFactory)
 
     await assert.revertsWith(
       erc20BridgedProxied.initialize(name, symbol, version),
-      "NonZeroContractVersionOnInit()"
+      "ErrorMetadataIsAlreadyInitialized()"
     );
   })
 
@@ -191,8 +192,47 @@ unit("ERC20BridgedPermit", ctxFactory)
     // can't initialize after finalizeUpgrade_v2
     await assert.revertsWith(
       erc20BridgedProxied.initialize("name", "symbol", "version"),
-      "NonZeroContractVersionOnInit()"
+      "ErrorMetadataIsAlreadyInitialized()"
     );
+  })
+
+  .test("initialize() :: ins't allowed to call instead of finalizeUpgrade_v2()", async (ctx) => {
+    const { deployer, owner } = ctx.accounts;
+    const { name, symbol, version } = ctx.constants;
+
+    const l2TokenOldImpl = await new ERC20BridgedWithInitializerStub__factory(deployer).deploy(
+      "name",
+      "symbol",
+      18,
+      owner.address
+    );
+
+    const l2TokenProxy = await new OssifiableProxy__factory(deployer).deploy(
+      l2TokenOldImpl.address,
+      deployer.address,
+      ERC20BridgedWithInitializerStub__factory.createInterface().encodeFunctionData("initializeERC20Metadata", [
+        "name",
+        "symbol"
+      ])
+    );
+
+    const l2TokenImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
+      "name",
+      "symbol",
+      "1",
+      18,
+      owner.address
+    );
+
+    await assert.revertsWith(l2TokenProxy.proxy__upgradeToAndCall(
+      l2TokenImpl.address,
+      ERC20BridgedPermit__factory.createInterface().encodeFunctionData("initialize", [
+        name,
+        symbol,
+        version
+      ]),
+      false
+    ), "ErrorMetadataIsAlreadyInitialized()");
   })
 
   .test("approve()", async (ctx) => {
