@@ -31,7 +31,7 @@ library DepositDataCodec {
         }
 
         DepositData memory depositData = DepositData({
-            rate: uint96(bytes12(buffer[0:RATE_FIELD_SIZE])),
+            rate: uint128(bytes16(buffer[0:RATE_FIELD_SIZE])),
             timestamp: uint40(bytes5(buffer[RATE_FIELD_SIZE:RATE_FIELD_SIZE + TIMESTAMP_FIELD_SIZE])),
             data: buffer[RATE_FIELD_SIZE + TIMESTAMP_FIELD_SIZE:]
         });

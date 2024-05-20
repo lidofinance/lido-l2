@@ -26,8 +26,8 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         /// @notice last time when token rate was updated on L1.
         uint64 rateUpdateL1Timestamp;
         /// @notice last time when token rate was received on L2.
-        uint64 rateReceiptL2Timestamp;
-    } // occupy a single slot
+        uint64 rateReceivedL2Timestamp;
+    } // occupies a single slot
 
     /// @notice A bridge which can update oracle.
     address public immutable L2_ERC20_TOKEN_BRIDGE;
@@ -114,7 +114,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
             uint80(tokenRateData.rateUpdateL1Timestamp),
             int256(uint256(tokenRateData.tokenRate)),
             tokenRateData.rateUpdateL1Timestamp,
-            tokenRateData.rateReceiptL2Timestamp,
+            tokenRateData.rateReceivedL2Timestamp,
             uint80(tokenRateData.rateUpdateL1Timestamp)
         );
     }
@@ -148,8 +148,8 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         /// NB: Here we assume that the rate can only be changed together with the token rebase induced
         /// by the AccountingOracle report
         if (rateUpdateL1Timestamp_ == tokenRateData.rateUpdateL1Timestamp) {
-            _loadTokenRateData().value.rateReceiptL2Timestamp = uint64(block.timestamp);
-            emit RateReceiptUpdated();
+            _loadTokenRateData().value.rateReceivedL2Timestamp = uint64(block.timestamp);
+            emit RateReceivedUpdated(block.timestamp);
             return;
         }
 
@@ -175,7 +175,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
 
     /// @notice Returns flag that shows that token rate can be considered outdated.
     function isLikelyOutdated() external view returns (bool) {
-        return block.timestamp > _loadTokenRateData().value.rateReceiptL2Timestamp + TOKEN_RATE_OUTDATED_DELAY;
+        return block.timestamp > _loadTokenRateData().value.rateReceivedL2Timestamp + TOKEN_RATE_OUTDATED_DELAY;
     }
 
     /// @notice Allow tokenRate deviation from the previous value to be
@@ -266,19 +266,10 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         _;
     }
 
-    event RateUpdated(
-        uint256 tokenRate_,
-        uint256 indexed rateL1Timestamp_
-    );
-    event RateReceiptUpdated();
-    event DormantTokenRateUpdateIgnored(
-        uint256 indexed newRateL1Timestamp_,
-        uint256 indexed currentRateL1Timestamp_
-    );
-    event TokenRateL1TimestampIsInFuture(
-        uint256 tokenRate_,
-        uint256 indexed rateL1Timestamp_
-    );
+    event RateUpdated(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
+    event RateReceivedUpdated(uint256 indexed rateReceivedL2Timestamp);
+    event DormantTokenRateUpdateIgnored(uint256 indexed newRateL1Timestamp_, uint256 indexed currentRateL1Timestamp_);
+    event TokenRateL1TimestampIsInFuture(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
 
     error ErrorNotBridgeOrTokenRatePusher();
     error ErrorL1TimestampExceededAllowedClockLag(uint256 tokenRate_, uint256 rateL1Timestamp_);

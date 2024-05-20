@@ -6,25 +6,15 @@ pragma solidity 0.8.10;
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {CrossDomainEnabled} from "./CrossDomainEnabled.sol";
 import {ITokenRatePusher} from "../lido/interfaces/ITokenRatePusher.sol";
-import {IERC20WstETH} from "./L1LidoTokensBridge.sol";
 import {ITokenRateUpdatable} from "../optimism/interfaces/ITokenRateUpdatable.sol";
-
-/// @author dzhon
-/// @notice Extracts of the L1ERC20ExtendedTokensBridge contract to support token rate retrieving
-interface IL1ERC20ExtendedTokensBridge {
-    /// @notice returns token rate and its update timestamp
-    function tokenRate() external view returns (uint256 rate, uint256 updateTimestamp);
-}
+import {TokenRateAndUpdateTimestampProvider} from "./TokenRateAndUpdateTimestampProvider.sol";
 
 /// @author kovalgek
 /// @notice Pushes token rate to L2 Oracle.
-contract OpStackTokenRatePusher is CrossDomainEnabled, ERC165, ITokenRatePusher {
+contract OpStackTokenRatePusher is ERC165, CrossDomainEnabled, TokenRateAndUpdateTimestampProvider, ITokenRatePusher {
 
     /// @notice Oracle address on L2 for receiving token rate.
     address public immutable L2_TOKEN_RATE_ORACLE;
-
-    /// @notice L1 token bridge
-    address public immutable L1_TOKEN_BRIDGE;
 
     /// @notice Gas limit for L2 required to finish pushing token rate on L2 side.
     ///         Client pays for gas on L2 by burning it on L1.
@@ -34,23 +24,24 @@ contract OpStackTokenRatePusher is CrossDomainEnabled, ERC165, ITokenRatePusher 
     uint32 public immutable L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE;
 
     /// @param messenger_ L1 messenger address being used for cross-chain communications
-    /// @param l1TokenBridge_ L1 token bridge address
+    /// @param wstETH_ L1 token bridge address
+    /// @param accountingOracle_ L1 token bridge address
     /// @param tokenRateOracle_ Oracle address on L2 for receiving token rate.
     /// @param l2GasLimitForPushingTokenRate_ Gas limit required to complete pushing token rate on L2.
     constructor(
         address messenger_,
-        address l1TokenBridge_,
+        address wstETH_,
+        address accountingOracle_,
         address tokenRateOracle_,
         uint32 l2GasLimitForPushingTokenRate_
-    ) CrossDomainEnabled(messenger_) {
-        L1_TOKEN_BRIDGE = l1TokenBridge_;
+    ) CrossDomainEnabled(messenger_) TokenRateAndUpdateTimestampProvider(wstETH_, accountingOracle_) {
         L2_TOKEN_RATE_ORACLE = tokenRateOracle_;
         L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE = l2GasLimitForPushingTokenRate_;
     }
 
     /// @inheritdoc ITokenRatePusher
     function pushTokenRate() external {
-        (uint256 rate, uint256 updateTimestamp) = IL1ERC20ExtendedTokensBridge(L1_TOKEN_BRIDGE).tokenRate();
+        (uint256 rate, uint256 updateTimestamp) = getTokenRateAndUpdateTimestamp();
 
         bytes memory message = abi.encodeWithSelector(ITokenRateUpdatable.updateRate.selector, rate, updateTimestamp);
 
