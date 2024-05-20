@@ -6,7 +6,7 @@ import network from "../../utils/network";
 import testing, { scenario } from "../../utils/testing";
 import deploymentOracle from "../../utils/optimism/deploymentOracle";
 import { getBridgeExecutorParams } from "../../utils/bridge-executor";
-import { tokenRateAndTimestamp } from "../../utils/testing/helpers";
+import { tokenRateAndTimestampPacked } from "../../utils/testing/helpers";
 import { BigNumber } from "ethers";
 import { getBlockTimestamp } from "../../utils/testing/helpers";
 import {
@@ -41,13 +41,12 @@ scenario("Optimism :: Token Rate Oracle integration test", ctxFactory)
     const messageNonce = await l1CrossDomainMessenger.messageNonce();
 
     const updateRateTime = genesisTime.add(secondsPerSlot.mul(lastProcessingRefSlot));
-    const [stEthPerTokenStr, blockTimestampStr] = await tokenRateAndTimestamp(tokenRate, updateRateTime);
 
     const l2Calldata = tokenRateOracle.interface.encodeFunctionData(
       "updateRate",
       [
-        stEthPerTokenStr,
-        blockTimestampStr
+        tokenRate,
+        updateRateTime
       ]
     );
 
@@ -74,9 +73,8 @@ scenario("Optimism :: Token Rate Oracle integration test", ctxFactory)
       .setXDomainMessageSender(opTokenRatePusher);
 
     const updateRateTime = genesisTime.add(secondsPerSlot.mul(lastProcessingRefSlot));
-    const [stEthPerTokenStr, blockTimestampStr] = await tokenRateAndTimestamp(tokenRate, updateRateTime);
 
-    const tx = await ctx.l2CrossDomainMessenger
+    await ctx.l2CrossDomainMessenger
       .connect(ctx.accounts.l1CrossDomainMessengerAliased)
       .relayMessage(
         1,
@@ -85,8 +83,8 @@ scenario("Optimism :: Token Rate Oracle integration test", ctxFactory)
         0,
         300_000,
         tokenRateOracle.interface.encodeFunctionData("updateRate", [
-          stEthPerTokenStr,
-          blockTimestampStr
+          tokenRate,
+          updateRateTime
         ]),
         { gasLimit: 5_000_000 }
       );

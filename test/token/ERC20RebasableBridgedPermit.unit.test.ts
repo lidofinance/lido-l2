@@ -3,6 +3,7 @@ import { assert } from "chai";
 import { BigNumber } from "ethers";
 import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
+import { getBlockTimestamp } from "../../utils/testing/helpers";
 import {
   erc20RebasableBridgedPermitUnderProxy,
   tokenRateOracleUnderProxy
@@ -1245,22 +1246,22 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
   .run();
 
 async function ctxFactory() {
+  /// ---------------------------
+  /// constants
+  /// ---------------------------
   const name = "StETH Test Token";
   const symbol = "StETH";
   const version = "1";
-  const decimals = BigNumber.from('27');
-  const tenPowDecimals = BigNumber.from('10').pow(decimals);
-  const tokenRate = BigNumber.from('1164454276599657236000000000');         // value taken from real contact on 23.04.24
-  const tokenRateOutdatedDelay = BigNumber.from(86400);            // 1 day
-  const maxAllowedL2ToL1ClockLag = BigNumber.from(86400);          // 1 day
-  const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);  // 5%
-
+  const decimals = BigNumber.from(27);
+  const tenPowDecimals = BigNumber.from(10).pow(decimals);
+  const tokenRate = BigNumber.from('1164454276599657236000000000'); // value taken from real contact on 23.04.24
+  const tokenRateOutdatedDelay = BigNumber.from(86400);             // 1 day
+  const maxAllowedL2ToL1ClockLag = BigNumber.from(86400);           // 1 day
+  const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);   // 5%
   const premintShares = wei.toBigNumber(wei`100 ether`);
-  const premintTokens = BigNumber.from(tokenRate).mul(premintShares).div(tenPowDecimals);
-
+  const premintTokens = tokenRate.mul(premintShares).div(tenPowDecimals);
   const provider = await hre.ethers.provider;
-  const blockNumber = await provider.getBlockNumber();
-  const blockTimestamp = BigNumber.from((await provider.getBlock(blockNumber)).timestamp);
+  const blockTimestamp = await getBlockTimestamp(provider, 0);
 
   const [
     deployer,
@@ -1275,6 +1276,9 @@ async function ctxFactory() {
 
   const zero = await hre.ethers.getSigner(hre.ethers.constants.AddressZero);
 
+  /// ---------------------------
+  /// contracts
+  /// ---------------------------
   const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
     "WsETH Test Token",
     "WsETH",
@@ -1307,6 +1311,9 @@ async function ctxFactory() {
     owner.address,
   );
 
+  /// ---------------------------
+  /// setup
+  /// ---------------------------
   await wrappedToken.connect(owner).bridgeMint(holder.address, premintTokens);
   await wrappedToken.connect(holder).approve(rebasableProxied.address, premintShares);
   await rebasableProxied.connect(holder).wrap(premintShares);
@@ -1317,8 +1324,32 @@ async function ctxFactory() {
   });
 
   return {
-    accounts: { deployer, owner, recipient, spender, holder, stranger, zero, user1, user2 },
-    constants: { name, symbol, version, decimals, tenPowDecimals, premintShares, premintTokens, tokenRate, blockTimestamp },
-    contracts: { rebasableProxied, wrappedToken, tokenRateOracle }
+    accounts: {
+      deployer,
+      owner,
+      recipient,
+      spender,
+      holder,
+      stranger,
+      zero,
+      user1,
+      user2
+    },
+    constants: {
+      name,
+      symbol,
+      version,
+      decimals,
+      tenPowDecimals,
+      premintShares,
+      premintTokens,
+      tokenRate,
+      blockTimestamp
+    },
+    contracts: {
+      rebasableProxied,
+      wrappedToken,
+      tokenRateOracle
+    }
   };
 }

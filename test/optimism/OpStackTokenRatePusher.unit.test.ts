@@ -57,14 +57,24 @@ unit("OpStackTokenRatePusher", ctxFactory)
   .run();
 
 async function ctxFactory() {
+  /// ---------------------------
+  /// constants
+  /// ---------------------------
   const [deployer, bridge, stranger, tokenRateOracle, l1TokenBridgeEOA] = await ethers.getSigners();
-
   const tokenRate = BigNumber.from('1164454276599657236000000000');
   const genesisTime = BigNumber.from(1);
   const secondsPerSlot = BigNumber.from(2);
   const lastProcessingRefSlot = BigNumber.from(3);
   const updateRateTime = genesisTime.add(secondsPerSlot.mul(lastProcessingRefSlot));
+  const l2GasLimitForPushingTokenRate = 123;
 
+  const l1MessengerStub = await new CrossDomainMessengerStub__factory(deployer)
+    .deploy({ value: wei.toBigNumber(wei`1 ether`) });
+  await l1MessengerStub.setXDomainMessageSender(l1TokenBridgeEOA.address);
+
+  /// ---------------------------
+  /// contracts
+  /// ---------------------------
   const l1TokenRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
     "L1 Token Rebasable",
     "L1R"
@@ -82,12 +92,6 @@ async function ctxFactory() {
     secondsPerSlot,
     lastProcessingRefSlot
   );
-
-  const l1MessengerStub = await new CrossDomainMessengerStub__factory(deployer)
-    .deploy({ value: wei.toBigNumber(wei`1 ether`) });
-  await l1MessengerStub.setXDomainMessageSender(l1TokenBridgeEOA.address);
-
-  const l2GasLimitForPushingTokenRate = 123;
 
   const opStackTokenRatePusher = await new OpStackTokenRatePusher__factory(deployer).deploy(
     l1MessengerStub.address,

@@ -613,21 +613,21 @@ unit("ERC20BridgedPermit", ctxFactory)
   .run();
 
 async function ctxFactory() {
+  /// ---------------------------
+  /// constants
+  /// ---------------------------
   const name = "ERC20 Test Token";
   const symbol = "ERC20";
   const version = "1";
-  const decimals = BigNumber.from('18');
+  const decimals = BigNumber.from(18);
   const premint = wei`100 ether`;
 
   const [deployer, owner, recipient, spender, holder, stranger] = await hre.ethers.getSigners();
-
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [hre.ethers.constants.AddressZero],
-  });
-
   const zero = await hre.ethers.getSigner(hre.ethers.constants.AddressZero);
 
+  /// ---------------------------
+  /// contracts
+  /// ---------------------------
   const erc20BridgedProxied = await erc20BridgedPermitUnderProxy(
     deployer,
     holder,
@@ -638,7 +638,15 @@ async function ctxFactory() {
     owner.address
   )
 
+  /// ---------------------------
+  /// setup
+  /// ---------------------------
   await erc20BridgedProxied.connect(owner).bridgeMint(holder.address, premint);
+
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [hre.ethers.constants.AddressZero],
+  });
 
   return {
     accounts: { deployer, owner, recipient, spender, holder, zero, stranger },

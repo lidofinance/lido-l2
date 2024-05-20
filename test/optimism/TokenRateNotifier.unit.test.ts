@@ -85,17 +85,16 @@ unit("TokenRateNotifier", ctxFactory)
 
       const {
         opStackTokenRatePusher
-      } = await getOpStackTokenRatePusher
-        (
-          tokenRate,
-          genesisTime,
-          secondsPerSlot,
-          lastProcessingRefSlot,
-          deployer,
-          owner,
-          tokenRateOracle,
-          l2GasLimitForPushingTokenRate
-        );
+      } = await createContracts(
+        tokenRate,
+        genesisTime,
+        secondsPerSlot,
+        lastProcessingRefSlot,
+        deployer,
+        owner,
+        tokenRateOracle,
+        l2GasLimitForPushingTokenRate
+      );
 
       await tokenRateNotifier
         .connect(ctx.accounts.owner)
@@ -244,7 +243,37 @@ unit("TokenRateNotifier", ctxFactory)
 
   .run();
 
-async function getOpStackTokenRatePusher(
+async function ctxFactory() {
+  const [deployer, owner, stranger, tokenRateOracle] = await ethers.getSigners();
+  const tokenRate = BigNumber.from('1164454276599657236000000000');
+  const l2GasLimitForPushingTokenRate = 300_000;
+  const genesisTime = BigNumber.from(1);
+  const secondsPerSlot = BigNumber.from(2);
+  const lastProcessingRefSlot = BigNumber.from(3);
+
+  const {
+    tokenRateNotifier,
+    opStackTokenRatePusher,
+    l1MessengerStub
+  } = await createContracts(
+    tokenRate,
+    genesisTime,
+    secondsPerSlot,
+    lastProcessingRefSlot,
+    deployer,
+    owner,
+    tokenRateOracle,
+    l2GasLimitForPushingTokenRate
+  );
+
+  return {
+    accounts: { deployer, owner, stranger, tokenRateOracle },
+    contracts: { tokenRateNotifier, opStackTokenRatePusher, l1MessengerStub },
+    constants: { l2GasLimitForPushingTokenRate, tokenRate, genesisTime, secondsPerSlot, lastProcessingRefSlot }
+  };
+}
+
+async function createContracts(
   tokenRate: BigNumber,
   genesisTime: BigNumber,
   secondsPerSlot: BigNumber,
@@ -293,35 +322,5 @@ async function getOpStackTokenRatePusher(
     accountingOracle,
     l1MessengerStub,
     tokenRate
-  };
-}
-
-async function ctxFactory() {
-  const [deployer, owner, stranger, tokenRateOracle] = await ethers.getSigners();
-  const tokenRate = BigNumber.from('1164454276599657236000000000');
-  const l2GasLimitForPushingTokenRate = 300_000;
-  const genesisTime = BigNumber.from(1);
-  const secondsPerSlot = BigNumber.from(2);
-  const lastProcessingRefSlot = BigNumber.from(3);
-
-  const {
-    tokenRateNotifier,
-    opStackTokenRatePusher,
-    l1MessengerStub
-  } = await getOpStackTokenRatePusher(
-    tokenRate,
-    genesisTime,
-    secondsPerSlot,
-    lastProcessingRefSlot,
-    deployer,
-    owner,
-    tokenRateOracle,
-    l2GasLimitForPushingTokenRate
-  );
-
-  return {
-    accounts: { deployer, owner, stranger, tokenRateOracle },
-    contracts: { tokenRateNotifier, opStackTokenRatePusher, l1MessengerStub },
-    constants: { l2GasLimitForPushingTokenRate, tokenRate, genesisTime, secondsPerSlot, lastProcessingRefSlot }
   };
 }

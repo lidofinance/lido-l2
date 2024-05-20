@@ -425,14 +425,16 @@ unit("TokenRateOracle", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const [deployer, bridge, stranger, l1TokenBridgeEOA] = await hre.ethers.getSigners();
-
+  /// ---------------------------
+  /// constants
+  /// ---------------------------
   const decimals = 27;
   const provider = await hre.ethers.provider;
   const tokenRate = BigNumber.from('1164454276599657236000000000'); // value taken from real contact on 23.04.24
   const tokenRateOutdatedDelay = BigNumber.from(86400);             // 1 day
   const maxAllowedL2ToL1ClockLag = BigNumber.from(86400 * 2);       // 2 days
   const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);   // 5%
+  const [deployer, bridge, stranger, l1TokenBridgeEOA] = await hre.ethers.getSigners();
 
   const l2MessengerStub = await new CrossDomainMessengerStub__factory(deployer)
     .deploy({ value: wei.toBigNumber(wei`1 ether`) });
@@ -440,6 +442,9 @@ async function ctxFactory() {
 
   const rateL1Timestamp = await getBlockTimestamp(provider, 0);
 
+  /// ---------------------------
+  /// contracts
+  /// ---------------------------
   const { tokenRateOracle, blockTimestampOfDeployment } = await tokenRateOracleUnderProxy(
     deployer,
     l2MessengerStub.address,
