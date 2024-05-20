@@ -1248,9 +1248,9 @@ async function ctxFactory() {
   const name = "StETH Test Token";
   const symbol = "StETH";
   const version = "1";
-  const decimals = BigNumber.from('18');
+  const decimals = BigNumber.from('27');
   const tenPowDecimals = BigNumber.from('10').pow(decimals);
-  const tokenRate = BigNumber.from('1164454276599657236');         // value taken from real contact on 23.04.24
+  const tokenRate = BigNumber.from('1164454276599657236000000000');         // value taken from real contact on 23.04.24
   const tokenRateOutdatedDelay = BigNumber.from(86400);            // 1 day
   const maxAllowedL2ToL1ClockLag = BigNumber.from(86400);          // 1 day
   const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);  // 5%
@@ -1283,7 +1283,7 @@ async function ctxFactory() {
     owner.address
   );
 
-  const tokenRateOracle = await tokenRateOracleUnderProxy(
+  const { tokenRateOracle } = await tokenRateOracleUnderProxy(
     deployer,
     zero.address,
     owner.address,

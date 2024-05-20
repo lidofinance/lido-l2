@@ -9,13 +9,14 @@ import {
   L2ERC20ExtendedTokensBridge__factory,
   OssifiableProxy__factory,
   EmptyContractStub__factory,
-  ERC20WrapperStub
+  AccountingOracleStub__factory,
+  L1LidoTokensBridge
 } from "../../typechain";
-import { JsonRpcProvider } from "@ethersproject/providers";
 import { CrossDomainMessengerStub__factory } from "../../typechain/factories/CrossDomainMessengerStub__factory";
 import testing, { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { tokenRateAndTimestampPacked, refSlotTimestamp } from "../../utils/testing/helpers";
 
 unit("Optimism :: L1LidoTokensBridge", ctxFactory)
 
@@ -30,38 +31,76 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
 
   .test("initialize() :: petrified", async (ctx) => {
     const { deployer, l2TokenBridgeEOA } = ctx.accounts;
+    const {
+      tokenRate,
+      genesisTime,
+      secondsPerSlot,
+      lastProcessingRefSlot
+    } = ctx.constants;
 
-    const l1LidoTokensBridgeImpl = await getL1LidoTokensBridgeImpl(deployer, l2TokenBridgeEOA.address);
+    const { l1TokenBridgeImpl } = await getL1LidoTokensBridgeImpl(
+      tokenRate,
+      genesisTime,
+      secondsPerSlot,
+      lastProcessingRefSlot,
+      deployer,
+      l2TokenBridgeEOA.address
+    );
 
     const petrifiedVersionMark = hre.ethers.constants.MaxUint256;
-    assert.equalBN(await l1LidoTokensBridgeImpl.getContractVersion(), petrifiedVersionMark);
+    assert.equalBN(await l1TokenBridgeImpl.getContractVersion(), petrifiedVersionMark);
 
     await assert.revertsWith(
-      l1LidoTokensBridgeImpl.initialize(deployer.address),
+      l1TokenBridgeImpl.initialize(deployer.address),
       "NonZeroContractVersionOnInit()"
     );
   })
 
   .test("initialize() :: zero address L2 bridge", async (ctx) => {
     const { deployer } = ctx.accounts;
+    const {
+      tokenRate,
+      genesisTime,
+      secondsPerSlot,
+      lastProcessingRefSlot
+    } = ctx.constants;
 
     await assert.revertsWith(
-      getL1LidoTokensBridgeImpl(deployer, hre.ethers.constants.AddressZero),
+      getL1LidoTokensBridgeImpl(tokenRate,
+        genesisTime,
+        secondsPerSlot,
+        lastProcessingRefSlot,
+        deployer,
+        hre.ethers.constants.AddressZero
+      ),
       "ErrorZeroAddressL2Bridge()"
     );
   })
 
   .test("initialize() :: don't allow to initialize twice", async (ctx) => {
     const { deployer, l2TokenBridgeEOA } = ctx.accounts;
+    const {
+      tokenRate,
+      genesisTime,
+      secondsPerSlot,
+      lastProcessingRefSlot
+    } = ctx.constants;
 
-    const l1LidoTokensBridgeImpl = await getL1LidoTokensBridgeImpl(deployer, l2TokenBridgeEOA.address);
+    const { l1TokenBridgeImpl } = await getL1LidoTokensBridgeImpl(
+      tokenRate,
+      genesisTime,
+      secondsPerSlot,
+      lastProcessingRefSlot,
+      deployer,
+      l2TokenBridgeEOA.address
+    );
 
     const l1TokenBridgeProxy = await new OssifiableProxy__factory(
       deployer
     ).deploy(
-      l1LidoTokensBridgeImpl.address,
+      l1TokenBridgeImpl.address,
       deployer.address,
-      l1LidoTokensBridgeImpl.interface.encodeFunctionData("initialize", [
+      l1TokenBridgeImpl.interface.encodeFunctionData("initialize", [
         deployer.address
       ])
     );
@@ -81,11 +120,24 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
 
   .test("finalizeUpgrade_v2() :: bridging manager uninitialized", async (ctx) => {
     const { deployer, l2TokenBridgeEOA } = ctx.accounts;
+    const {
+      tokenRate,
+      genesisTime,
+      secondsPerSlot,
+      lastProcessingRefSlot
+    } = ctx.constants;
 
-    const l1LidoTokensBridgeImpl = await getL1LidoTokensBridgeImpl(deployer, l2TokenBridgeEOA.address);
+    const { l1TokenBridgeImpl } = await getL1LidoTokensBridgeImpl(
+      tokenRate,
+      genesisTime,
+      secondsPerSlot,
+      lastProcessingRefSlot,
+      deployer,
+      l2TokenBridgeEOA.address
+    );
 
     await assert.revertsWith(new OssifiableProxy__factory(deployer).deploy(
-      l1LidoTokensBridgeImpl.address,
+      l1TokenBridgeImpl.address,
       deployer.address,
       L1LidoTokensBridge__factory.createInterface().encodeFunctionData("finalizeUpgrade_v2")
     ), "ErrorBridgingManagerIsNotInitialized()");
@@ -93,6 +145,12 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
 
   .test("finalizeUpgrade_v2() :: bridging manager initialized", async (ctx) => {
     const { deployer, l2TokenBridgeEOA } = ctx.accounts;
+    const {
+      tokenRate,
+      genesisTime,
+      secondsPerSlot,
+      lastProcessingRefSlot
+    } = ctx.constants;
 
     const bridgingManagerImpl = await new BridgingManagerStub__factory(deployer).deploy();
     const proxy = await new OssifiableProxy__factory(deployer).deploy(
@@ -103,9 +161,17 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
       ])
     );
 
-    const l1LidoTokensBridgeImpl = await getL1LidoTokensBridgeImpl(deployer, l2TokenBridgeEOA.address);
+    const { l1TokenBridgeImpl } = await getL1LidoTokensBridgeImpl(
+      tokenRate,
+      genesisTime,
+      secondsPerSlot,
+      lastProcessingRefSlot,
+      deployer,
+      l2TokenBridgeEOA.address
+    );
+
     await proxy.proxy__upgradeToAndCall(
-      l1LidoTokensBridgeImpl.address,
+      l1TokenBridgeImpl.address,
       L1LidoTokensBridge__factory.createInterface().encodeFunctionData("finalizeUpgrade_v2"),
       false
     );
@@ -246,7 +312,8 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
     const {
       l1TokenBridge,
       accounts: { deployer, l2TokenBridgeEOA },
-      stubs: { l1TokenNonRebasable, l2TokenNonRebasable, l1Messenger },
+      stubs: { l1TokenNonRebasable, l2TokenNonRebasable, l1Messenger, accountingOracle },
+      constants: { tokenRate }
     } = ctx;
 
     const l2Gas = wei`0.99 wei`;
@@ -266,8 +333,8 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
       data
     );
 
-    const packedTokenRateAndTimestampData = await packedTokenRateAndTimestamp(ctx.provider, l1TokenNonRebasable);
-    const dataToReceive = ethers.utils.hexConcat([packedTokenRateAndTimestampData, data]);
+    const refSlotTime = await refSlotTimestamp(accountingOracle);
+    const dataToReceive = await tokenRateAndTimestampPacked(tokenRate, refSlotTime, data);
 
     await assert.emits(l1TokenBridge, tx, "ERC20DepositInitiated", [
       l1TokenNonRebasable.address,
@@ -310,18 +377,15 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
   .test("depositERC20() :: rebasable token flow", async (ctx) => {
     const {
       l1TokenBridge,
+      constants: { tenPowerDecimals, tokenRate },
       accounts: { deployer, l2TokenBridgeEOA },
-      stubs: { l1TokenRebasable, l2TokenRebasable, l1TokenNonRebasable, l1Messenger },
+      stubs: { l1TokenRebasable, l2TokenRebasable, l1TokenNonRebasable, l1Messenger, accountingOracle },
     } = ctx;
 
     const l2Gas = wei`0.99 wei`;
     const amount = wei`1 ether`;
     const data = "0xdeadbeaf";
-    const rate = await l1TokenNonRebasable.stEthPerToken();
-    const decimalsStr = await l1TokenNonRebasable.decimals();
-    const decimals = BigNumber.from(10).pow(decimalsStr);
-
-    const amountWrapped = (wei.toBigNumber(amount)).mul(BigNumber.from(decimals)).div(rate);
+    const amountWrapped = (wei.toBigNumber(amount)).mul(tenPowerDecimals).div(tokenRate);
     const deployerBalanceBefore = await l1TokenRebasable.balanceOf(deployer.address);
     const bridgeBalanceBefore = await l1TokenNonRebasable.balanceOf(l1TokenBridge.address);
 
@@ -335,8 +399,8 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
       data
     );
 
-    const packedTokenRateAndTimestampData = await packedTokenRateAndTimestamp(ctx.provider, l1TokenNonRebasable);
-    const dataToReceive = ethers.utils.hexConcat([packedTokenRateAndTimestampData, data]);
+    const refSlotTime = await refSlotTimestamp(accountingOracle);
+    const dataToReceive = await tokenRateAndTimestampPacked(tokenRate, refSlotTime, data);
 
     await assert.emits(l1TokenBridge, tx, "ERC20DepositInitiated", [
       l1TokenRebasable.address,
@@ -538,7 +602,8 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
     const {
       l1TokenBridge,
       accounts: { deployer, l2TokenBridgeEOA, recipient },
-      stubs: { l1TokenNonRebasable, l2TokenNonRebasable, l1Messenger },
+      stubs: { l1TokenNonRebasable, l2TokenNonRebasable, l1Messenger, accountingOracle },
+      constants: { tokenRate }
     } = ctx;
 
     const l2Gas = wei`0.99 wei`;
@@ -559,8 +624,8 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
       data
     );
 
-    const packedTokenRateAndTimestampData = await packedTokenRateAndTimestamp(ctx.provider, l1TokenNonRebasable);
-    const dataToReceive = ethers.utils.hexConcat([packedTokenRateAndTimestampData, data]);
+    const refSlotTime = await refSlotTimestamp(accountingOracle);
+    const dataToReceive = await tokenRateAndTimestampPacked(tokenRate, refSlotTime, data);
 
     await assert.emits(l1TokenBridge, tx, "ERC20DepositInitiated", [
       l1TokenNonRebasable.address,
@@ -603,19 +668,16 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
   .test("depositERC20To() :: rebasable token flow", async (ctx) => {
     const {
       l1TokenBridge,
+      constants: { tenPowerDecimals, tokenRate },
       accounts: { deployer, l2TokenBridgeEOA, recipient },
-      stubs: { l1TokenNonRebasable, l2TokenNonRebasable, l1TokenRebasable, l2TokenRebasable, l1Messenger },
+      stubs: { l1TokenNonRebasable, l1TokenRebasable, l2TokenRebasable, l1Messenger, accountingOracle },
     } = ctx;
 
     const l2Gas = wei`0.99 wei`;
     const amount = wei`1 ether`;
     const data = "0x";
 
-    const rate = await l1TokenNonRebasable.stEthPerToken();
-    const decimalsStr = await l1TokenNonRebasable.decimals();
-    const decimals = BigNumber.from(10).pow(decimalsStr);
-
-    const amountWrapped = (wei.toBigNumber(amount)).mul(BigNumber.from(decimals)).div(rate);
+    const amountWrapped = (wei.toBigNumber(amount)).mul(tenPowerDecimals).div(tokenRate);
 
     await l1TokenRebasable.approve(l1TokenBridge.address, amount);
 
@@ -631,8 +693,8 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
       data
     );
 
-    const packedTokenRateAndTimestampData = await packedTokenRateAndTimestamp(ctx.provider, l1TokenNonRebasable);
-    const dataToReceive = ethers.utils.hexConcat([packedTokenRateAndTimestampData, data]);
+    const refSlotTime = await refSlotTimestamp(accountingOracle);
+    const dataToReceive = await tokenRateAndTimestampPacked(tokenRate, refSlotTime, data);
 
     await assert.emits(l1TokenBridge, tx, "ERC20DepositInitiated", [
       l1TokenRebasable.address,
@@ -941,7 +1003,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
   .test("finalizeERC20Withdrawal() :: rebasable token flow", async (ctx) => {
     const {
       l1TokenBridge,
-      stubs: { l1TokenRebasable, l2TokenRebasable, l1TokenNonRebasable, l2TokenNonRebasable, l1Messenger },
+      stubs: { l1TokenRebasable, l2TokenRebasable, l1TokenNonRebasable, l1Messenger },
       accounts: { deployer, recipient, l1MessengerStubAsEOA, l2TokenBridgeEOA },
     } = ctx;
 
@@ -950,10 +1012,9 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
 
     const amount = wei`1 ether`;
     const data = "0xdeadbeaf";
-    const rate = await l1TokenNonRebasable.stEthPerToken();
-    const decimalsStr = await l1TokenNonRebasable.decimals();
-    const decimals = BigNumber.from(10).pow(decimalsStr);
-    const amountUnwrapped = (wei.toBigNumber(amount)).mul(rate).div(BigNumber.from(decimals));
+    const rate = await l1TokenNonRebasable.getStETHByWstETH(BigNumber.from(10).pow(27));
+    const decimals = BigNumber.from(10).pow(27);
+    const amountUnwrapped = (wei.toBigNumber(amount)).mul(rate).div(decimals);
     const bridgeBalanceBefore = await l1TokenRebasable.balanceOf(l1TokenBridge.address);
 
     const tx = await l1TokenBridge
@@ -1060,91 +1121,44 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const [deployer, l2TokenBridgeEOA, stranger, recipient] =
-    await hre.ethers.getSigners();
+  const [deployer, l2TokenBridgeEOA, stranger, recipient] = await hre.ethers.getSigners();
 
   const provider = await hre.ethers.provider;
-  const tokenRate = BigNumber.from('1164454276599657236');
+  const tokenRate = BigNumber.from('1164454276599657236000000000');
+  const decimals = 27;
+  const tenPowerDecimals = BigNumber.from(10).pow(decimals);
+  const genesisTime = BigNumber.from(1);
+  const secondsPerSlot = BigNumber.from(2);
+  const lastProcessingRefSlot = BigNumber.from(3);
 
-  const l1MessengerStub = await new CrossDomainMessengerStub__factory(
-    deployer
-  ).deploy({ value: wei.toBigNumber(wei`1 ether`) });
-
-  const l1TokenRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
-    "L1 Token Rebasable",
-    "L1R"
+  const {
+    l1MessengerStub,
+    l1TokenBridgeImpl,
+    l1TokenNonRebasableStub,
+    l1TokenRebasableStub,
+    l2TokenNonRebasableStub,
+    l2TokenRebasableStub,
+    accountingOracle
+  } = await getL1LidoTokensBridgeImpl(
+    tokenRate,
+    genesisTime,
+    secondsPerSlot,
+    lastProcessingRefSlot,
+    deployer,
+    l2TokenBridgeEOA.address
   );
 
-  const l1TokenNonRebasableStub = await new ERC20WrapperStub__factory(deployer).deploy(
-    l1TokenRebasableStub.address,
-    "L1 Token Non Rebasable",
-    "L1NR",
-    tokenRate
-  );
+  const l1TokenBridge = await getL1LidoTokensBridgeProxy(deployer, l1TokenBridgeImpl);
 
-  const l2TokenNonRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
-    "L2 Token Non Rebasable",
-    "L2NR"
-  );
-
-  const l2TokenRebasableStub = await new ERC20WrapperStub__factory(deployer).deploy(
-    l2TokenNonRebasableStub.address,
-    "L2 Token Rebasable",
-    "L2R",
-    tokenRate
-  );
-
-  const emptyContract = await new EmptyContractStub__factory(deployer).deploy({
-    value: wei.toBigNumber(wei`1 ether`),
-  });
+  const emptyContract = await new EmptyContractStub__factory(deployer).deploy({ value: wei.toBigNumber(wei`1 ether`) });
   const emptyContractAsEOA = await testing.impersonate(emptyContract.address);
 
-  const l1MessengerStubAsEOA = await testing.impersonate(
-    l1MessengerStub.address
-  );
-
-  const l1TokenBridgeImpl = await new L1LidoTokensBridge__factory(
-    deployer
-  ).deploy(
-    l1MessengerStub.address,
-    l2TokenBridgeEOA.address,
-    l1TokenNonRebasableStub.address,
-    l1TokenRebasableStub.address,
-    l2TokenNonRebasableStub.address,
-    l2TokenRebasableStub.address
-  );
-
-  const l1TokenBridgeProxy = await new OssifiableProxy__factory(
-    deployer
-  ).deploy(
-    l1TokenBridgeImpl.address,
-    deployer.address,
-    l1TokenBridgeImpl.interface.encodeFunctionData("initialize", [
-      deployer.address
-    ])
-  );
-
-  const l1TokenBridge = L1LidoTokensBridge__factory.connect(
-    l1TokenBridgeProxy.address,
-    deployer
-  );
+  const l1MessengerStubAsEOA = await testing.impersonate(l1MessengerStub.address);
 
   await l1TokenNonRebasableStub.transfer(l1TokenBridge.address, wei`100 ether`);
   await l1TokenRebasableStub.transfer(l1TokenBridge.address, wei`100 ether`);
 
-  const roles = await Promise.all([
-    l1TokenBridge.DEPOSITS_ENABLER_ROLE(),
-    l1TokenBridge.DEPOSITS_DISABLER_ROLE(),
-    l1TokenBridge.WITHDRAWALS_ENABLER_ROLE(),
-    l1TokenBridge.WITHDRAWALS_DISABLER_ROLE(),
-  ]);
-
-  for (const role of roles) {
-    await l1TokenBridge.grantRole(role, deployer.address);
-  }
-
-  await l1TokenBridge.enableDeposits();
-  await l1TokenBridge.enableWithdrawals();
+  await setupL1TokenBridge(deployer, l1TokenBridge);
 
   return {
     provider: provider,
@@ -1162,26 +1176,30 @@ async function ctxFactory() {
       l2TokenNonRebasable: l2TokenNonRebasableStub,
       l2TokenRebasable: l2TokenRebasableStub,
       l1Messenger: l1MessengerStub,
+      accountingOracle: accountingOracle
+    },
+    constants: {
+      decimals,
+      tenPowerDecimals,
+      tokenRate,
+      genesisTime,
+      secondsPerSlot,
+      lastProcessingRefSlot
     },
     l1TokenBridge,
   };
 }
 
-async function packedTokenRateAndTimestamp(l1Provider: JsonRpcProvider, l1Token: ERC20WrapperStub) {
-  const stEthPerToken = await l1Token.stEthPerToken();
-  const blockNumber = await l1Provider.getBlockNumber();
-  const blockTimestamp = (await l1Provider.getBlock(blockNumber)).timestamp;
-  const stEthPerTokenStr = ethers.utils.hexZeroPad(stEthPerToken.toHexString(), 12);
-  const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 5);
-  return ethers.utils.hexConcat([stEthPerTokenStr, blockTimestampStr]);
-}
-
-async function getL1LidoTokensBridgeImpl(deployer: SignerWithAddress, l2TokenBridge: string) {
-  const tokenRate = BigNumber.from('1164454276599657236');
-
-  const l1MessengerStub = await new CrossDomainMessengerStub__factory(
-    deployer
-  ).deploy({ value: wei.toBigNumber(wei`1 ether`) });
+async function getL1LidoTokensBridgeImpl(
+  tokenRate: BigNumber,
+  genesisTime: BigNumber,
+  secondsPerSlot: BigNumber,
+  lastProcessingRefSlot: BigNumber,
+  deployer: SignerWithAddress,
+  l2TokenBridge: string
+) {
+  const l1MessengerStub = await new CrossDomainMessengerStub__factory(deployer)
+    .deploy({ value: wei.toBigNumber(wei`1 ether`) });
 
   const l1TokenRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
     "L1 Token Rebasable",
@@ -1207,6 +1225,11 @@ async function getL1LidoTokensBridgeImpl(deployer: SignerWithAddress, l2TokenBri
     tokenRate
   );
 
+  const accountingOracle = await new AccountingOracleStub__factory(deployer).deploy(
+    genesisTime,
+    secondsPerSlot,
+    lastProcessingRefSlot
+  );
   const l1TokenBridgeImpl = await new L1LidoTokensBridge__factory(
     deployer
   ).deploy(
@@ -1215,7 +1238,51 @@ async function getL1LidoTokensBridgeImpl(deployer: SignerWithAddress, l2TokenBri
     l1TokenNonRebasableStub.address,
     l1TokenRebasableStub.address,
     l2TokenNonRebasableStub.address,
-    l2TokenRebasableStub.address
+    l2TokenRebasableStub.address,
+    accountingOracle.address
   );
-  return l1TokenBridgeImpl;
+
+  return {
+    l1MessengerStub,
+    l1TokenBridgeImpl,
+    l1TokenNonRebasableStub,
+    l1TokenRebasableStub,
+    l2TokenNonRebasableStub,
+    l2TokenRebasableStub,
+    accountingOracle
+  };
+}
+
+async function getL1LidoTokensBridgeProxy(deployer: SignerWithAddress, l1TokenBridgeImpl: L1LidoTokensBridge) {
+
+  const l1TokenBridgeProxy = await new OssifiableProxy__factory(
+    deployer
+  ).deploy(
+    l1TokenBridgeImpl.address,
+    deployer.address,
+    l1TokenBridgeImpl.interface.encodeFunctionData("initialize", [
+      deployer.address
+    ])
+  );
+
+  return L1LidoTokensBridge__factory.connect(
+    l1TokenBridgeProxy.address,
+    deployer
+  );
+}
+
+async function setupL1TokenBridge(deployer: SignerWithAddress, l1TokenBridge: L1LidoTokensBridge) {
+  const roles = await Promise.all([
+    l1TokenBridge.DEPOSITS_ENABLER_ROLE(),
+    l1TokenBridge.DEPOSITS_DISABLER_ROLE(),
+    l1TokenBridge.WITHDRAWALS_ENABLER_ROLE(),
+    l1TokenBridge.WITHDRAWALS_DISABLER_ROLE(),
+  ]);
+
+  for (const role of roles) {
+    await l1TokenBridge.grantRole(role, deployer.address);
+  }
+
+  await l1TokenBridge.enableDeposits();
+  await l1TokenBridge.enableWithdrawals();
 }

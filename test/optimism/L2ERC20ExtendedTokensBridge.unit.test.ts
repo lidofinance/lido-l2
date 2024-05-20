@@ -1,6 +1,6 @@
 import hre, { ethers } from "hardhat";
 import { BigNumber } from "ethers";
-import { getContractAddress } from "ethers/lib/utils";
+import { predictAddresses } from "../../utils/testing/helpers";
 import { assert } from "chai";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { JsonRpcProvider } from "@ethersproject/providers";
@@ -1097,9 +1097,9 @@ async function ctxFactory() {
   const [deployer, stranger, recipient, l1TokenBridgeEOA] =
     await hre.ethers.getSigners();
 
-  const decimals = 18;
+  const decimals = 27;
   const decimalsBN = BigNumber.from(10).pow(decimals);
-  const exchangeRate = BigNumber.from('1164454276599657236')
+  const exchangeRate = BigNumber.from('1164454276599657236000000000')
 
   const l2MessengerStub = await new CrossDomainMessengerStub__factory(
     deployer
@@ -1240,25 +1240,10 @@ async function ctxFactory() {
   };
 }
 
-async function predictAddresses(account: SignerWithAddress, txsCount: number) {
-  const currentNonce = await account.getTransactionCount();
-
-  const res: string[] = [];
-  for (let i = 0; i < txsCount; ++i) {
-    res.push(
-      getContractAddress({
-        from: account.address,
-        nonce: currentNonce + i,
-      })
-    );
-  }
-  return res;
-}
-
 async function packedTokenRateAndTimestamp(provider: JsonRpcProvider, tokenRate: BigNumber) {
   const blockNumber = await provider.getBlockNumber();
   const blockTimestamp = (await provider.getBlock(blockNumber)).timestamp;
-  const stEthPerTokenStr = ethers.utils.hexZeroPad(tokenRate.toHexString(), 12);
+  const stEthPerTokenStr = ethers.utils.hexZeroPad(tokenRate.toHexString(), 16);
   const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 5);
   return ethers.utils.hexConcat([stEthPerTokenStr, blockTimestampStr]);
 }
@@ -1284,7 +1269,7 @@ async function pushTokenRate(ctx: ContextType) {
 
 async function getL2TokenBridgeImpl(deployer: SignerWithAddress, l1TokenBridge: string) {
   const decimals = 18;
-  const exchangeRate = BigNumber.from('1164454276599657236')
+  const exchangeRate = BigNumber.from('1164454276599657236000000000')
 
   const l2MessengerStub = await new CrossDomainMessengerStub__factory(
     deployer

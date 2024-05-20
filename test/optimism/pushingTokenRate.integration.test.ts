@@ -1,5 +1,4 @@
 import { assert } from "chai";
-import { ethers } from "hardhat";
 import env from "../../utils/env";
 import { wei } from "../../utils/wei";
 import optimism from "../../utils/optimism";
@@ -7,13 +6,16 @@ import network from "../../utils/network";
 import testing, { scenario } from "../../utils/testing";
 import deploymentOracle from "../../utils/optimism/deploymentOracle";
 import { getBridgeExecutorParams } from "../../utils/bridge-executor";
+import { tokenRateAndTimestamp } from "../../utils/testing/helpers";
 import { BigNumber } from "ethers";
+import { getBlockTimestamp } from "../../utils/testing/helpers";
 import {
   ERC20BridgedStub__factory,
   ERC20WrapperStub__factory,
   OptimismBridgeExecutor__factory,
   TokenRateNotifier__factory,
-  TokenRateOracle__factory
+  TokenRateOracle__factory,
+  AccountingOracleStub__factory
 } from "../../typechain";
 
 scenario("Optimism :: Token Rate Oracle integration test", ctxFactory)
@@ -24,11 +26,11 @@ scenario("Optimism :: Token Rate Oracle integration test", ctxFactory)
       tokenRateOracle,
       opTokenRatePusher,
       l1CrossDomainMessenger,
-      l1Token,
-      l1Provider
+      genesisTime,
+      secondsPerSlot,
+      lastProcessingRefSlot,
+      tokenRate
     } = ctx;
-
-    const tokenRate = await l1Token.stEthPerToken();
 
     const account = ctx.accounts.accountA;
 
@@ -36,11 +38,11 @@ scenario("Optimism :: Token Rate Oracle integration test", ctxFactory)
       .connect(account.l1Signer)
       .handlePostTokenRebase(1, 2, 3, 4, 5, 6, 7);
 
-    const blockNumber = await l1Provider.getBlockNumber();
-    const blockTimestamp = BigNumber.from((await l1Provider.getBlock(blockNumber)).timestamp);
-
     const messageNonce = await l1CrossDomainMessenger.messageNonce();
-    const [stEthPerTokenStr, blockTimestampStr] = await tokenRateAndTimestamp(tokenRate, blockTimestamp);
+
+    const updateRateTime = genesisTime.add(secondsPerSlot.mul(lastProcessingRefSlot));
+    const [stEthPerTokenStr, blockTimestampStr] = await tokenRateAndTimestamp(tokenRate, updateRateTime);
+
     const l2Calldata = tokenRateOracle.interface.encodeFunctionData(
       "updateRate",
       [
@@ -62,9 +64,8 @@ scenario("Optimism :: Token Rate Oracle integration test", ctxFactory)
     const {
       opTokenRatePusher,
       tokenRateOracle,
-      l1Token,
-      l1Provider,
-      l1CrossDomainMessenger
+      l1CrossDomainMessenger,
+      genesisTime, secondsPerSlot, lastProcessingRefSlot, tokenRate
     } = ctx;
 
     const account = ctx.accounts.accountA;
@@ -72,11 +73,8 @@ scenario("Optimism :: Token Rate Oracle integration test", ctxFactory)
       .connect(account.l1Signer)
       .setXDomainMessageSender(opTokenRatePusher);
 
-    const blockNumber = await l1Provider.getBlockNumber();
-    const blockTimestamp = BigNumber.from((await l1Provider.getBlock(blockNumber)).timestamp);
-
-    const tokenRate = await l1Token.stEthPerToken();
-    const [stEthPerTokenStr, blockTimestampStr] = await tokenRateAndTimestamp(tokenRate, blockTimestamp);
+    const updateRateTime = genesisTime.add(secondsPerSlot.mul(lastProcessingRefSlot));
+    const [stEthPerTokenStr, blockTimestampStr] = await tokenRateAndTimestamp(tokenRate, updateRateTime);
 
     const tx = await ctx.l2CrossDomainMessenger
       .connect(ctx.accounts.l1CrossDomainMessengerAliased)
@@ -99,18 +97,23 @@ scenario("Optimism :: Token Rate Oracle integration test", ctxFactory)
     const [
       ,
       tokenRateAnswer,
+      startedAt_,
       ,
-      updatedAt,
-
     ] = await tokenRateOracle.latestRoundData();
 
     assert.equalBN(tokenRateAnswer, tokenRate);
-    assert.equalBN(updatedAt, blockTimestampStr);
+    assert.equalBN(startedAt_, updateRateTime);
   })
 
   .run();
 
 async function ctxFactory() {
+  const l2GasLimitForPushingTokenRate = 1000;
+  const tokenRateOutdatedDelay = 86400;
+  const maxAllowedL2ToL1ClockLag = BigNumber.from(86400);
+  const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);
+  const tokenRate = BigNumber.from('1164454276599657236000000000');
+
   const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
   const [l1Provider, l2Provider] = network
     .multichain(["eth", "opt"], networkName)
@@ -118,11 +121,12 @@ async function ctxFactory() {
   const l1Deployer = testing.accounts.deployer(l1Provider);
   const l2Deployer = testing.accounts.deployer(l2Provider);
 
-  const blockNumber = await l2Provider.getBlockNumber();
-  const blockTimestamp = BigNumber.from((await l2Provider.getBlock(blockNumber)).timestamp);
+  const blockTimestamp = await getBlockTimestamp(l1Provider, 0);
+  const blockTimestampInPast = await getBlockTimestamp(l1Provider, -86400);
 
-  const blockTimestampInPast = BigNumber.from((await l2Provider.getBlock(blockNumber)).timestamp).sub(86400);
-  const tokenRate = BigNumber.from('1164454276599657236');
+  const genesisTime = blockTimestamp;
+  const secondsPerSlot = BigNumber.from(10);
+  const lastProcessingRefSlot = BigNumber.from(20);
 
   const optContracts = optimism.contracts(networkName, { forking: true });
   const l2CrossDomainMessenger = optContracts.L2CrossDomainMessenger;
@@ -151,12 +155,20 @@ async function ctxFactory() {
     "TT",
     tokenRate
   );
+
+  const accountingOracle = await new AccountingOracleStub__factory(l1Deployer).deploy(
+    genesisTime,
+    secondsPerSlot,
+    lastProcessingRefSlot
+  );
+
   const [ethDeployScript, optDeployScript] = await deploymentOracle(
     networkName
   ).oracleDeployScript(
     l1Token.address,
-    1000,
-    86400,
+    accountingOracle.address,
+    l2GasLimitForPushingTokenRate,
+    tokenRateOutdatedDelay,
     {
       deployer: l1Deployer,
       admins: {
@@ -173,8 +185,8 @@ async function ctxFactory() {
       },
       contractsShift: 0,
       tokenRateOracle: {
-        maxAllowedL2ToL1ClockLag: BigNumber.from(86400),
-        maxAllowedTokenRateDeviationPerDay: BigNumber.from(500),
+        maxAllowedL2ToL1ClockLag: maxAllowedL2ToL1ClockLag,
+        maxAllowedTokenRateDeviationPerDay: maxAllowedTokenRateDeviationPerDay,
         tokenRate: tokenRate,
         l1Timestamp: BigNumber.from(blockTimestampInPast)
       }
@@ -218,17 +230,14 @@ async function ctxFactory() {
     l1CrossDomainMessenger,
     l2CrossDomainMessenger,
     l1Token,
+    accountingOracle,
     l1Provider,
     blockTimestamp,
+    tokenRate,
+    genesisTime, secondsPerSlot, lastProcessingRefSlot,
     accounts: {
       accountA,
       l1CrossDomainMessengerAliased
     }
   };
-}
-
-async function tokenRateAndTimestamp(tokenRate: BigNumber, blockTimestamp: BigNumber) {
-  const stEthPerTokenStr = ethers.utils.hexZeroPad(tokenRate.toHexString(), 12);
-  const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 5);
-  return [stEthPerTokenStr, blockTimestampStr];
 }

@@ -1,13 +1,11 @@
 import { assert } from "chai";
-import { ethers } from "hardhat";
 import { BigNumber } from 'ethers'
-import { JsonRpcProvider } from "@ethersproject/providers";
 import env from "../../utils/env";
 import { wei } from "../../utils/wei";
 import optimism from "../../utils/optimism";
 import testing, { scenario } from "../../utils/testing";
-import { ERC20WrapperStub } from "../../typechain";
 import { ScenarioTest } from "../../utils/testing";
+import { tokenRateAndTimestampPacked, refSlotTimestamp } from "../../utils/testing/helpers";
 
 type ContextType = Awaited<ReturnType<ReturnType<typeof ctxFactory>>>
 
@@ -84,7 +82,8 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
         l2TokenRebasable,
         l1CrossDomainMessenger,
         l2ERC20ExtendedTokensBridge,
-        l1Provider
+        l1Provider,
+        accountingOracle
       } = ctx;
       const { accountA: tokenHolderA } = ctx.accounts;
       const { depositAmountOfRebasableToken, tokenRate } = ctx.constants;
@@ -112,7 +111,8 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
           "0x"
         );
 
-      const dataToSend = await packedTokenRateAndTimestamp(l1Provider, l1Token);
+      const refSlotTime = await refSlotTimestamp(accountingOracle);
+      const dataToSend = await tokenRateAndTimestampPacked(tokenRate, refSlotTime, "0x");
 
       await assert.emits(l1LidoTokensBridge, tx, "ERC20DepositInitiated", [
         l1TokenRebasable.address,
@@ -170,6 +170,7 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
       const {
         l1Token,
         l1TokenRebasable,
+        accountingOracle,
         l2TokenRebasable,
         l1LidoTokensBridge,
         l2CrossDomainMessenger,
@@ -187,7 +188,8 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
       const tokenHolderABalanceBefore = await l2TokenRebasable.balanceOf(tokenHolderA.address);
       const l2TokenRebasableTotalSupplyBefore = await l2TokenRebasable.totalSupply();
 
-      const dataToReceive = await packedTokenRateAndTimestamp(l2Provider, l1Token);
+      const refSlotTime = await refSlotTimestamp(accountingOracle);
+      const dataToReceive = await tokenRateAndTimestampPacked(tokenRate, refSlotTime, "0x");
 
       const tx = await l2CrossDomainMessenger
         .connect(l1CrossDomainMessengerAliased)
@@ -345,6 +347,7 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
       const {
         l1Token,
         l1TokenRebasable,
+        accountingOracle,
         l1LidoTokensBridge,
         l2TokenRebasable,
         l1CrossDomainMessenger,
@@ -380,7 +383,8 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
           "0x"
         );
 
-      const dataToSend = await packedTokenRateAndTimestamp(l1Provider, l1Token);
+      const refSlotTime = await refSlotTimestamp(accountingOracle);
+      const dataToSend = await tokenRateAndTimestampPacked(tokenRate, refSlotTime, "0x");
 
       await assert.emits(l1LidoTokensBridge, tx, "ERC20DepositInitiated", [
         l1TokenRebasable.address,
@@ -438,6 +442,7 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
       const {
         l1Token,
         l1TokenRebasable,
+        accountingOracle,
         l1LidoTokensBridge,
         l2TokenRebasable,
         l2CrossDomainMessenger,
@@ -456,7 +461,8 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
       const depositAmountNonRebasable = nonRebasableFromRebasable(depositAmountOfRebasableToken, tokenRate);
       const depositAmountRebasable = rebasableFromNonRebasable(depositAmountNonRebasable, tokenRate);
 
-      const dataToReceive = await packedTokenRateAndTimestamp(l2Provider, l1Token);
+      const refSlotTime = await refSlotTimestamp(accountingOracle);
+      const dataToReceive = await tokenRateAndTimestampPacked(tokenRate, refSlotTime, "0x");
 
       const l2TokenRebasableTotalSupplyBefore = await l2TokenRebasable.totalSupply();
       const tokenHolderBBalanceBefore = await l2TokenRebasable.balanceOf(tokenHolderB.address);
@@ -623,7 +629,7 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
 function ctxFactory(depositAmountOfRebasableToken: BigNumber, withdrawalAmountOfRebasableToken: BigNumber) {
   return async () => {
     const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
-    const exchangeRate = BigNumber.from('1164454276599657236');
+    const exchangeRate = BigNumber.from('1164454276599657236000000000');
 
     const {
       l1Provider,
@@ -707,25 +713,16 @@ function ctxFactory(depositAmountOfRebasableToken: BigNumber, withdrawalAmountOf
   }
 }
 
-async function packedTokenRateAndTimestamp(l1Provider: JsonRpcProvider, l1Token: ERC20WrapperStub) {
-  const stEthPerToken = await l1Token.stEthPerToken();
-  const blockNumber = await l1Provider.getBlockNumber();
-  const blockTimestamp = (await l1Provider.getBlock(blockNumber)).timestamp;
-  const stEthPerTokenStr = ethers.utils.hexZeroPad(stEthPerToken.toHexString(), 12);
-  const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 5);
-  return ethers.utils.hexConcat([stEthPerTokenStr, blockTimestampStr]);
-}
-
 function nonRebasableFromRebasable(rebasable: BigNumber, exchangeRate: BigNumber) {
   return BigNumber.from(rebasable)
-    .mul(BigNumber.from('1000000000000000000'))
+    .mul(BigNumber.from('1000000000000000000000000000'))
     .div(exchangeRate);
 }
 
 function rebasableFromNonRebasable(nonRebasable: BigNumber, exchangeRate: BigNumber) {
   return BigNumber.from(nonRebasable)
     .mul(exchangeRate)
-    .div(BigNumber.from('1000000000000000000'));
+    .div(BigNumber.from('1000000000000000000000000000'));
 }
 
 bridgingTestsSuit(

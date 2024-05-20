@@ -1,19 +1,21 @@
 import { ethers } from "hardhat";
 import { assert } from "chai";
-import { utils, BigNumber } from 'ethers'
+import { BigNumber } from 'ethers'
 import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
+import { getInterfaceID } from "../../utils/testing/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   TokenRateNotifier__factory,
   ITokenRatePusher__factory,
   OpStackTokenRatePusher__factory,
   ITokenRateOracle__factory,
-  ERC20BridgedStub__factory,
-  ERC20WrapperStub__factory,
   CrossDomainMessengerStub__factory,
   OpStackTokenRatePusherWithSomeErrorStub__factory,
-  OpStackTokenRatePusherWithOutOfGasErrorStub__factory
+  OpStackTokenRatePusherWithOutOfGasErrorStub__factory,
+  ERC20BridgedStub__factory,
+  ERC20WrapperStub__factory,
+  AccountingOracleStub__factory
 } from "../../typechain";
 
 unit("TokenRateNotifier", ctxFactory)
@@ -75,7 +77,7 @@ unit("TokenRateNotifier", ctxFactory)
   .test("addObserver() :: revert on adding too many observers", async (ctx) => {
     const { tokenRateNotifier, opStackTokenRatePusher } = ctx.contracts;
     const { deployer, owner, tokenRateOracle } = ctx.accounts;
-    const { l2GasLimitForPushingTokenRate } = ctx.constants;
+    const { l2GasLimitForPushingTokenRate, tokenRate, genesisTime, secondsPerSlot, lastProcessingRefSlot } = ctx.constants;
 
     assert.equalBN(await tokenRateNotifier.observersLength(), 0);
     const maxObservers = await tokenRateNotifier.MAX_OBSERVERS_COUNT();
@@ -83,7 +85,17 @@ unit("TokenRateNotifier", ctxFactory)
 
       const {
         opStackTokenRatePusher
-      } = await getOpStackTokenRatePusher(deployer, owner, tokenRateOracle, l2GasLimitForPushingTokenRate);
+      } = await getOpStackTokenRatePusher
+        (
+          tokenRate,
+          genesisTime,
+          secondsPerSlot,
+          lastProcessingRefSlot,
+          deployer,
+          owner,
+          tokenRateOracle,
+          l2GasLimitForPushingTokenRate
+        );
 
       await tokenRateNotifier
         .connect(ctx.accounts.owner)
@@ -203,21 +215,17 @@ unit("TokenRateNotifier", ctxFactory)
     const {
       tokenRateNotifier,
       l1MessengerStub,
-      opStackTokenRatePusher,
-      l1TokenNonRebasableStub
+      opStackTokenRatePusher
     } = ctx.contracts;
     const { tokenRateOracle } = ctx.accounts;
-    const { l2GasLimitForPushingTokenRate } = ctx.constants;
+    const { l2GasLimitForPushingTokenRate, tokenRate, genesisTime, secondsPerSlot, lastProcessingRefSlot } = ctx.constants;
 
-    let tokenRate = await l1TokenNonRebasableStub.stEthPerToken();
+    const updateRateTime = genesisTime.add(secondsPerSlot.mul(lastProcessingRefSlot));
+
     await tokenRateNotifier
       .connect(ctx.accounts.owner)
       .addObserver(opStackTokenRatePusher.address);
     let tx = await tokenRateNotifier.handlePostTokenRebase(1, 2, 3, 4, 5, 6, 7);
-
-    const provider = await ethers.provider;
-    const blockNumber = await provider.getBlockNumber();
-    const blockTimestamp = (await provider.getBlock(blockNumber)).timestamp;
 
     await assert.emits(l1MessengerStub, tx, "SentMessage", [
       tokenRateOracle.address,
@@ -226,7 +234,7 @@ unit("TokenRateNotifier", ctxFactory)
         "updateRate",
         [
           tokenRate,
-          blockTimestamp
+          updateRateTime
         ]
       ),
       1,
@@ -237,18 +245,20 @@ unit("TokenRateNotifier", ctxFactory)
   .run();
 
 async function getOpStackTokenRatePusher(
+  tokenRate: BigNumber,
+  genesisTime: BigNumber,
+  secondsPerSlot: BigNumber,
+  lastProcessingRefSlot: BigNumber,
   deployer: SignerWithAddress,
   owner: SignerWithAddress,
   tokenRateOracle: SignerWithAddress,
   l2GasLimitForPushingTokenRate: number) {
 
-  const tokenRate = BigNumber.from('1164454276599657236');
-
   const tokenRateNotifier = await new TokenRateNotifier__factory(deployer).deploy(owner.address);
 
-  const l1MessengerStub = await new CrossDomainMessengerStub__factory(
-    deployer
-  ).deploy({ value: wei.toBigNumber(wei`1 ether`) });
+  const l1MessengerStub = await new CrossDomainMessengerStub__factory(deployer)
+    .deploy({ value: wei.toBigNumber(wei`1 ether`) });
+
 
   const l1TokenRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
     "L1 Token Rebasable",
@@ -262,40 +272,56 @@ async function getOpStackTokenRatePusher(
     tokenRate
   );
 
+  const accountingOracle = await new AccountingOracleStub__factory(deployer).deploy(
+    genesisTime,
+    secondsPerSlot,
+    lastProcessingRefSlot
+  );
+
   const opStackTokenRatePusher = await new OpStackTokenRatePusher__factory(deployer).deploy(
     l1MessengerStub.address,
     l1TokenNonRebasableStub.address,
+    accountingOracle.address,
     tokenRateOracle.address,
     l2GasLimitForPushingTokenRate
   );
 
-  return { tokenRateNotifier, opStackTokenRatePusher, l1MessengerStub, l1TokenNonRebasableStub }
+  return {
+    tokenRateNotifier,
+    l1TokenNonRebasableStub,
+    opStackTokenRatePusher,
+    accountingOracle,
+    l1MessengerStub,
+    tokenRate
+  };
 }
 
 async function ctxFactory() {
   const [deployer, owner, stranger, tokenRateOracle] = await ethers.getSigners();
-
+  const tokenRate = BigNumber.from('1164454276599657236000000000');
   const l2GasLimitForPushingTokenRate = 300_000;
+  const genesisTime = BigNumber.from(1);
+  const secondsPerSlot = BigNumber.from(2);
+  const lastProcessingRefSlot = BigNumber.from(3);
 
   const {
     tokenRateNotifier,
     opStackTokenRatePusher,
-    l1MessengerStub,
-    l1TokenNonRebasableStub
-  } = await getOpStackTokenRatePusher(deployer, owner, tokenRateOracle, l2GasLimitForPushingTokenRate);
+    l1MessengerStub
+  } = await getOpStackTokenRatePusher(
+    tokenRate,
+    genesisTime,
+    secondsPerSlot,
+    lastProcessingRefSlot,
+    deployer,
+    owner,
+    tokenRateOracle,
+    l2GasLimitForPushingTokenRate
+  );
 
   return {
     accounts: { deployer, owner, stranger, tokenRateOracle },
-    contracts: { tokenRateNotifier, opStackTokenRatePusher, l1MessengerStub, l1TokenNonRebasableStub },
-    constants: { l2GasLimitForPushingTokenRate }
+    contracts: { tokenRateNotifier, opStackTokenRatePusher, l1MessengerStub },
+    constants: { l2GasLimitForPushingTokenRate, tokenRate, genesisTime, secondsPerSlot, lastProcessingRefSlot }
   };
-}
-
-export function getInterfaceID(contractInterface: utils.Interface) {
-  let interfaceID = ethers.constants.Zero;
-  const functions: string[] = Object.keys(contractInterface.functions);
-  for (let i = 0; i < functions.length; i++) {
-    interfaceID = interfaceID.xor(contractInterface.getSighash(functions[i]));
-  }
-  return interfaceID;
 }

@@ -15,6 +15,7 @@ import {
   L2ERC20ExtendedTokensBridge__factory,
   CrossDomainMessengerStub__factory,
   ERC20RebasableBridgedPermit__factory,
+  AccountingOracleStub__factory
 } from "../../typechain";
 import addresses from "./addresses";
 import contracts from "./contracts";
@@ -163,6 +164,10 @@ async function loadDeployedBridges(
       testingUtils.env.OPT_L1_REBASABLE_TOKEN(),
       l1SignerOrProvider
     ),
+    accountingOracle: AccountingOracleStub__factory.connect(
+      testingUtils.env.OPT_L1_REBASABLE_TOKEN(),
+      l1SignerOrProvider
+    ),
 
     ...connectBridgeContracts(
       {
@@ -199,11 +204,18 @@ async function deployTestBridge(
     tokenRate
   );
 
+  const accountingOracle = await new AccountingOracleStub__factory(ethDeployer).deploy(
+    1,
+    2,
+    3
+  );
+
   const [ethDeployScript, optDeployScript] = await deploymentAll(
     networkName
   ).deployAllScript(
     l1Token.address,
     l1TokenRebasable.address,
+    accountingOracle.address,
     {
       deployer: ethDeployer,
       admins: { proxy: ethDeployer.address, bridge: ethDeployer.address },
@@ -248,6 +260,7 @@ async function deployTestBridge(
   return {
     l1Token: l1Token.connect(ethProvider),
     l1TokenRebasable: l1TokenRebasable.connect(ethProvider),
+    accountingOracle: accountingOracle.connect(ethProvider),
     ...connectBridgeContracts(
       {
         tokenRateOracle: optDeployScript.tokenRateOracleProxyAddress,
