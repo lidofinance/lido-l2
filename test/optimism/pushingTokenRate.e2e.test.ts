@@ -17,7 +17,7 @@ scenario("Optimism :: Push token rate to Oracle E2E test", ctxFactory)
   })
 
   .step("Receive token rate", async (ctx) => {
-    const tokenRate = await ctx.l1Token.stEthPerToken();
+    const tokenRate = await ctx.l1Token.getStETHByWstETH(BigNumber.from(10).pow(27));
 
     const answer = await ctx.tokenRateOracle.latestAnswer();
     assert.equalBN(answer, tokenRate);

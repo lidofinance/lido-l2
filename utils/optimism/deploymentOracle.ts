@@ -63,6 +63,7 @@ export default function deploymentOracle(
   return {
     async oracleDeployScript(
       l1Token: string,
+      accountingOracle: string,
       l2GasLimitForPushingTokenRate: number,
       tokenRateOutdatedDelay: number,
       l1Params: OptDeployScriptParams,
@@ -99,6 +100,7 @@ export default function deploymentOracle(
           args: [
             optAddresses.L1CrossDomainMessenger,
             l1Token,
+            accountingOracle,
             expectedL2TokenRateOracleProxyAddress,
             l2GasLimitForPushingTokenRate,
             options?.overrides,

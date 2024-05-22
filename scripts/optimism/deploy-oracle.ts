@@ -28,6 +28,7 @@ async function main() {
         .deploymentOracle(networkName, { logger: console })
         .oracleDeployScript(
             deploymentConfig.l1Token,
+            deploymentConfig.accountingOracle,
             deploymentConfig.l2GasLimitForPushingTokenRate,
             deploymentConfig.tokenRateOutdatedDelay,
             {
@@ -48,7 +49,7 @@ async function main() {
                 tokenRateOracle: {
                     maxAllowedL2ToL1ClockLag: 86400,
                     maxAllowedTokenRateDeviationPerDay: 500,
-                    tokenRate: 1164454276599657236,
+                    tokenRate: 1164454276599657236000000000,
                     l1Timestamp: blockTimestamp
                 }
             }

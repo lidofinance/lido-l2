@@ -12,6 +12,7 @@ interface ChainDeploymentConfig extends BridgingManagerSetupConfig {
 interface MultiChainDeploymentConfig {
   l1Token: string;
   l1RebasableToken: string;
+  accountingOracle: string;
   l1OpStackTokenRatePusher: string;
   l2GasLimitForPushingTokenRate: number;
   tokenRateOutdatedDelay: number;
@@ -28,6 +29,7 @@ export function loadMultiChainDeploymentConfig(): MultiChainDeploymentConfig {
   return {
     l1Token: env.address("TOKEN"),
     l1RebasableToken: env.address("REBASABLE_TOKEN"),
+    accountingOracle: env.address("ACCOUNTING_ORACLE"),
     l1OpStackTokenRatePusher: env.address("L1_OP_STACK_TOKEN_RATE_PUSHER"),
     l2GasLimitForPushingTokenRate: Number(env.string("L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE")),
     tokenRateOutdatedDelay: Number(env.string("TOKEN_RATE_OUTDATED_DELAY")),

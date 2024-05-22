@@ -5,18 +5,11 @@ pragma solidity 0.8.10;
 
 import {L1ERC20ExtendedTokensBridge} from "./L1ERC20ExtendedTokensBridge.sol";
 import {Versioned} from "../utils/Versioned.sol";
-
-/// @author kovalgek
-/// @notice A subset of wstETH token interface of core LIDO protocol.
-interface IERC20WstETH {
-    /// @notice Get amount of wstETH for a one stETH
-    /// @return Amount of wstETH for a 1 stETH
-    function stEthPerToken() external view returns (uint256);
-}
+import {TokenRateAndUpdateTimestampProvider} from "./TokenRateAndUpdateTimestampProvider.sol";
 
 /// @author kovalgek
 /// @notice Hides wstETH concept from other contracts to keep `L1ERC20ExtendedTokensBridge` reusable.
-contract L1LidoTokensBridge is L1ERC20ExtendedTokensBridge, Versioned {
+contract L1LidoTokensBridge is L1ERC20ExtendedTokensBridge, TokenRateAndUpdateTimestampProvider, Versioned {
 
     /// @param messenger_ L1 messenger address being used for cross-chain communications
     /// @param l2TokenBridge_ Address of the corresponding L2 bridge
@@ -24,13 +17,15 @@ contract L1LidoTokensBridge is L1ERC20ExtendedTokensBridge, Versioned {
     /// @param l1TokenRebasable_ Address of the bridged token in the L1 chain
     /// @param l2TokenNonRebasable_ Address of the token minted on the L2 chain when token bridged
     /// @param l2TokenRebasable_ Address of the token minted on the L2 chain when token bridged
+    /// @param accountingOracle_ Address of the AccountingOracle instance to retrieve rate update timestamps
     constructor(
         address messenger_,
         address l2TokenBridge_,
         address l1TokenNonRebasable_,
         address l1TokenRebasable_,
         address l2TokenNonRebasable_,
-        address l2TokenRebasable_
+        address l2TokenRebasable_,
+        address accountingOracle_
     ) L1ERC20ExtendedTokensBridge(
         messenger_,
         l2TokenBridge_,
@@ -38,8 +33,10 @@ contract L1LidoTokensBridge is L1ERC20ExtendedTokensBridge, Versioned {
         l1TokenRebasable_,
         l2TokenNonRebasable_,
         l2TokenRebasable_
-    ) {
-    }
+    ) TokenRateAndUpdateTimestampProvider(
+        l1TokenNonRebasable_,
+        accountingOracle_
+    ) {}
 
     /// @notice Initializes the contract from scratch.
     /// @param admin_ Address of the account to grant the DEFAULT_ADMIN_ROLE
@@ -56,7 +53,7 @@ contract L1LidoTokensBridge is L1ERC20ExtendedTokensBridge, Versioned {
         _initializeContractVersionTo(2);
     }
 
-    function _tokenRate() override internal view returns (uint256) {
-        return IERC20WstETH(L1_TOKEN_NON_REBASABLE).stEthPerToken();
+    function tokenRate() override public view returns (uint256 rate, uint256 updateTimestamp) {
+        return getTokenRateAndUpdateTimestamp();
     }
 }

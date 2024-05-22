@@ -108,6 +108,7 @@ export default function deploymentAll(
     async deployAllScript(
       l1Token: string,
       l1TokenRebasable: string,
+      accountingOracle: string,
       l1Params: OptL1DeployScriptParams,
       l2Params: OptL2DeployScriptParams,
     ): Promise<[L1DeployAllScript, L2DeployAllScript]> {
@@ -147,6 +148,7 @@ export default function deploymentAll(
             l1TokenRebasable,
             expectedL2TokenProxyAddress,
             expectedL2TokenRebasableProxyAddress,
+            accountingOracle,
             options?.overrides,
           ],
           afterDeploy: (c) =>
@@ -180,6 +182,7 @@ export default function deploymentAll(
           args: [
             optAddresses.L1CrossDomainMessenger,
             l1Token,
+            accountingOracle,
             expectedL2TokenRateOracleProxyAddress,
             1000,
             options?.overrides,

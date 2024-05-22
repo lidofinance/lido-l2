@@ -8,6 +8,6 @@ pragma solidity 0.8.10;
 interface ITokenRateUpdatable {
     /// @notice Updates token rate.
     /// @param tokenRate_ wstETH/stETH token rate.
-    /// @param rateL1Timestamp_ L1 time when rate was pushed on L1 side.
-    function updateRate(uint256 tokenRate_, uint256 rateL1Timestamp_) external;
+    /// @param rateUpdateL1Timestamp_ L1 time when rate was updated on L1 side.
+    function updateRate(uint256 tokenRate_, uint256 rateUpdateL1Timestamp_) external;
 }

@@ -1,13 +1,11 @@
 import { assert } from "chai";
-import { ethers } from "hardhat";
 import { BigNumber } from 'ethers'
 import env from "../../utils/env";
 import { wei } from "../../utils/wei";
 import optimism from "../../utils/optimism";
 import testing, { scenario } from "../../utils/testing";
 import { ScenarioTest } from "../../utils/testing";
-import { ERC20WrapperStub } from "../../typechain";
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { tokenRateAndTimestampPacked, refSlotTimestamp, getExchangeRate } from "../../utils/testing/helpers";
 
 type ContextType = Awaited<ReturnType<ReturnType<typeof ctxFactory>>>
 
@@ -83,9 +81,10 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
         l2Token,
         l1CrossDomainMessenger,
         l2ERC20ExtendedTokensBridge,
+        accountingOracle
       } = ctx;
       const { accountA: tokenHolderA } = ctx.accounts;
-      const { depositAmount } = ctx.constants;
+      const { depositAmount, tokenRate } = ctx.constants;
 
       await l1Token
         .connect(tokenHolderA.l1Signer)
@@ -106,7 +105,8 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
           "0x"
         );
 
-      const dataToSend = await packedTokenRateAndTimestamp(ctx.l1Provider, l1Token);
+      const refSlotTime = await refSlotTimestamp(accountingOracle);
+      const dataToSend = await tokenRateAndTimestampPacked(tokenRate, refSlotTime, "0x");
 
       await assert.emits(l1LidoTokensBridge, tx, "ERC20DepositInitiated", [
         l1Token.address,
@@ -157,8 +157,9 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
         l1LidoTokensBridge,
         l2CrossDomainMessenger,
         l2ERC20ExtendedTokensBridge,
+        accountingOracle
       } = ctx;
-      const { depositAmount } = ctx.constants;
+      const { depositAmount, tokenRate } = ctx.constants;
 
       const { accountA: tokenHolderA, l1CrossDomainMessengerAliased } =
         ctx.accounts;
@@ -166,7 +167,8 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
       const tokenHolderABalanceBefore = await l2Token.balanceOf(tokenHolderA.address);
       const l2TokenTotalSupplyBefore = await l2Token.totalSupply();
 
-      const dataToReceive = await packedTokenRateAndTimestamp(ctx.l2Provider, l1Token);
+      const refSlotTime = await refSlotTimestamp(accountingOracle);
+      const dataToReceive = await tokenRateAndTimestampPacked(tokenRate, refSlotTime, "0x");
 
       const tx = await l2CrossDomainMessenger
         .connect(l1CrossDomainMessengerAliased)
@@ -318,9 +320,10 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
         l1LidoTokensBridge,
         l2ERC20ExtendedTokensBridge,
         l1CrossDomainMessenger,
+        accountingOracle
       } = ctx;
       const { accountA: tokenHolderA, accountB: tokenHolderB } = ctx.accounts;
-      const { depositAmount } = ctx.constants;
+      const { depositAmount, tokenRate } = ctx.constants;
 
       assert.notEqual(tokenHolderA.address, tokenHolderB.address);
 
@@ -345,7 +348,8 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
           "0x"
         );
 
-      const dataToSend = await packedTokenRateAndTimestamp(ctx.l1Provider, l1Token);
+      const refSlotTime = await refSlotTimestamp(accountingOracle);
+      const dataToSend = await tokenRateAndTimestampPacked(tokenRate, refSlotTime, "0x");
 
       await assert.emits(l1LidoTokensBridge, tx, "ERC20DepositInitiated", [
         l1Token.address,
@@ -396,18 +400,20 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
         l2Token,
         l2CrossDomainMessenger,
         l2ERC20ExtendedTokensBridge,
+        accountingOracle
       } = ctx;
       const {
         accountA: tokenHolderA,
         accountB: tokenHolderB,
         l1CrossDomainMessengerAliased,
       } = ctx.accounts;
-      const { depositAmount } = ctx.constants;
+      const { depositAmount, tokenRate } = ctx.constants;
 
       const l2TokenTotalSupplyBefore = await l2Token.totalSupply();
       const tokenHolderBBalanceBefore = await l2Token.balanceOf(tokenHolderB.address);
 
-      const dataToReceive = await packedTokenRateAndTimestamp(ctx.l2Provider, l1Token);
+      const refSlotTime = await refSlotTimestamp(accountingOracle);
+      const dataToReceive = await tokenRateAndTimestampPacked(tokenRate, refSlotTime, "0x");
 
       const tx = await l2CrossDomainMessenger
         .connect(l1CrossDomainMessengerAliased)
@@ -574,7 +580,10 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
 function ctxFactory(depositAmount: BigNumber, withdrawalAmount: BigNumber) {
   return async () => {
     const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
-    const tokenRate = BigNumber.from('1164454276599657236');
+    const tokenRateDecimals = BigNumber.from(27);
+    const totalPooledEther = BigNumber.from('9309904612343950493629678');
+    const totalShares = BigNumber.from('7975822843597609202337218');
+    const tokenRate = getExchangeRate(tokenRateDecimals, totalPooledEther, totalShares);
 
     const {
       l1Provider,
@@ -582,7 +591,7 @@ function ctxFactory(depositAmount: BigNumber, withdrawalAmount: BigNumber) {
       l1ERC20ExtendedTokensBridgeAdmin,
       l2ERC20ExtendedTokensBridgeAdmin,
       ...contracts
-    } = await optimism.testing(networkName).getIntegrationTestSetup(tokenRate);
+    } = await optimism.testing(networkName).getIntegrationTestSetup(totalPooledEther, totalShares);
 
     const l1Snapshot = await l1Provider.send("evm_snapshot", []);
     const l2Snapshot = await l2Provider.send("evm_snapshot", []);
@@ -656,15 +665,6 @@ function ctxFactory(depositAmount: BigNumber, withdrawalAmount: BigNumber) {
       },
     };
   }
-}
-
-async function packedTokenRateAndTimestamp(l1Provider: JsonRpcProvider, l1Token: ERC20WrapperStub) {
-  const stEthPerToken = await l1Token.stEthPerToken();
-  const blockNumber = await l1Provider.getBlockNumber();
-  const blockTimestamp = (await l1Provider.getBlock(blockNumber)).timestamp;
-  const stEthPerTokenStr = ethers.utils.hexZeroPad(stEthPerToken.toHexString(), 12);
-  const blockTimestampStr = ethers.utils.hexZeroPad(ethers.utils.hexlify(blockTimestamp), 5);
-  return ethers.utils.hexConcat([stEthPerTokenStr, blockTimestampStr]);
 }
 
 bridgingTestsSuit(

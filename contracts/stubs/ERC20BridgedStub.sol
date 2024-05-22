@@ -13,7 +13,7 @@ contract ERC20BridgedStub is IERC20Bridged, ERC20 {
     constructor(string memory name_, string memory symbol_)
         ERC20(name_, symbol_)
     {
-        _mint(msg.sender, 1000000 * 10**18);
+        _mint(msg.sender, 1000000 * 10**40);
     }
 
     function setBridge(address bridge_) external {

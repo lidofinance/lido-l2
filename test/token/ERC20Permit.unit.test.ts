@@ -322,7 +322,7 @@ function ctxFactoryFactory(
   return async () => {
     const decimalsToSet = 18;
     const decimals = BigNumber.from(10).pow(decimalsToSet);
-    const tokenRate = BigNumber.from('1164454276599657236');
+    const tokenRate = BigNumber.from('1164454276599657236000000000');
     const premintShares = wei.toBigNumber(wei`100 ether`);
     const premintTokens = tokenRate.mul(premintShares).div(decimals);
 
