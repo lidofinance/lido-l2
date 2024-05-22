@@ -285,17 +285,24 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
 
     const amountToDepositNonRebasable = wei`1 ether`;
 
+    // wrap on L2
     const amountToWithdrawRebasable = rebasableFromNonRebasableL2(
       wei.toBigNumber(amountToDepositNonRebasable),
       tokenRateDecimals,
       exchangeRate
     );
 
+    // unwrap on L2
     const amountReceivedWithdrawNonRebasable = nonRebasableFromRebasableL2(
       amountToWithdrawRebasable,
       tokenRateDecimals,
       exchangeRate
     );
+
+    console.log("input:        amountToDepositNonRebasable=",amountToDepositNonRebasable);
+    console.log("wrap on L2: amountToWithdrawRebasable=",amountToWithdrawRebasable);
+    console.log("unwrap on L2: amountReceivedWithdrawNonRebasable=",amountReceivedWithdrawNonRebasable);
+
 
     const l1Gas = wei`1 wei`;
     const data = "0xdeadbeaf";
@@ -354,19 +361,13 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
       l1Gas,
     ]);
 
-    console.log("amountToWithdraw=",amountToWithdrawRebasable);
-
-    console.log("recipientBalanceBefore=",recipientBalanceBefore);
-    console.log("after=",await l2TokenRebasable.balanceOf(deployer.address));
+    console.log("rebasable on L2 recipientBalanceBefore=",recipientBalanceBefore);
+    console.log("rebasable on L2 recipientBalanceAfter=",await l2TokenRebasable.balanceOf(recipient.address));
 
     assert.equalBN(
       await l2TokenRebasable.balanceOf(deployer.address),
       recipientBalanceBefore.sub(amountToWithdrawRebasable)
     );
-
-    console.log("await l2TokenRebasable.totalSupply()=",await l2TokenRebasable.totalSupply());
-    console.log("totalSupplyBefore=",totalSupplyBefore);
-    // console.log("amountToWithdraw=",amountToWithdraw);
 
     assert.isTrue(almostEqual(
       await l2TokenRebasable.totalSupply(),
