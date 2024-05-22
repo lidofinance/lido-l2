@@ -26,22 +26,13 @@ interface IL2ERC20Bridge {
         bytes _data
     );
 
-    event DepositFailed(
-        address indexed _l1Token,
-        address indexed _l2Token,
-        address indexed _from,
-        address _to,
-        uint256 _amount,
-        bytes _data
-    );
-
     /// @notice Returns the address of the corresponding L1 bridge contract
     function l1TokenBridge() external returns (address);
 
     /// @notice Initiates a withdraw of some tokens to the caller's account on L1
     /// @param l2Token_ Address of L2 token where withdrawal was initiated.
     /// @param amount_ Amount of the token to withdraw.
-    /// @param l1Gas_ Unused, but included for potential forward compatibility considerations.
+    /// @param l1Gas_ Minimum gas limit to use for the transaction.
     /// @param data_ Optional data to forward to L1. This data is provided
     ///     solely as a convenience for external contracts. Aside from enforcing a maximum
     ///     length, these contracts provide no guarantees about its content.
@@ -56,7 +47,7 @@ interface IL2ERC20Bridge {
     /// @param l2Token_ Address of L2 token where withdrawal is initiated.
     /// @param to_ L1 adress to credit the withdrawal to.
     /// @param amount_ Amount of the token to withdraw.
-    /// @param l1Gas_ Unused, but included for potential forward compatibility considerations.
+    /// @param l1Gas_ Minimum gas limit to use for the transaction.
     /// @param data_ Optional data to forward to L1. This data is provided
     ///     solely as a convenience for external contracts. Aside from enforcing a maximum
     ///     length, these contracts provide no guarantees about its content.

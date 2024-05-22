@@ -150,6 +150,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     /// @inheritdoc IERC20
     function approve(address spender_, uint256 amount_) external returns (bool) {
         _approve(msg.sender, spender_, amount_);
+        emit Approval(msg.sender, spender_, amount_);
         return true;
     }
 
@@ -273,7 +274,6 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         uint256 amount_
     ) internal virtual onlyNonZeroAccount(owner_) onlyNonZeroAccount(spender_) {
         _getTokenAllowance()[owner_][spender_] = amount_;
-        emit Approval(owner_, spender_, amount_);
     }
 
     function _sharesOf(address account_) internal view returns (uint256) {
@@ -312,8 +312,6 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     ) internal onlyNonZeroAccount(recipient_) {
         _setTotalShares(_getTotalShares() + amount_);
         _getShares()[recipient_] = _getShares()[recipient_] + amount_;
-        uint256 tokensAmount = _getTokensByShares(amount_);
-        _emitTransferEvents(address(0), recipient_, tokensAmount, amount_);
     }
 
     /// @dev Destroys `amount_` shares from `account_`, reducing the total shares supply.
@@ -338,7 +336,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         address recipient_,
         uint256 sharesAmount_
     ) internal onlyNonZeroAccount(sender_) onlyNonZeroAccount(recipient_) {
-        if (recipient_ == address(this)) revert ErrorTrasferToRebasableContract();
+        if (recipient_ == address(this)) revert ErrorTransferToRebasableContract();
 
         uint256 currentSenderShares = _getShares()[sender_];
         if (sharesAmount_ > currentSenderShares) revert ErrorNotEnoughBalance();
@@ -370,7 +368,9 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         if (sharesAmount_ == 0) revert ErrorZeroSharesWrap();
         TOKEN_TO_WRAP_FROM.safeTransferFrom(from_, address(this), sharesAmount_);
         _mintShares(to_, sharesAmount_);
-        return _getTokensByShares(sharesAmount_);
+        uint256 tokensAmount = _getTokensByShares(sharesAmount_);
+        _emitTransferEvents(address(0), to_, tokensAmount, sharesAmount_);
+        return tokensAmount;
     }
 
     function _unwrap(address account_, uint256 tokenAmount_) internal returns (uint256) {
@@ -416,10 +416,9 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     error ErrorZeroSharesUnwrap();
     error ErrorTokenRateDecimalsIsZero();
     error ErrorWrongOracleUpdateTime();
-    error ErrorTrasferToRebasableContract();
+    error ErrorTransferToRebasableContract();
     error ErrorNotEnoughBalance();
     error ErrorNotEnoughAllowance();
     error ErrorAccountIsZeroAddress();
-    error ErrorDecreasedAllowanceBelowZero();
     error ErrorNotBridge();
 }
