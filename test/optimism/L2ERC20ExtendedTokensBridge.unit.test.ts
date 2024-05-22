@@ -2,7 +2,16 @@ import hre from "hardhat";
 import { BigNumber } from "ethers";
 import { assert } from "chai";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { tokenRateAndTimestampPacked, getBlockTimestamp, predictAddresses } from "../../utils/testing/helpers";
+import {
+  tokenRateAndTimestampPacked,
+  getBlockTimestamp,
+  predictAddresses,
+  getExchangeRate,
+  nonRebasableFromRebasableL1,
+  nonRebasableFromRebasableL2,
+  rebasableFromNonRebasableL1,
+  rebasableFromNonRebasableL2
+} from "../../utils/testing/helpers";
 import testing, { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 import {
@@ -271,11 +280,23 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
         l1TokenRebasable,
         l2TokenRebasable
       },
-      constants: { exchangeRate, decimalsBN }
+      constants: { exchangeRate, tokenRateDecimals }
     } = ctx;
 
-    const amountToDeposit = wei`1 ether`;
-    const amountToWithdraw = wei.toBigNumber(amountToDeposit).mul(exchangeRate).div(decimalsBN);
+    const amountToDepositNonRebasable = wei`1 ether`;
+
+    const amountToWithdrawRebasable = rebasableFromNonRebasableL2(
+      wei.toBigNumber(amountToDepositNonRebasable),
+      tokenRateDecimals,
+      exchangeRate
+    );
+
+    const amountReceivedWithdrawNonRebasable = nonRebasableFromRebasableL2(
+      amountToWithdrawRebasable,
+      tokenRateDecimals,
+      exchangeRate
+    );
+
     const l1Gas = wei`1 wei`;
     const data = "0xdeadbeaf";
     const currentBlockTimestamp = await getBlockTimestamp(ctx.provider, 0);
@@ -292,7 +313,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
         l2TokenRebasable.address,
         deployer.address,
         recipient.address,
-        amountToDeposit,
+        amountToDepositNonRebasable,
         packedTokenRateAndTimestampData
       );
 
@@ -301,7 +322,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
 
     const tx = await l2TokenBridge.connect(recipient).withdraw(
       l2TokenRebasable.address,
-      amountToWithdraw,
+      amountToWithdrawRebasable,
       l1Gas,
       data
     );
@@ -311,7 +332,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
       l2TokenRebasable.address,
       recipient.address,
       recipient.address,
-      amountToWithdraw,
+      amountToWithdrawRebasable,
       data,
     ]);
 
@@ -325,7 +346,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
           l2TokenRebasable.address,
           recipient.address,
           recipient.address,
-          amountToDeposit,
+          amountReceivedWithdrawNonRebasable,
           data,
         ]
       ),
@@ -333,15 +354,24 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
       l1Gas,
     ]);
 
-    assert.equalBN(
-      await l2TokenRebasable.balanceOf(deployer.address),
-      recipientBalanceBefore.sub(amountToWithdraw)
-    );
+    console.log("amountToWithdraw=",amountToWithdrawRebasable);
+
+    console.log("recipientBalanceBefore=",recipientBalanceBefore);
+    console.log("after=",await l2TokenRebasable.balanceOf(deployer.address));
 
     assert.equalBN(
-      await l2TokenRebasable.totalSupply(),
-      totalSupplyBefore.sub(amountToWithdraw)
+      await l2TokenRebasable.balanceOf(deployer.address),
+      recipientBalanceBefore.sub(amountToWithdrawRebasable)
     );
+
+    console.log("await l2TokenRebasable.totalSupply()=",await l2TokenRebasable.totalSupply());
+    console.log("totalSupplyBefore=",totalSupplyBefore);
+    // console.log("amountToWithdraw=",amountToWithdraw);
+
+    assert.isTrue(almostEqual(
+      await l2TokenRebasable.totalSupply(),
+      totalSupplyBefore.sub(amountToWithdrawRebasable)
+    ));
   })
 
   .test("withdraw() :: zero rebasable tokens", async (ctx) => {
@@ -581,11 +611,21 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
         l1TokenRebasable,
         l2TokenRebasable
       },
-      constants: { exchangeRate, decimalsBN }
+      constants: { exchangeRate, tokenRateDecimals }
     } = ctx;
 
-    const amountToDeposit = wei`1 ether`; // shares
-    const amountToWithdraw = wei.toBigNumber(amountToDeposit).mul(exchangeRate).div(decimalsBN);
+    const amountToDepositNonRebasable = wei`1 ether`; // shares
+    const amountToWithdraw = rebasableFromNonRebasableL2(
+      wei.toBigNumber(amountToDepositNonRebasable),
+      tokenRateDecimals,
+      exchangeRate
+    );
+    const amountReceivedWithdrawNonRebasable = nonRebasableFromRebasableL2(
+      amountToWithdraw,
+      tokenRateDecimals,
+      exchangeRate
+    );
+
     const l1Gas = wei`1 wei`;
     const data = "0xdeadbeaf";
     const currentBlockTimestamp = await getBlockTimestamp(ctx.provider, 0);
@@ -602,7 +642,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
         l2TokenRebasable.address,
         deployer.address,
         deployer.address,
-        amountToDeposit,
+        amountToDepositNonRebasable,
         packedTokenRateAndTimestampData
       );
 
@@ -636,7 +676,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
           l2TokenRebasable.address,
           deployer.address,
           recipient.address,
-          amountToDeposit,
+          amountReceivedWithdrawNonRebasable,
           data,
         ]
       ),
@@ -649,9 +689,9 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
       deployerBalanceBefore.sub(amountToWithdraw)
     );
 
-    assert.equalBN(
+    assert.isTrue(almostEqual(
       await l2TokenRebasable.totalSupply(),
-      totalSupplyBefore.sub(amountToWithdraw)
+      totalSupplyBefore.sub(amountToWithdraw))
     );
   })
 
@@ -1057,13 +1097,18 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
     const {
       contracts: { l2TokenBridge, l1TokenRebasable, l2TokenRebasable, l2Messenger },
       accounts: { deployer, recipient, l2MessengerStubEOA, l1TokenBridgeEOA },
-      constants: {exchangeRate, decimalsBN}
+      constants: { exchangeRate, tokenRateDecimals }
     } = ctx;
 
     await l2Messenger.setXDomainMessageSender(l1TokenBridgeEOA.address);
 
     const amountOfSharesToDeposit = wei`1 ether`;
-    const amountOfRebasableToken = wei.toBigNumber(amountOfSharesToDeposit).mul(exchangeRate).div(decimalsBN);
+    const amountOfRebasableToken = rebasableFromNonRebasableL2(
+      wei.toBigNumber(amountOfSharesToDeposit),
+      tokenRateDecimals,
+      exchangeRate
+    );
+
     const data = "0xdeadbeaf";
     const currentBlockTimestamp = await getBlockTimestamp(ctx.provider, 0);
     const dataToReceive = await tokenRateAndTimestampPacked(
@@ -1098,12 +1143,13 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const [deployer, stranger, recipient, l1TokenBridgeEOA] =
-    await hre.ethers.getSigners();
+  const [deployer, stranger, recipient, l1TokenBridgeEOA] = await hre.ethers.getSigners();
 
-  const decimals = 27;
-  const decimalsBN = BigNumber.from(10).pow(decimals);
-  const exchangeRate = BigNumber.from('1164454276599657236000000000')
+  const tokenDecimals = 18;
+  const tokenRateDecimals = BigNumber.from(27);
+  const totalPooledEther = BigNumber.from('9309904612343950493629678');
+  const totalShares = BigNumber.from('7975822843597609202337218');
+  const exchangeRate = getExchangeRate(tokenRateDecimals, totalPooledEther, totalShares);
 
   const l2MessengerStub = await new CrossDomainMessengerStub__factory(
     deployer
@@ -1136,7 +1182,8 @@ async function ctxFactory() {
     l1TokenRebasableStub.address,
     "L1 Token Non Rebasable",
     "L1NR",
-    exchangeRate
+    totalPooledEther,
+    totalShares
   );
 
   const l2TokenNonRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
@@ -1176,7 +1223,7 @@ async function ctxFactory() {
     "L2 Token Rebasable",
     "L2R",
     "1",
-    decimals,
+    tokenDecimals,
     l2TokenNonRebasableStub.address,
     tokenRateOracle.address,
     l2TokenBridgeProxyAddress
@@ -1225,7 +1272,7 @@ async function ctxFactory() {
   return {
     constants: {
       exchangeRate,
-      decimalsBN
+      tokenRateDecimals
     },
     accounts: {
       deployer,
@@ -1272,7 +1319,10 @@ async function pushTokenRate(ctx: ContextType) {
 
 async function getL2TokenBridgeImpl(deployer: SignerWithAddress, l1TokenBridge: string) {
   const decimals = 18;
-  const exchangeRate = BigNumber.from('1164454276599657236000000000')
+  const tokenRateDecimals = BigNumber.from(27);
+  const totalPooledEther = BigNumber.from('9309904612343950493629678');
+  const totalShares = BigNumber.from('7975822843597609202337218');
+  const exchangeRate = getExchangeRate(tokenRateDecimals, totalPooledEther, totalShares);
 
   const l2MessengerStub = await new CrossDomainMessengerStub__factory(
     deployer
@@ -1299,7 +1349,7 @@ async function getL2TokenBridgeImpl(deployer: SignerWithAddress, l1TokenBridge: 
     l1TokenRebasableStub.address,
     "L1 Token Non Rebasable",
     "L1NR",
-    exchangeRate
+    totalPooledEther, totalShares
   );
 
   const l2TokenNonRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
@@ -1356,4 +1406,9 @@ async function getL2TokenBridgeImpl(deployer: SignerWithAddress, l1TokenBridge: 
     l2TokenRebasableStub.address
   );
   return l2TokenBridgeImpl;
+}
+
+function almostEqual(num1: BigNumber, num2: BigNumber) {
+  const delta = (num1.sub(num2)).abs();
+  return delta.lte(BigNumber.from('2'));
 }

@@ -6,7 +6,7 @@ import network from "../../utils/network";
 import testing, { scenario } from "../../utils/testing";
 import deploymentOracle from "../../utils/optimism/deploymentOracle";
 import { getBridgeExecutorParams } from "../../utils/bridge-executor";
-import { tokenRateAndTimestampPacked } from "../../utils/testing/helpers";
+import { getExchangeRate } from "../../utils/testing/helpers";
 import { BigNumber } from "ethers";
 import { getBlockTimestamp } from "../../utils/testing/helpers";
 import {
@@ -110,7 +110,10 @@ async function ctxFactory() {
   const tokenRateOutdatedDelay = 86400;
   const maxAllowedL2ToL1ClockLag = BigNumber.from(86400);
   const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);
-  const tokenRate = BigNumber.from('1164454276599657236000000000');
+  const totalPooledEther = BigNumber.from('9309904612343950493629678');
+  const totalShares = BigNumber.from('7975822843597609202337218');
+  const tokenRateDecimals = BigNumber.from(27);
+  const tokenRate = getExchangeRate(tokenRateDecimals, totalPooledEther, totalShares);
 
   const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
   const [l1Provider, l2Provider] = network
@@ -151,7 +154,8 @@ async function ctxFactory() {
     l1TokenRebasable.address,
     "Test Token",
     "TT",
-    tokenRate
+    totalPooledEther,
+    totalShares
   );
 
   const accountingOracle = await new AccountingOracleStub__factory(l1Deployer).deploy(

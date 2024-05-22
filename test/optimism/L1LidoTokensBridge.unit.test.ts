@@ -16,7 +16,7 @@ import { CrossDomainMessengerStub__factory } from "../../typechain/factories/Cro
 import testing, { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { tokenRateAndTimestampPacked, refSlotTimestamp } from "../../utils/testing/helpers";
+import { tokenRateAndTimestampPacked, refSlotTimestamp, getExchangeRate } from "../../utils/testing/helpers";
 
 unit("Optimism :: L1LidoTokensBridge", ctxFactory)
 
@@ -32,14 +32,16 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
   .test("initialize() :: petrified", async (ctx) => {
     const { deployer, l2TokenBridgeEOA } = ctx.accounts;
     const {
-      tokenRate,
+      totalPooledEther,
+      totalShares,
       genesisTime,
       secondsPerSlot,
       lastProcessingRefSlot
     } = ctx.constants;
 
     const { l1TokenBridgeImpl } = await getL1LidoTokensBridgeImpl(
-      tokenRate,
+      totalPooledEther,
+      totalShares,
       genesisTime,
       secondsPerSlot,
       lastProcessingRefSlot,
@@ -59,14 +61,17 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
   .test("initialize() :: zero address L2 bridge", async (ctx) => {
     const { deployer } = ctx.accounts;
     const {
-      tokenRate,
+      totalPooledEther,
+      totalShares,
       genesisTime,
       secondsPerSlot,
       lastProcessingRefSlot
     } = ctx.constants;
 
     await assert.revertsWith(
-      getL1LidoTokensBridgeImpl(tokenRate,
+      getL1LidoTokensBridgeImpl(
+        totalPooledEther,
+        totalShares,
         genesisTime,
         secondsPerSlot,
         lastProcessingRefSlot,
@@ -80,14 +85,16 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
   .test("initialize() :: don't allow to initialize twice", async (ctx) => {
     const { deployer, l2TokenBridgeEOA } = ctx.accounts;
     const {
-      tokenRate,
+      totalPooledEther,
+      totalShares,
       genesisTime,
       secondsPerSlot,
       lastProcessingRefSlot
     } = ctx.constants;
 
     const { l1TokenBridgeImpl } = await getL1LidoTokensBridgeImpl(
-      tokenRate,
+      totalPooledEther,
+      totalShares,
       genesisTime,
       secondsPerSlot,
       lastProcessingRefSlot,
@@ -121,14 +128,16 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
   .test("finalizeUpgrade_v2() :: bridging manager uninitialized", async (ctx) => {
     const { deployer, l2TokenBridgeEOA } = ctx.accounts;
     const {
-      tokenRate,
+      totalPooledEther,
+      totalShares,
       genesisTime,
       secondsPerSlot,
       lastProcessingRefSlot
     } = ctx.constants;
 
     const { l1TokenBridgeImpl } = await getL1LidoTokensBridgeImpl(
-      tokenRate,
+      totalPooledEther,
+      totalShares,
       genesisTime,
       secondsPerSlot,
       lastProcessingRefSlot,
@@ -146,7 +155,8 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
   .test("finalizeUpgrade_v2() :: bridging manager initialized", async (ctx) => {
     const { deployer, l2TokenBridgeEOA } = ctx.accounts;
     const {
-      tokenRate,
+      totalPooledEther,
+      totalShares,
       genesisTime,
       secondsPerSlot,
       lastProcessingRefSlot
@@ -162,7 +172,8 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
     );
 
     const { l1TokenBridgeImpl } = await getL1LidoTokensBridgeImpl(
-      tokenRate,
+      totalPooledEther,
+      totalShares,
       genesisTime,
       secondsPerSlot,
       lastProcessingRefSlot,
@@ -1124,8 +1135,10 @@ async function ctxFactory() {
   const [deployer, l2TokenBridgeEOA, stranger, recipient] = await hre.ethers.getSigners();
 
   const provider = await hre.ethers.provider;
-  const tokenRate = BigNumber.from('1164454276599657236000000000');
-  const decimals = 27;
+  const decimals = BigNumber.from(27);
+  const totalPooledEther = BigNumber.from('9309904612343950493629678');
+  const totalShares = BigNumber.from('7975822843597609202337218');
+  const tokenRate = getExchangeRate(decimals, totalPooledEther, totalShares);
   const tenPowerDecimals = BigNumber.from(10).pow(decimals);
   const genesisTime = BigNumber.from(1);
   const secondsPerSlot = BigNumber.from(2);
@@ -1140,7 +1153,8 @@ async function ctxFactory() {
     l2TokenRebasableStub,
     accountingOracle
   } = await getL1LidoTokensBridgeImpl(
-    tokenRate,
+    totalPooledEther,
+    totalShares,
     genesisTime,
     secondsPerSlot,
     lastProcessingRefSlot,
@@ -1181,7 +1195,9 @@ async function ctxFactory() {
     constants: {
       decimals,
       tenPowerDecimals,
+      totalPooledEther,
       tokenRate,
+      totalShares,
       genesisTime,
       secondsPerSlot,
       lastProcessingRefSlot
@@ -1191,7 +1207,8 @@ async function ctxFactory() {
 }
 
 async function getL1LidoTokensBridgeImpl(
-  tokenRate: BigNumber,
+  totalPooledEther: BigNumber,
+  totalShares: BigNumber,
   genesisTime: BigNumber,
   secondsPerSlot: BigNumber,
   lastProcessingRefSlot: BigNumber,
@@ -1210,7 +1227,7 @@ async function getL1LidoTokensBridgeImpl(
     l1TokenRebasableStub.address,
     "L1 Token Non Rebasable",
     "L1NR",
-    tokenRate
+    totalPooledEther, totalShares
   );
 
   const l2TokenNonRebasableStub = await new ERC20BridgedStub__factory(deployer).deploy(
@@ -1222,7 +1239,7 @@ async function getL1LidoTokensBridgeImpl(
     l2TokenNonRebasableStub.address,
     "L2 Token Rebasable",
     "L2R",
-    tokenRate
+    totalPooledEther, totalShares
   );
 
   const accountingOracle = await new AccountingOracleStub__factory(deployer).deploy(

@@ -5,7 +5,7 @@ import { wei } from "../../utils/wei";
 import optimism from "../../utils/optimism";
 import testing, { scenario } from "../../utils/testing";
 import { ScenarioTest } from "../../utils/testing";
-import { tokenRateAndTimestampPacked, refSlotTimestamp } from "../../utils/testing/helpers";
+import { tokenRateAndTimestampPacked, refSlotTimestamp, getExchangeRate } from "../../utils/testing/helpers";
 
 type ContextType = Awaited<ReturnType<ReturnType<typeof ctxFactory>>>
 
@@ -580,7 +580,10 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
 function ctxFactory(depositAmount: BigNumber, withdrawalAmount: BigNumber) {
   return async () => {
     const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
-    const tokenRate = BigNumber.from('1164454276599657236000000000');
+    const tokenRateDecimals = BigNumber.from(27);
+    const totalPooledEther = BigNumber.from('9309904612343950493629678');
+    const totalShares = BigNumber.from('7975822843597609202337218');
+    const tokenRate = getExchangeRate(tokenRateDecimals, totalPooledEther, totalShares);
 
     const {
       l1Provider,
@@ -588,7 +591,7 @@ function ctxFactory(depositAmount: BigNumber, withdrawalAmount: BigNumber) {
       l1ERC20ExtendedTokensBridgeAdmin,
       l2ERC20ExtendedTokensBridgeAdmin,
       ...contracts
-    } = await optimism.testing(networkName).getIntegrationTestSetup(tokenRate);
+    } = await optimism.testing(networkName).getIntegrationTestSetup(totalPooledEther, totalShares);
 
     const l1Snapshot = await l1Provider.send("evm_snapshot", []);
     const l2Snapshot = await l2Provider.send("evm_snapshot", []);

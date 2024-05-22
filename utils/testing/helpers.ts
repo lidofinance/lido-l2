@@ -55,3 +55,38 @@ export async function predictAddresses(account: SignerWithAddress, txsCount: num
   }
   return res;
 }
+
+export function getExchangeRate(decimals: BigNumber, totalPooledEther: BigNumber, totalShares: BigNumber) {
+  return (BigNumber.from(10).pow(decimals)).mul(totalPooledEther).div(totalShares);
+}
+
+/// token / rate
+export function nonRebasableFromRebasableL1(rebasable: BigNumber, totalPooledEther: BigNumber, totalShares: BigNumber) {
+  return rebasable
+    .mul(totalShares)
+    .div(totalPooledEther);
+}
+
+/// token * rate
+export function rebasableFromNonRebasableL1(rebasable: BigNumber, totalPooledEther: BigNumber, totalShares: BigNumber) {
+  return rebasable
+    .mul(totalPooledEther)
+    .div(totalShares);
+}
+
+export function nonRebasableFromRebasableL2(rebasable: BigNumber, decimals: BigNumber, exchangeRate: BigNumber) {
+  return rebasable
+    .mul(BigNumber.from(10).pow(decimals))
+    .div(exchangeRate);
+}
+
+export function rebasableFromNonRebasableL2(nonRebasable: BigNumber, decimals: BigNumber, exchangeRate: BigNumber) {
+  return nonRebasable
+    .mul(exchangeRate)
+    .div(BigNumber.from(10).pow(decimals));
+}
+
+export function almostEqual(num1: BigNumber, num2: BigNumber) {
+  const delta = (num1.sub(num2)).abs();
+  return delta.lte(BigNumber.from('2'));
+}

@@ -47,7 +47,10 @@ export default function testing(networkName: NetworkName) {
         ...bridgeContracts,
       };
     },
-    async getIntegrationTestSetup(tokenRate: BigNumber) {
+    async getIntegrationTestSetup(
+      totalPooledEther: BigNumber,
+      totalShares: BigNumber
+    ) {
       const hasDeployedContracts =
         testingUtils.env.USE_DEPLOYED_CONTRACTS(false);
 
@@ -57,7 +60,7 @@ export default function testing(networkName: NetworkName) {
 
       const bridgeContracts = hasDeployedContracts
         ? await loadDeployedBridges(ethProvider, optProvider)
-        : await deployTestBridge(networkName, tokenRate, ethProvider, optProvider);
+        : await deployTestBridge(networkName, totalPooledEther, totalShares, ethProvider, optProvider);
 
       const [l1ERC20ExtendedTokensAdminAddress] =
         await BridgingManagement.getAdmins(bridgeContracts.l1LidoTokensBridge);
@@ -185,7 +188,8 @@ async function loadDeployedBridges(
 
 async function deployTestBridge(
   networkName: NetworkName,
-  tokenRate: BigNumber,
+  totalPooledEther: BigNumber,
+  totalShares: BigNumber,
   ethProvider: JsonRpcProvider,
   optProvider: JsonRpcProvider
 ) {
@@ -201,13 +205,19 @@ async function deployTestBridge(
     l1TokenRebasable.address,
     "Test Token",
     "TT",
-    tokenRate
+    totalPooledEther,
+    totalShares
   );
 
+  const tokenRate = BigNumber.from(10).pow(27).mul(totalPooledEther).div(totalShares);
+  const genesisTime = 1;
+  const secondsPerSlot = 2;
+  const lastProcessingRefSlot = 3;
+
   const accountingOracle = await new AccountingOracleStub__factory(ethDeployer).deploy(
-    1,
-    2,
-    3
+    genesisTime,
+    secondsPerSlot,
+    lastProcessingRefSlot
   );
 
   const [ethDeployScript, optDeployScript] = await deploymentAll(

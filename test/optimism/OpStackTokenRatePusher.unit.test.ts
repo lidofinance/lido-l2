@@ -3,7 +3,7 @@ import { assert } from "chai";
 import { BigNumber } from 'ethers'
 import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
-import { getInterfaceID } from "../../utils/testing/helpers";
+import { getInterfaceID, getExchangeRate } from "../../utils/testing/helpers";
 import {
   OpStackTokenRatePusher__factory,
   CrossDomainMessengerStub__factory,
@@ -61,7 +61,11 @@ async function ctxFactory() {
   /// constants
   /// ---------------------------
   const [deployer, bridge, stranger, tokenRateOracle, l1TokenBridgeEOA] = await ethers.getSigners();
-  const tokenRate = BigNumber.from('1164454276599657236000000000');
+  const totalPooledEther = BigNumber.from('9309904612343950493629678');
+  const totalShares = BigNumber.from('7975822843597609202337218');
+  const tokenRateDecimals = BigNumber.from(27);
+  const tokenRate = getExchangeRate(tokenRateDecimals, totalPooledEther, totalShares);
+
   const genesisTime = BigNumber.from(1);
   const secondsPerSlot = BigNumber.from(2);
   const lastProcessingRefSlot = BigNumber.from(3);
@@ -84,7 +88,8 @@ async function ctxFactory() {
     l1TokenRebasableStub.address,
     "L1 Token Non Rebasable",
     "L1NR",
-    tokenRate
+    totalPooledEther,
+    totalShares
   );
 
   const accountingOracle = await new AccountingOracleStub__factory(deployer).deploy(

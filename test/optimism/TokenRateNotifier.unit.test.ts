@@ -3,7 +3,7 @@ import { assert } from "chai";
 import { BigNumber } from 'ethers'
 import { unit } from "../../utils/testing";
 import { wei } from "../../utils/wei";
-import { getInterfaceID } from "../../utils/testing/helpers";
+import { getInterfaceID, getExchangeRate } from "../../utils/testing/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   TokenRateNotifier__factory,
@@ -77,7 +77,7 @@ unit("TokenRateNotifier", ctxFactory)
   .test("addObserver() :: revert on adding too many observers", async (ctx) => {
     const { tokenRateNotifier, opStackTokenRatePusher } = ctx.contracts;
     const { deployer, owner, tokenRateOracle } = ctx.accounts;
-    const { l2GasLimitForPushingTokenRate, tokenRate, genesisTime, secondsPerSlot, lastProcessingRefSlot } = ctx.constants;
+    const { l2GasLimitForPushingTokenRate, tokenRate, totalPooledEther, totalShares, genesisTime, secondsPerSlot, lastProcessingRefSlot } = ctx.constants;
 
     assert.equalBN(await tokenRateNotifier.observersLength(), 0);
     const maxObservers = await tokenRateNotifier.MAX_OBSERVERS_COUNT();
@@ -86,6 +86,8 @@ unit("TokenRateNotifier", ctxFactory)
       const {
         opStackTokenRatePusher
       } = await createContracts(
+        totalPooledEther,
+        totalShares,
         tokenRate,
         genesisTime,
         secondsPerSlot,
@@ -245,7 +247,10 @@ unit("TokenRateNotifier", ctxFactory)
 
 async function ctxFactory() {
   const [deployer, owner, stranger, tokenRateOracle] = await ethers.getSigners();
-  const tokenRate = BigNumber.from('1164454276599657236000000000');
+  const totalPooledEther = BigNumber.from('9309904612343950493629678');
+  const totalShares = BigNumber.from('7975822843597609202337218');
+  const tokenRateDecimals = BigNumber.from(27);
+  const tokenRate = getExchangeRate(tokenRateDecimals, totalPooledEther, totalShares);
   const l2GasLimitForPushingTokenRate = 300_000;
   const genesisTime = BigNumber.from(1);
   const secondsPerSlot = BigNumber.from(2);
@@ -256,6 +261,8 @@ async function ctxFactory() {
     opStackTokenRatePusher,
     l1MessengerStub
   } = await createContracts(
+    totalPooledEther,
+    totalShares,
     tokenRate,
     genesisTime,
     secondsPerSlot,
@@ -267,13 +274,32 @@ async function ctxFactory() {
   );
 
   return {
-    accounts: { deployer, owner, stranger, tokenRateOracle },
-    contracts: { tokenRateNotifier, opStackTokenRatePusher, l1MessengerStub },
-    constants: { l2GasLimitForPushingTokenRate, tokenRate, genesisTime, secondsPerSlot, lastProcessingRefSlot }
+    accounts: {
+      deployer,
+      owner,
+      stranger,
+      tokenRateOracle
+    },
+    contracts: {
+      tokenRateNotifier,
+      opStackTokenRatePusher,
+      l1MessengerStub
+    },
+    constants: {
+      l2GasLimitForPushingTokenRate,
+      tokenRate,
+      totalPooledEther,
+      totalShares,
+      genesisTime,
+      secondsPerSlot,
+      lastProcessingRefSlot
+    }
   };
 }
 
 async function createContracts(
+  totalPooledEther: BigNumber,
+  totalShares: BigNumber,
   tokenRate: BigNumber,
   genesisTime: BigNumber,
   secondsPerSlot: BigNumber,
@@ -298,7 +324,8 @@ async function createContracts(
     l1TokenRebasableStub.address,
     "L1 Token Non Rebasable",
     "L1NR",
-    tokenRate
+    totalPooledEther,
+    totalShares
   );
 
   const accountingOracle = await new AccountingOracleStub__factory(deployer).deploy(
@@ -321,6 +348,8 @@ async function createContracts(
     opStackTokenRatePusher,
     accountingOracle,
     l1MessengerStub,
+    totalPooledEther,
+    totalShares,
     tokenRate
   };
 }
