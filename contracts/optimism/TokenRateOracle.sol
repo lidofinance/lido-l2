@@ -149,7 +149,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         /// by the AccountingOracle report
         if (rateUpdateL1Timestamp_ == tokenRateData.rateUpdateL1Timestamp) {
             _loadTokenRateData().value.rateReceivedL2Timestamp = uint64(block.timestamp);
-            emit RateReceivedUpdated(block.timestamp);
+            emit RateReceivedTimestampUpdated(block.timestamp);
             return;
         }
 
@@ -267,7 +267,7 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
     }
 
     event RateUpdated(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
-    event RateReceivedUpdated(uint256 indexed rateReceivedL2Timestamp);
+    event RateReceivedTimestampUpdated(uint256 indexed rateReceivedL2Timestamp);
     event DormantTokenRateUpdateIgnored(uint256 indexed newRateL1Timestamp_, uint256 indexed currentRateL1Timestamp_);
     event TokenRateL1TimestampIsInFuture(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
 
