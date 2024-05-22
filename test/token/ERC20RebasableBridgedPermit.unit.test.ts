@@ -352,6 +352,25 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     await assert.revertsWith(rebasableProxied.connect(user1).unwrap(wei`4 ether`), "ErrorNotEnoughBalance()");
   })
 
+  .test("unwrap() :: events", async (ctx) => {
+    const { rebasableProxied, wrappedToken } = ctx.contracts;
+    const { user1, owner, zero } = ctx.accounts;
+    const { tokenRate, tenPowDecimals } = ctx.constants;
+
+    const user1SharesToWrap = BigNumber.from(10).pow(30) ;
+    const user1TokensToUnwrap = BigNumber.from('764035550674393190');
+    const user1SharesToUnwrap = (user1TokensToUnwrap).mul(tenPowDecimals).div(BigNumber.from(tokenRate));
+
+    await wrappedToken.connect(owner).bridgeMint(user1.address, user1SharesToWrap);
+    await wrappedToken.connect(user1).approve(rebasableProxied.address, user1SharesToWrap);
+    await rebasableProxied.connect(user1).wrap(user1SharesToWrap);
+
+    const tx = await rebasableProxied.connect(user1).unwrap(user1TokensToUnwrap);
+
+    await assert.emits(rebasableProxied, tx, "Transfer", [user1.address, zero.address, user1TokensToUnwrap]);
+    await assert.emits(rebasableProxied, tx, "TransferShares", [user1.address, zero.address, user1SharesToUnwrap]);
+  })
+
   .test("unwrap() :: happy path", async (ctx) => {
 
     const { rebasableProxied, wrappedToken } = ctx.contracts;

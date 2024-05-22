@@ -92,7 +92,8 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     /// @param sharesAmount_ amount of rebasable token shares to unwrap.
     /// @return amount of non-rebasable token user receives after unwrap.
     function unwrapShares(uint256 sharesAmount_) external returns (uint256) {
-        return _unwrapShares(msg.sender, sharesAmount_);
+        uint256 tokenAmount = _getTokensByShares(sharesAmount_);
+        return _unwrapShares(msg.sender, sharesAmount_, tokenAmount);
     }
 
     /// @inheritdoc IBridgeWrapper
@@ -326,8 +327,6 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         if (accountShares < amount_) revert ErrorNotEnoughBalance();
         _setTotalShares(_getTotalShares() - amount_);
         _getShares()[account_] = accountShares - amount_;
-        uint256 tokensAmount = _getTokensByShares(amount_);
-        _emitTransferEvents(account_, address(0), tokensAmount, amount_);
     }
 
     /// @dev  Moves `sharesAmount_` shares from `sender_` to `recipient_`.
@@ -369,22 +368,21 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
 
    function _wrap(address from_, address to_, uint256 sharesAmount_) internal returns (uint256) {
         if (sharesAmount_ == 0) revert ErrorZeroSharesWrap();
-
         TOKEN_TO_WRAP_FROM.safeTransferFrom(from_, address(this), sharesAmount_);
         _mintShares(to_, sharesAmount_);
-
         return _getTokensByShares(sharesAmount_);
     }
 
     function _unwrap(address account_, uint256 tokenAmount_) internal returns (uint256) {
         if (tokenAmount_ == 0) revert ErrorZeroTokensUnwrap();
         uint256 sharesAmount = _getSharesByTokens(tokenAmount_);
-        return _unwrapShares(account_, sharesAmount);
+        return _unwrapShares(account_, sharesAmount, tokenAmount_);
     }
 
-    function _unwrapShares(address account_, uint256 sharesAmount_) internal returns (uint256) {
+    function _unwrapShares(address account_, uint256 sharesAmount_, uint256 tokenAmount_) internal returns (uint256) {
         if (sharesAmount_ == 0) revert ErrorZeroSharesUnwrap();
         _burnShares(account_, sharesAmount_);
+        _emitTransferEvents(account_, address(0), tokenAmount_, sharesAmount_);
         TOKEN_TO_WRAP_FROM.safeTransfer(account_, sharesAmount_);
         return sharesAmount_;
     }
