@@ -29,6 +29,95 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
     assert.equal(await ctx.l1TokenBridge.L2_TOKEN_REBASABLE(), ctx.stubs.l2TokenRebasable.address);
   })
 
+  .test("constructor() :: zero params", async (ctx) => {
+
+    const { deployer, stranger, zero } = ctx.accounts;
+
+    await assert.revertsWith(new L1LidoTokensBridge__factory(
+      deployer
+    ).deploy(
+      zero.address,
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      stranger.address
+    ), "ErrorZeroAddressMessenger()");
+
+    await assert.revertsWith(new L1LidoTokensBridge__factory(
+      deployer
+    ).deploy(
+      stranger.address,
+      zero.address,
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      stranger.address
+    ), "ErrorZeroAddressL2Bridge()");
+
+    await assert.revertsWith(new L1LidoTokensBridge__factory(
+      deployer
+    ).deploy(
+      stranger.address,
+      stranger.address,
+      zero.address,
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      stranger.address
+    ), "ErrorZeroAddressL1TokenNonRebasable()");
+
+    await assert.revertsWith(new L1LidoTokensBridge__factory(
+      deployer
+    ).deploy(
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      zero.address,
+      stranger.address,
+      stranger.address,
+      stranger.address
+    ), "ErrorZeroAddressL1TokenRebasable()");
+
+    await assert.revertsWith(new L1LidoTokensBridge__factory(
+      deployer
+    ).deploy(
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      zero.address,
+      stranger.address,
+      stranger.address
+    ), "ErrorZeroAddressL2TokenNonRebasable()");
+
+    await assert.revertsWith(new L1LidoTokensBridge__factory(
+      deployer
+    ).deploy(
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      zero.address,
+      stranger.address
+    ), "ErrorZeroAddressL2TokenRebasable()");
+
+    await assert.revertsWith(new L1LidoTokensBridge__factory(
+      deployer
+    ).deploy(
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      stranger.address,
+      zero.address,
+    ), "ErrorZeroAddressAccountingOracle()");
+  })
+
   .test("initialize() :: petrified", async (ctx) => {
     const { deployer, l2TokenBridgeEOA } = ctx.accounts;
     const {
@@ -1133,6 +1222,7 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
 
 async function ctxFactory() {
   const [deployer, l2TokenBridgeEOA, stranger, recipient] = await hre.ethers.getSigners();
+  const zero = await hre.ethers.getSigner(hre.ethers.constants.AddressZero);
 
   const provider = await hre.ethers.provider;
   const decimals = BigNumber.from(27);
@@ -1183,6 +1273,7 @@ async function ctxFactory() {
       emptyContractAsEOA,
       recipient,
       l1MessengerStubAsEOA,
+      zero
     },
     stubs: {
       l1TokenNonRebasable: l1TokenNonRebasableStub,

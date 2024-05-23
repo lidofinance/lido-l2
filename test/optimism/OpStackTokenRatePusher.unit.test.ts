@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import hre, { ethers } from "hardhat";
 import { assert } from "chai";
 import { BigNumber } from 'ethers'
 import { unit } from "../../utils/testing";
@@ -16,6 +16,53 @@ import {
 } from "../../typechain";
 
 unit("OpStackTokenRatePusher", ctxFactory)
+
+  .test("constructor() :: zero params", async (ctx) => {
+
+    const { deployer, stranger, zero } = ctx.accounts;
+
+    const accountingOracle = await new AccountingOracleStub__factory(deployer).deploy(1,2,3);
+
+    await assert.revertsWith(new OpStackTokenRatePusher__factory(
+      deployer
+    ).deploy(
+      zero.address,
+      stranger.address,
+      accountingOracle.address,
+      stranger.address,
+      10
+    ), "ErrorZeroAddressMessenger()");
+
+    await assert.revertsWith(new OpStackTokenRatePusher__factory(
+      deployer
+    ).deploy(
+      stranger.address,
+      zero.address,
+      accountingOracle.address,
+      stranger.address,
+      10
+    ), "ErrorZeroAddressWstEth()");
+
+    await assert.revertsWith(new OpStackTokenRatePusher__factory(
+      deployer
+    ).deploy(
+      stranger.address,
+      stranger.address,
+      zero.address,
+      stranger.address,
+      10
+    ), "ErrorZeroAddressAccountingOracle()");
+
+    await assert.revertsWith(new OpStackTokenRatePusher__factory(
+      deployer
+    ).deploy(
+      stranger.address,
+      stranger.address,
+      accountingOracle.address,
+      zero.address,
+      10
+    ), "ErrorZeroAddressTokenRateOracle()");
+  })
 
   .test("initial state", async (ctx) => {
     const { tokenRateOracle } = ctx.accounts;
@@ -61,6 +108,8 @@ async function ctxFactory() {
   /// constants
   /// ---------------------------
   const [deployer, bridge, stranger, tokenRateOracle, l1TokenBridgeEOA] = await ethers.getSigners();
+  const zero = await hre.ethers.getSigner(hre.ethers.constants.AddressZero);
+
   const totalPooledEther = BigNumber.from('9309904612343950493629678');
   const totalShares = BigNumber.from('7975822843597609202337218');
   const tokenRateDecimals = BigNumber.from(27);
@@ -107,8 +156,8 @@ async function ctxFactory() {
   );
 
   return {
-    accounts: { deployer, bridge, stranger, tokenRateOracle },
+    accounts: { deployer, bridge, stranger, zero, tokenRateOracle },
     contracts: { opStackTokenRatePusher, l1MessengerStub, l1TokenNonRebasableStub, accountingOracle },
-    constants: { l2GasLimitForPushingTokenRate, tokenRate, updateRateTime, genesisTime, secondsPerSlot, lastProcessingRefSlot  }
+    constants: { l2GasLimitForPushingTokenRate, tokenRate, updateRateTime, genesisTime, secondsPerSlot, lastProcessingRefSlot }
   };
 }

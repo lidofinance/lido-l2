@@ -72,6 +72,15 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         address tokenRateOracle_,
         address l2ERC20TokenBridge_
     ) ERC20Metadata(name_, symbol_, decimals_) {
+        if (tokenToWrapFrom_ == address(0)) {
+            revert ErrorZeroAddressTokenToWrapFrom();
+        }
+        if (tokenRateOracle_ == address(0)) {
+            revert ErrorZeroAddressTokenRateOracle();
+        }
+        if (l2ERC20TokenBridge_ == address(0)) {
+            revert ErrorZeroAddressL2ERC20TokenBridge();
+        }
         TOKEN_TO_WRAP_FROM = IERC20(tokenToWrapFrom_);
         TOKEN_RATE_ORACLE = ITokenRateOracle(tokenRateOracle_);
         TOKEN_RATE_ORACLE_DECIMALS = TOKEN_RATE_ORACLE.decimals();
@@ -411,6 +420,9 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         uint256 sharesValue
     );
 
+    error ErrorZeroAddressTokenToWrapFrom();
+    error ErrorZeroAddressTokenRateOracle();
+    error ErrorZeroAddressL2ERC20TokenBridge();
     error ErrorZeroSharesWrap();
     error ErrorZeroTokensUnwrap();
     error ErrorZeroSharesUnwrap();

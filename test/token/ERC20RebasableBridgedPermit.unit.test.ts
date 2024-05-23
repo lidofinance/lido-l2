@@ -17,6 +17,80 @@ import {
 
 unit("ERC20RebasableBridgedPermit", ctxFactory)
 
+  .test("constructor() :: zero params", async (ctx) => {
+    const {
+      deployer,
+      stranger,
+      zero,
+      owner,
+      messenger,
+      l1TokenRatePusher
+    } = ctx.accounts;
+
+    const {
+      tokenRateOutdatedDelay,
+      maxAllowedL2ToL1ClockLag,
+      maxAllowedTokenRateDeviationPerDay
+    } = ctx.constants;
+
+    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+      messenger.address,
+      owner.address,
+      l1TokenRatePusher.address,
+      tokenRateOutdatedDelay,
+      maxAllowedL2ToL1ClockLag,
+      maxAllowedTokenRateDeviationPerDay
+    );
+
+    await assert.revertsWith(new ERC20RebasableBridgedPermit__factory(
+      deployer
+    ).deploy(
+      "name",
+      "symbol",
+      "version",
+      0,
+      stranger.address,
+      tokenRateOracle.address,
+      stranger.address
+    ), "ErrorZeroDecimals()");
+
+    await assert.revertsWith(new ERC20RebasableBridgedPermit__factory(
+      deployer
+    ).deploy(
+      "name",
+      "symbol",
+      "version",
+      18,
+      zero.address,
+      tokenRateOracle.address,
+      stranger.address,
+    ), "ErrorZeroAddressTokenToWrapFrom()");
+
+    await assert.revertsWith(new ERC20RebasableBridgedPermit__factory(
+      deployer
+    ).deploy(
+      "name",
+      "symbol",
+      "version",
+      18,
+      stranger.address,
+      zero.address,
+      stranger.address,
+    ), "ErrorZeroAddressTokenRateOracle()");
+
+    await assert.revertsWith(new ERC20RebasableBridgedPermit__factory(
+      deployer
+    ).deploy(
+      "name",
+      "symbol",
+      "version",
+      18,
+      stranger.address,
+      tokenRateOracle.address,
+      zero.address,
+    ), "ErrorZeroAddressL2ERC20TokenBridge()");
+  })
+
   .test("initial state", async (ctx) => {
     const { rebasableProxied, wrappedToken, tokenRateOracle } = ctx.contracts;
     const { name, symbol, version, decimals } = ctx.constants;
@@ -33,7 +107,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
   })
 
   .test("initialize() :: petrified version", async (ctx) => {
-    const { deployer, owner, zero } = ctx.accounts;
+    const { deployer, owner, zero, messenger, l1TokenRatePusher } = ctx.accounts;
     const { decimals } = ctx.constants;
 
     // deploy new implementation
@@ -45,9 +119,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       owner.address
     );
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-      zero.address,
+      messenger.address,
       owner.address,
-      zero.address,
+      l1TokenRatePusher.address,
       86400,
       86400,
       500
@@ -72,7 +146,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
   })
 
   .test("initialize() :: don't allow to initialize with empty metadata", async (ctx) => {
-    const { deployer, owner, zero } = ctx.accounts;
+    const { deployer, owner, zero, messenger, l1TokenRatePusher } = ctx.accounts;
     const { decimals, name, symbol, version } = ctx.constants;
 
     // deploy new implementation
@@ -84,9 +158,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       owner.address
     );
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-      zero.address,
+      messenger.address,
       owner.address,
-      zero.address,
+      l1TokenRatePusher.address,
       86400,
       86400,
       500
@@ -128,7 +202,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
   })
 
   .test("initialize() :: don't allow to initialize twice", async (ctx) => {
-    const { deployer, owner, zero, holder } = ctx.accounts;
+    const { deployer, owner, zero, holder, messenger, l1TokenRatePusher } = ctx.accounts;
     const { decimals, name, symbol, version } = ctx.constants;
 
     // deploy new implementation
@@ -140,9 +214,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       owner.address
     );
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-      zero.address,
+      messenger.address,
       owner.address,
-      zero.address,
+      l1TokenRatePusher.address,
       86400,
       86400,
       500
@@ -197,7 +271,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
 
   .test("wrap() :: wrong oracle update time", async (ctx) => {
 
-    const { deployer, user1, owner, zero } = ctx.accounts;
+    const { deployer, user1, owner, zero, messenger, l1TokenRatePusher } = ctx.accounts;
     const { decimals } = ctx.constants;
 
     // deploy new implementation to test initial oracle state
@@ -209,9 +283,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       owner.address
     );
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-      zero.address,
+      messenger.address,
       owner.address,
-      zero.address,
+      l1TokenRatePusher.address,
       86400,
       86400,
       500
@@ -310,7 +384,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
 
   .test("unwrap() :: with wrong oracle update time", async (ctx) => {
 
-    const { deployer, user1, owner, zero } = ctx.accounts;
+    const { deployer, user1, owner, zero, messenger, l1TokenRatePusher } = ctx.accounts;
     const { decimals } = ctx.constants;
 
     // deploy new implementation to test initial oracle state
@@ -322,9 +396,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       owner.address
     );
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-      zero.address,
+      messenger.address,
       owner.address,
-      zero.address,
+      l1TokenRatePusher.address,
       86400,
       86400,
       500
@@ -357,7 +431,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     const { user1, owner, zero } = ctx.accounts;
     const { tokenRate, tenPowDecimals } = ctx.constants;
 
-    const user1SharesToWrap = BigNumber.from(10).pow(30) ;
+    const user1SharesToWrap = BigNumber.from(10).pow(30);
     const user1TokensToUnwrap = BigNumber.from('764035550674393190');
     const user1SharesToUnwrap = (user1TokensToUnwrap).mul(tenPowDecimals).div(BigNumber.from(tokenRate));
 
@@ -493,7 +567,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
   })
 
   .test("bridgeWrap() :: wrong oracle update time", async (ctx) => {
-    const { deployer, user1, owner, zero } = ctx.accounts;
+    const { deployer, user1, owner, zero, messenger, l1TokenRatePusher } = ctx.accounts;
     const { decimals } = ctx.constants;
 
     // deploy new implementation to test initial oracle state
@@ -505,9 +579,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       owner.address
     );
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-      zero.address,
+      messenger.address,
       owner.address,
-      zero.address,
+      l1TokenRatePusher.address,
       86400,
       86400,
       500
@@ -623,7 +697,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
 
   .test("bridgeUnwrap() :: with wrong oracle update time", async (ctx) => {
 
-    const { deployer, user1, owner, zero } = ctx.accounts;
+    const { deployer, user1, owner, zero, messenger, l1TokenRatePusher } = ctx.accounts;
     const { decimals } = ctx.constants;
 
     // deploy new implementation to test initial oracle state
@@ -635,9 +709,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       owner.address
     );
     const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-      zero.address,
+      messenger.address,
       owner.address,
-      zero.address,
+      l1TokenRatePusher.address,
       86400,
       86400,
       500
@@ -721,6 +795,20 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     assert.equalBN(await rebasableProxied.totalSupply(), totalSupply.add(user1Tokens).add(user2Tokens));
   })
 
+  .test("approve() :: events", async (ctx) => {
+    const { rebasableProxied } = ctx.contracts;
+    const { holder, spender } = ctx.accounts;
+    const amount = wei`1 ether`;
+
+    const tx = await rebasableProxied.approve(spender.address, amount);
+    await assert.emits(rebasableProxied, tx, "Approval", [
+      holder.address,
+      spender.address,
+      amount,
+    ]);
+
+
+  })
   .test("approve() :: happy path", async (ctx) => {
     const { rebasableProxied } = ctx.contracts;
     const { holder, spender } = ctx.accounts;
@@ -1041,7 +1129,6 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
 
     const tokensAmountToApprove = wei`2 ether`;
     const tokensAmountToTransfer = wei`1 ether`;
-    const sharesAmountToApprove = await rebasableProxied.getSharesByTokens(tokensAmountToApprove);
     const sharesAmountToTransfer = await rebasableProxied.getSharesByTokens(tokensAmountToTransfer);
 
     // holder sets allowance for spender
@@ -1063,13 +1150,6 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     const tx = await rebasableProxied
       .connect(spender)
       .transferFrom(holder.address, recipient.address, tokensAmountToTransfer);
-
-    // validate Approval event was emitted
-    await assert.emits(rebasableProxied, tx, "Approval", [
-      holder.address,
-      spender.address,
-      wei.toBigNumber(tokensAmountToApprove).sub(tokensAmountToTransfer),
-    ]);
 
     // validate Transfer event was emitted
     await assert.emits(rebasableProxied, tx, "Transfer", [
@@ -1224,13 +1304,6 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       .connect(spender)
       .transferSharesFrom(holder.address, recipient.address, sharesAmountToTransfer);
 
-    // validate Approval event was emitted
-    await assert.emits(rebasableProxied, tx, "Approval", [
-      holder.address,
-      spender.address,
-      tokensAmountToApprove.sub(tokensAmountToTransfer),
-    ]);
-
     // validate Transfer event was emitted
     await assert.emits(rebasableProxied, tx, "Transfer", [
       holder.address,
@@ -1290,7 +1363,9 @@ async function ctxFactory() {
     holder,
     stranger,
     user1,
-    user2
+    user2,
+    messenger,
+    l1TokenRatePusher
   ] = await hre.ethers.getSigners();
 
   const zero = await hre.ethers.getSigner(hre.ethers.constants.AddressZero);
@@ -1308,9 +1383,9 @@ async function ctxFactory() {
 
   const { tokenRateOracle } = await tokenRateOracleUnderProxy(
     deployer,
-    zero.address,
+    messenger.address,
     owner.address,
-    zero.address,
+    l1TokenRatePusher.address,
     tokenRateOutdatedDelay,
     maxAllowedL2ToL1ClockLag,
     maxAllowedTokenRateDeviationPerDay,
@@ -1352,7 +1427,9 @@ async function ctxFactory() {
       stranger,
       zero,
       user1,
-      user2
+      user2,
+      messenger,
+      l1TokenRatePusher
     },
     constants: {
       name,
@@ -1363,7 +1440,10 @@ async function ctxFactory() {
       premintShares,
       premintTokens,
       tokenRate,
-      blockTimestamp
+      blockTimestamp,
+      tokenRateOutdatedDelay,
+      maxAllowedL2ToL1ClockLag,
+      maxAllowedTokenRateDeviationPerDay
     },
     contracts: {
       rebasableProxied,

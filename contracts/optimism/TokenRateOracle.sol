@@ -79,6 +79,12 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
         uint256 maxAllowedL2ToL1ClockLag_,
         uint256 maxAllowedTokenRateDeviationPerDay_
     ) CrossDomainEnabled(messenger_) {
+        if (l2ERC20TokenBridge_ == address(0)) {
+            revert ErrorZeroAddressL2ERC20TokenBridge();
+        }
+        if (l1TokenRatePusher_ == address(0)) {
+            revert ErrorZeroAddressL1TokenRatePusher();
+        }
         if (maxAllowedTokenRateDeviationPerDay_ > BASIS_POINT_SCALE) {
             revert ErrorMaxTokenRateDeviationIsOutOfRange();
         }
@@ -271,6 +277,8 @@ contract TokenRateOracle is CrossDomainEnabled, ITokenRateOracle, Versioned {
     event DormantTokenRateUpdateIgnored(uint256 indexed newRateL1Timestamp_, uint256 indexed currentRateL1Timestamp_);
     event TokenRateL1TimestampIsInFuture(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
 
+    error ErrorZeroAddressL2ERC20TokenBridge();
+    error ErrorZeroAddressL1TokenRatePusher();
     error ErrorNotBridgeOrTokenRatePusher();
     error ErrorL1TimestampExceededAllowedClockLag(uint256 tokenRate_, uint256 rateL1Timestamp_);
     error ErrorTokenRateIsOutOfRange(uint256 tokenRate_, uint256 rateL1Timestamp_);
