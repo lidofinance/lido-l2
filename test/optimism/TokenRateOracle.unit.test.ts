@@ -249,7 +249,7 @@ unit("TokenRateOracle", ctxFactory)
 
     const updatedAt = await getContractTransactionTimestamp(ctx.provider, tx);
 
-    await assert.emits(tokenRateOracle, tx, "RateReceivedUpdated", [updatedAt]);
+    await assert.emits(tokenRateOracle, tx, "RateReceivedTimestampUpdated", [updatedAt]);
 
     const {
       roundId_,
