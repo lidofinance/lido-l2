@@ -1,3 +1,4 @@
+import hre from "hardhat";
 import { assert } from "chai";
 import env from "../../utils/env";
 import { wei } from "../../utils/wei";
@@ -164,10 +165,13 @@ async function ctxFactory() {
     lastProcessingRefSlot
   );
 
+  const [l2ERC20TokenBridge] = await hre.ethers.getSigners();
+
   const [ethDeployScript, optDeployScript] = await deploymentOracle(
     networkName
   ).oracleDeployScript(
     l1Token.address,
+    l2ERC20TokenBridge.address,
     accountingOracle.address,
     l2GasLimitForPushingTokenRate,
     tokenRateOutdatedDelay,

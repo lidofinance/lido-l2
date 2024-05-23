@@ -3,10 +3,10 @@
 
 pragma solidity 0.8.10;
 
-import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import {IERC2612} from "@openzeppelin/contracts/interfaces/draft-IERC2612.sol";
+import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {UnstructuredRefStorage} from "../lib//UnstructuredRefStorage.sol";
-import {SignatureChecker} from "../lib/SignatureChecker.sol";
 
 /// @author arwer13, kovalgek
 abstract contract PermitExtension is IERC2612, EIP712 {
@@ -36,35 +36,64 @@ abstract contract PermitExtension is IERC2612, EIP712 {
         _initializeEIP5267Metadata(name_, version_);
     }
 
-    /// @dev Sets `value` as the allowance of `spender` over ``owner``'s tokens,
-    /// given ``owner``'s signed approval.
-    ///
-    ///  Requirements:
-    ///
-    ///  - `spender` cannot be the zero address.
-    ///  - `deadline` must be a timestamp in the future.
-    ///  - `v`, `r` and `s` must be a valid `secp256k1` signature from `owner`
-    ///   over the EIP712-formatted function arguments.
-    ///  - the signature must use ``owner``'s current nonce (see {nonces}).
-    ///
+    /// @notice Sets `value_` as the allowance of `spender_` over `owner_`'s tokens, given `owner_`'s signed approval.
+    /// @param owner_  Token owner's address (Authorizer). Cannot be the zero address.
+    /// @param spender_  An address of the tokens spender. Cannot be the zero address.
+    /// @param value_ An amount of tokens to allow to spend.
+    /// @param deadline_ The time at which the signature expires (unix time). Must be a timestamp in the future.
+    /// @param v_, r_, s_ must be a valid `secp256k1` signature from `owner`
+    ///                   over the EIP712-formatted function arguments.
+    ///                   The signature must use ``owner``'s current nonce (see {nonces}).
     function permit(
-        address _owner, address _spender, uint256 _value, uint256 _deadline, uint8 _v, bytes32 _r, bytes32 _s
+        address owner_,
+        address spender_,
+        uint256 value_,
+        uint256 deadline_,
+        uint8 v_,
+        bytes32 r_,
+        bytes32 s_
     ) external {
-        if (block.timestamp > _deadline) {
+        _permit(owner_, spender_, value_, deadline_, abi.encodePacked(r_, s_, v_));
+    }
+
+    /// @notice Sets `value_` as the allowance of `spender_` over `owner_`'s tokens, given `owner_`'s signed approval.
+    /// @param owner_  Token owner's address (Authorizer). Cannot be the zero address.
+    /// @param spender_  An address of the tokens spender. Cannot be the zero address.
+    /// @param value_ An amount of tokens to allow to spend.
+    /// @param deadline_ The time at which the signature expires (unix time). Must be a timestamp in the future.
+    /// @param signature_ Unstructured bytes signature signed by an EOA wallet or a contract wallet.
+    function permit(
+        address owner_,
+        address spender_,
+        uint value_,
+        uint deadline_,
+        bytes memory signature_
+    ) external {
+        _permit(owner_, spender_, value_, deadline_, signature_);
+    }
+
+    function _permit(
+        address owner_,
+        address spender_,
+        uint value_,
+        uint deadline_,
+        bytes memory signature_
+    ) internal {
+        if (block.timestamp > deadline_) {
             revert ErrorDeadlineExpired();
         }
 
-        bytes32 structHash = keccak256(
-            abi.encode(PERMIT_TYPEHASH, _owner, _spender, _value, _useNonce(_owner), _deadline)
+        bytes32 hash = _hashTypedDataV4(
+            keccak256(
+                abi.encode(PERMIT_TYPEHASH, owner_, spender_, value_, _useNonce(owner_), deadline_)
+            )
         );
 
-        bytes32 hash = _hashTypedDataV4(structHash);
-
-        if (!SignatureChecker.isValidSignature(_owner, hash, _v, _r, _s)) {
+        if (!SignatureChecker.isValidSignatureNow(owner_, hash, signature_)) {
             revert ErrorInvalidSignature();
         }
 
-        _permitAccepted(_owner, _spender, _value);
+        _permitAccepted(owner_, spender_, value_);
     }
 
     /// @dev Returns the current nonce for `owner`. This value must be

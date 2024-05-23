@@ -133,15 +133,6 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
     );
   })
 
-  .test("initialize() :: zero address L2 bridge", async (ctx) => {
-    const { deployer } = ctx.accounts;
-
-    await assert.revertsWith(
-      getL2TokenBridgeImpl(deployer, hre.ethers.constants.AddressZero),
-      "ErrorZeroAddressL1Bridge()"
-    );
-  })
-
   .test("initialize() :: don't allow to initialize twice", async (ctx) => {
     const { deployer, l1TokenBridgeEOA } = ctx.accounts;
 

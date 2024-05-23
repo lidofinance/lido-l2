@@ -63,6 +63,7 @@ export default function deploymentOracle(
   return {
     async oracleDeployScript(
       l1Token: string,
+      l2ERC20TokenBridge: string,
       accountingOracle: string,
       l2GasLimitForPushingTokenRate: number,
       tokenRateOutdatedDelay: number,
@@ -119,7 +120,7 @@ export default function deploymentOracle(
           factory: TokenRateOracle__factory,
           args: [
             optAddresses.L2CrossDomainMessenger,
-            ethers.constants.AddressZero,
+            l2ERC20TokenBridge,
             expectedL1OpStackTokenRatePusherImplAddress,
             tokenRateOutdatedDelay,
             l2Params.tokenRateOracle.maxAllowedL2ToL1ClockLag,
