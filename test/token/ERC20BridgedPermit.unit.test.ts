@@ -11,6 +11,31 @@ import {
 } from "../../typechain";
 
 unit("ERC20BridgedPermit", ctxFactory)
+
+  .test("constructor() :: zero params", async (ctx) => {
+    const { deployer, stranger, zero } = ctx.accounts;
+
+    await assert.revertsWith(new ERC20BridgedPermit__factory(
+      deployer
+    ).deploy(
+      "name",
+      "symbol",
+      "version",
+      0,
+      stranger.address
+    ), "ErrorZeroDecimals()");
+
+    await assert.revertsWith(new ERC20BridgedPermit__factory(
+      deployer
+    ).deploy(
+      "name",
+      "symbol",
+      "version",
+      18,
+      zero.address
+    ), "ErrorZeroAddressBridge()");
+  })
+
   .test("initial state", async (ctx) => {
     const { erc20Bridged } = ctx;
     const { decimals, name, symbol, version, premint } = ctx.constants;
@@ -378,13 +403,6 @@ unit("ERC20BridgedPermit", ctxFactory)
     const tx = await erc20Bridged
       .connect(spender)
       .transferFrom(holder.address, recipient.address, amount);
-
-    // validate Approval event was emitted
-    await assert.emits(erc20Bridged, tx, "Approval", [
-      holder.address,
-      spender.address,
-      wei.toBigNumber(initialAllowance).sub(amount),
-    ]);
 
     // validate Transfer event was emitted
     await assert.emits(erc20Bridged, tx, "Transfer", [

@@ -42,7 +42,7 @@ contract BridgingManager is AccessControl {
         if (s.isInitialized) {
             revert ErrorAlreadyInitialized();
         }
-        _setupRole(DEFAULT_ADMIN_ROLE, admin_);
+        _grantRole(DEFAULT_ADMIN_ROLE, admin_);
         s.isInitialized = true;
         emit Initialized(admin_);
     }

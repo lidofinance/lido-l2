@@ -94,7 +94,8 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
         uint256, /* postTotalEther     */
         uint256  /* sharesMintedAsFees */
     ) external {
-        for (uint256 obIndex = 0; obIndex < observers.length; obIndex++) {
+        uint256 cachedObserversLength = observers.length;
+        for (uint256 obIndex = 0; obIndex < cachedObserversLength; obIndex++) {
             // solhint-disable-next-line no-empty-blocks
             try ITokenRatePusher(observers[obIndex]).pushTokenRate() {}
             catch (bytes memory lowLevelRevertData) {
@@ -121,7 +122,8 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
     /// @notice `observer_` index in `observers` array.
     /// @return An index of `observer_` or `INDEX_NOT_FOUND` if it wasn't found.
     function _observerIndex(address observer_) internal view returns (uint256) {
-        for (uint256 obIndex = 0; obIndex < observers.length; obIndex++) {
+        uint256 cachedObserversLength = observers.length;
+        for (uint256 obIndex = 0; obIndex < cachedObserversLength; obIndex++) {
             if (observers[obIndex] == observer_) {
                 return obIndex;
             }

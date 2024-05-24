@@ -24,6 +24,7 @@ contract ERC20Core is IERC20 {
         returns (bool)
     {
         _approve(msg.sender, spender_, amount_);
+        emit Approval(msg.sender, spender_, amount_);
         return true;
     }
 
@@ -90,7 +91,6 @@ contract ERC20Core is IERC20 {
         uint256 amount_
     ) internal virtual onlyNonZeroAccount(owner_) onlyNonZeroAccount(spender_) {
         allowance[owner_][spender_] = amount_;
-        emit Approval(owner_, spender_, amount_);
     }
 
     /// @dev Creates amount_ tokens and assigns them to account_, increasing the total supply
@@ -142,5 +142,4 @@ contract ERC20Core is IERC20 {
     error ErrorNotEnoughBalance();
     error ErrorNotEnoughAllowance();
     error ErrorAccountIsZeroAddress();
-    error ErrorDecreasedAllowanceBelowZero();
 }

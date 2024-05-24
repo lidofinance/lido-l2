@@ -28,6 +28,78 @@ import {
 } from "../../typechain";
 
 unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
+
+.test("constructor() :: zero params", async (ctx) => {
+
+  const { deployer, stranger, zero } = ctx.accounts;
+
+  await assert.revertsWith(new L2ERC20ExtendedTokensBridge__factory(
+    deployer
+  ).deploy(
+    zero.address,
+    stranger.address,
+    stranger.address,
+    stranger.address,
+    stranger.address,
+    stranger.address
+  ), "ErrorZeroAddressMessenger()");
+
+  await assert.revertsWith(new L2ERC20ExtendedTokensBridge__factory(
+    deployer
+  ).deploy(
+    stranger.address,
+    zero.address,
+    stranger.address,
+    stranger.address,
+    stranger.address,
+    stranger.address
+  ), "ErrorZeroAddressL1Bridge()");
+
+  await assert.revertsWith(new L2ERC20ExtendedTokensBridge__factory(
+    deployer
+  ).deploy(
+    stranger.address,
+    stranger.address,
+    zero.address,
+    stranger.address,
+    stranger.address,
+    stranger.address
+  ), "ErrorZeroAddressL1TokenNonRebasable()");
+
+  await assert.revertsWith(new L2ERC20ExtendedTokensBridge__factory(
+    deployer
+  ).deploy(
+    stranger.address,
+    stranger.address,
+    stranger.address,
+    zero.address,
+    stranger.address,
+    stranger.address
+  ), "ErrorZeroAddressL1TokenRebasable()");
+
+  await assert.revertsWith(new L2ERC20ExtendedTokensBridge__factory(
+    deployer
+  ).deploy(
+    stranger.address,
+    stranger.address,
+    stranger.address,
+    stranger.address,
+    zero.address,
+    stranger.address,
+  ), "ErrorZeroAddressL2TokenNonRebasable()");
+
+  await assert.revertsWith(new L2ERC20ExtendedTokensBridge__factory(
+    deployer
+  ).deploy(
+    stranger.address,
+    stranger.address,
+    stranger.address,
+    stranger.address,
+    stranger.address,
+    zero.address,
+  ), "ErrorZeroAddressL2TokenRebasable()");
+})
+
   .test("initial state", async (ctx) => {
     const {
       accounts: { l1TokenBridgeEOA, l2MessengerStubEOA },
@@ -58,15 +130,6 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
     await assert.revertsWith(
       l2TokenBridgeImpl.initialize(deployer.address),
       "NonZeroContractVersionOnInit()"
-    );
-  })
-
-  .test("initialize() :: zero address L2 bridge", async (ctx) => {
-    const { deployer } = ctx.accounts;
-
-    await assert.revertsWith(
-      getL2TokenBridgeImpl(deployer, hre.ethers.constants.AddressZero),
-      "ErrorZeroAddressL1Bridge()"
     );
   })
 
@@ -1145,6 +1208,7 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
 
 async function ctxFactory() {
   const [deployer, stranger, recipient, l1TokenBridgeEOA] = await hre.ethers.getSigners();
+  const zero = await hre.ethers.getSigner(hre.ethers.constants.AddressZero);
 
   const tokenDecimals = 18;
   const tokenRateDecimals = BigNumber.from(27);
@@ -1278,6 +1342,7 @@ async function ctxFactory() {
     accounts: {
       deployer,
       stranger,
+      zero,
       recipient,
       l2MessengerStubEOA,
       emptyContractEOA,

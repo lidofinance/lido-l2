@@ -129,8 +129,8 @@ contract L2ERC20ExtendedTokensBridge is
     )
         external
         whenDepositsEnabled
-        onlySupportedL1L2TokensPair(l1Token_, l2Token_)
         onlyFromCrossDomainAccount(L1_TOKEN_BRIDGE)
+        onlySupportedL1L2TokensPair(l1Token_, l2Token_)
     {
         DepositDataCodec.DepositData memory depositData = DepositDataCodec.decodeDepositData(data_);
         ITokenRateUpdatable tokenRateOracle = ERC20RebasableBridged(L2_TOKEN_REBASABLE).TOKEN_RATE_ORACLE();
@@ -152,7 +152,7 @@ contract L2ERC20ExtendedTokensBridge is
     /// @param from_ Account to pull the withdrawal from on L2
     /// @param to_ Account to give the withdrawal to on L1
     /// @param amount_ Amount of the token to withdraw
-    /// @param l1Gas_ Unused, but included for potential forward compatibility considerations
+    /// @param l1Gas_ Minimum gas limit to use for the transaction.
     /// @param data_ Optional data to forward to L1. This data is provided
     ///     solely as a convenience for external contracts. Aside from enforcing a maximum
     ///     length, these contracts provide no guarantees about its content

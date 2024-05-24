@@ -8,6 +8,45 @@ import { getContractTransactionTimestamp, getBlockTimestamp } from "../../utils/
 import { TokenRateOracle__factory, CrossDomainMessengerStub__factory } from "../../typechain";
 
 unit("TokenRateOracle", ctxFactory)
+
+  .test("constructor() :: zero params", async (ctx) => {
+
+    const { deployer, stranger, zero } = ctx.accounts;
+
+    await assert.revertsWith(new TokenRateOracle__factory(
+      deployer
+    ).deploy(
+      zero.address,
+      stranger.address,
+      stranger.address,
+      0,
+      0,
+      0
+    ), "ErrorZeroAddressMessenger()");
+
+    await assert.revertsWith(new TokenRateOracle__factory(
+      deployer
+    ).deploy(
+      stranger.address,
+      zero.address,
+      stranger.address,
+      0,
+      0,
+      0
+    ), "ErrorZeroAddressL2ERC20TokenBridge()");
+
+    await assert.revertsWith(new TokenRateOracle__factory(
+      deployer
+    ).deploy(
+      stranger.address,
+      stranger.address,
+      zero.address,
+      0,
+      0,
+      0
+    ), "ErrorZeroAddressL1TokenRatePusher()");
+  })
+
   .test("state after init", async (ctx) => {
     const { tokenRateOracle, l2MessengerStub } = ctx.contracts;
     const { bridge, l1TokenBridgeEOA } = ctx.accounts;
@@ -321,7 +360,7 @@ unit("TokenRateOracle", ctxFactory)
       deployer
     ).deploy({ value: wei.toBigNumber(wei`1 ether`) });
 
-    const {tokenRateOracle, blockTimestampOfDeployment } = await tokenRateOracleUnderProxy(
+    const { tokenRateOracle, blockTimestampOfDeployment } = await tokenRateOracleUnderProxy(
       deployer,
       l2MessengerStub.address,
       bridge.address,
@@ -435,6 +474,7 @@ async function ctxFactory() {
   const maxAllowedL2ToL1ClockLag = BigNumber.from(86400 * 2);       // 2 days
   const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);   // 5%
   const [deployer, bridge, stranger, l1TokenBridgeEOA] = await hre.ethers.getSigners();
+  const zero = await hre.ethers.getSigner(hre.ethers.constants.AddressZero);
 
   const l2MessengerStub = await new CrossDomainMessengerStub__factory(deployer)
     .deploy({ value: wei.toBigNumber(wei`1 ether`) });
@@ -461,6 +501,7 @@ async function ctxFactory() {
     accounts: {
       deployer,
       bridge,
+      zero,
       stranger,
       l1TokenBridgeEOA,
       l2MessengerStubEOA

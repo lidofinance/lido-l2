@@ -35,6 +35,9 @@ contract OpStackTokenRatePusher is ERC165, CrossDomainEnabled, TokenRateAndUpdat
         address tokenRateOracle_,
         uint32 l2GasLimitForPushingTokenRate_
     ) CrossDomainEnabled(messenger_) TokenRateAndUpdateTimestampProvider(wstETH_, accountingOracle_) {
+        if (tokenRateOracle_ == address(0)) {
+            revert ErrorZeroAddressTokenRateOracle();
+        }
         L2_TOKEN_RATE_ORACLE = tokenRateOracle_;
         L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE = l2GasLimitForPushingTokenRate_;
     }
@@ -55,4 +58,6 @@ contract OpStackTokenRatePusher is ERC165, CrossDomainEnabled, TokenRateAndUpdat
             || super.supportsInterface(_interfaceId)
         );
     }
+
+    error ErrorZeroAddressTokenRateOracle();
 }

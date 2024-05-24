@@ -44,6 +44,9 @@ contract ERC20Metadata is IERC20Metadata {
         string memory symbol_,
         uint8 decimals_
     ) {
+        if (decimals_ == 0) {
+            revert ErrorZeroDecimals();
+        }
         decimals = decimals_;
         _setERC20MetadataName(name_);
         _setERC20MetadataSymbol(symbol_);
@@ -91,6 +94,7 @@ contract ERC20Metadata is IERC20Metadata {
         }
     }
 
+    error ErrorZeroDecimals();
     error ErrorNameIsEmpty();
     error ErrorSymbolIsEmpty();
 }

@@ -43,6 +43,12 @@ abstract contract TokenRateAndUpdateTimestampProvider {
     uint256 public constant TOKEN_RATE_DECIMALS = 27;
 
     constructor(address wstETH_, address accountingOracle_) {
+        if (wstETH_ == address(0)) {
+            revert ErrorZeroAddressWstEth();
+        }
+        if (accountingOracle_ == address(0)) {
+            revert ErrorZeroAddressAccountingOracle();
+        }
         WSTETH = wstETH_;
         ACCOUNTING_ORACLE = accountingOracle_;
         GENESIS_TIME = IAccountingOracle(ACCOUNTING_ORACLE).GENESIS_TIME();
@@ -57,4 +63,7 @@ abstract contract TokenRateAndUpdateTimestampProvider {
             ACCOUNTING_ORACLE
         ).getLastProcessingRefSlot();
     }
+
+    error ErrorZeroAddressWstEth();
+    error ErrorZeroAddressAccountingOracle();
 }
