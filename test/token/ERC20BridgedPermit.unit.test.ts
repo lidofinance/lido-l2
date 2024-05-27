@@ -404,6 +404,13 @@ unit("ERC20BridgedPermit", ctxFactory)
       .connect(spender)
       .transferFrom(holder.address, recipient.address, amount);
 
+    // validate Approval event was emitted
+    await assert.emits(erc20Bridged, tx, "Approval", [
+      holder.address,
+      spender.address,
+      wei.toBigNumber(initialAllowance).sub(amount),
+    ]);
+
     // validate Transfer event was emitted
     await assert.emits(erc20Bridged, tx, "Transfer", [
       holder.address,

@@ -806,9 +806,8 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       spender.address,
       amount,
     ]);
-
-
   })
+
   .test("approve() :: happy path", async (ctx) => {
     const { rebasableProxied } = ctx.contracts;
     const { holder, spender } = ctx.accounts;
@@ -1151,6 +1150,13 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       .connect(spender)
       .transferFrom(holder.address, recipient.address, tokensAmountToTransfer);
 
+    // validate Approval event was emitted
+    await assert.emits(rebasableProxied, tx, "Approval", [
+      holder.address,
+      spender.address,
+      wei.toBigNumber(tokensAmountToApprove).sub(tokensAmountToTransfer),
+    ]);
+
     // validate Transfer event was emitted
     await assert.emits(rebasableProxied, tx, "Transfer", [
       holder.address,
@@ -1303,6 +1309,13 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     const tx = await rebasableProxied
       .connect(spender)
       .transferSharesFrom(holder.address, recipient.address, sharesAmountToTransfer);
+
+    // validate Approval event was emitted
+    await assert.emits(rebasableProxied, tx, "Approval", [
+      holder.address,
+      spender.address,
+      tokensAmountToApprove.sub(tokensAmountToTransfer),
+    ]);
 
     // validate Transfer event was emitted
     await assert.emits(rebasableProxied, tx, "Transfer", [

@@ -159,7 +159,6 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     /// @inheritdoc IERC20
     function approve(address spender_, uint256 amount_) external returns (bool) {
         _approve(msg.sender, spender_, amount_);
-        emit Approval(msg.sender, spender_, amount_);
         return true;
     }
 
@@ -283,6 +282,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         uint256 amount_
     ) internal virtual onlyNonZeroAccount(owner_) onlyNonZeroAccount(spender_) {
         _getTokenAllowance()[owner_][spender_] = amount_;
+        emit Approval(owner_, spender_, amount_);
     }
 
     function _sharesOf(address account_) internal view returns (uint256) {
