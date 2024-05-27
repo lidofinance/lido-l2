@@ -20,6 +20,8 @@ interface ITokenRateOracle is ITokenRateUpdatable, IChainlinkAggregatorInterface
 /// @dev Token rate updates can be delivered from two sources: L1 token rate pusher and L2 bridge.
 contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl, Versioned {
 
+    using UnstructuredStorage for bytes32;
+
     /// @dev Stores the dynamic data of the oracle. Allows safely use of this
     ///     contract with upgradable proxies
     struct TokenRateData {
@@ -62,12 +64,14 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     /// @notice Basic point scale.
     uint256 private constant BASIS_POINT_SCALE = 1e4;
 
-    /// @dev Location of the slot with TokenRateData
-    bytes32 private constant TOKEN_RATES_COUNT_POSITION = keccak256("TokenRateOracle.TOKEN_RATES_COUNT_POSITION");
+    /// @notice Max delta time for last updates to pause updating rate.
+    uint256 private constant MAX_DELTA_TIME_TO_PAUSE_TOKEN_RATE_UPDATES = 86400 * 3;
 
-    bytes32 private constant TOKEN_RATES_DATA_SLOT = keccak256("TokenRateOracle.TOKEN_RATES_DATA_SLOT");
-
+    /// @notice Pause flag for updates slot position.
     bytes32 private constant PAUSE_TOKEN_RATE_UPDATES = keccak256("TokenRateOracle.PAUSE_TOKEN_RATE_UPDATES");
+
+    /// @notice Token rates array slot position.
+    bytes32 private constant TOKEN_RATES_DATA_SLOT = keccak256("TokenRateOracle.TOKEN_RATES_DATA_SLOT");
 
     /// @dev Role granting the permission to pause updating rate.
     bytes32 public constant RATE_UPDATE_DISABLER_ROLE = keccak256("TokenRateOracle.RATE_UPDATE_DISABLER_ROLE");
@@ -119,35 +123,40 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         }
         _initializeContractVersionTo(1);
         _grantRole(DEFAULT_ADMIN_ROLE, admin_);
-        _addTokenRate(tokenRate_, rateL1Timestamp_, block.timestamp);
+        _addTokenRate(uint128(tokenRate_), uint64(rateL1Timestamp_), uint64(block.timestamp));
     }
 
     function pause(uint256 oldRateUpdateL1Timestamp_, uint256 rateIndexHint_) external onlyRole(RATE_UPDATE_DISABLER_ROLE) {
-        PAUSE_TOKEN_RATE_UPDATES.setStorageBool(true);
+        uint256 tokenRatesLength = _getStorageTokenRates().length;
+        if (tokenRatesLength == 0) {
+            revert ErrorNoTokenRateUpdates();
+        }
 
-        TokenRateData storage tokenRateData = _getLastTokenRate();
+        if (rateIndexHint_ >= tokenRatesLength) {
+            revert ErrorWrongIndex();
+        }
 
-        if(tokenRateData.rateUpdateL1Timestamp == oldRateUpdateL1Timestamp_) {
-            _addTokenRate(tokenRateData.tokenRate, tokenRateData.rateUpdateL1Timestamp, block.timestamp);
-            emit RateUpdated(tokenRateData.tokenRate, tokenRateData.rateUpdateL1Timestamp);
+        TokenRateData storage lastTokenRateData = _getStorageTokenRates()[tokenRatesLength - 1];
+        if (lastTokenRateData.rateUpdateL1Timestamp == oldRateUpdateL1Timestamp_) {
+            PAUSE_TOKEN_RATE_UPDATES.setStorageBool(true);
+            emit TokenRateUpdatesPaused(lastTokenRateData.tokenRate, lastTokenRateData.rateUpdateL1Timestamp);
             return;
         }
 
-        uint256 tokenRatesCount = _getTokenRatesCount();
-        for (uint256 idx = tokenRatesCount - 1; idx >= rateIndexHint_; idx--) {
-            if (_getTokenRateByIndex(idx).rateUpdateL1Timestamp == oldRateUpdateL1Timestamp_ &&
-                _getTokenRateByIndex(idx).rateReceivedL2Timestamp > block.timestamp - 86000*3 ) {
-                _addTokenRate(tokenRateData.tokenRate, tokenRateData.rateUpdateL1Timestamp, block.timestamp);
-                emit RateUpdated(tokenRateData.tokenRate, tokenRateData.rateUpdateL1Timestamp);
-                return;
-            }
+        TokenRateData storage tokenRateData = _getStorageTokenRates()[rateIndexHint_];
+        if (tokenRateData.rateReceivedL2Timestamp > block.timestamp - MAX_DELTA_TIME_TO_PAUSE_TOKEN_RATE_UPDATES) {
+            _removeLastElements(tokenRatesLength - rateIndexHint_ - 1);
+            PAUSE_TOKEN_RATE_UPDATES.setStorageBool(true);
+            emit TokenRateUpdatesPaused(tokenRateData.tokenRate, tokenRateData.rateUpdateL1Timestamp);
+        } else {
+            revert ErrorLastTokenRateUpdateTooOld();
         }
     }
 
     function unpause(uint256 tokenRate_, uint256 rateUpdateL1Timestamp_) external onlyRole(RATE_UPDATE_ENABLER_ROLE) {
+        _addTokenRate(uint128(tokenRate_), uint64(rateUpdateL1Timestamp_), uint64(block.timestamp));
         PAUSE_TOKEN_RATE_UPDATES.setStorageBool(false);
-
-        _addTokenRate(tokenRate_, rateUpdateL1Timestamp_, block.timestamp);
+        emit TokenRateUpdatesUnpaused(tokenRate_, rateUpdateL1Timestamp_);
         emit RateUpdated(tokenRate_, rateUpdateL1Timestamp_);
     }
 
@@ -182,12 +191,9 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     }
 
     /// @inheritdoc ITokenRateUpdatable
-    function updateRate(uint256 tokenRate_, uint256 rateUpdateL1Timestamp_) external onlyBridgeOrTokenRatePusher {
-
-        if(PAUSE_TOKEN_RATE_UPDATES.getStorageBool()) {
-            //revert;
-            return;
-        }
+    function updateRate(
+        uint256 tokenRate_, uint256 rateUpdateL1Timestamp_
+    ) external onlyBridgeOrTokenRatePusher whenNotPaused {
 
         TokenRateData memory tokenRateData = _getLastTokenRate();
 
@@ -206,7 +212,7 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         /// NB: Here we assume that the rate can only be changed together with the token rebase induced
         /// by the AccountingOracle report
         if (rateUpdateL1Timestamp_ == tokenRateData.rateUpdateL1Timestamp) {
-            _addTokenRate(tokenRateData.tokenRate, rateUpdateL1Timestamp_, block.timestamp);
+            tokenRateData.rateReceivedL2Timestamp = uint64(block.timestamp);
             emit RateReceivedTimestampUpdated(block.timestamp);
             return;
         }
@@ -226,13 +232,13 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
             emit TokenRateL1TimestampIsInFuture(tokenRate_, rateUpdateL1Timestamp_);
         }
 
-        _addTokenRate(tokenRate_, rateUpdateL1Timestamp_, block.timestamp);
+        _addTokenRate(uint128(tokenRate_), uint64(rateUpdateL1Timestamp_), uint64(block.timestamp));
         emit RateUpdated(tokenRate_, rateUpdateL1Timestamp_);
     }
 
     /// @notice Returns flag that shows that token rate can be considered outdated.
     function isLikelyOutdated() external view returns (bool) {
-        return block.timestamp > _loadTokenRateData().value.rateReceivedL2Timestamp + TOKEN_RATE_OUTDATED_DELAY;
+        return block.timestamp > _getLastTokenRate().rateReceivedL2Timestamp + TOKEN_RATE_OUTDATED_DELAY;
     }
 
     /// @notice Allow tokenRate deviation from the previous value to be
@@ -291,30 +297,53 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         return false;
     }
 
-    // function _setTokenRateAndTimestamps(uint128 tokenRate_, uint64 rateUpdateL1Timestamp_) internal {
-    //     _loadTokenRateData().value = TokenRateData(tokenRate_, rateUpdateL1Timestamp_, uint64(block.timestamp));
-    // }
+    function _addTokenRate(
+        uint128 tokenRate_, uint64 rateUpdateL1Timestamp_, uint64 rateReceivedL2Timestamp_
+    ) internal {
+        _getStorageTokenRates().push(TokenRateData({
+            tokenRate: tokenRate_,
+            rateUpdateL1Timestamp: rateUpdateL1Timestamp_,
+            rateReceivedL2Timestamp: rateReceivedL2Timestamp_
+        }));
+    }
 
-    // function _getTokenRateAndTimestamps() private view returns (TokenRateData memory tokenRateData) {
-    //     tokenRateData = _loadTokenRateData().value;
-    // }
+    function _getLastTokenRate() internal view returns (TokenRateData storage) {
+        return _getTokenRateByIndex(_getStorageTokenRates().length - 1);
+    }
 
-    // /// @dev Storage helper for TokenRateData
-    // struct StorageTokenRateData {
-    //     TokenRateData value;
-    // }
+    function _getTokenRateByIndex(uint256 _tokenRateIndex) internal view returns (TokenRateData storage) {
+        return _getStorageTokenRates()[_tokenRateIndex];
+    }
 
-    /// @dev Returns the reference to the slot with TokenRateData struct
-    // function _loadTokenRateData()
-    //     private
-    //     pure
-    //     returns (StorageTokenRateData storage r)
-    // {
-    //     bytes32 slot = TOKEN_RATE_DATA_SLOT;
-    //     assembly {
-    //         r.slot := slot
-    //     }
-    // }
+    function _getStorageTokenRates() internal pure returns (TokenRateData [] storage result) {
+        bytes32 position = TOKEN_RATES_DATA_SLOT;
+        assembly {
+            result.slot := position
+        }
+    }
+
+    function _removeLastElements(uint256 removeElementsCount_) internal {
+        uint256 removeElementsCount = removeElementsCount_;
+        while (removeElementsCount > 0) {
+            removeElementsCount -= 1;
+            _getStorageTokenRates().pop();
+        }
+    }
+
+    function _setPause(bool pause) internal {
+        PAUSE_TOKEN_RATE_UPDATES.setStorageBool(pause);
+    }
+
+    function _isPaused() internal view returns (bool) {
+        return PAUSE_TOKEN_RATE_UPDATES.getStorageBool();
+    }
+
+    modifier whenNotPaused() {
+        if (PAUSE_TOKEN_RATE_UPDATES.getStorageBool()) {
+            revert ErrorRateUpdatePaused();
+        }
+        _;
+    }
 
     modifier onlyBridgeOrTokenRatePusher() {
         if (!_isCallerBridgeOrMessengerWithTokenRatePusher(msg.sender)) {
@@ -323,44 +352,18 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         _;
     }
 
-    function _addTokenRate(
-        uint128 tokenRate_, uint64 rateUpdateL1Timestamp_, uint64 rateReceivedL2Timestamp_
-    ) internal {
-        uint256 newTokenRateIndex = _getTokenRatesCount();
-        TokenRateData storage newTokenRateData = _getTokenRateByIndex(newTokenRateIndex);
-        newTokenRateData.tokenRate = tokenRate_;
-        newTokenRateData.rateUpdateL1Timestamps = rateUpdateL1Timestamp_;
-        newTokenRateData.rateReceivedL2Timestamp = rateReceivedL2Timestamp_;
-        TOKEN_RATES_COUNT_POSITION.setStorageUint256(newTokenRateIndex + 1);
-    }
-
-    function _getLastTokenRate() internal view returns (TokenRateData storage) {
-        uint256 tokenRatesCount = _getTokenRatesCount();
-        return _getTokenRateByIndex(tokenRatesCount - 1);
-    }
-
-    function _getTokenRateByIndex(uint256 _tokenRateIndex) internal view returns (TokenRateData storage) {
-        mapping(uint256 => TokenRateData) storage _tokenRates = _getStorageTokenRatesMapping();
-        return _tokenRates[_tokenRateIndex];
-    }
-
-    function _getStorageTokenRatesMapping() internal pure returns (mapping(uint256 => TokenRateData) storage result) {
-        bytes32 position = TOKEN_RATES_DATA_SLOT;
-        assembly {
-            result.slot := position
-        }
-    }
-
-    function _getTokenRatesCount() public view returns (uint256) {
-        return TOKEN_RATES_COUNT_POSITION.getStorageUint256();
-    }
-
     event RateUpdated(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
     event RateReceivedTimestampUpdated(uint256 indexed rateReceivedL2Timestamp);
     event DormantTokenRateUpdateIgnored(uint256 indexed newRateL1Timestamp_, uint256 indexed currentRateL1Timestamp_);
     event TokenRateL1TimestampIsInFuture(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
+    event TokenRateUpdatesPaused(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
+    event TokenRateUpdatesUnpaused(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
 
     error ErrorZeroAddressAdmin();
+    error ErrorRateUpdatePaused();
+    error ErrorNoTokenRateUpdates();
+    error ErrorWrongIndex();
+    error ErrorLastTokenRateUpdateTooOld();
     error ErrorZeroAddressL2ERC20TokenBridge();
     error ErrorZeroAddressL1TokenRatePusher();
     error ErrorNotBridgeOrTokenRatePusher();
