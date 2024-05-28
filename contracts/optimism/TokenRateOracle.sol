@@ -203,8 +203,13 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
 
     /// @inheritdoc ITokenRateUpdatable
     function updateRate(
-        uint256 tokenRate_, uint256 rateUpdateL1Timestamp_
-    ) external onlyBridgeOrTokenRatePusher whenNotPaused {
+        uint256 tokenRate_,
+        uint256 rateUpdateL1Timestamp_
+    ) external onlyBridgeOrTokenRatePusher {
+        if (_isPaused()) {
+            emit TokenRateUpdateAttemptDuringPause(tokenRate_, rateUpdateL1Timestamp_);
+            return;
+        }
 
         TokenRateData storage tokenRateData = _getLastTokenRate();
 
@@ -360,13 +365,6 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         return PAUSE_TOKEN_RATE_UPDATES.getStorageBool();
     }
 
-    modifier whenNotPaused() {
-        if (_isPaused()) {
-            revert ErrorRateUpdatePaused();
-        }
-        _;
-    }
-
     modifier onlyBridgeOrTokenRatePusher() {
         if (!_isCallerBridgeOrMessengerWithTokenRatePusher(msg.sender)) {
             revert ErrorNotBridgeOrTokenRatePusher();
@@ -380,9 +378,9 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     event TokenRateL1TimestampIsInFuture(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
     event TokenRateUpdatesPaused(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
     event TokenRateUpdatesUnpaused(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
+    event TokenRateUpdateAttemptDuringPause(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
 
     error ErrorZeroAddressAdmin();
-    error ErrorRateUpdatePaused();
     error ErrorNoTokenRateUpdates();
     error ErrorWrongTokenRateIndex();
     error ErrorTokenRateUpdateTooOld();
