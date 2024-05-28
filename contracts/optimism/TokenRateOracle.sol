@@ -129,26 +129,18 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         _addTokenRate(uint128(tokenRate_), uint64(rateUpdateL1Timestamp_), uint64(block.timestamp));
     }
 
-    /// @notice Pauses token rate updates. Should be called by DAO or multisig only.
-    /// @param rateIndex_ The index of the token rate that applies after the pause.
-    ///        Token Rate can't be older then MAX_DELTA_TIME_TO_PAUSE_TOKEN_RATE_UPDATES.
-    function pauseTokenRateUpdates(uint256 rateIndex_) external onlyRole(RATE_UPDATE_DISABLER_ROLE) {
-        uint256 tokenRatesLength = _getStorageTokenRates().length;
-        if (tokenRatesLength == 0) {
-            revert ErrorNoTokenRateUpdates();
-        }
-        if (rateIndex_ >= tokenRatesLength) {
-            revert ErrorWrongTokenRateIndex();
-        }
-
-        TokenRateData storage tokenRateData = _getStorageTokenRates()[rateIndex_];
-        if (tokenRateData.rateReceivedL2Timestamp > block.timestamp - MAX_DELTA_TIME_TO_PAUSE_TOKEN_RATE_UPDATES) {
-            _removeLastElements(tokenRatesLength - rateIndex_ - 1);
-            PAUSE_TOKEN_RATE_UPDATES.setStorageBool(true);
-            emit TokenRateUpdatesPaused(tokenRateData.tokenRate, tokenRateData.rateUpdateL1Timestamp);
-        } else {
+    /// @notice Pauses token rate updates and setup old rate provided by tokenRateIndex_.
+    ///         Should be called by DAO or multisig only.
+    /// @param tokenRateIndex_ The index of the token rate that applies after the pause.
+    ///        Token Rate can't be received older then MAX_DELTA_TIME_TO_PAUSE_TOKEN_RATE_UPDATES.
+    function pauseTokenRateUpdates(uint256 tokenRateIndex_) external onlyRole(RATE_UPDATE_DISABLER_ROLE) {
+        TokenRateData memory tokenRateData = _getTokenRateByIndex(tokenRateIndex_);
+        if (tokenRateData.rateReceivedL2Timestamp < block.timestamp - MAX_DELTA_TIME_TO_PAUSE_TOKEN_RATE_UPDATES) {
             revert ErrorTokenRateUpdateTooOld();
         }
+        _removeElementsAfterIndex(tokenRateIndex_);
+        PAUSE_TOKEN_RATE_UPDATES.setStorageBool(true);
+        emit TokenRateUpdatesPaused(tokenRateData.tokenRate, tokenRateData.rateUpdateL1Timestamp);
     }
 
     /// @notice Unpauses token rate updates applying provided token rate. Should be called by DAO only.
@@ -189,7 +181,6 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         uint80 answeredInRound_
     ) {
         TokenRateData memory tokenRateData = _getLastTokenRate();
-
         return (
             uint80(tokenRateData.rateUpdateL1Timestamp),
             int256(uint256(tokenRateData.tokenRate)),
@@ -215,7 +206,7 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         uint256 tokenRate_, uint256 rateUpdateL1Timestamp_
     ) external onlyBridgeOrTokenRatePusher whenNotPaused {
 
-        TokenRateData memory tokenRateData = _getLastTokenRate();
+        TokenRateData storage tokenRateData = _getLastTokenRate();
 
         /// @dev checks if the clock lag (i.e, time difference) between L1 and L2 exceeds the configurable threshold
         if (rateUpdateL1Timestamp_ > block.timestamp + MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
@@ -328,10 +319,16 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     }
 
     function _getLastTokenRate() internal view returns (TokenRateData storage) {
+        if (_getStorageTokenRates().length == 0) {
+            revert ErrorNoTokenRateUpdates();
+        }
         return _getTokenRateByIndex(_getStorageTokenRates().length - 1);
     }
 
     function _getTokenRateByIndex(uint256 tokenRateIndex_) internal view returns (TokenRateData storage) {
+        if (tokenRateIndex_ >= _getStorageTokenRates().length) {
+            revert ErrorWrongTokenRateIndex();
+        }
         return _getStorageTokenRates()[tokenRateIndex_];
     }
 
@@ -342,8 +339,13 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         }
     }
 
-    function _removeLastElements(uint256 numberOfElementsToRemove_) internal {
-        uint256 numberOfElementsToRemove = numberOfElementsToRemove_;
+    function _removeElementsAfterIndex(uint256 tokenRateIndex_) internal {
+        uint256 tokenRatesLength = _getStorageTokenRates().length;
+        if (tokenRateIndex_ >= tokenRatesLength) {
+            revert ErrorWrongTokenRateIndex();
+        }
+
+        uint256 numberOfElementsToRemove = tokenRatesLength - tokenRateIndex_ - 1;
         while (numberOfElementsToRemove > 0) {
             numberOfElementsToRemove -= 1;
             _getStorageTokenRates().pop();
@@ -359,7 +361,7 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     }
 
     modifier whenNotPaused() {
-        if (PAUSE_TOKEN_RATE_UPDATES.getStorageBool()) {
+        if (_isPaused()) {
             revert ErrorRateUpdatePaused();
         }
         _;
