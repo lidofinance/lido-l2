@@ -68,6 +68,7 @@ export async function tokenRateOracleUnderProxy(
   const unsignedTx = tokenRateOracleProxy.getDeployTransaction(tokenRateOracleImpl.address,
     deployer.address,
     tokenRateOracleImpl.interface.encodeFunctionData("initialize", [
+      deployer.address,
       tokenRate,
       rateL1Timestamp
     ]));

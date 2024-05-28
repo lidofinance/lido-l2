@@ -138,6 +138,7 @@ export default function deploymentOracle(
             TokenRateOracle__factory.createInterface().encodeFunctionData(
               "initialize",
               [
+                l2Params.admins.bridge,
                 l2Params.tokenRateOracle.tokenRate,
                 l2Params.tokenRateOracle.l1Timestamp
               ]

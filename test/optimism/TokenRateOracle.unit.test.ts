@@ -103,19 +103,20 @@ unit("TokenRateOracle", ctxFactory)
     assert.equalBN(await tokenRateOracleImpl.getContractVersion(), petrifiedVersionMark);
 
     await assert.revertsWith(
-      tokenRateOracleImpl.initialize(tokenRate, blockTimestampOfDeployment),
+      tokenRateOracleImpl.initialize(deployer.address, tokenRate, blockTimestampOfDeployment),
       "NonZeroContractVersionOnInit()"
     );
   })
 
   .test("initialize() :: don't allow to initialize twice", async (ctx) => {
+    const { deployer } = ctx.accounts;
     const { tokenRateOracle } = ctx.contracts;
     const { tokenRate, blockTimestampOfDeployment } = ctx.constants;
 
     assert.equalBN(await tokenRateOracle.getContractVersion(), 1);
 
     await assert.revertsWith(
-      tokenRateOracle.initialize(tokenRate, blockTimestampOfDeployment),
+      tokenRateOracle.initialize(deployer.address, tokenRate, blockTimestampOfDeployment),
       "NonZeroContractVersionOnInit()"
     );
   })
@@ -138,12 +139,12 @@ unit("TokenRateOracle", ctxFactory)
     const tokenRateMax = await tokenRateOracleImpl.MAX_ALLOWED_TOKEN_RATE();
 
     await assert.revertsWith(
-      tokenRateOracleImpl.initialize(tokenRateMin.sub(1), blockTimestampOfDeployment),
+      tokenRateOracleImpl.initialize(deployer.address, tokenRateMin.sub(1), blockTimestampOfDeployment),
       "ErrorTokenRateInitializationIsOutOfAllowedRange(" + tokenRateMin.sub(1) + ")"
     );
 
     await assert.revertsWith(
-      tokenRateOracleImpl.initialize(tokenRateMax.add(1), blockTimestampOfDeployment),
+      tokenRateOracleImpl.initialize(deployer.address, tokenRateMax.add(1), blockTimestampOfDeployment),
       "ErrorTokenRateInitializationIsOutOfAllowedRange(" + tokenRateMax.add(1) + ")"
     );
   })
@@ -165,7 +166,7 @@ unit("TokenRateOracle", ctxFactory)
     const wrongTimeMax = blockTimestampOfDeployment.add(maxAllowedL2ToL1ClockLag).add(20);
 
     await assert.revertsWith(
-      tokenRateOracleImpl.initialize(tokenRate, wrongTimeMax),
+      tokenRateOracleImpl.initialize(deployer.address, tokenRate, wrongTimeMax),
       "ErrorL1TimestampInitializationIsOutOfAllowedRange(" + wrongTimeMax + ")"
     );
   })

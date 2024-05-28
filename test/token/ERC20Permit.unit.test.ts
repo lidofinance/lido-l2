@@ -441,6 +441,7 @@ async function tokenProxied(
       tokenRateOracleImpl.address,
       deployer.address,
       tokenRateOracleImpl.interface.encodeFunctionData("initialize", [
+        deployer.address,
         tokenRate,
         blockTimestamp
       ])

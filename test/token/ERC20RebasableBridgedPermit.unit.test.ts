@@ -16,7 +16,6 @@ import {
 } from "../../typechain";
 
 unit("ERC20RebasableBridgedPermit", ctxFactory)
-
   .test("constructor() :: zero params", async (ctx) => {
     const {
       deployer,
@@ -272,7 +271,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
   .test("wrap() :: wrong oracle update time", async (ctx) => {
 
     const { deployer, user1, owner, zero, messenger, l1TokenRatePusher } = ctx.accounts;
-    const { decimals } = ctx.constants;
+    const { decimals, tokenRate } = ctx.constants;
 
     // deploy new implementation to test initial oracle state
     const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
@@ -282,7 +281,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       decimals,
       owner.address
     );
-    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
+    const tokenRateOracleImpl = await new TokenRateOracle__factory(deployer).deploy(
       messenger.address,
       owner.address,
       l1TokenRatePusher.address,
@@ -290,20 +289,21 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       86400,
       500
     );
+
     const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       "name",
       "symbol",
       "1",
       10,
       wrappedToken.address,
-      tokenRateOracle.address,
+      tokenRateOracleImpl.address,
       owner.address
     );
 
     await wrappedToken.connect(owner).bridgeMint(user1.address, 1000);
     await wrappedToken.connect(user1).approve(rebasableProxied.address, 1000);
 
-    await assert.revertsWith(rebasableProxied.connect(user1).wrap(5), "ErrorWrongOracleUpdateTime()");
+    await assert.revertsWith(rebasableProxied.connect(user1).wrap(5), "ErrorNoTokenRateUpdates()");
   })
 
   .test("wrap() :: when no balance", async (ctx) => {
@@ -416,7 +416,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     await wrappedToken.connect(owner).bridgeMint(user1.address, 1000);
     await wrappedToken.connect(user1).approve(rebasableProxied.address, 1000);
 
-    await assert.revertsWith(rebasableProxied.connect(user1).unwrap(5), "ErrorWrongOracleUpdateTime()");
+    await assert.revertsWith(rebasableProxied.connect(user1).unwrap(5), "ErrorNoTokenRateUpdates()");
   })
 
   .test("unwrap() :: when no balance", async (ctx) => {
@@ -601,7 +601,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
 
     await assert.revertsWith(
       rebasableProxied.connect(owner).bridgeWrap(user1.address, 5),
-      "ErrorWrongOracleUpdateTime()"
+      "ErrorNoTokenRateUpdates()"
     );
   })
 
@@ -727,7 +727,7 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     );
 
     await wrappedToken.connect(owner).bridgeMint(user1.address, 1000);
-    await assert.revertsWith(rebasableProxied.connect(owner).bridgeUnwrap(user1.address, 5), "ErrorWrongOracleUpdateTime()");
+    await assert.revertsWith(rebasableProxied.connect(owner).bridgeUnwrap(user1.address, 5), "ErrorNoTokenRateUpdates()");
   })
 
   .test("bridgeUnwrap() :: happy path", async (ctx) => {

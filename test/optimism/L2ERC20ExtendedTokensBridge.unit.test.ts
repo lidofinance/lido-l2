@@ -1274,6 +1274,7 @@ async function ctxFactory() {
     tokenRateOracleImpl.address,
     deployer.address,
     tokenRateOracleImpl.interface.encodeFunctionData("initialize", [
+      deployer.address,
       exchangeRate,
       blockTimestamp
     ])
@@ -1441,6 +1442,7 @@ async function getL2TokenBridgeImpl(deployer: SignerWithAddress, l1TokenBridge: 
     tokenRateOracleImpl.address,
     deployer.address,
     tokenRateOracleImpl.interface.encodeFunctionData("initialize", [
+      deployer.address,
       exchangeRate,
       blockTimestamp
     ])
