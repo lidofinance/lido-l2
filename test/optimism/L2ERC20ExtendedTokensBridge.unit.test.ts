@@ -1262,7 +1262,8 @@ async function ctxFactory() {
     l1TokenBridgeEOA.address,
     86400,
     86400,
-    500
+    500,
+    86400*3
   );
 
   const provider = await hre.ethers.provider;
@@ -1430,7 +1431,8 @@ async function getL2TokenBridgeImpl(deployer: SignerWithAddress, l1TokenBridge: 
     l1TokenBridge,
     86400,
     86400,
-    500
+    500,
+    86400*3
   );
 
   const provider = await hre.ethers.provider;

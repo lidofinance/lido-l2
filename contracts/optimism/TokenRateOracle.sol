@@ -48,6 +48,9 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     /// @notice Allowed token rate deviation per day in basic points.
     uint256 public immutable MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY;
 
+    /// @notice Max delta time for last updates to pause updating rate.
+    uint256 public immutable MAX_DELTA_TIME_TO_PAUSE_TOKEN_RATE_UPDATES;
+
     /// @notice Number of seconds in one day.
     uint256 public constant ONE_DAY_SECONDS = 86400;
 
@@ -60,23 +63,20 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     /// @notice Min allowed token rate value.
     uint256 public constant MIN_ALLOWED_TOKEN_RATE = 10 ** (DECIMALS - 2);
 
+    /// @dev Role granting the permission to pause updating rate.
+    bytes32 public constant RATE_UPDATE_DISABLER_ROLE = keccak256("TokenRateOracle.RATE_UPDATE_DISABLER_ROLE");
+
+    /// @dev Role granting the permission to unpause updating rate.
+    bytes32 public constant RATE_UPDATE_ENABLER_ROLE = keccak256("TokenRateOracle.RATE_UPDATE_ENABLER_ROLE");
+
     /// @notice Basic point scale.
     uint256 private constant BASIS_POINT_SCALE = 1e4;
-
-    /// @notice Max delta time for last updates to pause updating rate.
-    uint256 private constant MAX_DELTA_TIME_TO_PAUSE_TOKEN_RATE_UPDATES = 86400 * 3;
 
     /// @notice Flag to pause token rate updates slot position.
     bytes32 private constant PAUSE_TOKEN_RATE_UPDATES = keccak256("TokenRateOracle.PAUSE_TOKEN_RATE_UPDATES");
 
     /// @notice Token rates array slot position.
     bytes32 private constant TOKEN_RATES_DATA_SLOT = keccak256("TokenRateOracle.TOKEN_RATES_DATA_SLOT");
-
-    /// @dev Role granting the permission to pause updating rate.
-    bytes32 public constant RATE_UPDATE_DISABLER_ROLE = keccak256("TokenRateOracle.RATE_UPDATE_DISABLER_ROLE");
-
-    /// @dev Role granting the permission to unpause updating rate.
-    bytes32 private constant RATE_UPDATE_ENABLER_ROLE = keccak256("TokenRateOracle.RATE_UPDATE_ENABLER_ROLE");
 
     /// @param messenger_ L2 messenger address being used for cross-chain communications
     /// @param l2ERC20TokenBridge_ the bridge address that has a right to updates oracle.
@@ -86,13 +86,16 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     ///         when token rate can be considered outdated.
     /// @param maxAllowedTokenRateDeviationPerDay_ Allowed token rate deviation per day in basic points.
     ///        Can't be bigger than BASIS_POINT_SCALE.
+    /// @param maxDeltaTimeToPausetokenRateUpdates_ Maximum delta time between current time and last received
+    ///        token rate update that is allowed to set during pause.
     constructor(
         address messenger_,
         address l2ERC20TokenBridge_,
         address l1TokenRatePusher_,
         uint256 tokenRateOutdatedDelay_,
         uint256 maxAllowedL2ToL1ClockLag_,
-        uint256 maxAllowedTokenRateDeviationPerDay_
+        uint256 maxAllowedTokenRateDeviationPerDay_,
+        uint256 maxDeltaTimeToPausetokenRateUpdates_
     ) CrossDomainEnabled(messenger_) {
         if (l2ERC20TokenBridge_ == address(0)) {
             revert ErrorZeroAddressL2ERC20TokenBridge();
@@ -108,11 +111,12 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         TOKEN_RATE_OUTDATED_DELAY = tokenRateOutdatedDelay_;
         MAX_ALLOWED_L2_TO_L1_CLOCK_LAG = maxAllowedL2ToL1ClockLag_;
         MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY = maxAllowedTokenRateDeviationPerDay_;
+        MAX_DELTA_TIME_TO_PAUSE_TOKEN_RATE_UPDATES = maxDeltaTimeToPausetokenRateUpdates_;
     }
 
     /// @notice Initializes the contract from scratch.
     /// @param admin_ Address of the account to grant the DEFAULT_ADMIN_ROLE
-    /// @param tokenRate_ wstETH/stETH token rate.
+    /// @param tokenRate_ wstETH/stETH token rate, uses 10**DECIMALS precision.
     /// @param rateUpdateL1Timestamp_ L1 time when rate was updated on L1 side.
     function initialize(address admin_, uint256 tokenRate_, uint256 rateUpdateL1Timestamp_) external {
         if (admin_ == address(0)) {
@@ -129,18 +133,24 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         _addTokenRate(uint128(tokenRate_), uint64(rateUpdateL1Timestamp_), uint64(block.timestamp));
     }
 
-    /// @notice Pauses token rate updates and setup old rate provided by tokenRateIndex_.
-    ///         Should be called by DAO or multisig only.
+    /// @notice Pauses token rate updates and sets the old rate provided by tokenRateIndex_.
+    ///         Should be called by DAO or emergency breaks only.
     /// @param tokenRateIndex_ The index of the token rate that applies after the pause.
-    ///        Token Rate can't be received older then MAX_DELTA_TIME_TO_PAUSE_TOKEN_RATE_UPDATES.
+    ///        Token Rate can't be received older then MAX_DELTA_TIME_TO_PAUSE_TOKEN_RATE_UPDATES
+    ///        except only if the passed index is the latest one.
     function pauseTokenRateUpdates(uint256 tokenRateIndex_) external onlyRole(RATE_UPDATE_DISABLER_ROLE) {
+        if (_isPaused()) {
+            revert ErrorAlreadyPaused();
+        }
         TokenRateData memory tokenRateData = _getTokenRateByIndex(tokenRateIndex_);
-        if (tokenRateData.rateReceivedL2Timestamp < block.timestamp - MAX_DELTA_TIME_TO_PAUSE_TOKEN_RATE_UPDATES) {
+        if (tokenRateIndex_ != _getStorageTokenRates().length - 1 &&
+            tokenRateData.rateReceivedL2Timestamp < block.timestamp - MAX_DELTA_TIME_TO_PAUSE_TOKEN_RATE_UPDATES) {
             revert ErrorTokenRateUpdateTooOld();
         }
         _removeElementsAfterIndex(tokenRateIndex_);
         PAUSE_TOKEN_RATE_UPDATES.setStorageBool(true);
         emit TokenRateUpdatesPaused(tokenRateData.tokenRate, tokenRateData.rateUpdateL1Timestamp);
+        emit RateUpdated(tokenRateData.tokenRate, tokenRateData.rateUpdateL1Timestamp);
     }
 
     /// @notice Unpauses token rate updates applying provided token rate. Should be called by DAO only.
@@ -150,6 +160,9 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         uint256 tokenRate_,
         uint256 rateUpdateL1Timestamp_
     ) external onlyRole(RATE_UPDATE_ENABLER_ROLE) {
+        if (!_isPaused()) {
+            revert ErrorAlreadyUnpaused();
+        }
         _addTokenRate(uint128(tokenRate_), uint64(rateUpdateL1Timestamp_), uint64(block.timestamp));
         PAUSE_TOKEN_RATE_UPDATES.setStorageBool(false);
         emit TokenRateUpdatesUnpaused(tokenRate_, rateUpdateL1Timestamp_);
@@ -346,14 +359,11 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
 
     function _removeElementsAfterIndex(uint256 tokenRateIndex_) internal {
         uint256 tokenRatesLength = _getStorageTokenRates().length;
-        if (tokenRateIndex_ >= tokenRatesLength) {
-            revert ErrorWrongTokenRateIndex();
-        }
-
-        uint256 numberOfElementsToRemove = tokenRatesLength - tokenRateIndex_ - 1;
-        while (numberOfElementsToRemove > 0) {
-            numberOfElementsToRemove -= 1;
-            _getStorageTokenRates().pop();
+        if (tokenRateIndex_ < tokenRatesLength) {
+            uint256 numberOfElementsToRemove = tokenRatesLength - tokenRateIndex_ - 1;
+            for (uint256 i = 0; i < numberOfElementsToRemove; i++) {
+                _getStorageTokenRates().pop();
+            }
         }
     }
 
@@ -384,6 +394,8 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     error ErrorNoTokenRateUpdates();
     error ErrorWrongTokenRateIndex();
     error ErrorTokenRateUpdateTooOld();
+    error ErrorAlreadyPaused();
+    error ErrorAlreadyUnpaused();
     error ErrorZeroAddressL2ERC20TokenBridge();
     error ErrorZeroAddressL1TokenRatePusher();
     error ErrorNotBridgeOrTokenRatePusher();

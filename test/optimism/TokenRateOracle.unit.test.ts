@@ -21,6 +21,7 @@ unit("TokenRateOracle", ctxFactory)
       stranger.address,
       0,
       0,
+      0,
       0
     ), "ErrorZeroAddressMessenger()");
 
@@ -32,6 +33,7 @@ unit("TokenRateOracle", ctxFactory)
       stranger.address,
       0,
       0,
+      0,
       0
     ), "ErrorZeroAddressL2ERC20TokenBridge()");
 
@@ -41,6 +43,7 @@ unit("TokenRateOracle", ctxFactory)
       stranger.address,
       stranger.address,
       zero.address,
+      0,
       0,
       0,
       0
@@ -96,7 +99,8 @@ unit("TokenRateOracle", ctxFactory)
       l1TokenBridgeEOA.address,
       86400,
       86400,
-      500
+      500,
+      86400*3
     );
 
     const petrifiedVersionMark = hre.ethers.constants.MaxUint256;
@@ -132,7 +136,8 @@ unit("TokenRateOracle", ctxFactory)
       l1TokenBridgeEOA.address,
       86400,
       86400,
-      500
+      500,
+      86400*3
     );
 
     const tokenRateMin = await tokenRateOracleImpl.MIN_ALLOWED_TOKEN_RATE();
@@ -160,7 +165,8 @@ unit("TokenRateOracle", ctxFactory)
       l1TokenBridgeEOA.address,
       86400,
       86400,
-      500
+      500,
+      86400*3
     );
 
     const wrongTimeMax = blockTimestampOfDeployment.add(maxAllowedL2ToL1ClockLag).add(20);
@@ -184,7 +190,8 @@ unit("TokenRateOracle", ctxFactory)
         l1TokenBridgeEOA.address,
         86400,
         86400,
-        maxAllowedTokenRateDeviationPerDay
+        maxAllowedTokenRateDeviationPerDay,
+        86400*3
       ),
       "ErrorMaxTokenRateDeviationIsOutOfRange()"
     );
@@ -369,6 +376,7 @@ unit("TokenRateOracle", ctxFactory)
       tokenRateOutdatedDelay,
       maxAllowedL2ToL1ClockLag,
       maxAllowedTokenRateDeviationPerDay,
+      BigNumber.from(86400*3),
       tokenRate,
       BigNumber.from(0)
     );
@@ -462,6 +470,171 @@ unit("TokenRateOracle", ctxFactory)
     assert.equalBN(answeredInRound_, blockTimestampInFuture);
   })
 
+  // correct index
+  // too old time
+  // success + state and events + check event when update
+  .test("pauseTokenRateUpdates() :: wrong role", async (ctx) => {
+    const { tokenRateOracle } = ctx.contracts;
+    const { deployer } = ctx.accounts;
+
+    const disablerRole = await tokenRateOracle.RATE_UPDATE_DISABLER_ROLE();
+    const account = deployer.address.toLowerCase();
+
+    await assert.revertsWith(
+      tokenRateOracle.pauseTokenRateUpdates(1),
+      "AccessControl: account " + account + " is missing role " + disablerRole
+    );
+  })
+
+  .test("pauseTokenRateUpdates() :: wrong index", async (ctx) => {
+    const { tokenRateOracle } = ctx.contracts;
+    const { multisig } = ctx.accounts;
+
+    const disablerRole = await tokenRateOracle.RATE_UPDATE_DISABLER_ROLE();
+    await tokenRateOracle.grantRole(disablerRole, multisig.address);
+
+    await assert.revertsWith(
+      tokenRateOracle.connect(multisig).pauseTokenRateUpdates(1),
+      "ErrorWrongTokenRateIndex()"
+    );
+  })
+
+  .test("pauseTokenRateUpdates() :: old rate", async (ctx) => {
+
+    const { multisig, bridge, deployer, l1TokenBridgeEOA } = ctx.accounts;
+    const { tokenRate, tokenRateOutdatedDelay, maxAllowedL2ToL1ClockLag, maxAllowedTokenRateDeviationPerDay } = ctx.constants;
+    const { l2MessengerStub } = ctx.contracts;
+
+    /// create new Oracle with 0 maxDeltaTimeToPausetokenRateUpdates
+    const maxDeltaTimeToPausetokenRateUpdates = BigNumber.from(0);
+    const { tokenRateOracle, blockTimestampOfDeployment } = await tokenRateOracleUnderProxy(
+      deployer,
+      l2MessengerStub.address,
+      bridge.address,
+      l1TokenBridgeEOA.address,
+      tokenRateOutdatedDelay,
+      maxAllowedL2ToL1ClockLag,
+      maxAllowedTokenRateDeviationPerDay,
+      maxDeltaTimeToPausetokenRateUpdates,
+      tokenRate,
+      BigNumber.from(0)
+    );
+
+    const disablerRole = await tokenRateOracle.RATE_UPDATE_DISABLER_ROLE();
+    await tokenRateOracle.grantRole(disablerRole, multisig.address);
+
+    await tokenRateOracle.connect(bridge).updateRate(tokenRate, blockTimestampOfDeployment.add(1000));
+
+    await assert.revertsWith(
+      tokenRateOracle.connect(multisig).pauseTokenRateUpdates(0),
+      "ErrorTokenRateUpdateTooOld()"
+    );
+  })
+
+  .test("pauseTokenRateUpdates() :: success", async (ctx) => {
+    const { tokenRateOracle } = ctx.contracts;
+    const { multisig, bridge } = ctx.accounts;
+    const { tokenRate, blockTimestampOfDeployment } = ctx.constants;
+
+    const disablerRole = await tokenRateOracle.RATE_UPDATE_DISABLER_ROLE();
+    await tokenRateOracle.grantRole(disablerRole, multisig.address);
+
+    const tokenRate0 = tokenRate.add(100);
+    const tokenRate1 = tokenRate.add(200);
+    const tokenRate2 = tokenRate.add(300);
+    const tokenRate3 = tokenRate.add(300);
+
+    const blockTimestampOfDeployment0 = blockTimestampOfDeployment.add(1000);
+    const blockTimestampOfDeployment1 = blockTimestampOfDeployment.add(2000);
+    const blockTimestampOfDeployment2 = blockTimestampOfDeployment.add(3000);
+    const blockTimestampOfDeployment3 = blockTimestampOfDeployment.add(4000);
+
+    const tx0 = await tokenRateOracle.connect(bridge).updateRate(tokenRate0, blockTimestampOfDeployment0);
+    await assert.emits(tokenRateOracle, tx0, "RateUpdated", [tokenRate0, blockTimestampOfDeployment0]);
+
+    const tx1 = await tokenRateOracle.connect(bridge).updateRate(tokenRate1, blockTimestampOfDeployment1);
+    await assert.emits(tokenRateOracle, tx1, "RateUpdated", [tokenRate1, blockTimestampOfDeployment1]);
+
+    const tx2 = await tokenRateOracle.connect(bridge).updateRate(tokenRate2, blockTimestampOfDeployment2);
+    await assert.emits(tokenRateOracle, tx2, "RateUpdated", [tokenRate2, blockTimestampOfDeployment2]);
+
+    assert.equalBN(await tokenRateOracle.getTokenRatesLength(), 4);
+    assert.isFalse(await tokenRateOracle.isTokenRateUpdatesPaused());
+
+    const pauseTx = await tokenRateOracle.connect(multisig).pauseTokenRateUpdates(1);
+
+    await assert.emits(tokenRateOracle, pauseTx, "TokenRateUpdatesPaused", [
+      tokenRate0,
+      blockTimestampOfDeployment0
+    ]);
+
+    assert.equalBN(await tokenRateOracle.getTokenRatesLength(), 2);
+    assert.isTrue(await tokenRateOracle.isTokenRateUpdatesPaused());
+
+    const tx3 = await tokenRateOracle.connect(bridge).updateRate(tokenRate3, blockTimestampOfDeployment3);
+    await assert.emits(
+      tokenRateOracle,
+      tx3,
+      "TokenRateUpdateAttemptDuringPause",
+      [tokenRate3, blockTimestampOfDeployment3]
+    );
+  })
+
+  // unpause
+  // wrong role
+  // success + state and events + updates goes as before
+  .test("unpauseTokenRateUpdates() :: wrong role", async (ctx) => {
+    const { tokenRateOracle } = ctx.contracts;
+    const { deployer } = ctx.accounts;
+    const { tokenRate, blockTimestampOfDeployment } = ctx.constants;
+
+    const enablerRole = await tokenRateOracle.RATE_UPDATE_ENABLER_ROLE();
+    const account = deployer.address.toLowerCase();
+
+    await assert.revertsWith(
+      tokenRateOracle.unpauseTokenRateUpdates(tokenRate, blockTimestampOfDeployment.add(1000)),
+      "AccessControl: account " + account + " is missing role " + enablerRole
+    );
+  })
+
+  .test("unpauseTokenRateUpdates() :: success", async (ctx) => {
+    const { tokenRateOracle } = ctx.contracts;
+    const { multisig, bridge } = ctx.accounts;
+    const { tokenRate, blockTimestampOfDeployment } = ctx.constants;
+
+    const disablerRole = await tokenRateOracle.RATE_UPDATE_DISABLER_ROLE();
+    await tokenRateOracle.grantRole(disablerRole, multisig.address);
+
+    const enablerRole = await tokenRateOracle.RATE_UPDATE_ENABLER_ROLE();
+    await tokenRateOracle.grantRole(enablerRole, multisig.address);
+
+    await tokenRateOracle.connect(bridge).updateRate(tokenRate, blockTimestampOfDeployment.add(1000));
+    assert.isFalse(await tokenRateOracle.isTokenRateUpdatesPaused());
+    await tokenRateOracle.connect(multisig).pauseTokenRateUpdates(0);
+    assert.isTrue(await tokenRateOracle.isTokenRateUpdatesPaused());
+    const unpauseTx = await tokenRateOracle.connect(multisig).unpauseTokenRateUpdates(tokenRate, blockTimestampOfDeployment);
+    assert.isFalse(await tokenRateOracle.isTokenRateUpdatesPaused());
+
+    await assert.emits(
+      tokenRateOracle,
+      unpauseTx,
+      "TokenRateUpdatesUnpaused",
+      [tokenRate, blockTimestampOfDeployment]
+    );
+    await assert.emits(tokenRateOracle,
+      unpauseTx,
+      "RateUpdated",
+      [tokenRate, blockTimestampOfDeployment]
+    );
+
+    const tx = await tokenRateOracle.connect(bridge).updateRate(tokenRate.add(100), blockTimestampOfDeployment.add(1000));
+    await assert.emits(tokenRateOracle,
+      tx,
+      "RateUpdated",
+      [tokenRate.add(100), blockTimestampOfDeployment.add(1000)]
+    );
+  })
+
   .run();
 
 async function ctxFactory() {
@@ -474,7 +647,7 @@ async function ctxFactory() {
   const tokenRateOutdatedDelay = BigNumber.from(86400);             // 1 day
   const maxAllowedL2ToL1ClockLag = BigNumber.from(86400 * 2);       // 2 days
   const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);   // 5%
-  const [deployer, bridge, stranger, l1TokenBridgeEOA] = await hre.ethers.getSigners();
+  const [deployer, bridge, stranger, l1TokenBridgeEOA, multisig] = await hre.ethers.getSigners();
   const zero = await hre.ethers.getSigner(hre.ethers.constants.AddressZero);
 
   const l2MessengerStub = await new CrossDomainMessengerStub__factory(deployer)
@@ -494,6 +667,7 @@ async function ctxFactory() {
     tokenRateOutdatedDelay,
     maxAllowedL2ToL1ClockLag,
     maxAllowedTokenRateDeviationPerDay,
+    BigNumber.from(86400*3),
     tokenRate,
     rateL1Timestamp
   );
@@ -505,7 +679,8 @@ async function ctxFactory() {
       zero,
       stranger,
       l1TokenBridgeEOA,
-      l2MessengerStubEOA
+      l2MessengerStubEOA,
+      multisig
     },
     contracts: {
       tokenRateOracle,

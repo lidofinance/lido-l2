@@ -38,7 +38,8 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       l1TokenRatePusher.address,
       tokenRateOutdatedDelay,
       maxAllowedL2ToL1ClockLag,
-      maxAllowedTokenRateDeviationPerDay
+      maxAllowedTokenRateDeviationPerDay,
+      86400*3
     );
 
     await assert.revertsWith(new ERC20RebasableBridgedPermit__factory(
@@ -123,7 +124,8 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       l1TokenRatePusher.address,
       86400,
       86400,
-      500
+      500,
+      86400*3
     );
     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       "stETH Test Token",
@@ -162,7 +164,8 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       l1TokenRatePusher.address,
       86400,
       86400,
-      500
+      500,
+      86400*3
     );
     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       "name",
@@ -218,7 +221,8 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       l1TokenRatePusher.address,
       86400,
       86400,
-      500
+      500,
+      86400*3
     );
     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       "name",
@@ -287,7 +291,8 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       l1TokenRatePusher.address,
       86400,
       86400,
-      500
+      500,
+      86400*3
     );
 
     const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
@@ -401,7 +406,8 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       l1TokenRatePusher.address,
       86400,
       86400,
-      500
+      500,
+      86400*3
     );
     const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       "name",
@@ -584,7 +590,8 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       l1TokenRatePusher.address,
       86400,
       86400,
-      500
+      500,
+      86400*3
     );
     const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       "name",
@@ -714,7 +721,8 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       l1TokenRatePusher.address,
       86400,
       86400,
-      500
+      500,
+      86400*3
     );
     const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       "name",
@@ -1402,6 +1410,7 @@ async function ctxFactory() {
     tokenRateOutdatedDelay,
     maxAllowedL2ToL1ClockLag,
     maxAllowedTokenRateDeviationPerDay,
+    BigNumber.from(86400*3),
     tokenRate,
     blockTimestamp
   )
