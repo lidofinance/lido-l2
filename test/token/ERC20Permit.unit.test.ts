@@ -430,7 +430,8 @@ async function tokenProxied(
       86400,
       86400,
       500,
-      86400*3
+      86400*3,
+      3600
     );
     const provider = await hre.ethers.provider;
     const blockNumber = await provider.getBlockNumber();

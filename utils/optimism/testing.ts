@@ -201,9 +201,9 @@ async function deployTestBridge(
     "TTR"
   );
 
-  const l1Token = await new ERC20WrapperStub__factory(ethDeployer).deploy(
+  const l1TokenNonRebasable = await new ERC20WrapperStub__factory(ethDeployer).deploy(
     l1TokenRebasable.address,
-    "Test Token",
+    "Test Non Rebasable Token",
     "TT",
     totalPooledEther,
     totalShares
@@ -220,13 +220,20 @@ async function deployTestBridge(
     lastProcessingRefSlot
   );
 
+  const maxAllowedL2ToL1ClockLag = BigNumber.from(86400);
+  const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);
+  const oldestRateAllowedInPauseTimeSpan = BigNumber.from(86400*3);
+  const maxAllowedTimeBetweenTokenRateUpdates = BigNumber.from(3600);
+  const tokenRateOutdatedDelay = BigNumber.from(86400);
+
   const [ethDeployScript, optDeployScript] = await deploymentAll(
     networkName
   ).deployAllScript(
-    l1Token.address,
-    l1TokenRebasable.address,
-    accountingOracle.address,
     {
+      l1Token: l1TokenNonRebasable.address,
+      l1TokenRebasable: l1TokenRebasable.address,
+      accountingOracle: accountingOracle.address,
+      l2GasLimitForPushingTokenRate: 300_000,
       deployer: ethDeployer,
       admins: { proxy: ethDeployer.address, bridge: ethDeployer.address },
       contractsShift: 0
@@ -236,8 +243,25 @@ async function deployTestBridge(
       admins: { proxy: optDeployer.address, bridge: optDeployer.address },
       contractsShift: 0,
       tokenRateOracle: {
+        tokenRateOutdatedDelay: tokenRateOutdatedDelay,
+        maxAllowedL2ToL1ClockLag: maxAllowedL2ToL1ClockLag,
+        maxAllowedTokenRateDeviationPerDayBp: maxAllowedTokenRateDeviationPerDay,
+        oldestRateAllowedInPauseTimeSpan: oldestRateAllowedInPauseTimeSpan,
+        maxAllowedTimeBetweenTokenRateUpdates: maxAllowedTimeBetweenTokenRateUpdates,
         tokenRate: tokenRate,
         l1Timestamp: BigNumber.from('1000')
+      },
+      l2TokenNonRebasable: {
+        name: "wstETH",
+        symbol: "WST",
+        version: "1",
+        decimals: 18
+      },
+      l2TokenRebasable: {
+        name: "stETH",
+        symbol: "ST",
+        version: "1",
+        decimals: 18
       }
     }
   );
@@ -268,7 +292,7 @@ async function deployTestBridge(
   });
 
   return {
-    l1Token: l1Token.connect(ethProvider),
+    l1Token: l1TokenNonRebasable.connect(ethProvider),
     l1TokenRebasable: l1TokenRebasable.connect(ethProvider),
     accountingOracle: accountingOracle.connect(ethProvider),
     ...connectBridgeContracts(
