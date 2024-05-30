@@ -256,7 +256,6 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         }
 
         /// @dev This condition was made under the assumption that the L1 timestamps can be hacked.
-        /// Normally L1 timestamps (oracle reports) can't be less than 24 hours.
         if (rateUpdateL1Timestamp_ < tokenRateData.rateUpdateL1Timestamp + MAX_ALLOWED_TIME_BETWEEEN_TOKEN_RATE_UPDATES) {
             emit UpdateRateIsTooOften();
             return;

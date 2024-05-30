@@ -540,6 +540,21 @@ unit("TokenRateOracle", ctxFactory)
     );
   })
 
+  .test("pauseTokenRateUpdates() :: double pause", async (ctx) => {
+    const { tokenRateOracle } = ctx.contracts;
+    const { multisig } = ctx.accounts;
+
+    const disablerRole = await tokenRateOracle.RATE_UPDATE_DISABLER_ROLE();
+    await tokenRateOracle.grantRole(disablerRole, multisig.address);
+
+    await tokenRateOracle.connect(multisig).pauseTokenRateUpdates(0);
+
+    await assert.revertsWith(
+      tokenRateOracle.connect(multisig).pauseTokenRateUpdates(1),
+      "ErrorAlreadyPaused()"
+    );
+  })
+
   .test("pauseTokenRateUpdates() :: wrong index", async (ctx) => {
     const { tokenRateOracle } = ctx.contracts;
     const { multisig } = ctx.accounts;
@@ -646,6 +661,20 @@ unit("TokenRateOracle", ctxFactory)
     await assert.revertsWith(
       tokenRateOracle.resumeTokenRateUpdates(tokenRate, blockTimestampOfDeployment.add(1000)),
       "AccessControl: account " + account + " is missing role " + enablerRole
+    );
+  })
+
+  .test("resumeTokenRateUpdates() :: unpause when unpaused", async (ctx) => {
+    const { tokenRateOracle } = ctx.contracts;
+    const { multisig } = ctx.accounts;
+    const { tokenRate, blockTimestampOfDeployment } = ctx.constants;
+
+    const enablerRole = await tokenRateOracle.RATE_UPDATE_ENABLER_ROLE();
+    await tokenRateOracle.grantRole(enablerRole, multisig.address);
+
+    await assert.revertsWith(
+      tokenRateOracle.connect(multisig).resumeTokenRateUpdates(tokenRate, blockTimestampOfDeployment),
+      "ErrorAlreadyResumed()"
     );
   })
 
