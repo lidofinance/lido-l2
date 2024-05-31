@@ -47,6 +47,9 @@ abstract contract L1ERC20ExtendedTokensBridge is
         l2TokenNonRebasable_,
         l2TokenRebasable_
     ) {
+        if (l2TokenBridge_ == address(0)) {
+            revert ErrorZeroAddressL2Bridge();
+        }
         L2_TOKEN_BRIDGE = l2TokenBridge_;
     }
 
@@ -134,11 +137,11 @@ abstract contract L1ERC20ExtendedTokensBridge is
         uint32 l2Gas_,
         bytes memory encodedDepositData_
     ) internal {
-        uint256 nonRebaseableAmountToDeposit = _transferToBridge(l1Token_, from_, amount_);
+        uint256 nonRebasableAmountToDeposit = _transferToBridge(l1Token_, from_, amount_);
 
         bytes memory message = abi.encodeWithSelector(
             IL2ERC20Bridge.finalizeDeposit.selector,
-            l1Token_, l2Token_, from_, to_, nonRebaseableAmountToDeposit, encodedDepositData_
+            l1Token_, l2Token_, from_, to_, nonRebasableAmountToDeposit, encodedDepositData_
         );
 
         sendCrossDomainMessage(L2_TOKEN_BRIDGE, l2Gas_, message);
@@ -156,7 +159,7 @@ abstract contract L1ERC20ExtendedTokensBridge is
     ) internal returns (uint256) {
         if (amount_ != 0) {
             IERC20(l1Token_).safeTransferFrom(from_, address(this), amount_);
-            if(l1Token_ == L1_TOKEN_REBASABLE) {
+            if (l1Token_ == L1_TOKEN_REBASABLE) {
                 IERC20(l1Token_).safeIncreaseAllowance(L1_TOKEN_NON_REBASABLE, amount_);
                 return IERC20Wrapper(L1_TOKEN_NON_REBASABLE).wrap(amount_);
             }
@@ -164,16 +167,22 @@ abstract contract L1ERC20ExtendedTokensBridge is
         return amount_;
     }
 
+    /// @dev Helper that simplifies calling encoding by DepositDataCodec.
+    ///      Encodes token rate, it's L1 timestamp and optional data.
+    /// @param data_ Optional data to forward to L2.
+    /// @return encoded data in the 'wired' bytes form.
     function _encodeInputDepositData(bytes calldata data_) internal view returns (bytes memory)  {
+        (uint256 rate, uint256 timestamp) = _tokenRate();
         return DepositDataCodec.encodeDepositData(DepositDataCodec.DepositData({
-            rate: uint96(_tokenRate()),
-            timestamp: uint40(block.timestamp),
+            rate: uint128(rate),
+            timestamp: uint40(timestamp),
             data: data_
         }));
     }
 
     /// @notice required to abstact a way token rate is requested.
-    function _tokenRate() virtual internal view returns (uint256);
+    function _tokenRate() virtual internal view returns (uint256 rate_, uint256 updateTimestamp_);
 
     error ErrorSenderNotEOA();
+    error ErrorZeroAddressL2Bridge();
 }

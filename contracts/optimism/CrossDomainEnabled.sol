@@ -12,6 +12,9 @@ contract CrossDomainEnabled {
 
     /// @param messenger_ Address of the CrossDomainMessenger on the current layer
     constructor(address messenger_) {
+        if (messenger_ == address(0)) {
+            revert ErrorZeroAddressMessenger();
+        }
         MESSENGER = ICrossDomainMessenger(messenger_);
     }
 
@@ -41,6 +44,7 @@ contract CrossDomainEnabled {
         _;
     }
 
+    error ErrorZeroAddressMessenger();
     error ErrorUnauthorizedMessenger();
     error ErrorWrongCrossDomainSender();
 }

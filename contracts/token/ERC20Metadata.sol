@@ -29,6 +29,7 @@ contract ERC20Metadata is IERC20Metadata {
     }
 
     /// @dev Location of the slot with DynamicMetdata
+    ///      The slot's index string has a misspelling, but the contract storage will be broken without it.
     bytes32 private constant DYNAMIC_METADATA_SLOT =
         keccak256("ERC20Metdata.dynamicMetadata");
 
@@ -43,6 +44,9 @@ contract ERC20Metadata is IERC20Metadata {
         string memory symbol_,
         uint8 decimals_
     ) {
+        if (decimals_ == 0) {
+            revert ErrorZeroDecimals();
+        }
         decimals = decimals_;
         _setERC20MetadataName(name_);
         _setERC20MetadataSymbol(symbol_);
@@ -58,13 +62,19 @@ contract ERC20Metadata is IERC20Metadata {
         return _loadDynamicMetadata().symbol;
     }
 
-    /// @dev Sets the name of the token. Might be called only when the name is empty
+    /// @dev Sets the name of the token.
     function _setERC20MetadataName(string memory name_) internal {
+        if (bytes(name_).length == 0) {
+            revert ErrorNameIsEmpty();
+        }
         _loadDynamicMetadata().name = name_;
     }
 
-    /// @dev Sets the symbol of the token. Might be called only when the symbol is empty
+    /// @dev Sets the symbol of the token.
     function _setERC20MetadataSymbol(string memory symbol_) internal {
+        if (bytes(symbol_).length == 0) {
+            revert ErrorSymbolIsEmpty();
+        }
         _loadDynamicMetadata().symbol = symbol_;
     }
 
@@ -83,4 +93,8 @@ contract ERC20Metadata is IERC20Metadata {
             r.slot := slot
         }
     }
+
+    error ErrorZeroDecimals();
+    error ErrorNameIsEmpty();
+    error ErrorSymbolIsEmpty();
 }

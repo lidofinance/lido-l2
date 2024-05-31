@@ -33,6 +33,9 @@ contract ERC20BridgedPermit is ERC20Bridged, PermitExtension, Versioned {
     /// @param symbol_ The symbol of the token
     /// @param version_ The version of the token
     function initialize(string memory name_, string memory symbol_, string memory version_) external {
+        if (_isMetadataInitialized()) {
+            revert ErrorMetadataIsAlreadyInitialized();
+        }
         _initializeERC20Metadata(name_, symbol_);
         _initialize_v2(name_, version_);
     }
@@ -56,4 +59,5 @@ contract ERC20BridgedPermit is ERC20Bridged, PermitExtension, Versioned {
     }
 
     error ErrorMetadataIsNotInitialized();
+    error ErrorMetadataIsAlreadyInitialized();
 }

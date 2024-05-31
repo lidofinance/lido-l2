@@ -13,7 +13,9 @@ contract BridgingManager is AccessControl {
     /// @param isDepositsEnabled Stores the state of the deposits
     /// @param isWithdrawalsEnabled Stores the state of the withdrawals
     struct State {
-        /// @dev DEPRECATED since v2 as bridges have their own code for initialization and storage versioning.
+        /// @dev This variable is used to determine whether the contract has been initialized or not.
+        /// At the same time, bridges have their own code for initialization and storage versioning.
+        /// Therefore, it is recommended to base upgrade logic on new mechanisms since v2.
         bool isInitialized;
         bool isDepositsEnabled;
         bool isWithdrawalsEnabled;
@@ -40,7 +42,7 @@ contract BridgingManager is AccessControl {
         if (s.isInitialized) {
             revert ErrorAlreadyInitialized();
         }
-        _setupRole(DEFAULT_ADMIN_ROLE, admin_);
+        _grantRole(DEFAULT_ADMIN_ROLE, admin_);
         s.isInitialized = true;
         emit Initialized(admin_);
     }

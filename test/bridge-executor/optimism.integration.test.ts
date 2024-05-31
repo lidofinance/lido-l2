@@ -7,6 +7,7 @@ import {
   OptimismBridgeExecutor__factory,
   ERC20BridgedPermit__factory,
   ERC20WrapperStub__factory,
+  AccountingOracleStub__factory
 } from "../../typechain";
 import { wei } from "../../utils/wei";
 import optimism from "../../utils/optimism";
@@ -218,8 +219,10 @@ async function ctxFactory() {
     l1Token.address,
     "Test Token",
     "TT",
-    BigNumber.from('1164454276599657236')
+    BigNumber.from('1164454276599657236000000000')
   );
+
+  const accountingOracle = await new AccountingOracleStub__factory(l1Deployer).deploy(1,2,3);
 
   const optAddresses = optimism.addresses(networkName);
   const testingOnDeployedContracts = testing.env.USE_DEPLOYED_CONTRACTS(false);
@@ -244,6 +247,7 @@ async function ctxFactory() {
   ).deployAllScript(
     l1Token.address,
     l1TokenRebasable.address,
+    accountingOracle.address,
     {
       deployer: l1Deployer,
       admins: {
@@ -260,8 +264,8 @@ async function ctxFactory() {
       },
       contractsShift: 0,
       tokenRateOracle: {
-        tokenRate:10,
-        l1Timestamp:2
+        tokenRate: BigNumber.from(10),
+        l1Timestamp:BigNumber.from(2)
       }
     }
   );

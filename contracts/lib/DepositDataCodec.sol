@@ -7,11 +7,11 @@ pragma solidity 0.8.10;
 /// @notice encodes and decodes DepositData for crosschain transfering.
 library DepositDataCodec {
 
-    uint8 internal constant RATE_FIELD_SIZE = 12;
+    uint8 internal constant RATE_FIELD_SIZE = 16;
     uint8 internal constant TIMESTAMP_FIELD_SIZE = 5;
 
     struct DepositData {
-        uint96 rate;
+        uint128 rate;
         uint40 timestamp;
         bytes data;
     }
@@ -31,7 +31,7 @@ library DepositDataCodec {
         }
 
         DepositData memory depositData = DepositData({
-            rate: uint96(bytes12(buffer[0:RATE_FIELD_SIZE])),
+            rate: uint128(bytes16(buffer[0:RATE_FIELD_SIZE])),
             timestamp: uint40(bytes5(buffer[RATE_FIELD_SIZE:RATE_FIELD_SIZE + TIMESTAMP_FIELD_SIZE])),
             data: buffer[RATE_FIELD_SIZE + TIMESTAMP_FIELD_SIZE:]
         });

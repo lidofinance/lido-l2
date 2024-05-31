@@ -1,4 +1,4 @@
-import hre from "hardhat";
+import hre, { ethers } from "hardhat";
 import { assert } from "chai";
 import { BigNumber } from "ethers";
 import { unit, UnitTest } from "../../utils/testing";
@@ -6,6 +6,7 @@ import { wei } from "../../utils/wei";
 import { makeDomainSeparator, signPermit, calculateTransferAuthorizationDigest, signEOAorEIP1271 } from "../../utils/testing/permit-helpers";
 import testing from "../../utils/testing";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { BaseContract, Overrides } from "@ethersproject/contracts";
 
 import {
   TokenRateOracle__factory,
@@ -13,6 +14,7 @@ import {
   ERC20RebasableBridgedPermit__factory,
   ERC1271PermitSignerMock__factory,
   ERC20BridgedPermit__factory,
+
 } from "../../typechain";
 
 
@@ -91,8 +93,17 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
 
       // a third-party, Charlie (not Alice) submits the permit
       // TODO: handle unpredictable gas limit somehow better than setting it to a random constant
-      const tx = await token.connect(charlie)
-        .permit(owner.address, spender.address, value, deadline, v, r, s, { gasLimit: '0xffffff' })
+        const tx = await permit(
+          token,
+          charlie,
+          owner.address,
+          spender.address,
+          value,
+          deadline,
+          v, r, s,
+          ctx.constants.usePermitMethodWithSignature,
+          { gasLimit: '0xffffff' }
+        );
 
       // check that allowance is updated
       assert.equalBN(await token.allowance(owner.address, spender.address), BigNumber.from(value))
@@ -106,7 +117,16 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
         ; ({ v, r, s } = await signPermit(owner.address, owner, spender.address, value, deadline, nonce, ctx.domainSeparator))
 
       // submit the permit
-      const tx2 = await token.connect(charlie).permit(owner.address, spender.address, value, deadline, v, r, s)
+      const tx2 = await permit(
+        token,
+        charlie,
+        owner.address,
+        spender.address,
+        value,
+        deadline,
+        v, r, s,
+        ctx.constants.usePermitMethodWithSignature
+      );
 
       // check that allowance is updated
       assert.equalBN(await token.allowance(owner.address, spender.address), BigNumber.from(value))
@@ -125,7 +145,8 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
 
       // try to cheat by claiming the approved amount + 1
       await assert.revertsWith(
-        token.connect(charlie).permit(
+        permit(token,
+          charlie,
           owner.address,
           spender.address,
           value + 1, // pass more than signed value
@@ -133,13 +154,16 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
           v,
           r,
           s,
+          ctx.constants.usePermitMethodWithSignature
         ),
         'ErrorInvalidSignature()'
       )
 
       // check that msg is incorrect even if claim the approved amount - 1
       await assert.revertsWith(
-        token.connect(charlie).permit(
+        permit(
+          token,
+          charlie,
           owner.address,
           spender.address,
           value - 1, // pass less than signed
@@ -147,6 +171,7 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
           v,
           r,
           s,
+          ctx.constants.usePermitMethodWithSignature
         ),
         'ErrorInvalidSignature()'
       )
@@ -165,7 +190,7 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
       // try to cheat by submitting the permit that is signed by a
       // wrong person
       await assert.revertsWith(
-        token.connect(charlie).permit(owner.address, spender.address, value, deadline, v, r, s),
+        permit(token, charlie, owner.address, spender.address, value, deadline, v, r, s, ctx.constants.usePermitMethodWithSignature),
         'ErrorInvalidSignature()'
       )
 
@@ -174,7 +199,7 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
 
       // even Bob himself can't call permit with the invalid sig
       await assert.revertsWith(
-        token.connect(spenderSigner).permit(owner.address, spender.address, value, deadline, v, r, s),
+        permit(token, spenderSigner, owner.address, spender.address, value, deadline, v, r, s, ctx.constants.usePermitMethodWithSignature),
         'ErrorInvalidSignature()'
       )
     })
@@ -190,7 +215,7 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
 
       // try to submit the permit that is expired
       await assert.revertsWith(
-        token.connect(charlie).permit(owner.address, spender.address, value, deadline, v, r, s, { gasLimit: '0xffffff' }),
+        permit(token, charlie, owner.address, spender.address, value, deadline, v, r, s, ctx.constants.usePermitMethodWithSignature, { gasLimit: '0xffffff' }),
         'ErrorDeadlineExpired()'
       )
 
@@ -198,7 +223,7 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
         // create a signed permit that valid for 1 minute (approximately)
         const deadline1min = ((await hre.ethers.provider.getBlock('latest')).timestamp + 60).toString()
         const { v, r, s } = await signPermit(owner.address, owner, spender.address, value, deadline1min, nonce, ctx.domainSeparator)
-        const tx = await token.connect(charlie).permit(owner.address, spender.address, value, deadline1min, v, r, s)
+        const tx = await permit(token, charlie, owner.address, spender.address, value, deadline1min, v, r, s, ctx.constants.usePermitMethodWithSignature)
 
         assert.equalBN(await token.nonces(owner.address), BigNumber.from(1))
         assert.emits(token, tx, 'Approval', [owner, spender, BigNumber.from(value)])
@@ -217,7 +242,7 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
 
       // try to submit the permit
       await assert.revertsWith(
-        token.connect(charlie).permit(owner.address, spender.address, value, deadline, v, r, s),
+        permit(token, charlie, owner.address, spender.address, value, deadline, v, r, s, ctx.constants.usePermitMethodWithSignature),
         'ErrorInvalidSignature()'
       )
     })
@@ -230,11 +255,11 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
       const { v, r, s } = await signPermit(owner.address, owner, spender.address, value, deadline, nonce, ctx.domainSeparator)
 
       // submit the permit
-      await token.connect(charlie).permit(owner.address, spender.address, value, deadline, v, r, s)
+      await permit(token, charlie, owner.address, spender.address, value, deadline, v, r, s, ctx.constants.usePermitMethodWithSignature)
 
       // try to submit the permit again
       await assert.revertsWith(
-        token.connect(charlie).permit(owner.address, spender.address, value, deadline, v, r, s),
+        permit(token, charlie, owner.address, spender.address, value, deadline, v, r, s, ctx.constants.usePermitMethodWithSignature),
         'ErrorInvalidSignature()'
       )
 
@@ -243,7 +268,7 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
 
       // try to submit the permit again from Alice herself
       await assert.revertsWith(
-        token.connect(await hre.ethers.getSigner(owner.address)).permit(owner.address, spender.address, value, deadline, v, r, s),
+        permit(token, await hre.ethers.getSigner(owner.address), owner.address, spender.address, value, deadline, v, r, s, ctx.constants.usePermitMethodWithSignature),
         'ErrorInvalidSignature()'
       )
     })
@@ -253,10 +278,10 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
       const { owner, spender, value, nonce, deadline } = ctx.permitParams
       const charlie = ctx.accounts.user2
       // create a signed permit
-      const permit = await signPermit(owner.address, owner, spender.address, value, deadline, nonce, ctx.domainSeparator)
+      const permit0 = await signPermit(owner.address, owner, spender.address, value, deadline, nonce, ctx.domainSeparator)
 
       // submit the permit
-      await token.connect(charlie).permit(owner.address, spender.address, value, deadline, permit.v, permit.r, permit.s)
+      await permit(token, charlie, owner.address, spender.address, value, deadline, permit0.v, permit0.r, permit0.s, ctx.constants.usePermitMethodWithSignature)
 
       // create another signed permit with the same nonce, but
       // with different parameters
@@ -264,7 +289,7 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
 
       // try to submit the permit again
       await assert.revertsWith(
-        token.connect(charlie).permit(owner.address, spender.address, 1e6, deadline, permit2.v, permit2.r, permit2.s),
+        permit(token, charlie, owner.address, spender.address, 1e6, deadline, permit2.v, permit2.r, permit2.s, ctx.constants.usePermitMethodWithSignature),
         'ErrorInvalidSignature()'
       )
     })
@@ -280,7 +305,7 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
 
       // try to submit the permit with invalid approval parameters
       await assert.revertsWith(
-        token.connect(charlie).permit(owner.address, spender, value, deadline, v, r, s),
+        permit(token, charlie, owner.address, spender, value, deadline, v, r, s, ctx.constants.usePermitMethodWithSignature),
         'ErrorAccountIsZeroAddress()'
       )
     })
@@ -305,7 +330,7 @@ function permitTestsSuit(unitInstance: UnitTest<ContextType>) {
 
       // try to submit the transfer permit
       await assert.revertsWith(
-        token.connect(charlie).permit(from.address, to.address, value, validBefore, v, r, s),
+        permit(token, charlie, from.address, to.address, value, validBefore, v, r, s, ctx.constants.usePermitMethodWithSignature),
         'ErrorInvalidSignature()'
       )
     })
@@ -317,12 +342,13 @@ function ctxFactoryFactory(
   name: string,
   symbol: string,
   isRebasable: boolean,
+  usePermitMethodWithSignature: boolean,
   signingAccountsFuncFactory: typeof getAccountsEIP1271 | typeof getAccountsEOA
 ) {
   return async () => {
     const decimalsToSet = 18;
     const decimals = BigNumber.from(10).pow(decimalsToSet);
-    const tokenRate = BigNumber.from('1164454276599657236');
+    const tokenRate = BigNumber.from('1164454276599657236000000000');
     const premintShares = wei.toBigNumber(wei`100 ether`);
     const premintTokens = tokenRate.mul(premintShares).div(decimals);
 
@@ -335,6 +361,8 @@ function ctxFactoryFactory(
       stranger,
       user1,
       user2,
+      messenger,
+      l1TokenRatePusher
     ] = await hre.ethers.getSigners();
 
     await hre.network.provider.request({
@@ -350,6 +378,8 @@ function ctxFactoryFactory(
       decimalsToSet,
       tokenRate,
       isRebasable,
+      messenger.address,
+      l1TokenRatePusher.address,
       owner,
       deployer,
       holder
@@ -359,7 +389,7 @@ function ctxFactoryFactory(
 
     return {
       accounts: { deployer, owner, recipient, spender, holder, stranger, zero, user1, user2 },
-      constants: { name, symbol, decimalsToSet, decimals, premintShares, premintTokens, tokenRate },
+      constants: { name, symbol, decimalsToSet, decimals, premintShares, premintTokens, tokenRate, usePermitMethodWithSignature },
       contracts: { rebasableProxied },
       permitParams: {
         owner: alice,
@@ -379,6 +409,8 @@ async function tokenProxied(
   decimalsToSet: number,
   tokenRate: BigNumber,
   isRebasable: boolean,
+  messenger: string,
+  l1TokenRatePusher: string,
   owner: SignerWithAddress,
   deployer: SignerWithAddress,
   holder: SignerWithAddress) {
@@ -392,12 +424,14 @@ async function tokenProxied(
       owner.address
     );
     const tokenRateOracleImpl = await new TokenRateOracle__factory(deployer).deploy(
-      hre.ethers.constants.AddressZero,
+      messenger,
       owner.address,
-      hre.ethers.constants.AddressZero,
+      l1TokenRatePusher,
       86400,
       86400,
-      500
+      500,
+      86400*3,
+      3600
     );
     const provider = await hre.ethers.provider;
     const blockNumber = await provider.getBlockNumber();
@@ -409,6 +443,7 @@ async function tokenProxied(
       tokenRateOracleImpl.address,
       deployer.address,
       tokenRateOracleImpl.interface.encodeFunctionData("initialize", [
+        deployer.address,
         tokenRate,
         blockTimestamp
       ])
@@ -473,11 +508,13 @@ async function tokenProxied(
   return nonRebasableProxied;
 }
 
+/// permit with signature parameter
 permitTestsSuit(
-  unit("ERC20RebasableBridgedPermit with EIP1271 (contract) signing",
+  unit("ERC20RebasableBridgedPermit with EIP1271 (contract) signing. Uses permit function with signature parameter.",
     ctxFactoryFactory(
       "Liquid staked Ether 2.0",
       "stETH",
+      true,
       true,
       getAccountsEIP1271
     )
@@ -485,10 +522,11 @@ permitTestsSuit(
 );
 
 permitTestsSuit(
-  unit("ERC20RebasableBridgedPermit with ECDSA (EOA) signing",
+  unit("ERC20RebasableBridgedPermit with ECDSA (EOA) signing. Uses permit function with signature parameter.",
     ctxFactoryFactory(
       "Liquid staked Ether 2.0",
       "stETH",
+      true,
       true,
       getAccountsEOA
     )
@@ -496,23 +534,94 @@ permitTestsSuit(
 );
 
 permitTestsSuit(
-  unit("ERC20BridgedPermit with EIP1271 (contract) signing",
+  unit("ERC20BridgedPermit with EIP1271 (contract) signing. Uses permit function with signature parameter.",
     ctxFactoryFactory(
       "Wrapped liquid staked Ether 2.0",
       "wstETH",
       false,
+      true,
       getAccountsEIP1271
     )
   )
 );
 
 permitTestsSuit(
-  unit("ERC20BridgedPermit with ECDSA (EOA) signing",
+  unit("ERC20BridgedPermit with ECDSA (EOA) signing. Uses permit function with signature parameter.",
     ctxFactoryFactory(
       "Wrapped liquid staked Ether 2.0",
       "WstETH",
+      false,
+      true,
+      getAccountsEOA
+    )
+  )
+);
+
+/// permit with v,r,s params
+permitTestsSuit(
+  unit("ERC20RebasableBridgedPermit with EIP1271 (contract) signing. Uses permit function with v,r,s params",
+    ctxFactoryFactory(
+      "Liquid staked Ether 2.0",
+      "stETH",
+      true,
+      false,
+      getAccountsEIP1271
+    )
+  )
+);
+
+permitTestsSuit(
+  unit("ERC20RebasableBridgedPermit with ECDSA (EOA) signing. Uses permit function with v,r,s params",
+    ctxFactoryFactory(
+      "Liquid staked Ether 2.0",
+      "stETH",
+      true,
       false,
       getAccountsEOA
     )
   )
 );
+
+permitTestsSuit(
+  unit("ERC20BridgedPermit with EIP1271 (contract) signing. Uses permit function with v,r,s params",
+    ctxFactoryFactory(
+      "Wrapped liquid staked Ether 2.0",
+      "wstETH",
+      false,
+      false,
+      getAccountsEIP1271
+    )
+  )
+);
+
+permitTestsSuit(
+  unit("ERC20BridgedPermit with ECDSA (EOA) signing. Uses permit function with v,r,s params",
+    ctxFactoryFactory(
+      "Wrapped liquid staked Ether 2.0",
+      "WstETH",
+      false,
+      false,
+      getAccountsEOA
+    )
+  )
+);
+
+async function permit(
+  token: BaseContract,
+  signer: SignerWithAddress,
+  owner: string,
+  spender: string,
+  value: number,
+  deadline: string,
+  v: string | number,
+  r: string,
+  s: string,
+  functionWithSignature: boolean,
+  overrides: Overrides & { from?: string | Promise<string>} = {}) {
+    if(functionWithSignature) {
+      const signature = ethers.utils.solidityPack(["bytes32", "bytes32", "uint8"], [r, s, v])
+      return await token.connect(signer)["permit(address,address,uint256,uint256,bytes)"](owner, spender, value, deadline, signature, overrides);
+    } else {
+      return await token.connect(signer)["permit(address,address,uint256,uint256,uint8,bytes32,bytes32)"](owner, spender, value, deadline, v, r, s, overrides);
+    }
+}

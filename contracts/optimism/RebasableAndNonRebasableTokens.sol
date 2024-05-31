@@ -29,6 +29,18 @@ contract RebasableAndNonRebasableTokens {
         address l2TokenNonRebasable_,
         address l2TokenRebasable_
     ) {
+        if (l1TokenNonRebasable_ == address(0)) {
+            revert ErrorZeroAddressL1TokenNonRebasable();
+        }
+        if (l1TokenRebasable_ == address(0)) {
+            revert ErrorZeroAddressL1TokenRebasable();
+        }
+        if (l2TokenNonRebasable_ == address(0)) {
+            revert ErrorZeroAddressL2TokenNonRebasable();
+        }
+        if (l2TokenRebasable_ == address(0)) {
+            revert ErrorZeroAddressL2TokenRebasable();
+        }
         L1_TOKEN_NON_REBASABLE = l1TokenNonRebasable_;
         L1_TOKEN_REBASABLE = l1TokenRebasable_;
         L2_TOKEN_NON_REBASABLE = l2TokenNonRebasable_;
@@ -71,7 +83,10 @@ contract RebasableAndNonRebasableTokens {
         _;
     }
 
-    error ErrorUnsupportedL1Token(address l1Token);
+    error ErrorZeroAddressL1TokenNonRebasable();
+    error ErrorZeroAddressL1TokenRebasable();
+    error ErrorZeroAddressL2TokenNonRebasable();
+    error ErrorZeroAddressL2TokenRebasable();
     error ErrorUnsupportedL2Token(address l2Token);
     error ErrorUnsupportedL1L2TokensPair(address l1Token, address l2Token);
     error ErrorAccountIsZeroAddress();

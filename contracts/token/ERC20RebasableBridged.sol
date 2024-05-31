@@ -17,16 +17,16 @@ interface IBridgeWrapper {
     /// @notice Returns bridge which can wrap/unwrap token on L2.
     function L2_ERC20_TOKEN_BRIDGE() external view returns (address);
 
-    /// @notice Exchanges non-rebaseable token (shares) to rebaseable token. Can be called by bridge only.
+    /// @notice Exchanges non-rebasable token (shares) to rebasable token. Can be called by bridge only.
     /// @param account_ an address of the account to exchange shares for.
-    /// @param sharesAmount_ amount of non-rebaseable token (shares).
-    /// @return Amount of rebaseable token.
+    /// @param sharesAmount_ amount of non-rebasable token (shares).
+    /// @return Amount of rebasable token.
     function bridgeWrap(address account_, uint256 sharesAmount_) external returns (uint256);
 
-    /// @notice Exchanges rebaseable token to non-rebasable (shares). Can be called by bridge only.
+    /// @notice Exchanges rebasable token to non-rebasable (shares). Can be called by bridge only.
     /// @param account_ an address of the account to exchange token for.
-    /// @param tokenAmount_ amount of rebaseable token to uwrap in exchange for non-rebaseable token (shares).
-    /// @return Amount of non-rebaseable token (shares) user receives after unwrap.
+    /// @param tokenAmount_ amount of rebasable token to uwrap in exchange for non-rebasable token (shares).
+    /// @return Amount of non-rebasable token (shares) user receives after unwrap.
     function bridgeUnwrap(address account_, uint256 tokenAmount_) external returns (uint256);
 }
 
@@ -45,6 +45,9 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
 
     /// @notice Oracle contract used to get token rate for wrapping/unwrapping tokens.
     ITokenRateOracle public immutable TOKEN_RATE_ORACLE;
+
+    /// @notice Decimals of the oracle response.
+    uint8 public immutable TOKEN_RATE_ORACLE_DECIMALS;
 
     /// @dev token allowance slot position.
     bytes32 internal constant TOKEN_ALLOWANCE_POSITION = keccak256("ERC20RebasableBridged.TOKEN_ALLOWANCE_POSITION");
@@ -69,8 +72,18 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         address tokenRateOracle_,
         address l2ERC20TokenBridge_
     ) ERC20Metadata(name_, symbol_, decimals_) {
+        if (tokenToWrapFrom_ == address(0)) {
+            revert ErrorZeroAddressTokenToWrapFrom();
+        }
+        if (tokenRateOracle_ == address(0)) {
+            revert ErrorZeroAddressTokenRateOracle();
+        }
+        if (l2ERC20TokenBridge_ == address(0)) {
+            revert ErrorZeroAddressL2ERC20TokenBridge();
+        }
         TOKEN_TO_WRAP_FROM = IERC20(tokenToWrapFrom_);
         TOKEN_RATE_ORACLE = ITokenRateOracle(tokenRateOracle_);
+        TOKEN_RATE_ORACLE_DECIMALS = TOKEN_RATE_ORACLE.decimals();
         L2_ERC20_TOKEN_BRIDGE = l2ERC20TokenBridge_;
     }
 
@@ -82,6 +95,14 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     /// @inheritdoc IERC20Wrapper
     function unwrap(uint256 tokenAmount_) external returns (uint256) {
         return _unwrap(msg.sender, tokenAmount_);
+    }
+
+    /// @notice Exchanges rebasable token to non-rebasable by providing rebasable token shares.
+    /// @param sharesAmount_ amount of rebasable token shares to unwrap.
+    /// @return amount of non-rebasable token user receives after unwrap.
+    function unwrapShares(uint256 sharesAmount_) external returns (uint256) {
+        uint256 tokenAmount = _getTokensByShares(sharesAmount_);
+        return _unwrapShares(msg.sender, sharesAmount_, tokenAmount);
     }
 
     /// @inheritdoc IBridgeWrapper
@@ -226,7 +247,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     ) internal onlyNonZeroAccount(from_) onlyNonZeroAccount(to_) {
         uint256 sharesToTransfer = _getSharesByTokens(amount_);
         _transferShares(from_, to_, sharesToTransfer);
-        _emitTransferEvents(from_, to_, amount_ ,sharesToTransfer);
+        _emitTransferEvents(from_, to_, amount_, sharesToTransfer);
     }
 
     /// @dev Updates owner_'s allowance for spender_ based on spent amount_. Does not update
@@ -269,32 +290,15 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     }
 
     function _getTokensByShares(uint256 sharesAmount_) internal view returns (uint256) {
-        (uint256 tokensRate, uint256 decimals) = _getTokenRateAndDecimal();
-        return (sharesAmount_ * tokensRate) / (10 ** decimals);
+        return (sharesAmount_ * _getTokenRate()) / (10 ** TOKEN_RATE_ORACLE_DECIMALS);
     }
 
     function _getSharesByTokens(uint256 tokenAmount_) internal view returns (uint256) {
-        (uint256 tokensRate, uint256 decimals) = _getTokenRateAndDecimal();
-        return (tokenAmount_ * (10 ** decimals)) / tokensRate;
+        return (tokenAmount_ * (10 ** TOKEN_RATE_ORACLE_DECIMALS)) / _getTokenRate();
     }
 
-    function _getTokenRateAndDecimal() internal view returns (uint256, uint256) {
-        uint8 rateDecimals = TOKEN_RATE_ORACLE.decimals();
-
-        if (rateDecimals == uint8(0)) revert ErrorTokenRateDecimalsIsZero();
-
-        //slither-disable-next-line unused-return
-        (
-            /* roundId_ */,
-            int256 answer,
-            /* startedAt_ */,
-            uint256 updatedAt,
-            /* answeredInRound_ */
-        ) = TOKEN_RATE_ORACLE.latestRoundData();
-
-        if (updatedAt == 0) revert ErrorWrongOracleUpdateTime();
-
-        return (uint256(answer), uint256(rateDecimals));
+    function _getTokenRate() internal view returns (uint256) {
+        return uint256(TOKEN_RATE_ORACLE.latestAnswer());
     }
 
     /// @dev Creates `amount_` shares and assigns them to `account_`, increasing the total shares supply
@@ -306,8 +310,6 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     ) internal onlyNonZeroAccount(recipient_) {
         _setTotalShares(_getTotalShares() + amount_);
         _getShares()[recipient_] = _getShares()[recipient_] + amount_;
-        uint256 tokensAmount = _getTokensByShares(amount_);
-        _emitTransferEvents(address(0), recipient_, tokensAmount ,amount_);
     }
 
     /// @dev Destroys `amount_` shares from `account_`, reducing the total shares supply.
@@ -321,8 +323,6 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         if (accountShares < amount_) revert ErrorNotEnoughBalance();
         _setTotalShares(_getTotalShares() - amount_);
         _getShares()[account_] = accountShares - amount_;
-        uint256 tokensAmount = _getTokensByShares(amount_);
-        _emitTransferEvents(account_, address(0), tokensAmount ,amount_);
     }
 
     /// @dev  Moves `sharesAmount_` shares from `sender_` to `recipient_`.
@@ -334,7 +334,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         address recipient_,
         uint256 sharesAmount_
     ) internal onlyNonZeroAccount(sender_) onlyNonZeroAccount(recipient_) {
-        if (recipient_ == address(this)) revert ErrorTrasferToRebasableContract();
+        if (recipient_ == address(this)) revert ErrorTransferToRebasableContract();
 
         uint256 currentSenderShares = _getShares()[sender_];
         if (sharesAmount_ > currentSenderShares) revert ErrorNotEnoughBalance();
@@ -364,21 +364,25 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
 
    function _wrap(address from_, address to_, uint256 sharesAmount_) internal returns (uint256) {
         if (sharesAmount_ == 0) revert ErrorZeroSharesWrap();
-
         TOKEN_TO_WRAP_FROM.safeTransferFrom(from_, address(this), sharesAmount_);
         _mintShares(to_, sharesAmount_);
-
-        return _getTokensByShares(sharesAmount_);
+        uint256 tokensAmount = _getTokensByShares(sharesAmount_);
+        _emitTransferEvents(address(0), to_, tokensAmount, sharesAmount_);
+        return tokensAmount;
     }
 
     function _unwrap(address account_, uint256 tokenAmount_) internal returns (uint256) {
         if (tokenAmount_ == 0) revert ErrorZeroTokensUnwrap();
-
         uint256 sharesAmount = _getSharesByTokens(tokenAmount_);
-        _burnShares(account_, sharesAmount);
-        TOKEN_TO_WRAP_FROM.safeTransfer(account_, sharesAmount);
+        return _unwrapShares(account_, sharesAmount, tokenAmount_);
+    }
 
-        return sharesAmount;
+    function _unwrapShares(address account_, uint256 sharesAmount_, uint256 tokenAmount_) internal returns (uint256) {
+        if (sharesAmount_ == 0) revert ErrorZeroSharesUnwrap();
+        _burnShares(account_, sharesAmount_);
+        _emitTransferEvents(account_, address(0), tokenAmount_, sharesAmount_);
+        TOKEN_TO_WRAP_FROM.safeTransfer(account_, sharesAmount_);
+        return sharesAmount_;
     }
 
     /// @dev validates that account_ is not zero address
@@ -405,14 +409,16 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         uint256 sharesValue
     );
 
+    error ErrorZeroAddressTokenToWrapFrom();
+    error ErrorZeroAddressTokenRateOracle();
+    error ErrorZeroAddressL2ERC20TokenBridge();
     error ErrorZeroSharesWrap();
     error ErrorZeroTokensUnwrap();
+    error ErrorZeroSharesUnwrap();
     error ErrorTokenRateDecimalsIsZero();
-    error ErrorWrongOracleUpdateTime();
-    error ErrorTrasferToRebasableContract();
+    error ErrorTransferToRebasableContract();
     error ErrorNotEnoughBalance();
     error ErrorNotEnoughAllowance();
     error ErrorAccountIsZeroAddress();
-    error ErrorDecreasedAllowanceBelowZero();
     error ErrorNotBridge();
 }

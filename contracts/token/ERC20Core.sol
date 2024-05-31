@@ -142,5 +142,4 @@ contract ERC20Core is IERC20 {
     error ErrorNotEnoughBalance();
     error ErrorNotEnoughAllowance();
     error ErrorAccountIsZeroAddress();
-    error ErrorDecreasedAllowanceBelowZero();
 }

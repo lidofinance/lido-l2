@@ -17,7 +17,9 @@ interface OptDeployScriptParams extends DeployScriptParams { }
 interface OptL2DeployScriptParams extends DeployScriptParams {
   tokenRateOracle: {
     maxAllowedL2ToL1ClockLag: BigNumber;
-    maxAllowedTokenRateDeviationPerDay: BigNumber;
+    maxAllowedTokenRateDeviationPerDayBp: BigNumber;
+    oldestRateAllowedInPauseTimeSpan: BigNumber;
+    maxAllowedTimeBetweenTokenRateUpdates: BigNumber;
     tokenRate: BigNumber;
     l1Timestamp: BigNumber;
   }
@@ -55,6 +57,12 @@ export class OracleL2DeployScript extends DeployScript {
   public tokenRateOracleProxyAddress: string;
 }
 
+/// Deploy Oracle + L1 part to push rate
+/// L1 part
+///     TokenRateNotifier
+///     OpStackTokenRatePusher
+/// L2 part
+///     TokenRateOracle + proxy
 export default function deploymentOracle(
   networkName: NetworkName,
   options: OptDeploymentOptions = {}
@@ -63,6 +71,8 @@ export default function deploymentOracle(
   return {
     async oracleDeployScript(
       l1Token: string,
+      l2ERC20TokenBridge: string,
+      accountingOracle: string,
       l2GasLimitForPushingTokenRate: number,
       tokenRateOutdatedDelay: number,
       l1Params: OptDeployScriptParams,
@@ -99,6 +109,7 @@ export default function deploymentOracle(
           args: [
             optAddresses.L1CrossDomainMessenger,
             l1Token,
+            accountingOracle,
             expectedL2TokenRateOracleProxyAddress,
             l2GasLimitForPushingTokenRate,
             options?.overrides,
@@ -117,11 +128,13 @@ export default function deploymentOracle(
           factory: TokenRateOracle__factory,
           args: [
             optAddresses.L2CrossDomainMessenger,
-            ethers.constants.AddressZero,
+            l2ERC20TokenBridge,
             expectedL1OpStackTokenRatePusherImplAddress,
             tokenRateOutdatedDelay,
             l2Params.tokenRateOracle.maxAllowedL2ToL1ClockLag,
-            l2Params.tokenRateOracle.maxAllowedTokenRateDeviationPerDay,
+            l2Params.tokenRateOracle.maxAllowedTokenRateDeviationPerDayBp,
+            l2Params.tokenRateOracle.oldestRateAllowedInPauseTimeSpan,
+            l2Params.tokenRateOracle.maxAllowedTimeBetweenTokenRateUpdates,
             options?.overrides,
           ],
           afterDeploy: (c) =>
@@ -135,6 +148,7 @@ export default function deploymentOracle(
             TokenRateOracle__factory.createInterface().encodeFunctionData(
               "initialize",
               [
+                l2Params.admins.bridge,
                 l2Params.tokenRateOracle.tokenRate,
                 l2Params.tokenRateOracle.l1Timestamp
               ]

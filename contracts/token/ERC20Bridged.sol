@@ -40,6 +40,9 @@ contract ERC20Bridged is IERC20Bridged, ERC20Core, ERC20Metadata {
         uint8 decimals_,
         address bridge_
     ) ERC20Metadata(name_, symbol_, decimals_) {
+        if (bridge_ == address(0)) {
+            revert ErrorZeroAddressBridge();
+        }
         bridge = bridge_;
     }
 
@@ -69,5 +72,6 @@ contract ERC20Bridged is IERC20Bridged, ERC20Core, ERC20Metadata {
         _;
     }
 
+    error ErrorZeroAddressBridge();
     error ErrorNotBridge();
 }
