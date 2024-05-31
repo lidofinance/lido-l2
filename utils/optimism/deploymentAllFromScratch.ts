@@ -17,19 +17,30 @@ import {
 } from "../../typechain";
 
 interface OptL1DeployScriptParams extends DeployScriptParams {
+  l1Token: string;
+  l1TokenRebasable: string;
+  accountingOracle: string;
+  l2GasLimitForPushingTokenRate: number;
 }
 interface OptL2DeployScriptParams extends DeployScriptParams {
-  l2Token?: {
-    name?: string;
-    symbol?: string;
-    version?: string;
+  l2TokenNonRebasable: {
+    name: string;
+    symbol: string;
+    version: string;
+    decimals: number;
   };
-  l2TokenRebasable?: {
-    name?: string;
-    symbol?: string;
-    version?: string;
+  l2TokenRebasable: {
+    name: string;
+    symbol: string;
+    version: string;
+    decimals: number;
   };
   tokenRateOracle: {
+    tokenRateOutdatedDelay: BigNumber;
+    maxAllowedL2ToL1ClockLag: BigNumber;
+    maxAllowedTokenRateDeviationPerDayBp: BigNumber;
+    oldestRateAllowedInPauseTimeSpan: BigNumber;
+    maxAllowedTimeBetweenTokenRateUpdates: BigNumber;
     tokenRate: BigNumber;
     l1Timestamp: BigNumber;
   }
@@ -93,12 +104,16 @@ export class L2DeployAllScript extends DeployScript {
   public tokenRateOracleProxyAddress: string;
 }
 
-/// deploys from scratch
-/// - wstETH on L2
-/// - stETH on L2
-/// - bridgeL1
-/// - bridgeL2
-/// - Oracle
+/// Deploy all from scratch
+/// L1 part
+///     L1LidoTokensBridge + Proxy
+///     TokenRateNotifier
+///     OpStackTokenRatePusher
+/// L2 part
+///      TokenRateOracle + Proxy
+///      ERC20BridgedPermit + Proxy
+///      ERC20RebasableBridgedPermit + Proxy
+///      L2ERC20ExtendedTokensBridge + Proxy
 export default function deploymentAll(
   networkName: NetworkName,
   options: OptDeploymentOptions = {}
@@ -106,9 +121,6 @@ export default function deploymentAll(
   const optAddresses = addresses(networkName, options);
   return {
     async deployAllScript(
-      l1Token: string,
-      l1TokenRebasable: string,
-      accountingOracle: string,
       l1Params: OptL1DeployScriptParams,
       l2Params: OptL2DeployScriptParams,
     ): Promise<[L1DeployAllScript, L2DeployAllScript]> {
@@ -144,11 +156,11 @@ export default function deploymentAll(
           args: [
             optAddresses.L1CrossDomainMessenger,
             expectedL2TokenBridgeProxyAddress,
-            l1Token,
-            l1TokenRebasable,
+            l1Params.l1Token,
+            l1Params.l1TokenRebasable,
             expectedL2TokenProxyAddress,
             expectedL2TokenRebasableProxyAddress,
-            accountingOracle,
+            l1Params.accountingOracle,
             options?.overrides,
           ],
           afterDeploy: (c) =>
@@ -181,33 +193,15 @@ export default function deploymentAll(
           factory: OpStackTokenRatePusher__factory,
           args: [
             optAddresses.L1CrossDomainMessenger,
-            l1Token,
-            accountingOracle,
+            l1Params.l1Token,
+            l1Params.accountingOracle,
             expectedL2TokenRateOracleProxyAddress,
-            1000,
+            l1Params.l2GasLimitForPushingTokenRate,
             options?.overrides,
           ],
           afterDeploy: (c) =>
             assert.equal(c.address, expectedL1OpStackTokenRatePusherImplAddress),
         });
-
-      const l1TokenInfo = IERC20Metadata__factory.connect(
-        l1Token,
-        l1Params.deployer
-      );
-
-      const l1TokenRebasableInfo = IERC20Metadata__factory.connect(
-        l1TokenRebasable,
-        l1Params.deployer
-      );
-      const [decimals, l2TokenName, l2TokenSymbol, l2TokenVersion, l2TokenRebasableName, l2TokenRebasableSymbol] = await Promise.all([
-        l1TokenInfo.decimals(),
-        l2Params.l2Token?.name ?? l1TokenInfo.name(),
-        l2Params.l2Token?.symbol ?? l1TokenInfo.symbol(),
-        l2Params.l2Token?.version ?? "1",
-        l2Params.l2TokenRebasable?.name ?? l1TokenRebasableInfo.name(),
-        l2Params.l2TokenRebasable?.symbol ?? l1TokenRebasableInfo.symbol(),
-      ]);
 
       const l2DeployScript = new L2DeployAllScript(
         l2Params.deployer,
@@ -221,44 +215,47 @@ export default function deploymentAll(
         expectedL2TokenRateOracleProxyAddress,
         options?.logger
       )
-      .addStep({
-        factory: TokenRateOracle__factory,
-        args: [
-          optAddresses.L2CrossDomainMessenger,
-          expectedL2TokenBridgeProxyAddress,
-          expectedL1OpStackTokenRatePusherImplAddress,
-          86400,
-          86400,
-          500,
-          options?.overrides,
-        ],
-        afterDeploy: (c) =>
-          assert.equal(c.address, expectedL2TokenRateOracleImplAddress),
-      })
-      .addStep({
-        factory: OssifiableProxy__factory,
-        args: [
-          expectedL2TokenRateOracleImplAddress,
-          l2Params.admins.proxy,
-          TokenRateOracle__factory.createInterface().encodeFunctionData(
-            "initialize",
-            [
-              l2Params.tokenRateOracle.tokenRate,
-              l2Params.tokenRateOracle.l1Timestamp
-            ]
-          ),
-          options?.overrides,
-        ],
-        afterDeploy: (c) =>
-          assert.equal(c.address, expectedL2TokenRateOracleProxyAddress),
-      })
+        .addStep({
+          factory: TokenRateOracle__factory,
+          args: [
+            optAddresses.L2CrossDomainMessenger,
+            expectedL2TokenBridgeProxyAddress,
+            expectedL1OpStackTokenRatePusherImplAddress,
+            l2Params.tokenRateOracle.tokenRateOutdatedDelay,
+            l2Params.tokenRateOracle.maxAllowedL2ToL1ClockLag,
+            l2Params.tokenRateOracle.maxAllowedTokenRateDeviationPerDayBp,
+            l2Params.tokenRateOracle.oldestRateAllowedInPauseTimeSpan,
+            l2Params.tokenRateOracle.maxAllowedTimeBetweenTokenRateUpdates,
+            options?.overrides,
+          ],
+          afterDeploy: (c) =>
+            assert.equal(c.address, expectedL2TokenRateOracleImplAddress),
+        })
+        .addStep({
+          factory: OssifiableProxy__factory,
+          args: [
+            expectedL2TokenRateOracleImplAddress,
+            l2Params.admins.proxy,
+            TokenRateOracle__factory.createInterface().encodeFunctionData(
+              "initialize",
+              [
+                l2Params.admins.bridge,
+                l2Params.tokenRateOracle.tokenRate,
+                l2Params.tokenRateOracle.l1Timestamp
+              ]
+            ),
+            options?.overrides,
+          ],
+          afterDeploy: (c) =>
+            assert.equal(c.address, expectedL2TokenRateOracleProxyAddress),
+        })
         .addStep({
           factory: ERC20BridgedPermit__factory,
           args: [
-            l2TokenName,
-            l2TokenSymbol,
-            l2TokenVersion,
-            decimals,
+            l2Params.l2TokenNonRebasable.name,
+            l2Params.l2TokenNonRebasable.symbol,
+            l2Params.l2TokenNonRebasable.version,
+            l2Params.l2TokenNonRebasable.decimals,
             expectedL2TokenBridgeProxyAddress,
             options?.overrides,
           ],
@@ -272,7 +269,11 @@ export default function deploymentAll(
             l2Params.admins.proxy,
             ERC20BridgedPermit__factory.createInterface().encodeFunctionData(
               "initialize",
-              [l2TokenName, l2TokenSymbol, l2TokenVersion]
+              [
+                l2Params.l2TokenNonRebasable.name,
+                l2Params.l2TokenNonRebasable.symbol,
+                l2Params.l2TokenNonRebasable.version
+              ]
             ),
             options?.overrides,
           ],
@@ -282,10 +283,10 @@ export default function deploymentAll(
         .addStep({
           factory: ERC20RebasableBridgedPermit__factory,
           args: [
-            l2TokenRebasableName,
-            l2TokenRebasableSymbol,
-            l2TokenVersion,
-            decimals,
+            l2Params.l2TokenRebasable.name,
+            l2Params.l2TokenRebasable.symbol,
+            l2Params.l2TokenRebasable.version,
+            l2Params.l2TokenRebasable.decimals,
             expectedL2TokenProxyAddress,
             expectedL2TokenRateOracleProxyAddress,
             expectedL2TokenBridgeProxyAddress,
@@ -301,7 +302,11 @@ export default function deploymentAll(
             l2Params.admins.proxy,
             ERC20RebasableBridgedPermit__factory.createInterface().encodeFunctionData(
               "initialize",
-              [l2TokenRebasableName, l2TokenRebasableSymbol, l2TokenVersion]
+              [
+                l2Params.l2TokenRebasable.name,
+                l2Params.l2TokenRebasable.symbol,
+                l2Params.l2TokenRebasable.version
+              ]
             ),
             options?.overrides,
           ],
@@ -313,8 +318,8 @@ export default function deploymentAll(
           args: [
             optAddresses.L2CrossDomainMessenger,
             expectedL1TokenBridgeProxyAddress,
-            l1Token,
-            l1TokenRebasable,
+            l1Params.l1Token,
+            l1Params.l1TokenRebasable,
             expectedL2TokenProxyAddress,
             expectedL2TokenRebasableProxyAddress,
             options?.overrides,

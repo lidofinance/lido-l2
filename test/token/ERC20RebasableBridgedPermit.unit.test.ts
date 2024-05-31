@@ -16,7 +16,6 @@ import {
 } from "../../typechain";
 
 unit("ERC20RebasableBridgedPermit", ctxFactory)
-
   .test("constructor() :: zero params", async (ctx) => {
     const {
       deployer,
@@ -39,7 +38,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       l1TokenRatePusher.address,
       tokenRateOutdatedDelay,
       maxAllowedL2ToL1ClockLag,
-      maxAllowedTokenRateDeviationPerDay
+      maxAllowedTokenRateDeviationPerDay,
+      BigNumber.from(86400*3),
+      BigNumber.from(3600)
     );
 
     await assert.revertsWith(new ERC20RebasableBridgedPermit__factory(
@@ -124,7 +125,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       l1TokenRatePusher.address,
       86400,
       86400,
-      500
+      500,
+      86400*3,
+      3600
     );
     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       "stETH Test Token",
@@ -163,7 +166,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       l1TokenRatePusher.address,
       86400,
       86400,
-      500
+      500,
+      86400*3,
+      3600
     );
     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       "name",
@@ -219,7 +224,9 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
       l1TokenRatePusher.address,
       86400,
       86400,
-      500
+      500,
+      86400*3,
+      3600
     );
     const rebasableTokenImpl = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
       "name",
@@ -267,43 +274,6 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     const { rebasableProxied } = ctx.contracts;
     const { user1 } = ctx.accounts;
     await assert.revertsWith(rebasableProxied.connect(user1).wrap(0), "ErrorZeroSharesWrap()");
-  })
-
-  .test("wrap() :: wrong oracle update time", async (ctx) => {
-
-    const { deployer, user1, owner, zero, messenger, l1TokenRatePusher } = ctx.accounts;
-    const { decimals } = ctx.constants;
-
-    // deploy new implementation to test initial oracle state
-    const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
-      "WsETH Test Token",
-      "WsETH",
-      "1",
-      decimals,
-      owner.address
-    );
-    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-      messenger.address,
-      owner.address,
-      l1TokenRatePusher.address,
-      86400,
-      86400,
-      500
-    );
-    const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
-      "name",
-      "symbol",
-      "1",
-      10,
-      wrappedToken.address,
-      tokenRateOracle.address,
-      owner.address
-    );
-
-    await wrappedToken.connect(owner).bridgeMint(user1.address, 1000);
-    await wrappedToken.connect(user1).approve(rebasableProxied.address, 1000);
-
-    await assert.revertsWith(rebasableProxied.connect(user1).wrap(5), "ErrorWrongOracleUpdateTime()");
   })
 
   .test("wrap() :: when no balance", async (ctx) => {
@@ -380,43 +350,6 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     const { rebasableProxied } = ctx.contracts;
     const { user1 } = ctx.accounts;
     await assert.revertsWith(rebasableProxied.connect(user1).unwrap(0), "ErrorZeroTokensUnwrap()");
-  })
-
-  .test("unwrap() :: with wrong oracle update time", async (ctx) => {
-
-    const { deployer, user1, owner, zero, messenger, l1TokenRatePusher } = ctx.accounts;
-    const { decimals } = ctx.constants;
-
-    // deploy new implementation to test initial oracle state
-    const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
-      "WsETH Test Token",
-      "WsETH",
-      "1",
-      decimals,
-      owner.address
-    );
-    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-      messenger.address,
-      owner.address,
-      l1TokenRatePusher.address,
-      86400,
-      86400,
-      500
-    );
-    const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
-      "name",
-      "symbol",
-      "1",
-      10,
-      wrappedToken.address,
-      tokenRateOracle.address,
-      owner.address
-    );
-
-    await wrappedToken.connect(owner).bridgeMint(user1.address, 1000);
-    await wrappedToken.connect(user1).approve(rebasableProxied.address, 1000);
-
-    await assert.revertsWith(rebasableProxied.connect(user1).unwrap(5), "ErrorWrongOracleUpdateTime()");
   })
 
   .test("unwrap() :: when no balance", async (ctx) => {
@@ -566,45 +499,6 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     await assert.revertsWith(rebasableProxied.connect(owner).bridgeWrap(user1.address, 0), "ErrorZeroSharesWrap()");
   })
 
-  .test("bridgeWrap() :: wrong oracle update time", async (ctx) => {
-    const { deployer, user1, owner, zero, messenger, l1TokenRatePusher } = ctx.accounts;
-    const { decimals } = ctx.constants;
-
-    // deploy new implementation to test initial oracle state
-    const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
-      "WsETH Test Token",
-      "WsETH",
-      "1",
-      decimals,
-      owner.address
-    );
-    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-      messenger.address,
-      owner.address,
-      l1TokenRatePusher.address,
-      86400,
-      86400,
-      500
-    );
-    const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
-      "name",
-      "symbol",
-      "1",
-      10,
-      wrappedToken.address,
-      tokenRateOracle.address,
-      owner.address
-    );
-
-    await wrappedToken.connect(owner).bridgeMint(owner.address, 1000);
-    await wrappedToken.connect(owner).approve(rebasableProxied.address, 1000);
-
-    await assert.revertsWith(
-      rebasableProxied.connect(owner).bridgeWrap(user1.address, 5),
-      "ErrorWrongOracleUpdateTime()"
-    );
-  })
-
   .test("bridgeWrap() :: when no balance", async (ctx) => {
     const { rebasableProxied, wrappedToken } = ctx.contracts;
     const { owner, user1 } = ctx.accounts;
@@ -693,41 +587,6 @@ unit("ERC20RebasableBridgedPermit", ctxFactory)
     const { user1, owner } = ctx.accounts;
 
     await assert.revertsWith(rebasableProxied.connect(owner).bridgeUnwrap(user1.address, wei`4 ether`), "ErrorNotEnoughBalance()");
-  })
-
-  .test("bridgeUnwrap() :: with wrong oracle update time", async (ctx) => {
-
-    const { deployer, user1, owner, zero, messenger, l1TokenRatePusher } = ctx.accounts;
-    const { decimals } = ctx.constants;
-
-    // deploy new implementation to test initial oracle state
-    const wrappedToken = await new ERC20BridgedPermit__factory(deployer).deploy(
-      "WsETH Test Token",
-      "WsETH",
-      "1",
-      decimals,
-      owner.address
-    );
-    const tokenRateOracle = await new TokenRateOracle__factory(deployer).deploy(
-      messenger.address,
-      owner.address,
-      l1TokenRatePusher.address,
-      86400,
-      86400,
-      500
-    );
-    const rebasableProxied = await new ERC20RebasableBridgedPermit__factory(deployer).deploy(
-      "name",
-      "symbol",
-      "1",
-      10,
-      wrappedToken.address,
-      tokenRateOracle.address,
-      owner.address
-    );
-
-    await wrappedToken.connect(owner).bridgeMint(user1.address, 1000);
-    await assert.revertsWith(rebasableProxied.connect(owner).bridgeUnwrap(user1.address, 5), "ErrorWrongOracleUpdateTime()");
   })
 
   .test("bridgeUnwrap() :: happy path", async (ctx) => {
@@ -1402,6 +1261,8 @@ async function ctxFactory() {
     tokenRateOutdatedDelay,
     maxAllowedL2ToL1ClockLag,
     maxAllowedTokenRateDeviationPerDay,
+    BigNumber.from(86400*3),
+    BigNumber.from(3600),
     tokenRate,
     blockTimestamp
   )

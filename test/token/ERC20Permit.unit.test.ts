@@ -429,7 +429,9 @@ async function tokenProxied(
       l1TokenRatePusher,
       86400,
       86400,
-      500
+      500,
+      86400*3,
+      3600
     );
     const provider = await hre.ethers.provider;
     const blockNumber = await provider.getBlockNumber();
@@ -441,6 +443,7 @@ async function tokenProxied(
       tokenRateOracleImpl.address,
       deployer.address,
       tokenRateOracleImpl.interface.encodeFunctionData("initialize", [
+        deployer.address,
         tokenRate,
         blockTimestamp
       ])

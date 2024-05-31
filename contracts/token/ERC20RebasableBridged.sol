@@ -298,18 +298,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     }
 
     function _getTokenRate() internal view returns (uint256) {
-        //slither-disable-next-line unused-return
-        (
-            /* roundId_ */,
-            int256 answer,
-            /* startedAt_ */,
-            uint256 updatedAt,
-            /* answeredInRound_ */
-        ) = TOKEN_RATE_ORACLE.latestRoundData();
-
-        if (updatedAt == 0) revert ErrorWrongOracleUpdateTime();
-
-        return uint256(answer);
+        return uint256(TOKEN_RATE_ORACLE.latestAnswer());
     }
 
     /// @dev Creates `amount_` shares and assigns them to `account_`, increasing the total shares supply
@@ -427,7 +416,6 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
     error ErrorZeroTokensUnwrap();
     error ErrorZeroSharesUnwrap();
     error ErrorTokenRateDecimalsIsZero();
-    error ErrorWrongOracleUpdateTime();
     error ErrorTransferToRebasableContract();
     error ErrorNotEnoughBalance();
     error ErrorNotEnoughAllowance();

@@ -111,6 +111,8 @@ async function ctxFactory() {
   const tokenRateOutdatedDelay = 86400;
   const maxAllowedL2ToL1ClockLag = BigNumber.from(86400);
   const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);
+  const oldestRateAllowedInPauseTimeSpan = BigNumber.from(86400*3);
+  const maxAllowedTimeBetweenTokenRateUpdates = BigNumber.from(3600);
   const totalPooledEther = BigNumber.from('9309904612343950493629678');
   const totalShares = BigNumber.from('7975822843597609202337218');
   const tokenRateDecimals = BigNumber.from(27);
@@ -192,7 +194,9 @@ async function ctxFactory() {
       contractsShift: 0,
       tokenRateOracle: {
         maxAllowedL2ToL1ClockLag: maxAllowedL2ToL1ClockLag,
-        maxAllowedTokenRateDeviationPerDay: maxAllowedTokenRateDeviationPerDay,
+        maxAllowedTokenRateDeviationPerDayBp: maxAllowedTokenRateDeviationPerDay,
+        oldestRateAllowedInPauseTimeSpan: oldestRateAllowedInPauseTimeSpan,
+        maxAllowedTimeBetweenTokenRateUpdates: maxAllowedTimeBetweenTokenRateUpdates,
         tokenRate: tokenRate,
         l1Timestamp: BigNumber.from(blockTimestampInPast)
       }

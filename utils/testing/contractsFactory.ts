@@ -51,6 +51,8 @@ export async function tokenRateOracleUnderProxy(
   tokenRateOutdatedDelay: BigNumber,
   maxAllowedL2ToL1ClockLag: BigNumber,
   maxAllowedTokenRateDeviationPerDay: BigNumber,
+  oldestRateAllowedInPauseTimeSpan: BigNumber,
+  maxAllowedTimeBetweenTokenRateUpdates: BigNumber,
   tokenRate: BigNumber,
   rateL1Timestamp: BigNumber
 ) {
@@ -60,7 +62,9 @@ export async function tokenRateOracleUnderProxy(
     l1TokenRatePusher,
     tokenRateOutdatedDelay,
     maxAllowedL2ToL1ClockLag,
-    maxAllowedTokenRateDeviationPerDay
+    maxAllowedTokenRateDeviationPerDay,
+    oldestRateAllowedInPauseTimeSpan,
+    maxAllowedTimeBetweenTokenRateUpdates
   );
 
   const tokenRateOracleProxy = new OssifiableProxy__factory(deployer);
@@ -68,6 +72,7 @@ export async function tokenRateOracleUnderProxy(
   const unsignedTx = tokenRateOracleProxy.getDeployTransaction(tokenRateOracleImpl.address,
     deployer.address,
     tokenRateOracleImpl.interface.encodeFunctionData("initialize", [
+      deployer.address,
       tokenRate,
       rateL1Timestamp
     ]));

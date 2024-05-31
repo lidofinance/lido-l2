@@ -1215,6 +1215,11 @@ async function ctxFactory() {
   const totalPooledEther = BigNumber.from('9309904612343950493629678');
   const totalShares = BigNumber.from('7975822843597609202337218');
   const exchangeRate = getExchangeRate(tokenRateDecimals, totalPooledEther, totalShares);
+  const tokenRateOutdatedDelay = 86400;
+  const maxAllowedL2ToL1ClockLag = BigNumber.from(86400);
+  const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);
+  const oldestRateAllowedInPauseTimeSpan = BigNumber.from(86400*3);
+  const maxAllowedTimeBetweenTokenRateUpdates = BigNumber.from(3600);
 
   const l2MessengerStub = await new CrossDomainMessengerStub__factory(
     deployer
@@ -1260,9 +1265,11 @@ async function ctxFactory() {
     l2MessengerStub.address,
     l2TokenBridgeProxyAddress,
     l1TokenBridgeEOA.address,
-    86400,
-    86400,
-    500
+    tokenRateOutdatedDelay,
+    maxAllowedL2ToL1ClockLag,
+    maxAllowedTokenRateDeviationPerDay,
+    oldestRateAllowedInPauseTimeSpan,
+    maxAllowedTimeBetweenTokenRateUpdates
   );
 
   const provider = await hre.ethers.provider;
@@ -1274,6 +1281,7 @@ async function ctxFactory() {
     tokenRateOracleImpl.address,
     deployer.address,
     tokenRateOracleImpl.interface.encodeFunctionData("initialize", [
+      deployer.address,
       exchangeRate,
       blockTimestamp
     ])
@@ -1389,6 +1397,11 @@ async function getL2TokenBridgeImpl(deployer: SignerWithAddress, l1TokenBridge: 
   const totalPooledEther = BigNumber.from('9309904612343950493629678');
   const totalShares = BigNumber.from('7975822843597609202337218');
   const exchangeRate = getExchangeRate(tokenRateDecimals, totalPooledEther, totalShares);
+  const tokenRateOutdatedDelay = 86400;
+  const maxAllowedL2ToL1ClockLag = BigNumber.from(86400);
+  const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);
+  const oldestRateAllowedInPauseTimeSpan = BigNumber.from(86400*3);
+  const maxAllowedTimeBetweenTokenRateUpdates = BigNumber.from(3600);
 
   const l2MessengerStub = await new CrossDomainMessengerStub__factory(
     deployer
@@ -1427,9 +1440,11 @@ async function getL2TokenBridgeImpl(deployer: SignerWithAddress, l1TokenBridge: 
     l2MessengerStub.address,
     l2TokenBridgeProxyAddress,
     l1TokenBridge,
-    86400,
-    86400,
-    500
+    tokenRateOutdatedDelay,
+    maxAllowedL2ToL1ClockLag,
+    maxAllowedTokenRateDeviationPerDay,
+    oldestRateAllowedInPauseTimeSpan,
+    maxAllowedTimeBetweenTokenRateUpdates
   );
 
   const provider = await hre.ethers.provider;
@@ -1441,6 +1456,7 @@ async function getL2TokenBridgeImpl(deployer: SignerWithAddress, l1TokenBridge: 
     tokenRateOracleImpl.address,
     deployer.address,
     tokenRateOracleImpl.interface.encodeFunctionData("initialize", [
+      deployer.address,
       exchangeRate,
       blockTimestamp
     ])

@@ -17,7 +17,9 @@ interface OptDeployScriptParams extends DeployScriptParams { }
 interface OptL2DeployScriptParams extends DeployScriptParams {
   tokenRateOracle: {
     maxAllowedL2ToL1ClockLag: BigNumber;
-    maxAllowedTokenRateDeviationPerDay: BigNumber;
+    maxAllowedTokenRateDeviationPerDayBp: BigNumber;
+    oldestRateAllowedInPauseTimeSpan: BigNumber;
+    maxAllowedTimeBetweenTokenRateUpdates: BigNumber;
     tokenRate: BigNumber;
     l1Timestamp: BigNumber;
   }
@@ -55,6 +57,12 @@ export class OracleL2DeployScript extends DeployScript {
   public tokenRateOracleProxyAddress: string;
 }
 
+/// Deploy Oracle + L1 part to push rate
+/// L1 part
+///     TokenRateNotifier
+///     OpStackTokenRatePusher
+/// L2 part
+///     TokenRateOracle + proxy
 export default function deploymentOracle(
   networkName: NetworkName,
   options: OptDeploymentOptions = {}
@@ -124,7 +132,9 @@ export default function deploymentOracle(
             expectedL1OpStackTokenRatePusherImplAddress,
             tokenRateOutdatedDelay,
             l2Params.tokenRateOracle.maxAllowedL2ToL1ClockLag,
-            l2Params.tokenRateOracle.maxAllowedTokenRateDeviationPerDay,
+            l2Params.tokenRateOracle.maxAllowedTokenRateDeviationPerDayBp,
+            l2Params.tokenRateOracle.oldestRateAllowedInPauseTimeSpan,
+            l2Params.tokenRateOracle.maxAllowedTimeBetweenTokenRateUpdates,
             options?.overrides,
           ],
           afterDeploy: (c) =>
@@ -138,6 +148,7 @@ export default function deploymentOracle(
             TokenRateOracle__factory.createInterface().encodeFunctionData(
               "initialize",
               [
+                l2Params.admins.bridge,
                 l2Params.tokenRateOracle.tokenRate,
                 l2Params.tokenRateOracle.l1Timestamp
               ]
