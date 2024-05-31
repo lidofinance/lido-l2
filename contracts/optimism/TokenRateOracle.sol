@@ -16,18 +16,19 @@ interface ITokenRateOracle is ITokenRateUpdatable, IChainlinkAggregatorInterface
 /// @author kovalgek
 /// @notice Oracle for storing and providing token rate.
 ///         NB: Cross-chain apps and CEXes should fetch the token rate specific to the chain for deposits/withdrawals
-///         and compare against the token rate on L1 being a source of truth;
+///         and compare against the token rate on L1 being an ultimate source of truth;
+///         If the L1 rate differs, it can be pushed permissionlessly via OpStackTokenRatePusher.
 /// @dev Token rate updates can be delivered from two sources: L1 token rate pusher and L2 bridge.
 contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl, Versioned {
 
     using UnstructuredStorage for bytes32;
 
-    /// @dev Uses to store historical data of rate and times.
+    /// @dev Used to store historical data of rate and times.
     struct TokenRateData {
         /// @notice wstETH/stETH token rate.
         uint128 tokenRate;
         /// @notice last time when token rate was updated on L1.
-        uint64 rateUpdateL1Timestamp;
+        uint64 rateUpdatedL1Timestamp;
         /// @notice last time when token rate was received on L2.
         uint64 rateReceivedL2Timestamp;
     } // occupies a single slot
@@ -50,11 +51,12 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
 
     /// @notice The maximum allowed time difference between the current time and the last received
     ///         token rate update that can be set during a pause. This is required to limit the pause role
-    ///         and prevent potential economic attacks.
+    ///         and mitigate potential economic attacks.
+    ///         See the 'pauseTokenRateUpdates()' method
     uint256 public immutable OLDEST_RATE_ALLOWED_IN_PAUSE_TIME_SPAN;
 
     /// @notice The maximum delta time that is allowed between two L1 timestamps of token rate updates.
-    uint256 public immutable MAX_ALLOWED_TIME_BETWEEEN_TOKEN_RATE_UPDATES;
+    uint256 public immutable MAX_ALLOWED_TIME_BETWEEN_TOKEN_RATE_UPDATES;
 
     /// @notice Decimals of the oracle response.
     uint8 public constant DECIMALS = 27;
@@ -68,8 +70,8 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     /// @dev Role granting the permission to pause updating rate.
     bytes32 public constant RATE_UPDATE_DISABLER_ROLE = keccak256("TokenRateOracle.RATE_UPDATE_DISABLER_ROLE");
 
-    /// @dev Role granting the permission to unpause updating rate.
-    bytes32 public constant RATE_UPDATE_ENABLER_ROLE = keccak256("TokenRateOracle.RATE_UPDATE_ENABLER_ROLE");
+    /// @dev Role granting the permission to resume updating rate.
+    bytes32 public constant RATE_UPDATE_ENABLER_ROLE = keccak256("TokenRafteOracle.RATE_UPDATE_ENABLER_ROLE");
 
     /// @notice Basic point scale.
     uint256 private constant BASIS_POINT_SCALE = 1e4;
@@ -93,7 +95,7 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     ///        Can't be bigger than BASIS_POINT_SCALE.
     /// @param oldestRateAllowedInPauseTimeSpan_ Maximum allowed time difference between the current time
     ///        and the last received token rate update that can be set during a pause.
-    /// @param maxAllowedTimeBetweenTokenRateUpdates_ he maximum delta time that is allowed between two
+    /// @param maxAllowedTimeBetweenTokenRateUpdates_ the maximum delta time that is allowed between two
     ///        L1 timestamps of token rate updates.
     constructor(
         address messenger_,
@@ -111,7 +113,7 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         if (l1TokenRatePusher_ == address(0)) {
             revert ErrorZeroAddressL1TokenRatePusher();
         }
-        if (maxAllowedTokenRateDeviationPerDayBp_ > BASIS_POINT_SCALE) {
+        if (maxAllowedTokenRateDeviationPerDayBp_ == 0 || maxAllowedTokenRateDeviationPerDayBp_ > BASIS_POINT_SCALE) {
             revert ErrorMaxTokenRateDeviationIsOutOfRange();
         }
         L2_ERC20_TOKEN_BRIDGE = l2ERC20TokenBridge_;
@@ -120,30 +122,30 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         MAX_ALLOWED_L2_TO_L1_CLOCK_LAG = maxAllowedL2ToL1ClockLag_;
         MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY_BP = maxAllowedTokenRateDeviationPerDayBp_;
         OLDEST_RATE_ALLOWED_IN_PAUSE_TIME_SPAN = oldestRateAllowedInPauseTimeSpan_;
-        MAX_ALLOWED_TIME_BETWEEEN_TOKEN_RATE_UPDATES = maxAllowedTimeBetweenTokenRateUpdates_;
+        MAX_ALLOWED_TIME_BETWEEN_TOKEN_RATE_UPDATES = maxAllowedTimeBetweenTokenRateUpdates_;
     }
 
     /// @notice Initializes the contract from scratch.
     /// @param admin_ Address of the account to grant the DEFAULT_ADMIN_ROLE
     /// @param tokenRate_ wstETH/stETH token rate, uses 10**DECIMALS precision.
-    /// @param rateUpdateL1Timestamp_ L1 time when rate was updated on L1 side.
-    function initialize(address admin_, uint256 tokenRate_, uint256 rateUpdateL1Timestamp_) external {
+    /// @param rateUpdatedL1Timestamp_ L1 time when rate was updated on L1 side.
+    function initialize(address admin_, uint256 tokenRate_, uint256 rateUpdatedL1Timestamp_) external {
         _initializeContractVersionTo(1);
         if (admin_ == address(0)) {
             revert ErrorZeroAddressAdmin();
         }
         if (tokenRate_ < MIN_SANE_TOKEN_RATE || tokenRate_ > MAX_SANE_TOKEN_RATE) {
-            revert ErrorTokenRateInitializationIsOutOfSaneRange(tokenRate_);
+            revert ErrorTokenRateIsOutOfSaneRange(tokenRate_);
         }
-        if (rateUpdateL1Timestamp_ > block.timestamp + MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
-            revert ErrorL1TimestampInitializationIsOutOfAllowedRange(rateUpdateL1Timestamp_);
+        if (rateUpdatedL1Timestamp_ > block.timestamp + MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
+            revert ErrorL1TimestampExceededMaxAllowedClockLag(rateUpdatedL1Timestamp_);
         }
         _grantRole(DEFAULT_ADMIN_ROLE, admin_);
-        _addTokenRate(tokenRate_, rateUpdateL1Timestamp_, block.timestamp);
+        _addTokenRate(tokenRate_, rateUpdatedL1Timestamp_, block.timestamp);
     }
 
     /// @notice Pauses token rate updates and sets the old rate provided by tokenRateIndex_.
-    ///         Should be called by DAO or emergency breaks only.
+    ///         Should be called by DAO or emergency brakes only.
     /// @param tokenRateIndex_ The index of the token rate that applies after the pause.
     ///        Token Rate can't be received older then OLDEST_RATE_ALLOWED_IN_PAUSE_TIME_SPAN
     ///        except only if the passed index is the latest one.
@@ -158,24 +160,30 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
         }
         _removeElementsAfterIndex(tokenRateIndex_);
         _setPause(true);
-        emit TokenRateUpdatesPaused(tokenRateData.tokenRate, tokenRateData.rateUpdateL1Timestamp);
-        emit RateUpdated(tokenRateData.tokenRate, tokenRateData.rateUpdateL1Timestamp);
+        emit TokenRateUpdatesPaused(tokenRateData.tokenRate, tokenRateData.rateUpdatedL1Timestamp);
+        emit RateUpdated(tokenRateData.tokenRate, tokenRateData.rateUpdatedL1Timestamp);
     }
 
     /// @notice Resume token rate updates applying provided token rate.
-    /// @param tokenRate_ a new token rate that applies after unpausing.
-    /// @param rateUpdateL1Timestamp_ L1 time when rate was updated on L1 side.
+    /// @param tokenRate_ a new token rate that applies after resuming.
+    /// @param rateUpdatedL1Timestamp_ L1 time when rate was updated on L1 side.
     function resumeTokenRateUpdates(
         uint256 tokenRate_,
-        uint256 rateUpdateL1Timestamp_
+        uint256 rateUpdatedL1Timestamp_
     ) external onlyRole(RATE_UPDATE_ENABLER_ROLE) {
         if (!_isPaused()) {
             revert ErrorAlreadyResumed();
         }
-        _addTokenRate(tokenRate_, rateUpdateL1Timestamp_, block.timestamp);
+        if (tokenRate_ < MIN_SANE_TOKEN_RATE || tokenRate_ > MAX_SANE_TOKEN_RATE) {
+            revert ErrorTokenRateIsOutOfSaneRange(tokenRate_);
+        }
+        if (rateUpdatedL1Timestamp_ > block.timestamp + MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
+            revert ErrorL1TimestampExceededMaxAllowedClockLag(rateUpdatedL1Timestamp_);
+        }
+        _addTokenRate(tokenRate_, rateUpdatedL1Timestamp_, block.timestamp);
         _setPause(false);
-        emit TokenRateUpdatesResumed(tokenRate_, rateUpdateL1Timestamp_);
-        emit RateUpdated(tokenRate_, rateUpdateL1Timestamp_);
+        emit TokenRateUpdatesResumed(tokenRate_, rateUpdatedL1Timestamp_);
+        emit RateUpdated(tokenRate_, rateUpdatedL1Timestamp_);
     }
 
     /// @notice Shows that token rate updates are paused or not.
@@ -204,11 +212,11 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     ) {
         TokenRateData memory tokenRateData = _getLastTokenRate();
         return (
-            uint80(tokenRateData.rateUpdateL1Timestamp),
+            uint80(tokenRateData.rateUpdatedL1Timestamp),
             int256(uint256(tokenRateData.tokenRate)),
-            tokenRateData.rateUpdateL1Timestamp,
+            tokenRateData.rateUpdatedL1Timestamp,
             tokenRateData.rateReceivedL2Timestamp,
-            uint80(tokenRateData.rateUpdateL1Timestamp)
+            uint80(tokenRateData.rateUpdatedL1Timestamp)
         );
     }
 
@@ -226,58 +234,58 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     /// @inheritdoc ITokenRateUpdatable
     function updateRate(
         uint256 tokenRate_,
-        uint256 rateUpdateL1Timestamp_
+        uint256 rateUpdatedL1Timestamp_
     ) external onlyBridgeOrTokenRatePusher {
         if (_isPaused()) {
-            emit TokenRateUpdateAttemptDuringPause(tokenRate_, rateUpdateL1Timestamp_);
+            emit TokenRateUpdateAttemptDuringPause();
             return;
         }
 
         TokenRateData storage tokenRateData = _getLastTokenRate();
 
         /// @dev checks if the clock lag (i.e, time difference) between L1 and L2 exceeds the configurable threshold
-        if (rateUpdateL1Timestamp_ > block.timestamp + MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
-            revert ErrorL1TimestampExceededAllowedClockLag(tokenRate_, rateUpdateL1Timestamp_);
+        if (rateUpdatedL1Timestamp_ > block.timestamp + MAX_ALLOWED_L2_TO_L1_CLOCK_LAG) {
+            revert ErrorL1TimestampExceededAllowedClockLag(tokenRate_, rateUpdatedL1Timestamp_);
         }
 
         /// @dev Use only the most up-to-date token rate. Reverting should be avoided as it may occur occasionally.
-        if (rateUpdateL1Timestamp_ < tokenRateData.rateUpdateL1Timestamp) {
-            emit DormantTokenRateUpdateIgnored(rateUpdateL1Timestamp_, tokenRateData.rateUpdateL1Timestamp);
+        if (rateUpdatedL1Timestamp_ < tokenRateData.rateUpdatedL1Timestamp) {
+            emit DormantTokenRateUpdateIgnored(rateUpdatedL1Timestamp_, tokenRateData.rateUpdatedL1Timestamp);
             return;
         }
 
         /// @dev Bump L2 receipt time, don't touch the rate othwerwise
         /// NB: Here we assume that the rate can only be changed together with the token rebase induced
         /// by the AccountingOracle report
-        if (rateUpdateL1Timestamp_ == tokenRateData.rateUpdateL1Timestamp) {
+        if (rateUpdatedL1Timestamp_ == tokenRateData.rateUpdatedL1Timestamp) {
             tokenRateData.rateReceivedL2Timestamp = uint64(block.timestamp);
             emit RateReceivedTimestampUpdated(block.timestamp);
             return;
         }
 
         /// @dev This condition was made under the assumption that the L1 timestamps can be hacked.
-        if (rateUpdateL1Timestamp_ < tokenRateData.rateUpdateL1Timestamp + MAX_ALLOWED_TIME_BETWEEEN_TOKEN_RATE_UPDATES) {
-            emit UpdateRateIsTooOften();
+        if (rateUpdatedL1Timestamp_ < tokenRateData.rateUpdatedL1Timestamp + MAX_ALLOWED_TIME_BETWEEN_TOKEN_RATE_UPDATES) {
+            emit UpdateRateIsTooOften(rateUpdatedL1Timestamp_, tokenRateData.rateUpdatedL1Timestamp);
             return;
         }
 
         /// @dev allow token rate to be within some configurable range that depens on time it wasn't updated.
-        if ((tokenRate_ != tokenRateData.tokenRate) && !_isTokenRateWithinAllowedRange(
-                tokenRateData.tokenRate,
-                tokenRate_,
-                tokenRateData.rateUpdateL1Timestamp,
-                rateUpdateL1Timestamp_)
-            ) {
-            revert ErrorTokenRateIsOutOfRange(tokenRate_, rateUpdateL1Timestamp_);
+        if (!_isTokenRateWithinAllowedRange(
+            tokenRateData.tokenRate,
+            tokenRate_,
+            tokenRateData.rateUpdatedL1Timestamp,
+            rateUpdatedL1Timestamp_)
+        ) {
+            revert ErrorTokenRateIsOutOfRange(tokenRate_, rateUpdatedL1Timestamp_);
         }
 
         /// @dev notify that there is a differnce L1 and L2 time.
-        if (rateUpdateL1Timestamp_ > block.timestamp) {
-            emit TokenRateL1TimestampIsInFuture(tokenRate_, rateUpdateL1Timestamp_);
+        if (rateUpdatedL1Timestamp_ > block.timestamp) {
+            emit TokenRateL1TimestampIsInFuture(tokenRate_, rateUpdatedL1Timestamp_);
         }
 
-        _addTokenRate(tokenRate_, rateUpdateL1Timestamp_, block.timestamp);
-        emit RateUpdated(tokenRate_, rateUpdateL1Timestamp_);
+        _addTokenRate(tokenRate_, rateUpdatedL1Timestamp_, block.timestamp);
+        emit RateUpdated(tokenRate_, rateUpdatedL1Timestamp_);
     }
 
     /// @notice Returns flag that shows that token rate can be considered outdated.
@@ -343,11 +351,11 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     }
 
     function _addTokenRate(
-        uint256 tokenRate_, uint256 rateUpdateL1Timestamp_, uint256 rateReceivedL2Timestamp_
+        uint256 tokenRate_, uint256 rateUpdatedL1Timestamp_, uint256 rateReceivedL2Timestamp_
     ) internal {
         _getStorageTokenRates().push(TokenRateData({
             tokenRate: uint128(tokenRate_),
-            rateUpdateL1Timestamp: uint64(rateUpdateL1Timestamp_),
+            rateUpdatedL1Timestamp: uint64(rateUpdatedL1Timestamp_),
             rateReceivedL2Timestamp: uint64(rateReceivedL2Timestamp_)
         }));
     }
@@ -404,8 +412,8 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     event TokenRateL1TimestampIsInFuture(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
     event TokenRateUpdatesPaused(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
     event TokenRateUpdatesResumed(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
-    event TokenRateUpdateAttemptDuringPause(uint256 tokenRate_, uint256 indexed rateL1Timestamp_);
-    event UpdateRateIsTooOften();
+    event TokenRateUpdateAttemptDuringPause();
+    event UpdateRateIsTooOften(uint256 indexed newRateL1Timestamp_, uint256 indexed currentRateL1Timestamp_);
 
     error ErrorZeroAddressAdmin();
     error ErrorWrongTokenRateIndex();
@@ -418,6 +426,6 @@ contract TokenRateOracle is ITokenRateOracle, CrossDomainEnabled, AccessControl,
     error ErrorL1TimestampExceededAllowedClockLag(uint256 tokenRate_, uint256 rateL1Timestamp_);
     error ErrorTokenRateIsOutOfRange(uint256 tokenRate_, uint256 rateL1Timestamp_);
     error ErrorMaxTokenRateDeviationIsOutOfRange();
-    error ErrorTokenRateInitializationIsOutOfSaneRange(uint256 tokenRate_);
-    error ErrorL1TimestampInitializationIsOutOfAllowedRange(uint256 rateL1Timestamp_);
+    error ErrorTokenRateIsOutOfSaneRange(uint256 tokenRate_);
+    error ErrorL1TimestampExceededMaxAllowedClockLag(uint256 rateL1Timestamp_);
 }

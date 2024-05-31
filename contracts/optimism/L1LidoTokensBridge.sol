@@ -53,7 +53,7 @@ contract L1LidoTokensBridge is L1ERC20ExtendedTokensBridge, TokenRateAndUpdateTi
         _initializeContractVersionTo(2);
     }
 
-    function tokenRate() override public view returns (uint256 rate, uint256 updateTimestamp) {
-        return getTokenRateAndUpdateTimestamp();
+    function _tokenRate() override internal view returns (uint256 rate, uint256 updateTimestamp) {
+        return _getTokenRateAndUpdateTimestamp();
     }
 }

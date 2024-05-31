@@ -52,6 +52,5 @@ contract ERC20RebasableBridgedPermit is ERC20RebasableBridged, PermitExtension, 
     /// @inheritdoc PermitExtension
     function _permitAccepted(address owner_, address spender_, uint256 amount_) internal override {
         _approve(owner_, spender_, amount_);
-        emit Approval(owner_, spender_, amount_);
     }
 }

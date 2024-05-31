@@ -158,7 +158,7 @@ unit("TokenRateOracle", ctxFactory)
         tokenRateMin.sub(1),
         blockTimestampOfDeployment
       ),
-      "ErrorTokenRateInitializationIsOutOfSaneRange(" + tokenRateMin.sub(1) + ")"
+      "ErrorTokenRateIsOutOfSaneRange(" + tokenRateMin.sub(1) + ")"
     );
 
     await assert.revertsWith(
@@ -175,7 +175,7 @@ unit("TokenRateOracle", ctxFactory)
         tokenRateMax.add(1),
         blockTimestampOfDeployment
       ),
-      "ErrorTokenRateInitializationIsOutOfSaneRange(" + tokenRateMax.add(1) + ")"
+      "ErrorTokenRateIsOutOfSaneRange(" + tokenRateMax.add(1) + ")"
     );
   })
 
@@ -208,7 +208,7 @@ unit("TokenRateOracle", ctxFactory)
         tokenRate,
         wrongTimeMax
       ),
-      "ErrorL1TimestampInitializationIsOutOfAllowedRange(" + wrongTimeMax + ")"
+      "ErrorL1TimestampExceededMaxAllowedClockLag(" + wrongTimeMax + ")"
     );
   })
 
@@ -317,7 +317,7 @@ unit("TokenRateOracle", ctxFactory)
       .connect(bridge)
       .updateRate(tokenRate, rateL1TimestampWithinTooOften);
 
-    await assert.emits(tokenRateOracle, tx0, "UpdateRateIsTooOften");
+    await assert.emits(tokenRateOracle, tx0, "UpdateRateIsTooOften", [rateL1TimestampWithinTooOften, rateL1Timestamp]);
     await assert.notEmits(tokenRateOracle, tx0, "RateUpdated");
   })
 
@@ -645,8 +645,7 @@ unit("TokenRateOracle", ctxFactory)
     await assert.emits(
       tokenRateOracle,
       tx3,
-      "TokenRateUpdateAttemptDuringPause",
-      [tokenRate3, blockTimestampOfDeployment3]
+      "TokenRateUpdateAttemptDuringPause"
     );
   })
 

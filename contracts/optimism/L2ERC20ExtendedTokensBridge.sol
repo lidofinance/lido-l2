@@ -108,12 +108,6 @@ contract L2ERC20ExtendedTokensBridge is
         onlyNonZeroAccount(to_)
         onlySupportedL2Token(l2Token_)
     {
-        /// @dev L1_TOKEN_REBASABLE does not allow transfers to itself.
-        ///      Additionally, sending funds to L1_TOKEN_NON_REBASABLE would lock these funds permanently,
-        ///      as it is non-upgradeable. To prevent stucking tokens on L1 bridge or token this check was added.
-        if (to_ == L1_TOKEN_REBASABLE || to_ == L1_TOKEN_NON_REBASABLE) {
-            revert ErrorTransferToL1TokenContract();
-        }
         _withdrawTo(l2Token_, msg.sender, to_, amount_, l1Gas_, data_);
         emit WithdrawalInitiated(_getL1Token(l2Token_), l2Token_, msg.sender, to_, amount_, data_);
     }
@@ -147,15 +141,17 @@ contract L2ERC20ExtendedTokensBridge is
     }
 
     /// @notice Performs the logic for withdrawals by burning the token and informing
-    ///     the L1 token Gateway of the withdrawal
+    ///         the L1 token Gateway of the withdrawal. This function does not allow sending to token addresses.
+    ///         L1_TOKEN_REBASABLE does not allow transfers to itself. Additionally, sending funds to
+    ///         L1_TOKEN_NON_REBASABLE would lock these funds permanently, as it is non-upgradeable.
     /// @param l2Token_ Address of L2 token where withdrawal was initiated.
     /// @param from_ Account to pull the withdrawal from on L2
-    /// @param to_ Account to give the withdrawal to on L1
+    /// @param to_ Account to give the withdrawal to on L1.
     /// @param amount_ Amount of the token to withdraw
     /// @param l1Gas_ Minimum gas limit to use for the transaction.
     /// @param data_ Optional data to forward to L1. This data is provided
-    ///     solely as a convenience for external contracts. Aside from enforcing a maximum
-    ///     length, these contracts provide no guarantees about its content
+    ///        solely as a convenience for external contracts. Aside from enforcing a maximum
+    ///        length, these contracts provide no guarantees about its content
     function _withdrawTo(
         address l2Token_,
         address from_,
@@ -164,6 +160,10 @@ contract L2ERC20ExtendedTokensBridge is
         uint32 l1Gas_,
         bytes calldata data_
     ) internal {
+        if (to_ == L1_TOKEN_REBASABLE || to_ == L1_TOKEN_NON_REBASABLE) {
+            revert ErrorTransferToL1TokenContract();
+        }
+
         uint256 nonRebasableAmountToWithdraw = _burnTokens(l2Token_, from_, amount_);
 
         bytes memory message = abi.encodeWithSelector(
@@ -176,23 +176,22 @@ contract L2ERC20ExtendedTokensBridge is
     /// @notice Mints tokens, wraps if needed and returns amount of minted tokens.
     /// @param l2Token_ Address of L2 token for which deposit is finalizing.
     /// @param to_ Account that token mints for.
-    /// @param amount_ Amount of token or shares to mint.
+    /// @param nonRebasableTokenAmount_ Amount of non-rebasable token.
     /// @return returns amount of minted tokens.
     function _mintTokens(
         address l2Token_,
         address to_,
-        uint256 amount_
+        uint256 nonRebasableTokenAmount_
     ) internal returns (uint256) {
-        uint256 tokenAmount = amount_;
-        if (l2Token_ == L2_TOKEN_REBASABLE) {
-            IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeMint(address(this), amount_);
-            if (amount_ != 0) {
-                tokenAmount = ERC20RebasableBridged(l2Token_).bridgeWrap(to_, amount_);
-            }
-        } else {
-            IERC20Bridged(l2Token_).bridgeMint(to_, amount_);
+        if (nonRebasableTokenAmount_ == 0) {
+            return 0;
         }
-        return tokenAmount;
+        if (l2Token_ == L2_TOKEN_REBASABLE) {
+            IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeMint(address(this), nonRebasableTokenAmount_);
+            return ERC20RebasableBridged(l2Token_).bridgeWrap(to_, nonRebasableTokenAmount_);
+        }
+        IERC20Bridged(l2Token_).bridgeMint(to_, nonRebasableTokenAmount_);
+        return nonRebasableTokenAmount_;
     }
 
     /// @notice Unwraps if needed, burns tokens and returns amount of non-rebasable token to withdraw.
@@ -205,16 +204,20 @@ contract L2ERC20ExtendedTokensBridge is
         address from_,
         uint256 amount_
     ) internal returns (uint256) {
+        if (amount_ == 0) {
+            return 0;
+        }
+        uint256 nonRebasableTokenAmount = amount_;
         if (l2Token_ == L2_TOKEN_REBASABLE) {
-            uint256 nonRebasableTokenAmount = ERC20RebasableBridged(L2_TOKEN_REBASABLE).getSharesByTokens(amount_);
-            if (amount_ != 0 && nonRebasableTokenAmount != 0) {
+            nonRebasableTokenAmount = ERC20RebasableBridged(L2_TOKEN_REBASABLE).getSharesByTokens(amount_);
+            if (nonRebasableTokenAmount != 0) {
                 ERC20RebasableBridged(L2_TOKEN_REBASABLE).bridgeUnwrap(from_, amount_);
                 IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeBurn(from_, nonRebasableTokenAmount);
             }
             return nonRebasableTokenAmount;
         }
-        IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeBurn(from_, amount_);
-        return amount_;
+        IERC20Bridged(L2_TOKEN_NON_REBASABLE).bridgeBurn(from_, nonRebasableTokenAmount);
+        return nonRebasableTokenAmount;
     }
 
     error ErrorSenderNotEOA();

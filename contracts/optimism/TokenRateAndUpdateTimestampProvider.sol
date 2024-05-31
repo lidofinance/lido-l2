@@ -44,7 +44,7 @@ abstract contract TokenRateAndUpdateTimestampProvider {
 
     constructor(address wstETH_, address accountingOracle_) {
         if (wstETH_ == address(0)) {
-            revert ErrorZeroAddressWstEth();
+            revert ErrorZeroAddressWstETH();
         }
         if (accountingOracle_ == address(0)) {
             revert ErrorZeroAddressAccountingOracle();
@@ -55,7 +55,7 @@ abstract contract TokenRateAndUpdateTimestampProvider {
         SECONDS_PER_SLOT = IAccountingOracle(ACCOUNTING_ORACLE).SECONDS_PER_SLOT();
     }
 
-    function getTokenRateAndUpdateTimestamp() internal view returns (uint256 rate, uint256 updateTimestamp) {
+    function _getTokenRateAndUpdateTimestamp() internal view returns (uint256 rate, uint256 updateTimestamp) {
         rate = IERC20WstETH(WSTETH).getStETHByWstETH(10 ** TOKEN_RATE_DECIMALS);
 
         /// @dev github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md#compute_timestamp_at_slot
@@ -64,6 +64,6 @@ abstract contract TokenRateAndUpdateTimestampProvider {
         ).getLastProcessingRefSlot();
     }
 
-    error ErrorZeroAddressWstEth();
+    error ErrorZeroAddressWstETH();
     error ErrorZeroAddressAccountingOracle();
 }

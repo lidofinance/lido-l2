@@ -41,7 +41,7 @@ unit("OpStackTokenRatePusher", ctxFactory)
       accountingOracle.address,
       stranger.address,
       10
-    ), "ErrorZeroAddressWstEth()");
+    ), "ErrorZeroAddressWstETH()");
 
     await assert.revertsWith(new OpStackTokenRatePusher__factory(
       deployer

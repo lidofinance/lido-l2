@@ -65,9 +65,9 @@ abstract contract PermitExtension is IERC2612, EIP712 {
     function permit(
         address owner_,
         address spender_,
-        uint value_,
-        uint deadline_,
-        bytes memory signature_
+        uint256 value_,
+        uint256 deadline_,
+        bytes calldata signature_
     ) external {
         _permit(owner_, spender_, value_, deadline_, signature_);
     }
@@ -75,8 +75,8 @@ abstract contract PermitExtension is IERC2612, EIP712 {
     function _permit(
         address owner_,
         address spender_,
-        uint value_,
-        uint deadline_,
+        uint256 value_,
+        uint256 deadline_,
         bytes memory signature_
     ) internal {
         if (block.timestamp > deadline_) {

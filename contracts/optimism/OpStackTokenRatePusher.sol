@@ -11,7 +11,7 @@ import {TokenRateAndUpdateTimestampProvider} from "./TokenRateAndUpdateTimestamp
 
 /// @author kovalgek
 /// @notice Pushes token rate to L2 Oracle.
-contract OpStackTokenRatePusher is ERC165, CrossDomainEnabled, TokenRateAndUpdateTimestampProvider, ITokenRatePusher {
+contract OpStackTokenRatePusher is ITokenRatePusher, CrossDomainEnabled, TokenRateAndUpdateTimestampProvider, ERC165 {
 
     /// @notice Oracle address on L2 for receiving token rate.
     address public immutable L2_TOKEN_RATE_ORACLE;
@@ -23,9 +23,9 @@ contract OpStackTokenRatePusher is ERC165, CrossDomainEnabled, TokenRateAndUpdat
     ///         (gas cost of L2Bridge.finalizeDeposit() + OptimismPortal.minimumGasLimit(depositData.length)) * 1.5
     uint32 public immutable L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE;
 
-    /// @param messenger_ L1 messenger address being used for cross-chain communications
-    /// @param wstETH_ L1 token bridge address
-    /// @param accountingOracle_ L1 token bridge address
+    /// @param messenger_ L1 messenger address being used for cross-chain communications.
+    /// @param wstETH_ L1 token bridge address.
+    /// @param accountingOracle_ Address of the AccountingOracle instance to retrieve rate update timestamps.
     /// @param tokenRateOracle_ Oracle address on L2 for receiving token rate.
     /// @param l2GasLimitForPushingTokenRate_ Gas limit required to complete pushing token rate on L2.
     constructor(
@@ -44,7 +44,7 @@ contract OpStackTokenRatePusher is ERC165, CrossDomainEnabled, TokenRateAndUpdat
 
     /// @inheritdoc ITokenRatePusher
     function pushTokenRate() external {
-        (uint256 rate, uint256 updateTimestamp) = getTokenRateAndUpdateTimestamp();
+        (uint256 rate, uint256 updateTimestamp) = _getTokenRateAndUpdateTimestamp();
 
         bytes memory message = abi.encodeWithSelector(ITokenRateUpdatable.updateRate.selector, rate, updateTimestamp);
 
