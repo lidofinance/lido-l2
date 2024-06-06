@@ -171,6 +171,37 @@ unit("Optimism :: L1LidoTokensBridge", ctxFactory)
     );
   })
 
+  .test("initialize() :: revert when admin is zero", async (ctx) => {
+    const { deployer, l2TokenBridgeEOA, zero } = ctx.accounts;
+    const {
+      totalPooledEther,
+      totalShares,
+      genesisTime,
+      secondsPerSlot,
+      lastProcessingRefSlot
+    } = ctx.constants;
+
+    const { l1TokenBridgeImpl } = await getL1LidoTokensBridgeImpl(
+      totalPooledEther,
+      totalShares,
+      genesisTime,
+      secondsPerSlot,
+      lastProcessingRefSlot,
+      deployer,
+      l2TokenBridgeEOA.address
+    );
+
+    await assert.revertsWith(new OssifiableProxy__factory(
+      deployer
+    ).deploy(
+      l1TokenBridgeImpl.address,
+      deployer.address,
+      l1TokenBridgeImpl.interface.encodeFunctionData("initialize", [
+        zero.address
+      ])
+    ), "ErrorZeroAddressAdmin()");
+  })
+
   .test("initialize() :: don't allow to initialize twice", async (ctx) => {
     const { deployer, l2TokenBridgeEOA } = ctx.accounts;
     const {

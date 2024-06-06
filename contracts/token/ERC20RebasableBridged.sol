@@ -362,7 +362,7 @@ contract ERC20RebasableBridged is IERC20, IERC20Wrapper, IBridgeWrapper, ERC20Me
         _setERC20MetadataSymbol(symbol_);
     }
 
-   function _wrap(address from_, address to_, uint256 sharesAmount_) internal returns (uint256) {
+    function _wrap(address from_, address to_, uint256 sharesAmount_) internal returns (uint256) {
         if (sharesAmount_ == 0) revert ErrorZeroSharesWrap();
         TOKEN_TO_WRAP_FROM.safeTransferFrom(from_, address(this), sharesAmount_);
         _mintShares(to_, sharesAmount_);
