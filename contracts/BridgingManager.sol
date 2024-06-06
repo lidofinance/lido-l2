@@ -38,6 +38,9 @@ contract BridgingManager is AccessControl {
     /// @dev This method might be called only once
     /// @param admin_ Address of the account to grant the DEFAULT_ADMIN_ROLE
     function _initializeBridgingManager(address admin_) internal {
+        if (admin_ == address(0)) {
+            revert ErrorZeroAddressAdmin();
+        }
         State storage s = _loadState();
         if (s.isInitialized) {
             revert ErrorAlreadyInitialized();
@@ -135,6 +138,7 @@ contract BridgingManager is AccessControl {
     event WithdrawalsDisabled(address indexed disabler);
     event Initialized(address indexed admin);
 
+    error ErrorZeroAddressAdmin();
     error ErrorDepositsEnabled();
     error ErrorDepositsDisabled();
     error ErrorWithdrawalsEnabled();

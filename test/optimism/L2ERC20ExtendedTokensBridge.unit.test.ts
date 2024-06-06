@@ -161,6 +161,21 @@ unit("Optimism:: L2ERC20ExtendedTokensBridge", ctxFactory)
     );
   })
 
+  .test("initialize() :: revert when admin is zero", async (ctx) => {
+    const { deployer, l1TokenBridgeEOA, zero } = ctx.accounts;
+    const l2TokenBridgeImpl = await getL2TokenBridgeImpl(deployer, l1TokenBridgeEOA.address);
+
+    await assert.revertsWith(new OssifiableProxy__factory(
+      deployer
+    ).deploy(
+      l2TokenBridgeImpl.address,
+      deployer.address,
+      l2TokenBridgeImpl.interface.encodeFunctionData("initialize", [
+        zero.address
+      ])
+    ), "ErrorZeroAddressAdmin()");
+  })
+
   .test("finalizeUpgrade_v2() :: bridging manager uninitialized", async (ctx) => {
     const { deployer, l1TokenBridgeEOA } = ctx.accounts;
 
