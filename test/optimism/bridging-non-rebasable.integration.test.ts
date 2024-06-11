@@ -583,7 +583,6 @@ function ctxFactory(depositAmount: BigNumber, withdrawalAmount: BigNumber) {
     const tokenRateDecimals = BigNumber.from(27);
     const totalPooledEther = BigNumber.from('9309904612343950493629678');
     const totalShares = BigNumber.from('7975822843597609202337218');
-    const tokenRate = getExchangeRate(tokenRateDecimals, totalPooledEther, totalShares);
 
     const {
       l1Provider,
@@ -596,6 +595,7 @@ function ctxFactory(depositAmount: BigNumber, withdrawalAmount: BigNumber) {
     const l1Snapshot = await l1Provider.send("evm_snapshot", []);
     const l2Snapshot = await l2Provider.send("evm_snapshot", []);
 
+    const tokenRate =  await contracts.l1Token.getStETHByWstETH(BigNumber.from(10).pow(tokenRateDecimals));
 
     await optimism.testing(networkName).stubL1CrossChainMessengerContract();
 

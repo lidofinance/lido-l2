@@ -79,7 +79,7 @@ async function loadDeployedContracts(
 ) {
   return {
     l1Token: ERC20WrapperStub__factory.connect(
-      testingUtils.env.OPT_L1_TOKEN(),
+      testingUtils.env.OPT_L1_NON_REBASABLE_TOKEN(),
       l1SignerOrProvider
     ),
     tokenRateNotifier: TokenRateNotifier__factory.connect(

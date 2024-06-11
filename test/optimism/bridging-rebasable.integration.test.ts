@@ -11,8 +11,7 @@ import {
   nonRebasableFromRebasableL1,
   nonRebasableFromRebasableL2,
   rebasableFromNonRebasableL1,
-  rebasableFromNonRebasableL2,
-  getExchangeRate
+  rebasableFromNonRebasableL2
 } from "../../utils/testing/helpers";
 
 type ContextType = Awaited<ReturnType<ReturnType<typeof ctxFactory>>>
@@ -95,7 +94,7 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
       const { accountA: tokenHolderA } = ctx.accounts;
       const { depositAmountOfRebasableToken, tokenRate } = ctx.constants;
 
-      /// warp L1
+      /// wrap L1
       const depositAmountNonRebasable = nonRebasableFromRebasableL1(
         depositAmountOfRebasableToken,
         ctx.constants.totalPooledEther,
@@ -103,7 +102,7 @@ function bridgingTestsSuit(scenarioInstance: ScenarioTest<ContextType>) {
       );
 
       console.log("depositAmountOfRebasableToken=",depositAmountOfRebasableToken);
-      console.log("warp L1: depositAmountNonRebasable=",depositAmountNonRebasable);
+      console.log("wrap L1: depositAmountNonRebasable=",depositAmountNonRebasable);
 
       await l1TokenRebasable
         .connect(tokenHolderA.l1Signer)
@@ -709,8 +708,6 @@ function ctxFactory(
   return async () => {
     const networkName = env.network("TESTING_OPT_NETWORK", "mainnet");
 
-    const exchangeRate = getExchangeRate(tokenRateDecimals, totalPooledEther, totalShares);
-
     const {
       l1Provider,
       l2Provider,
@@ -721,6 +718,8 @@ function ctxFactory(
 
     const l1Snapshot = await l1Provider.send("evm_snapshot", []);
     const l2Snapshot = await l2Provider.send("evm_snapshot", []);
+
+    const exchangeRate = await contracts.l1Token.getStETHByWstETH(BigNumber.from(10).pow(tokenRateDecimals));
 
     await optimism.testing(networkName).stubL1CrossChainMessengerContract();
 

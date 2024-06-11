@@ -13,11 +13,12 @@ import { wei } from "../../utils/wei";
 import optimism from "../../utils/optimism";
 import testing, { scenario } from "../../utils/testing";
 import { BridgingManagerRole } from "../../utils/bridging-management";
+import { getExchangeRate } from "../../utils/testing/helpers";
 
 import env from "../../utils/env";
 import network from "../../utils/network";
 import { getBridgeExecutorParams } from "../../utils/bridge-executor";
-import deploymentAll from "../../utils/optimism/deploymentAllFromScratch";
+import deploymentAll from "../../utils/optimism/deployment";
 
 scenario("Optimism :: Bridge Executor integration test", ctxFactory)
   .step("Activate L2 bridge", async (ctx) => {
@@ -204,6 +205,14 @@ async function ctxFactory() {
     .multichain(["eth", "opt"], networkName)
     .getProviders({ forking: true });
 
+  const tokenRateDecimals = BigNumber.from(27);
+  const totalPooledEther = BigNumber.from('9309904612343950493629678');
+  const totalShares = BigNumber.from('7975822843597609202337218');
+  const maxAllowedL2ToL1ClockLag = BigNumber.from(86400);
+  const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);
+  const oldestRateAllowedInPauseTimeSpan = BigNumber.from(86400*3);
+  const maxAllowedTimeBetweenTokenRateUpdates = BigNumber.from(3600);
+  const exchangeRate = getExchangeRate(tokenRateDecimals, totalPooledEther, totalShares);
 
   const l1Deployer = testing.accounts.deployer(l1Provider);
   const l2Deployer = testing.accounts.deployer(l2Provider);
@@ -219,7 +228,8 @@ async function ctxFactory() {
     l1Token.address,
     "Test Token",
     "TT",
-    BigNumber.from('1164454276599657236000000000')
+    totalPooledEther,
+    totalShares
   );
 
   const accountingOracle = await new AccountingOracleStub__factory(l1Deployer).deploy(1,2,3);
@@ -245,28 +255,46 @@ async function ctxFactory() {
   const [, optDeployScript] = await deploymentAll(
     networkName
   ).deployAllScript(
-    l1Token.address,
-    l1TokenRebasable.address,
-    accountingOracle.address,
     {
+      l1TokenNonRebasable: l1Token.address,
+      l1TokenRebasable: l1TokenRebasable.address,
+      accountingOracle: accountingOracle.address,
+      l2GasLimitForPushingTokenRate: BigNumber.from(300_000),
       deployer: l1Deployer,
       admins: {
         proxy: l1Deployer.address,
         bridge: l1Deployer.address
       },
-      contractsShift: 0
+      contractsShift: 0,
     },
     {
+      tokenRateOracle: {
+        tokenRateOutdatedDelay: BigNumber.from(1000),
+        maxAllowedL2ToL1ClockLag: maxAllowedL2ToL1ClockLag,
+        maxAllowedTokenRateDeviationPerDayBp: maxAllowedTokenRateDeviationPerDay,
+        oldestRateAllowedInPauseTimeSpan: oldestRateAllowedInPauseTimeSpan,
+        maxAllowedTimeBetweenTokenRateUpdates: maxAllowedTimeBetweenTokenRateUpdates,
+        tokenRate: exchangeRate,
+        l1Timestamp: BigNumber.from('1000')
+      },
+      l2TokenNonRebasable: {
+        name: "wstETH",
+        symbol: "WST",
+        version: "1",
+        decimals: 18
+      },
+      l2TokenRebasable: {
+        name: "stETH",
+        symbol: "ST",
+        version: "1",
+        decimals: 18
+      },
       deployer: l2Deployer,
       admins: {
         proxy: govBridgeExecutor.address,
         bridge: govBridgeExecutor.address,
       },
       contractsShift: 0,
-      tokenRateOracle: {
-        tokenRate: BigNumber.from(10),
-        l1Timestamp:BigNumber.from(2)
-      }
     }
   );
 

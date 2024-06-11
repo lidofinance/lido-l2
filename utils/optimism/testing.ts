@@ -15,11 +15,12 @@ import {
   L2ERC20ExtendedTokensBridge__factory,
   CrossDomainMessengerStub__factory,
   ERC20RebasableBridgedPermit__factory,
-  AccountingOracleStub__factory
+  AccountingOracleStub__factory,
+  IAccountingOracle__factory,
 } from "../../typechain";
 import addresses from "./addresses";
 import contracts from "./contracts";
-import deploymentAll from "./deploymentAllFromScratch";
+import deploymentAll from "./deployment";
 import testingUtils from "../testing";
 import { BridgingManagement } from "../bridging-management";
 import network, { NetworkName, SignerOrProvider } from "../network";
@@ -160,7 +161,7 @@ async function loadDeployedBridges(
 ) {
   return {
     l1Token: ERC20WrapperStub__factory.connect(
-      testingUtils.env.OPT_L1_TOKEN(),
+      testingUtils.env.OPT_L1_NON_REBASABLE_TOKEN(),
       l1SignerOrProvider
     ),
     l1TokenRebasable: IERC20__factory.connect(
@@ -168,14 +169,14 @@ async function loadDeployedBridges(
       l1SignerOrProvider
     ),
     accountingOracle: AccountingOracleStub__factory.connect(
-      testingUtils.env.OPT_L1_REBASABLE_TOKEN(),
+      testingUtils.env.OPT_L1_ACCOUNTING_ORACLE(),
       l1SignerOrProvider
     ),
 
     ...connectBridgeContracts(
       {
         tokenRateOracle: testingUtils.env.OPT_L2_TOKEN_RATE_ORACLE(),
-        l2Token: testingUtils.env.OPT_L2_TOKEN(),
+        l2Token: testingUtils.env.OPT_L2_NON_REBASABLE_TOKEN(),
         l2TokenRebasable: testingUtils.env.OPT_L2_REBASABLE_TOKEN(),
         l1LidoTokensBridge: testingUtils.env.OPT_L1_ERC20_TOKEN_BRIDGE(),
         l2ERC20ExtendedTokensBridge: testingUtils.env.OPT_L2_ERC20_TOKEN_BRIDGE(),
@@ -193,6 +194,18 @@ async function deployTestBridge(
   ethProvider: JsonRpcProvider,
   optProvider: JsonRpcProvider
 ) {
+  const tokenRate = BigNumber.from(10).pow(27)
+    .mul(totalPooledEther)
+    .div(totalShares);
+  const genesisTime = 1;
+  const secondsPerSlot = 2;
+  const lastProcessingRefSlot = 3;
+  const maxAllowedL2ToL1ClockLag = BigNumber.from(86400);
+  const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);
+  const oldestRateAllowedInPauseTimeSpan = BigNumber.from(86400*3);
+  const maxAllowedTimeBetweenTokenRateUpdates = BigNumber.from(3600);
+  const tokenRateOutdatedDelay = BigNumber.from(86400);
+
   const ethDeployer = testingUtils.accounts.deployer(ethProvider);
   const optDeployer = testingUtils.accounts.deployer(optProvider);
 
@@ -209,31 +222,20 @@ async function deployTestBridge(
     totalShares
   );
 
-  const tokenRate = BigNumber.from(10).pow(27).mul(totalPooledEther).div(totalShares);
-  const genesisTime = 1;
-  const secondsPerSlot = 2;
-  const lastProcessingRefSlot = 3;
-
   const accountingOracle = await new AccountingOracleStub__factory(ethDeployer).deploy(
     genesisTime,
     secondsPerSlot,
     lastProcessingRefSlot
   );
 
-  const maxAllowedL2ToL1ClockLag = BigNumber.from(86400);
-  const maxAllowedTokenRateDeviationPerDay = BigNumber.from(500);
-  const oldestRateAllowedInPauseTimeSpan = BigNumber.from(86400*3);
-  const maxAllowedTimeBetweenTokenRateUpdates = BigNumber.from(3600);
-  const tokenRateOutdatedDelay = BigNumber.from(86400);
-
   const [ethDeployScript, optDeployScript] = await deploymentAll(
     networkName
   ).deployAllScript(
     {
-      l1Token: l1TokenNonRebasable.address,
+      l1TokenNonRebasable: l1TokenNonRebasable.address,
       l1TokenRebasable: l1TokenRebasable.address,
       accountingOracle: accountingOracle.address,
-      l2GasLimitForPushingTokenRate: 300_000,
+      l2GasLimitForPushingTokenRate: BigNumber.from(300_000),
       deployer: ethDeployer,
       admins: { proxy: ethDeployer.address, bridge: ethDeployer.address },
       contractsShift: 0

@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { Wallet } from "ethers";
+import { BigNumber, Wallet } from "ethers";
 
 import env from "./env";
 import { DeployScript } from "./deployment/DeployScript";
@@ -10,16 +10,29 @@ interface ChainDeploymentConfig extends BridgingManagerSetupConfig {
 }
 
 interface MultiChainDeploymentConfig {
-  l1Token: string;
+  /// L1
+  l1TokenNonRebasable: string;
   l1RebasableToken: string;
   accountingOracle: string;
-  l1OpStackTokenRatePusher: string;
-  l2GasLimitForPushingTokenRate: number;
-  tokenRateOutdatedDelay: number;
+  l2GasLimitForPushingTokenRate: BigNumber;
   l1TokenBridge: string;
+
+  /// L2
+  /// Oracle
+  tokenRateOutdatedDelay: BigNumber;
+  maxAllowedL2ToL1ClockLag: BigNumber;
+  maxAllowedTokenRateDeviationPerDayBp: BigNumber;
+  oldestRateAllowedInPauseTimeSpan: BigNumber;
+  maxAllowedTimeBetweenTokenRateUpdates: BigNumber;
+  tokenRateValue: BigNumber;
+  tokenRateL1Timestamp: BigNumber;
+
+  /// wstETH address to upgrade
+  l2TokenNonRebasable: string;
+
+  /// bridge
   l2TokenBridge: string;
-  l2Token: string;
-  l2TokenRateOracle: string;
+
   govBridgeExecutor: string;
   l1: ChainDeploymentConfig;
   l2: ChainDeploymentConfig;
@@ -27,16 +40,26 @@ interface MultiChainDeploymentConfig {
 
 export function loadMultiChainDeploymentConfig(): MultiChainDeploymentConfig {
   return {
-    l1Token: env.address("TOKEN"),
-    l1RebasableToken: env.address("REBASABLE_TOKEN"),
+    /// L1 Part
+    l1TokenNonRebasable: env.address("L1_NON_REBASABLE_TOKEN"),
+    l1RebasableToken: env.address("L1_REBASABLE_TOKEN"),
     accountingOracle: env.address("ACCOUNTING_ORACLE"),
-    l1OpStackTokenRatePusher: env.address("L1_OP_STACK_TOKEN_RATE_PUSHER"),
-    l2GasLimitForPushingTokenRate: Number(env.string("L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE")),
-    tokenRateOutdatedDelay: Number(env.string("TOKEN_RATE_OUTDATED_DELAY")),
+    l2GasLimitForPushingTokenRate: BigNumber.from(env.string("L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE")),
     l1TokenBridge: env.address("L1_TOKEN_BRIDGE"),
+
+    /// L2 Part
+    /// TokenRateOracle
+    tokenRateOutdatedDelay: BigNumber.from(env.string("TOKEN_RATE_OUTDATED_DELAY")),
+    maxAllowedL2ToL1ClockLag: BigNumber.from(env.string("MAX_ALLOWED_L2_TO_L1_CLOCK_LAG")),
+    maxAllowedTokenRateDeviationPerDayBp: BigNumber.from(env.string("MAX_ALLOWED_TOKEN_RATE_DEVIATION_PER_DAY_BP")),
+    oldestRateAllowedInPauseTimeSpan: BigNumber.from(env.string("OLDEST_RATE_ALLOWED_IN_PAUSE_TIME_SPAN")),
+    maxAllowedTimeBetweenTokenRateUpdates: BigNumber.from(env.string("MAX_ALLOWED_TIME_BETWEEN_TOKEN_RATE_UPDATES")),
+    tokenRateValue: BigNumber.from(env.string("TOKEN_RATE")),
+    tokenRateL1Timestamp: BigNumber.from(env.string("TOKEN_RATE_L1_TIMESTAMP")),
+
+    l2TokenNonRebasable: env.address("L2_TOKEN_NON_REBASABLE"),
     l2TokenBridge: env.address("L2_TOKEN_BRIDGE"),
-    l2Token: env.address("L2_TOKEN"),
-    l2TokenRateOracle: env.address("L2_TOKEN_RATE_ORACLE"),
+
     govBridgeExecutor: env.address("GOV_BRIDGE_EXECUTOR"),
     l1: {
       proxyAdmin: env.address("L1_PROXY_ADMIN"),
@@ -61,6 +84,12 @@ export function loadMultiChainDeploymentConfig(): MultiChainDeploymentConfig {
   };
 }
 
+export async function printDeploymentConfig() {
+  const pad = " ".repeat(4);
+  console.log(`${pad}· Network: ${env.string("NETWORK")}`);
+  console.log(`${pad}· Forking: ${env.bool("FORKING")}`);
+}
+
 export async function printMultiChainDeploymentConfig(
   title: string,
   l1Deployer: Wallet,
@@ -69,8 +98,13 @@ export async function printMultiChainDeploymentConfig(
   l1DeployScript: DeployScript,
   l2DeployScript: DeployScript
 ) {
-  const { l1Token, l1RebasableToken, l1, l2 } = deploymentParams;
-  console.log(chalk.bold(`${title} :: ${chalk.underline(l1Token)} :: ${chalk.underline(l1RebasableToken)}\n`));
+  const { l1TokenNonRebasable, l1RebasableToken, l1, l2 } = deploymentParams;
+  console.log(chalk.bold(`${title} :: ${chalk.underline(l1TokenNonRebasable)} :: ${chalk.underline(l1RebasableToken)}\n`));
+
+  console.log(chalk.bold("  · Deployment Params:"));
+  await printDeploymentConfig();
+  console.log();
+
   console.log(chalk.bold("  · L1 Deployment Params:"));
   await printChainDeploymentConfig(l1Deployer, l1);
   console.log();
