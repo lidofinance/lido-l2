@@ -16,7 +16,8 @@ import {
   OptimismBridgeExecutor__factory,
   TokenRateNotifier__factory,
   TokenRateOracle__factory,
-  AccountingOracleStub__factory
+  AccountingOracleStub__factory,
+  EmptyContractStub__factory
 } from "../../typechain";
 
 scenario("Optimism :: Token Rate Oracle integration test", ctxFactory)
@@ -30,13 +31,12 @@ scenario("Optimism :: Token Rate Oracle integration test", ctxFactory)
       genesisTime,
       secondsPerSlot,
       lastProcessingRefSlot,
-      tokenRate
+      tokenRate,
+      l1AuthorizedRebaseCaller
     } = ctx;
 
-    const account = ctx.accounts.accountA;
-
     const tx = await tokenRateNotifier
-      .connect(account.l1Signer)
+      .connect(l1AuthorizedRebaseCaller)
       .handlePostTokenRebase(1, 2, 3, 4, 5, 6, 7);
 
     const messageNonce = await l1CrossDomainMessenger.messageNonce();
@@ -169,6 +169,10 @@ async function ctxFactory() {
 
   const [l2ERC20TokenBridge] = await hre.ethers.getSigners();
 
+  const l1AuthorizedRebaseCaller = await new EmptyContractStub__factory(l1Deployer).deploy({ value: 10000000 });
+  const l1AuthorizedRebaseCallerAsEOA = await testing.impersonate(l1AuthorizedRebaseCaller.address);
+  await testing.setBalance(l1AuthorizedRebaseCaller.address, wei.toBigNumber(wei`1 ether`));
+
   const [ethDeployScript, optDeployScript] = await deploymentOracle(
     networkName
   ).oracleDeployScript(
@@ -178,6 +182,7 @@ async function ctxFactory() {
     l2GasLimitForPushingTokenRate,
     tokenRateOutdatedDelay,
     {
+      l1AuthorizedRebaseCaller: l1AuthorizedRebaseCaller.address,
       deployer: l1Deployer,
       admins: {
         proxy: l1Deployer.address,
@@ -245,6 +250,7 @@ async function ctxFactory() {
     blockTimestamp,
     tokenRate,
     genesisTime, secondsPerSlot, lastProcessingRefSlot,
+    l1AuthorizedRebaseCaller: l1AuthorizedRebaseCallerAsEOA,
     accounts: {
       accountA,
       l1CrossDomainMessengerAliased

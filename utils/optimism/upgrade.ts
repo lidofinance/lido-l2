@@ -22,6 +22,7 @@ interface OptL1UpgradeScriptParams extends DeployScriptParams {
   accountingOracle: string;
   l2GasLimitForPushingTokenRate: BigNumber;
   l1TokenBridge: string;
+  l1AuthorizedRebaseCaller: string;
 }
 
 interface OptL2UpgradeScriptParams extends DeployScriptParams {
@@ -177,6 +178,7 @@ export default function upgrade(
           factory: TokenRateNotifier__factory,
           args: [
             l1Params.deployer.address,
+            l1Params.l1AuthorizedRebaseCaller,
             options?.overrides,
           ],
           afterDeploy: (c) =>

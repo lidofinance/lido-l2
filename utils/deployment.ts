@@ -16,6 +16,7 @@ interface MultiChainDeploymentConfig {
   accountingOracle: string;
   l2GasLimitForPushingTokenRate: BigNumber;
   l1TokenBridge: string;
+  l1AuthorizedRebaseCaller: string;
 
   /// L2
   /// Oracle
@@ -46,6 +47,7 @@ export function loadMultiChainDeploymentConfig(): MultiChainDeploymentConfig {
     accountingOracle: env.address("ACCOUNTING_ORACLE"),
     l2GasLimitForPushingTokenRate: BigNumber.from(env.string("L2_GAS_LIMIT_FOR_PUSHING_TOKEN_RATE")),
     l1TokenBridge: env.address("L1_TOKEN_BRIDGE"),
+    l1AuthorizedRebaseCaller: env.address("L1_AUTHORIZED_REBASE_CALLER"),
 
     /// L2 Part
     /// TokenRateOracle

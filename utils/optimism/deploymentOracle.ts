@@ -12,7 +12,9 @@ import {
   OpStackTokenRatePusher__factory
 } from "../../typechain";
 
-interface OptDeployScriptParams extends DeployScriptParams { }
+interface OptDeployScriptParams extends DeployScriptParams {
+  l1AuthorizedRebaseCaller: string;
+}
 
 interface OptL2DeployScriptParams extends DeployScriptParams {
   tokenRateOracle: {
@@ -99,6 +101,7 @@ export default function deploymentOracle(
           factory: TokenRateNotifier__factory,
           args: [
             l1Params.deployer.address,
+            l1Params.l1AuthorizedRebaseCaller,
             options?.overrides,
           ],
           afterDeploy: (c) =>

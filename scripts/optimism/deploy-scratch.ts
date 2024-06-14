@@ -3,7 +3,7 @@ import prompt from "../../utils/prompt";
 import network from "../../utils/network";
 import deployment from "../../utils/deployment";
 import { BridgingManagement } from "../../utils/bridging-management";
-import deploymentAllFromScratch from "../../utils/optimism/deployment";
+import deploymentAll from "../../utils/optimism/deployment";
 
 async function main() {
   const networkName = env.network();
@@ -21,13 +21,14 @@ async function main() {
 
   const deploymentConfig = deployment.loadMultiChainDeploymentConfig();
 
-  const [l1DeployScript, l2DeployScript] = await deploymentAllFromScratch (networkName, { logger: console })
+  const [l1DeployScript, l2DeployScript] = await deploymentAll (networkName, { logger: console })
     .deployAllScript(
       {
         l1TokenNonRebasable: deploymentConfig.l1TokenNonRebasable,
         l1TokenRebasable: deploymentConfig.l1RebasableToken,
         accountingOracle: deploymentConfig.accountingOracle,
         l2GasLimitForPushingTokenRate: deploymentConfig.l2GasLimitForPushingTokenRate,
+        l1AuthorizedRebaseCaller: deploymentConfig.l1AuthorizedRebaseCaller,
 
         deployer: ethDeployer,
         admins: {

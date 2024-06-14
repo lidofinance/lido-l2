@@ -21,11 +21,20 @@ import {
 unit("TokenRateNotifier", ctxFactory)
 
   .test("deploy with zero address owner", async (ctx) => {
+    const { deployer, l1AuthorizedRebaseCaller } = ctx.accounts;
+
+    await assert.revertsWith(
+      new TokenRateNotifier__factory(deployer).deploy(ethers.constants.AddressZero, l1AuthorizedRebaseCaller.address),
+      "ErrorZeroAddressOwner()"
+    );
+  })
+
+  .test("deploy with zero address rebase caller", async (ctx) => {
     const { deployer } = ctx.accounts;
 
     await assert.revertsWith(
-      new TokenRateNotifier__factory(deployer).deploy(ethers.constants.AddressZero),
-      "ErrorZeroAddressOwner()"
+      new TokenRateNotifier__factory(deployer).deploy(deployer.address, ethers.constants.AddressZero),
+      "ErrorZeroAddressCaller()"
     );
   })
 
@@ -63,9 +72,9 @@ unit("TokenRateNotifier", ctxFactory)
 
   .test("addObserver() :: revert on adding observer with bad interface", async (ctx) => {
     const { tokenRateNotifier } = ctx.contracts;
-    const { deployer } = ctx.accounts;
+    const { deployer, l1AuthorizedRebaseCaller } = ctx.accounts;
 
-    const observer = await new TokenRateNotifier__factory(deployer).deploy(deployer.address);
+    const observer = await new TokenRateNotifier__factory(deployer).deploy(deployer.address, l1AuthorizedRebaseCaller.address);
     await assert.revertsWith(
       tokenRateNotifier
         .connect(ctx.accounts.owner)
@@ -76,7 +85,7 @@ unit("TokenRateNotifier", ctxFactory)
 
   .test("addObserver() :: revert on adding too many observers", async (ctx) => {
     const { tokenRateNotifier, opStackTokenRatePusher } = ctx.contracts;
-    const { deployer, owner, tokenRateOracle } = ctx.accounts;
+    const { deployer, owner, tokenRateOracle, l1AuthorizedRebaseCaller } = ctx.accounts;
     const { l2GasLimitForPushingTokenRate, tokenRate, totalPooledEther, totalShares, genesisTime, secondsPerSlot, lastProcessingRefSlot } = ctx.constants;
 
     assert.equalBN(await tokenRateNotifier.observersLength(), 0);
@@ -95,7 +104,8 @@ unit("TokenRateNotifier", ctxFactory)
         deployer,
         owner,
         tokenRateOracle,
-        l2GasLimitForPushingTokenRate
+        l2GasLimitForPushingTokenRate,
+        l1AuthorizedRebaseCaller
       );
 
       await tokenRateNotifier
@@ -183,23 +193,33 @@ unit("TokenRateNotifier", ctxFactory)
     assert.equalBN(await tokenRateNotifier.observersLength(), 0);
   })
 
+  .test("handlePostTokenRebase() :: unauthorized caller", async (ctx) => {
+    const { tokenRateNotifier } = ctx.contracts;
+    const { stranger } = ctx.accounts;
+
+    await assert.revertsWith(
+      tokenRateNotifier.connect(stranger).handlePostTokenRebase(1, 2, 3, 4, 5, 6, 7),
+      "ErrorNotAuthorizedRebaseCaller()"
+    );
+  })
+
   .test("handlePostTokenRebase() :: failed with some error", async (ctx) => {
     const { tokenRateNotifier } = ctx.contracts;
-    const { deployer } = ctx.accounts;
+    const { deployer, l1AuthorizedRebaseCaller } = ctx.accounts;
 
     const observer = await new OpStackTokenRatePusherWithSomeErrorStub__factory(deployer).deploy();
     await tokenRateNotifier
       .connect(ctx.accounts.owner)
       .addObserver(observer.address);
 
-    const tx = await tokenRateNotifier.handlePostTokenRebase(1, 2, 3, 4, 5, 6, 7);
+    const tx = await tokenRateNotifier.connect(l1AuthorizedRebaseCaller).handlePostTokenRebase(1, 2, 3, 4, 5, 6, 7);
 
     await assert.emits(tokenRateNotifier, tx, "PushTokenRateFailed", [observer.address, "0x332e27d2"]);
   })
 
   .test("handlePostTokenRebase() :: revert when observer has out of gas error", async (ctx) => {
     const { tokenRateNotifier } = ctx.contracts;
-    const { deployer } = ctx.accounts;
+    const { deployer, l1AuthorizedRebaseCaller } = ctx.accounts;
 
     const observer = await new OpStackTokenRatePusherWithOutOfGasErrorStub__factory(deployer).deploy();
     await tokenRateNotifier
@@ -207,7 +227,7 @@ unit("TokenRateNotifier", ctxFactory)
       .addObserver(observer.address);
 
     await assert.revertsWith(
-      tokenRateNotifier.handlePostTokenRebase(1, 2, 3, 4, 5, 6, 7),
+      tokenRateNotifier.connect(l1AuthorizedRebaseCaller).handlePostTokenRebase(1, 2, 3, 4, 5, 6, 7),
       "ErrorTokenRateNotifierRevertedWithNoData()"
     );
   })
@@ -218,7 +238,7 @@ unit("TokenRateNotifier", ctxFactory)
       l1MessengerStub,
       opStackTokenRatePusher
     } = ctx.contracts;
-    const { tokenRateOracle } = ctx.accounts;
+    const { tokenRateOracle, l1AuthorizedRebaseCaller } = ctx.accounts;
     const { l2GasLimitForPushingTokenRate, tokenRate, genesisTime, secondsPerSlot, lastProcessingRefSlot } = ctx.constants;
 
     const updateRateTime = genesisTime.add(secondsPerSlot.mul(lastProcessingRefSlot));
@@ -226,7 +246,7 @@ unit("TokenRateNotifier", ctxFactory)
     await tokenRateNotifier
       .connect(ctx.accounts.owner)
       .addObserver(opStackTokenRatePusher.address);
-    let tx = await tokenRateNotifier.handlePostTokenRebase(1, 2, 3, 4, 5, 6, 7);
+    let tx = await tokenRateNotifier.connect(l1AuthorizedRebaseCaller).handlePostTokenRebase(1, 2, 3, 4, 5, 6, 7);
 
     await assert.emits(l1MessengerStub, tx, "SentMessage", [
       tokenRateOracle.address,
@@ -246,7 +266,7 @@ unit("TokenRateNotifier", ctxFactory)
   .run();
 
 async function ctxFactory() {
-  const [deployer, owner, stranger, tokenRateOracle] = await ethers.getSigners();
+  const [deployer, owner, stranger, tokenRateOracle, l1AuthorizedRebaseCaller] = await ethers.getSigners();
   const totalPooledEther = BigNumber.from('9309904612343950493629678');
   const totalShares = BigNumber.from('7975822843597609202337218');
   const tokenRateDecimals = BigNumber.from(27);
@@ -270,7 +290,8 @@ async function ctxFactory() {
     deployer,
     owner,
     tokenRateOracle,
-    l2GasLimitForPushingTokenRate
+    l2GasLimitForPushingTokenRate,
+    l1AuthorizedRebaseCaller
   );
 
   return {
@@ -278,7 +299,8 @@ async function ctxFactory() {
       deployer,
       owner,
       stranger,
-      tokenRateOracle
+      tokenRateOracle,
+      l1AuthorizedRebaseCaller
     },
     contracts: {
       tokenRateNotifier,
@@ -307,9 +329,13 @@ async function createContracts(
   deployer: SignerWithAddress,
   owner: SignerWithAddress,
   tokenRateOracle: SignerWithAddress,
-  l2GasLimitForPushingTokenRate: number) {
+  l2GasLimitForPushingTokenRate: number,
+  l1AuthorizedRebaseCaller: SignerWithAddress) {
 
-  const tokenRateNotifier = await new TokenRateNotifier__factory(deployer).deploy(owner.address);
+  const tokenRateNotifier = await new TokenRateNotifier__factory(deployer).deploy(
+    owner.address,
+    l1AuthorizedRebaseCaller.address
+  );
 
   const l1MessengerStub = await new CrossDomainMessengerStub__factory(deployer)
     .deploy({ value: wei.toBigNumber(wei`1 ether`) });

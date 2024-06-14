@@ -21,6 +21,7 @@ interface OptL1DeployScriptParams extends DeployScriptParams {
   l1TokenRebasable: string;
   accountingOracle: string;
   l2GasLimitForPushingTokenRate: BigNumber;
+  l1AuthorizedRebaseCaller: string;
 }
 
 interface OptL2DeployScriptParams extends DeployScriptParams {
@@ -185,6 +186,7 @@ export default function deploymentAll(
           factory: TokenRateNotifier__factory,
           args: [
             l1Params.deployer.address,
+            l1Params.l1AuthorizedRebaseCaller,
             options?.overrides,
           ],
           afterDeploy: (c) =>

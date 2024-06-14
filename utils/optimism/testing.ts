@@ -236,6 +236,7 @@ async function deployTestBridge(
       l1TokenRebasable: l1TokenRebasable.address,
       accountingOracle: accountingOracle.address,
       l2GasLimitForPushingTokenRate: BigNumber.from(300_000),
+      l1AuthorizedRebaseCaller: ethDeployer.address,
       deployer: ethDeployer,
       admins: { proxy: ethDeployer.address, bridge: ethDeployer.address },
       contractsShift: 0

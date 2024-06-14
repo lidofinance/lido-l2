@@ -27,6 +27,9 @@ interface IPostTokenRebaseReceiver {
 contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
     using ERC165Checker for address;
 
+    /// @notice Address of the contract that is allowed to call handlePostTokenRebase.
+    address public immutable AUTHORIZED_REBASE_CALLER;
+
     /// @notice Maximum amount of observers to be supported.
     uint256 public constant MAX_OBSERVERS_COUNT = 32;
 
@@ -40,11 +43,16 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
     address[] public observers;
 
     /// @param initialOwner_ initial owner
-    constructor(address initialOwner_) {
+    /// @param authorizedRebaseCaller_ Address of the contract that is allowed to call handlePostTokenRebase.
+    constructor(address initialOwner_, address authorizedRebaseCaller_) {
         if (initialOwner_ == address(0)) {
             revert ErrorZeroAddressOwner();
         }
+        if (authorizedRebaseCaller_ == address(0)) {
+            revert ErrorZeroAddressCaller();
+        }
         _transferOwnership(initialOwner_);
+        AUTHORIZED_REBASE_CALLER = authorizedRebaseCaller_;
     }
 
     /// @notice Add a `observer_` to the back of array
@@ -94,6 +102,9 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
         uint256, /* postTotalEther     */
         uint256  /* sharesMintedAsFees */
     ) external {
+        if (msg.sender != AUTHORIZED_REBASE_CALLER) {
+            revert ErrorNotAuthorizedRebaseCaller();
+        }
         uint256 cachedObserversLength = observers.length;
         for (uint256 obIndex = 0; obIndex < cachedObserversLength; obIndex++) {
             // solhint-disable-next-line no-empty-blocks
@@ -141,5 +152,7 @@ contract TokenRateNotifier is Ownable, IPostTokenRebaseReceiver {
     error ErrorMaxObserversCountExceeded();
     error ErrorNoObserverToRemove();
     error ErrorZeroAddressOwner();
+    error ErrorZeroAddressCaller();
+    error ErrorNotAuthorizedRebaseCaller();
     error ErrorAddExistedObserver();
 }
