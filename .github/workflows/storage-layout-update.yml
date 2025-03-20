@@ -21,7 +21,7 @@ jobs:
         run: npm ci
 
       - name: Generate new .storage-layout
-        uses: lidofinance/storage-layout-action@v1
+        uses: lidofinance/storage-layout-action@v2
         with:
           mode: generate
           src-folder: ./contracts

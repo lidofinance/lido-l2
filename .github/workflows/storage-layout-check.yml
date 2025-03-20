@@ -24,7 +24,7 @@ jobs:
         run: npm ci
 
       - name: Check storage-layout
-        uses: lidofinance/storage-layout-action@v1
+        uses: lidofinance/storage-layout-action@v2
         with:
           mode: check
           src-folder: ./contracts
