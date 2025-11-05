@@ -365,28 +365,28 @@ Whether the deposits enabled on the L1 after the deployment
 > Default value: `[]`
 
 The array of addresses to grant `DEPOSITS_ENABLER_ROLE` on L1 bridge/gateway. The value must be in the form of JSON array of strings. For example:
-`["0x00000000219ab540356cbb839cbe05303d7705fa","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
+`["","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
 
 #### `L1_DEPOSITS_DISABLERS`
 
 > Default value: `[]`
 
 The array of addresses to grant `DEPOSITS_DISABLER_ROLE` on L1 bridge/gateway. The value must be in the form of JSON array of strings. For example:
-`["0x00000000219ab540356cbb839cbe05303d7705fa","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
+`["","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
 
 #### `L1_WITHDRAWALS_ENABLERS`
 
 > Default value: `[]`
 
 The array of addresses to grant `WITHDRAWALS_ENABLER_ROLE` on L1 bridge/gateway. The value must be in the form of JSON array of strings. For example:
-`["0x00000000219ab540356cbb839cbe05303d7705fa","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
+`["","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
 
 #### `L1_WITHDRAWALS_DISABLERS`
 
 > Default value: `[]`
 
 The array of addresses to grant `WITHDRAWALS_DISABLER_ROLE`. The value must be in the form of JSON array of strings. For example:
-`["0x00000000219ab540356cbb839cbe05303d7705fa","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
+`["","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
 
 #### `L2_PROXY_ADMIN`
 
@@ -413,28 +413,28 @@ Whether the deposits enabled on the L2 after the deployment
 > Default value: `[]`
 
 The array of addresses to grant `DEPOSITS_ENABLER_ROLE` on L2 bridge/gateway. The value must be in the form of JSON array of strings. For example:
-`["0x00000000219ab540356cbb839cbe05303d7705fa","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
+`["","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
 
 #### `L2_DEPOSITS_DISABLERS`
 
 > Default value: `[]`
 
 The array of addresses to grant `DEPOSITS_DISABLER_ROLE` on L2 bridge/gateway. The value must be in the form of JSON array of strings. For example:
-`["0x00000000219ab540356cbb839cbe05303d7705fa","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
+`["","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
 
 #### `L2_WITHDRAWALS_ENABLERS`
 
 > Default value: `[]`
 
 The array of addresses to grant `WITHDRAWALS_ENABLER_ROLE` on L2 bridge/gateway. The value must be in the form of JSON array of strings. For example:
-`["0x00000000219ab540356cbb839cbe05303d7705fa","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
+`["","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
 
 #### `L2_WITHDRAWALS_DISABLERS`
 
 > Default value: `[]`
 
 The array of addresses to grant `WITHDRAWALS_DISABLER_ROLE` on L2 bridge/gateway. The value must be in the form of JSON array of strings. For example:
-`["0x00000000219ab540356cbb839cbe05303d7705fa","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
+`["","0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"]`
 
 ### Acceptance Integration & E2E Testing
 
