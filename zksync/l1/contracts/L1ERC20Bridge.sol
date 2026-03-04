@@ -239,7 +239,7 @@ contract L1ERC20Bridge is
         uint256 _l2MessageIndex,
         uint16 _l2TxNumberInBlock,
         bytes32[] calldata _merkleProof
-    ) external nonReentrant {
+    ) external nonReentrant onlySupportedL1Token(_l1Token) {
         bool proofValid = zkSync.proveL1ToL2TransactionStatus(
             _l2TxHash,
             _l2BlockNumber,
