@@ -1,0 +1,11 @@
+[profile.default]
+src = "zksync/l1/contracts"
+libs = ["node_modules", "lib"]
+solc = "0.8.15"
+optimizer = true
+optimizer_runs = 100_000
+remappings = [
+    "@matterlabs/zksync-contracts/=node_modules/@matterlabs/zksync-contracts/",
+    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+    "@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/",
+]
