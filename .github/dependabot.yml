@@ -24,6 +24,10 @@ updates:
     groups:
       javascript:
         patterns: ["*"]
+    ignore:
+      - dependency-name: "@openzeppelin/contracts"
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     labels: ["dependencies", "javascript"]
     commit-message:
       prefix: "build"
