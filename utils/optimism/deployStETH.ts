@@ -271,7 +271,6 @@ export default function deploy(
             l2TokenNonRebasableSymbol,
             l2Params.l2TokenNonRebasable.version,
             l2TokenNonRebasableDecimals,
-            l2Params.l2TokenBridge,
             options?.overrides,
           ],
           afterDeploy: (c) =>

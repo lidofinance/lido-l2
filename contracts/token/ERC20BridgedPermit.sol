@@ -15,15 +15,13 @@ contract ERC20BridgedPermit is ERC20Bridged, PermitExtension, Versioned {
     /// @param symbol_ The symbol of the token
     /// @param version_ The current major version of the signing domain (aka token version)
     /// @param decimals_ The decimals places of the token
-    /// @param bridge_ The bridge address which allows to mint/burn tokens
     constructor(
         string memory name_,
         string memory symbol_,
         string memory version_,
-        uint8 decimals_,
-        address bridge_
+        uint8 decimals_
     )
-        ERC20Bridged(name_, symbol_, decimals_, bridge_)
+        ERC20Bridged(name_, symbol_, decimals_)
         PermitExtension(name_, version_)
     {
     }

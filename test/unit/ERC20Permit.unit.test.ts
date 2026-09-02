@@ -420,8 +420,7 @@ async function tokenProxied(
       "WstETH Test Token",
       "WstETH",
       SIGNING_DOMAIN_VERSION,
-      decimalsToSet,
-      owner.address
+      decimalsToSet
     );
     const tokenRateOracleImpl = await new TokenRateOracle__factory(deployer).deploy(
       messenger,
@@ -486,8 +485,7 @@ async function tokenProxied(
     name,
     symbol,
     SIGNING_DOMAIN_VERSION,
-    decimalsToSet,
-    owner.address
+    decimalsToSet
   );
 
   const l2TokensProxy = await new OssifiableProxy__factory(deployer).deploy(

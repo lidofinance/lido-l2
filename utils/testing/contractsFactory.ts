@@ -3,6 +3,7 @@ import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   ERC20BridgedPermit__factory,
+  ERC20BridgedPermitMintableStub__factory,
   TokenRateOracle__factory,
   ERC20RebasableBridgedPermit__factory,
   OssifiableProxy__factory,
@@ -10,21 +11,22 @@ import {
   ERC20BridgedPermit
 } from "../../typechain";
 
+/// @dev Deploys the mintable stub rather than `ERC20BridgedPermit` itself: the token carries no
+///      mint/burn authority of its own, so a test needs some way to create supply. Everything the
+///      suites exercise -- ERC20 core, metadata, permit, versioning -- is inherited unchanged.
 export async function erc20BridgedPermitUnderProxy(
   deployer: SignerWithAddress,
   holder: SignerWithAddress,
   name: string,
   symbol: string,
   version: string,
-  decimals: BigNumber,
-  bridge: string
+  decimals: BigNumber
 ) {
-  const erc20BridgedPermitImpl = await new ERC20BridgedPermit__factory(deployer).deploy(
+  const erc20BridgedPermitImpl = await new ERC20BridgedPermitMintableStub__factory(deployer).deploy(
     name,
     symbol,
     version,
-    decimals,
-    bridge
+    decimals
   );
 
   const erc20BridgedPermitProxy = await new OssifiableProxy__factory(deployer).deploy(
@@ -37,7 +39,7 @@ export async function erc20BridgedPermitUnderProxy(
     ])
   );
 
-  return ERC20BridgedPermit__factory.connect(
+  return ERC20BridgedPermitMintableStub__factory.connect(
     erc20BridgedPermitProxy.address,
     holder
   );

@@ -43,7 +43,7 @@ A high-level overview of the proposed solution might be found in the below diagr
 - [**`CrossDomainEnabled`**](#CrossDomainEnabled) - helper contract for contracts performing cross-domain communications
 - [**`L1ERC20ExtendedTokensBridge`**](#L1ERC20ExtendedTokensBridge) - Ethereum's counterpart of the bridge to bridge registered ERC20 compatible tokens between Ethereum and Optimism chains.
 - [**`L2ERC20ExtendedTokensBridge`**](#L2ERC20ExtendedTokensBridge) - Optimism's counterpart of the bridge to bridge registered ERC20 compatible tokens between Ethereum and Optimism chains
-- [**`ERC20Bridged`**](#ERC20Bridged) - an implementation of the `ERC20` token with administrative methods to mint and burn tokens.
+- [**`ERC20Bridged`**](#ERC20Bridged) - an implementation of the `ERC20` token. Carries no mint/burn authority of its own.
 - [**`OssifiableProxy`**](#OssifiableProxy) - the ERC1967 proxy with extra admin functionality.
 
 ## BridgingManager
@@ -514,52 +514,28 @@ Transfers `amount` of token from the `from_` account to `to_` using the allowanc
 
 ## `ERC20Bridged`
 
-**Implements:** [`IERC20Bridged`](https://github.com/lidofinance/lido-l2/blob/main/contracts/token/ERC20Bridged.sol)
 **Inherits:** [`ERC20Metadata`](#ERC20Metadata) [`ERC20Core`](#ERC20CoreLogic)
 
-Inherits the `ERC20` default functionality that allows the bridge to mint and burn tokens.
+An `ERC20` token with unstructured-storage metadata. It carries **no mint/burn authority of its own**: the
+`bridge` immutable, the `bridgeMint`/`bridgeBurn` pair, the `onlyBridge` modifier and the
+`ErrorZeroAddressBridge`/`ErrorNotBridge` errors were removed by
+`patches/lido-l2-with-steth/0001-drop-bridge-mint-burn.patch`. The absence of a standing mint principal is
+therefore a property of the bytecode, checkable by reading the source, rather than of an address nobody is
+expected to hold.
 
-### Variables
+Supply is created and destroyed exclusively through whatever authority the deploying implementation adds on
+top of this contract - in the target architecture, the CCIP `BurnMintTokenPool` holding role-gated
+mint/burn rights. See [`PRD.md`](../../PRD.md).
 
-Contract declares an immutable variable **`bridge`** which can mint/burn the token.
+> **Note:** the `IERC20Bridged` interface is still declared in `contracts/token/ERC20Bridged.sol` so its
+> existing importers resolve the symbol, but `ERC20Bridged` no longer implements it. Consequently
+> [`L2ERC20ExtendedTokensBridge`](#L2ERC20ExtendedTokensBridge), which mints and burns through that
+> interface, cannot drive a token built on the patched `ERC20Bridged`. That legacy bridge is the component
+> being decommissioned by the CCIP migration.
 
 ### Functions
 
-#### `mint(address,uint256)`
-
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
->
-> **Modifiers:** &nbsp;&nbsp; [`onlyBridge`](#onlybridge)
->
-> **Arguments:**
->
-> - **`account_`** - an address of the tokens recipient
-> - **`amount_`** - a number to mint
->
-> **Emits:** `Transfer(address indexed from, address indexed to, uint256 value)`
-
-Mints the `amount_` of tokens to the `account_`. The method might be called only by the bridge. Reverts with the error `ErrorNotBridge()` when called not by bridge.
-
-#### `burn(address,uint256)`
-
-> **Visibility:** &nbsp;&nbsp;&nbsp; `external`
->
-> **Modifiers:** &nbsp;&nbsp; [`onlyBridge`](#onlybridge)
->
-> **Arguments:**
->
-> - **`account_`** - an address of the tokens recipient
-> - **`amount_`** - a number to burn
->
-> **Emits:** `Transfer(address indexed from, address indexed to, uint256 value)`
-
-Destroys the `amount_` of tokens from the `account_`. The method might be called only by the bridge. Reverts with the error `ErrorNotBridge()` when called not by bridge.
-
-### Modifiers
-
-#### `onlyBridge()`
-
-Validates that the `msg.sender` of the method is the `bridge`. Reverts with error `ErrorNotBridge()` in other cases.
+None beyond those inherited from [`ERC20Metadata`](#ERC20Metadata) and [`ERC20Core`](#ERC20CoreLogic).
 
 ## `OssifiableProxy`
 
@@ -661,7 +637,7 @@ Validates that that proxy is not ossified and that method is called by the admin
 
 ## Deployment Process
 
-To reduce the gas costs for users, contracts `L1ERC20ExtendedTokensBridge`, `L2ERC20ExtendedTokensBridge`, and `ERC20Bridged` contracts use immutable variables as much as possible. But some of those variables are cross-referred. For example, `L1ERC20ExtendedTokensBridge` has reference to `L2ERC20ExtendedTokensBridge` and vice versa. As we use proxies, we can deploy proxies at first and stub the implementation with an empty contract. Then deploy actual implementations with addresses of deployed proxies and then upgrade proxies with new implementations. For stub, the following contract might be used:
+To reduce the gas costs for users, contracts `L1ERC20ExtendedTokensBridge` and `L2ERC20ExtendedTokensBridge` use immutable variables as much as possible. But some of those variables are cross-referred. For example, `L1ERC20ExtendedTokensBridge` has reference to `L2ERC20ExtendedTokensBridge` and vice versa. As we use proxies, we can deploy proxies at first and stub the implementation with an empty contract. Then deploy actual implementations with addresses of deployed proxies and then upgrade proxies with new implementations. For stub, the following contract might be used:
 
 ```
 pragma solidity ^0.8.0;

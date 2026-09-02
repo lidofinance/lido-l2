@@ -309,7 +309,6 @@ export default function deployAll(
             l2TokenNonRebasableSymbol,
             l2Params.l2TokenNonRebasable.version,
             l2TokenNonRebasableDecimals,
-            predictedAddresses.l2TokenBridgeProxy,
             options?.overrides,
           ],
           afterDeploy: (c) =>

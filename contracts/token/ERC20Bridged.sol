@@ -25,36 +25,20 @@ interface IERC20Bridged is IERC20 {
 }
 
 /// @author psirex, kovalgek
-/// @notice Extends the ERC20 functionality that allows the bridge to mint/burn tokens
-contract ERC20Bridged is IERC20Bridged, ERC20Core, ERC20Metadata {
-    /// @inheritdoc IERC20Bridged
-    address public immutable bridge;
-
+/// @notice ERC20 with unstructured-storage metadata. Carries NO mint/burn authority of its own:
+///     the `bridge` immutable and the `bridgeMint`/`bridgeBurn` pair are removed by
+///     patches/lido-l2-with-steth/0001 — this deployment mints and burns exclusively through the
+///     OZ AccessControl roles added by src/vendor/BurnMintERC20BridgedPermit.sol. `IERC20Bridged`
+///     above is left declared so the submodule's own importers still resolve it.
+contract ERC20Bridged is ERC20Core, ERC20Metadata {
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
     /// @param decimals_ The decimals places of the token
-    /// @param bridge_ The bridge address which allows to mint/burn tokens
     constructor(
         string memory name_,
         string memory symbol_,
-        uint8 decimals_,
-        address bridge_
-    ) ERC20Metadata(name_, symbol_, decimals_) {
-        if (bridge_ == address(0)) {
-            revert ErrorZeroAddressBridge();
-        }
-        bridge = bridge_;
-    }
-
-    /// @inheritdoc IERC20Bridged
-    function bridgeMint(address account_, uint256 amount_) external onlyBridge {
-        _mint(account_, amount_);
-    }
-
-    /// @inheritdoc IERC20Bridged
-    function bridgeBurn(address account_, uint256 amount_) external onlyBridge {
-        _burn(account_, amount_);
-    }
+        uint8 decimals_
+    ) ERC20Metadata(name_, symbol_, decimals_) {}
 
     /// @notice Sets the name and the symbol of the tokens if they both are empty
     /// @param name_ The name of the token
@@ -63,15 +47,4 @@ contract ERC20Bridged is IERC20Bridged, ERC20Core, ERC20Metadata {
         _setERC20MetadataName(name_);
         _setERC20MetadataSymbol(symbol_);
     }
-
-    /// @dev Validates that sender of the transaction is the bridge
-    modifier onlyBridge() {
-        if (msg.sender != bridge) {
-            revert ErrorNotBridge();
-        }
-        _;
-    }
-
-    error ErrorZeroAddressBridge();
-    error ErrorNotBridge();
 }

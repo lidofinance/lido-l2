@@ -13,7 +13,7 @@ import {
 unit("ERC20BridgedPermit", ctxFactory)
 
   .test("constructor() :: zero params", async (ctx) => {
-    const { deployer, stranger, zero } = ctx.accounts;
+    const { deployer } = ctx.accounts;
 
     await assert.revertsWith(new ERC20BridgedPermit__factory(
       deployer
@@ -21,19 +21,8 @@ unit("ERC20BridgedPermit", ctxFactory)
       "name",
       "symbol",
       "version",
-      0,
-      stranger.address
+      0
     ), "ErrorZeroDecimals()");
-
-    await assert.revertsWith(new ERC20BridgedPermit__factory(
-      deployer
-    ).deploy(
-      "name",
-      "symbol",
-      "version",
-      18,
-      zero.address
-    ), "ErrorZeroAddressBridge()");
   })
 
   .test("initial state", async (ctx) => {
@@ -47,7 +36,6 @@ unit("ERC20BridgedPermit", ctxFactory)
     assert.equal(await erc20Bridged.name(), name);
     assert.equal(await erc20Bridged.symbol(), symbol);
     assert.equalBN(await erc20Bridged.decimals(), decimals);
-    assert.equal(await erc20Bridged.bridge(), owner.address);
     assert.equalBN(await erc20Bridged.totalSupply(), premint);
   })
 
@@ -59,8 +47,7 @@ unit("ERC20BridgedPermit", ctxFactory)
       "name",
       "symbol",
       "version",
-      9,
-      owner.address
+      9
     );
 
     const petrifiedVersionMark = hre.ethers.constants.MaxUint256;
@@ -81,8 +68,7 @@ unit("ERC20BridgedPermit", ctxFactory)
       "wstETH",
       "wst",
       "1",
-      9,
-      owner.address
+      9
     );
 
     await assert.revertsWith(
@@ -120,8 +106,7 @@ unit("ERC20BridgedPermit", ctxFactory)
       "wstETH",
       "wst",
       "1",
-      9,
-      owner.address
+      9
     );
 
     const l2TokensProxy = await new OssifiableProxy__factory(deployer).deploy(
@@ -156,8 +141,7 @@ unit("ERC20BridgedPermit", ctxFactory)
       "name",
       "Symbol",
       "1",
-      9,
-      owner.address
+      9
     );
 
     await assert.revertsWith(new OssifiableProxy__factory(deployer).deploy(
@@ -177,8 +161,7 @@ unit("ERC20BridgedPermit", ctxFactory)
     const l2TokenOldImpl = await new ERC20BridgedWithInitializerStub__factory(deployer).deploy(
       "name",
       "symbol",
-      18,
-      owner.address
+      18
     );
 
     const l2TokenProxy = await new OssifiableProxy__factory(deployer).deploy(
@@ -199,8 +182,7 @@ unit("ERC20BridgedPermit", ctxFactory)
       "name",
       "symbol",
       "1",
-      18,
-      owner.address
+      18
     );
 
     await l2TokenProxy.proxy__upgradeToAndCall(
@@ -228,8 +210,7 @@ unit("ERC20BridgedPermit", ctxFactory)
     const l2TokenOldImpl = await new ERC20BridgedWithInitializerStub__factory(deployer).deploy(
       "name",
       "symbol",
-      18,
-      owner.address
+      18
     );
 
     const l2TokenProxy = await new OssifiableProxy__factory(deployer).deploy(
@@ -245,8 +226,7 @@ unit("ERC20BridgedPermit", ctxFactory)
       "name",
       "symbol",
       "1",
-      18,
-      owner.address
+      18
     );
 
     await assert.revertsWith(l2TokenProxy.proxy__upgradeToAndCall(
@@ -518,123 +498,6 @@ unit("ERC20BridgedPermit", ctxFactory)
     );
   })
 
-  .test("bridgeMint() :: not owner", async (ctx) => {
-    const { erc20Bridged } = ctx;
-    const { stranger } = ctx.accounts;
-
-    await assert.revertsWith(
-      erc20Bridged
-        .connect(stranger)
-        .bridgeMint(stranger.address, wei`1000 ether`),
-      "ErrorNotBridge()"
-    );
-  })
-
-  .group([wei`1000 ether`, "0"], (mintAmount) => [
-    `bridgeMint() :: amount is ${mintAmount} wei`,
-    async (ctx) => {
-      const { erc20Bridged } = ctx;
-      const { premint } = ctx.constants;
-      const { recipient, owner } = ctx.accounts;
-
-      // validate balance before mint
-      assert.equalBN(await erc20Bridged.balanceOf(recipient.address), 0);
-
-      // validate total supply before mint
-      assert.equalBN(await erc20Bridged.totalSupply(), premint);
-
-      // mint tokens
-      const tx = await erc20Bridged
-        .connect(owner)
-        .bridgeMint(recipient.address, mintAmount);
-
-      // validate Transfer event was emitted
-      await assert.emits(erc20Bridged, tx, "Transfer", [
-        hre.ethers.constants.AddressZero,
-        recipient.address,
-        mintAmount,
-      ]);
-
-      // validate balance was updated
-      assert.equalBN(
-        await erc20Bridged.balanceOf(recipient.address),
-        mintAmount
-      );
-
-      // validate total supply was updated
-      assert.equalBN(
-        await erc20Bridged.totalSupply(),
-        wei.toBigNumber(premint).add(mintAmount)
-      );
-    },
-  ])
-
-  .test("bridgeBurn() :: not owner", async (ctx) => {
-    const { erc20Bridged } = ctx;
-    const { holder, stranger } = ctx.accounts;
-
-    await assert.revertsWith(
-      erc20Bridged.connect(stranger).bridgeBurn(holder.address, wei`100 ether`),
-      "ErrorNotBridge()"
-    );
-  })
-
-  .test("bridgeBurn() :: amount exceeds balance", async (ctx) => {
-    const { erc20Bridged } = ctx;
-    const { owner, stranger } = ctx.accounts;
-
-    // validate stranger has no tokens
-    assert.equalBN(await erc20Bridged.balanceOf(stranger.address), 0);
-
-    await assert.revertsWith(
-      erc20Bridged.connect(owner).bridgeBurn(stranger.address, wei`100 ether`),
-      "ErrorNotEnoughBalance()"
-    );
-  })
-
-  .group([wei`10 ether`, "0"], (burnAmount) => [
-    `bridgeBurn() :: amount is ${burnAmount} wei`,
-    async (ctx) => {
-      const { erc20Bridged } = ctx;
-      const { premint } = ctx.constants;
-      const { owner, holder } = ctx.accounts;
-
-      // validate balance before mint
-      assert.equalBN(await erc20Bridged.balanceOf(holder.address), premint);
-
-      // validate total supply before mint
-      assert.equalBN(await erc20Bridged.totalSupply(), premint);
-
-      // burn tokens
-      const tx = await erc20Bridged
-        .connect(owner)
-        .bridgeBurn(holder.address, burnAmount);
-
-      // validate Transfer event was emitted
-      await assert.emits(erc20Bridged, tx, "Transfer", [
-        holder.address,
-        hre.ethers.constants.AddressZero,
-        burnAmount,
-      ]);
-
-      const expectedBalanceAndTotalSupply = wei
-        .toBigNumber(premint)
-        .sub(burnAmount);
-
-      // validate balance was updated
-      assert.equalBN(
-        await erc20Bridged.balanceOf(holder.address),
-        expectedBalanceAndTotalSupply
-      );
-
-      // validate total supply was updated
-      assert.equalBN(
-        await erc20Bridged.totalSupply(),
-        expectedBalanceAndTotalSupply
-      );
-    },
-  ])
-
   .run();
 
 async function ctxFactory() {
@@ -659,14 +522,13 @@ async function ctxFactory() {
     name,
     symbol,
     version,
-    decimals,
-    owner.address
+    decimals
   )
 
   /// ---------------------------
   /// setup
   /// ---------------------------
-  await erc20BridgedProxied.connect(owner).bridgeMint(holder.address, premint);
+  await erc20BridgedProxied.connect(owner).mint(holder.address, premint);
 
   await hre.network.provider.request({
     method: "hardhat_impersonateAccount",
